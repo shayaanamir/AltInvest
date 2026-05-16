@@ -1,0 +1,11 @@
+# Core
+pandas, numpy, scikit-learn
+prophet
+xgboost
+tensorflow (or torch — pick one and stick with it)
+
+# Experiment tracking (critical for teams)
+mlflow  ← install this before training anything
+
+# Dev
+jupyter, black, pytest
