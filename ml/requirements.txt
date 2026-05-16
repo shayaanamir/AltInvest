@@ -1,11 +1,26 @@
-# Core
-pandas, numpy, scikit-learn
-prophet
-xgboost
-tensorflow (or torch — pick one and stick with it)
+# ─── Core Data & ML ───────────────────────────────────────────────────────────
+pandas>=2.0.0
+numpy>=1.26.0
+scikit-learn>=1.4.0
 
-# Experiment tracking (critical for teams)
-mlflow  ← install this before training anything
+# ─── Forecasting ──────────────────────────────────────────────────────────────
+prophet>=1.1.5
 
-# Dev
-jupyter, black, pytest
+# ─── Boosting ─────────────────────────────────────────────────────────────────
+xgboost>=2.0.0
+
+# ─── Deep Learning (LSTM) — pick ONE and uncomment ───────────────────────────
+tensorflow>=2.16.0
+# torch>=2.2.0              # uncomment if switching to PyTorch
+
+# ─── API Layer ────────────────────────────────────────────────────────────────
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+
+# ─── Experiment Tracking ──────────────────────────────────────────────────────
+mlflow>=2.13.0              # install before running any training!
+
+# ─── Dev / Notebooks ──────────────────────────────────────────────────────────
+jupyter>=1.0.0
+black>=24.0.0
+pytest>=8.0.0
