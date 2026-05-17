@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import { NAV_ITEMS, BOTTOM_NAV } from "../../data/constants";
 import { makeStyles } from "../../styles/makeStyles";
@@ -6,18 +5,17 @@ import { makeStyles } from "../../styles/makeStyles";
 function LogoIcon({ color }) {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-      <rect x="1"  y="1"  width="7" height="7" rx="1.5" fill={color} />
-      <rect x="10" y="1"  width="7" height="7" rx="1.5" fill={color} fillOpacity="0.5" />
-      <rect x="1"  y="10" width="7" height="7" rx="1.5" fill={color} fillOpacity="0.5" />
+      <rect x="1" y="1" width="7" height="7" rx="1.5" fill={color} />
+      <rect x="10" y="1" width="7" height="7" rx="1.5" fill={color} fillOpacity="0.5" />
+      <rect x="1" y="10" width="7" height="7" rx="1.5" fill={color} fillOpacity="0.5" />
       <rect x="10" y="10" width="7" height="7" rx="1.5" fill={color} />
     </svg>
   );
 }
 
-export default function Sidebar() {
+export default function Sidebar({ activePage, onNavigate }) {
   const { tokens: t } = useTheme();
   const s = makeStyles(t);
-  const [activeNav, setActiveNav] = useState("Dashboard");
 
   return (
     <aside style={s.sidebar}>
@@ -34,8 +32,8 @@ export default function Sidebar() {
         {NAV_ITEMS.map((item) => (
           <div
             key={item.label}
-            style={{ ...s.navItem, ...(item.label === activeNav ? s.navItemActive : {}) }}
-            onClick={() => setActiveNav(item.label)}
+            style={{ ...s.navItem, ...(item.label === activePage ? s.navItemActive : {}) }}
+            onClick={() => onNavigate && onNavigate(item.label)}
           >
             <span style={s.navIcon}>{item.icon}</span>
             <span style={s.navLabel}>{item.label}</span>

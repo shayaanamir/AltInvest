@@ -155,7 +155,7 @@ export function makeStyles(t) {
       cursor: "pointer", fontWeight: 600,
     },
 
-    // ── Stats row ─────────────────────────────────────────────
+    // ── Stats row (dashboard) ─────────────────────────────────
     statsRow: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1.15fr", gap: 10, marginBottom: 12 },
     statCard: {
       background: t.bgCard, border: `1px solid ${t.border}`,
@@ -170,7 +170,7 @@ export function makeStyles(t) {
     moodSquare:{ width: 28, height: 28, borderRadius: 5, background: "linear-gradient(135deg,#4b8dff,#00c9b0)", opacity: 0.85 },
     moodConf:  { fontSize: 10, color: t.textMuted, marginTop: 5 },
 
-    // ── Charts row ────────────────────────────────────────────
+    // ── Charts row (dashboard) ────────────────────────────────
     chartsRow:   { display: "grid", gridTemplateColumns: "1fr 288px", gap: 10, marginBottom: 12 },
     card: {
       background: t.bgCard, border: `1px solid ${t.border}`,
@@ -214,5 +214,33 @@ export function makeStyles(t) {
     scoreIcon:  { fontSize: 11, color: t.accentBlue },
     scoreLbl:   { fontSize: 10, color: t.textMuted },
     assetSig:   { fontSize: 10.5, fontWeight: 700 },
+
+    // ── Portfolio page ────────────────────────────────────────
+    portfolioStatsRow: {
+      display: "grid",
+      gridTemplateColumns: "1fr 1fr 1fr",
+      gap: 10,
+      marginBottom: 12,
+    },
+    portfolioChartsRow: {
+      display: "grid",
+      gridTemplateColumns: "1fr 260px",
+      gap: 10,
+      marginBottom: 12,
+    },
+    diversificationRing: {
+      position: "relative",
+      width: 64, height: 64,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      flexShrink: 0,
+    },
+    diversificationRingLabel: {
+      position: "absolute",
+      fontSize: 11, fontWeight: 700,
+      color: t.accentYellow,
+      top: "50%", left: "50%",
+      transform: "translate(-50%, -50%)",
+      pointerEvents: "none",
+    },
   };
 }

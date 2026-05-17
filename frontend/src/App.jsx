@@ -1,19 +1,32 @@
+import { useState } from "react";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import { makeStyles } from "./styles/makeStyles";
 import Sidebar from "./components/layout/Sidebar";
 import Topbar from "./components/layout/Topbar";
 import DashboardPage from "./pages/DashboardPage";
+import PortfolioPage from "./pages/PortfolioPage";
 
 function Shell() {
   const { tokens: t } = useTheme();
   const s = makeStyles(t);
+  const [activePage, setActivePage] = useState("Dashboard");
+
+  const renderPage = () => {
+    switch (activePage) {
+      case "Portfolio":
+        return <PortfolioPage />;
+      case "Dashboard":
+      default:
+        return <DashboardPage />;
+    }
+  };
 
   return (
     <div style={s.root}>
-      <Sidebar />
+      <Sidebar activePage={activePage} onNavigate={setActivePage} />
       <div style={s.main}>
         <Topbar />
-        <DashboardPage />
+        {renderPage()}
       </div>
     </div>
   );
