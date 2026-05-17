@@ -1,0 +1,41 @@
+# ─────────────────────────────────────────────────────────────
+# AltInvest — Sentiment Engine
+# Full pinned requirements
+#
+# Install:
+#   pip install -r requirements.txt
+#
+# For CPU-only machines (no GPU), replace the torch line with:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+# ─────────────────────────────────────────────────────────────
+
+# ── Data collection ───────────────────────────────────────────
+feedparser==6.0.12          # RSS feed parsing
+requests==2.33.1            # HTTP client for CMC API
+
+# ── NLP ───────────────────────────────────────────────────────
+vaderSentiment==3.3.2       # Rule-based sentiment scorer
+transformers==5.8.1         # FinBERT and HuggingFace pipelines
+torch==2.12.0               # PyTorch backend for transformers
+
+# Key transitive deps for transformers — pin to avoid silent breakage
+huggingface-hub==1.15.0
+tokenizers==0.22.2
+safetensors==0.7.0
+
+# ── Database ──────────────────────────────────────────────────
+pymongo==4.17.0             # MongoDB driver
+
+# ── API layer ─────────────────────────────────────────────────
+fastapi==0.136.1            # Web framework (Person B mounts the router)
+uvicorn==0.47.0             # ASGI server
+pydantic==2.13.4            # Request/response validation (used by FastAPI)
+starlette==1.0.0            # FastAPI's underlying ASGI toolkit
+
+# ── Utilities ─────────────────────────────────────────────────
+python-dotenv==1.2.2        # Loads .env file for API keys
+numpy==2.4.4                # Numerical ops in aggregator
+pytz==2026.2                # Timezone handling
+
+# ── Testing ───────────────────────────────────────────────────
+pytest==9.0.3               # Test runner
