@@ -1,7 +1,28 @@
-import LandingPage from './pages/LandingPage.jsx'
+import { ThemeProvider, useTheme } from "./context/ThemeContext";
+import { makeStyles } from "./styles/makeStyles";
+import Sidebar from "./components/layout/Sidebar";
+import Topbar from "./components/layout/Topbar";
+import DashboardPage from "./pages/DashboardPage";
 
-function App() {
-  return <LandingPage />
+function Shell() {
+  const { tokens: t } = useTheme();
+  const s = makeStyles(t);
+
+  return (
+    <div style={s.root}>
+      <Sidebar />
+      <div style={s.main}>
+        <Topbar />
+        <DashboardPage />
+      </div>
+    </div>
+  );
 }
 
-export default App
+export default function App() {
+  return (
+    <ThemeProvider>
+      <Shell />
+    </ThemeProvider>
+  );
+}
