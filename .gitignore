@@ -1,0 +1,8 @@
+# ML artifacts and data
+ml/data/
+ml/experiments/
+*.pkl
+*.h5
+*.pt
+__pycache__/
+.env

@@ -3,7 +3,7 @@ prediction_service.py
 ─────────────────────────────────────────────────────────────────────────────
 FastAPI prediction service for AltInvest ML pipeline.
 
-Serves pre-trained Prophet + RandomForest models via HTTP on port 8001.
+Serves pre-trained Prophet + RandomForest + LSTM models via HTTP on port 8001.
 
 Start command (from repo root):
     uvicorn ml.api.prediction_service:app --port 8001 --reload
@@ -15,7 +15,8 @@ Endpoints
 ─────────
     GET /                          — health check
     GET /health                    — detailed system health
-    GET /prediction/{asset}        — main prediction endpoint
+    GET /prediction/{asset}        — main prediction (Prophet) endpoint
+    GET /models/{asset}            — A/B comparison: Prophet vs LSTM
     GET /assets                    — list supported assets
     POST /retrain/{asset}          — trigger fresh training (reloads cache)
 
@@ -58,6 +59,7 @@ from pydantic import BaseModel, Field
 
 from models.forecaster  import ProphetForecaster
 from models.classifier  import RiskClassifier
+from models              import lstm as lstm_module
 from features.feature_engineering import load_raw_csv, build_features
 from training.train import run_training
 
@@ -109,6 +111,13 @@ class HealthResponse(BaseModel):
     supported_assets: list[str]
 
 
+class ModelCompareResponse(BaseModel):
+    """Side-by-side Prophet vs LSTM output for A/B evaluation."""
+    asset:   str
+    prophet: dict
+    lstm:    Optional[dict] = Field(None, description="None if LSTM not yet trained for this asset")
+
+
 class RetrainResponse(BaseModel):
     asset:   str
     status:  str
@@ -131,16 +140,17 @@ class ModelCache:
     """
 
     def __init__(self):
-        # { "btc": {"forecaster": ..., "classifier": ..., "features_df": ...} }
+        # { "btc": {"forecaster": ..., "classifier": ..., "features_df": ..., "lstm_report": ...} }
         self._cache: dict = {}
 
     def load_asset(self, asset: str) -> None:
-        """Load both models for an asset. Called at startup and on retrain."""
+        """Load Prophet, RF classifier, and LSTM report for an asset."""
         asset = asset.lower()
         log.info("[%s] Loading models into cache ...", asset.upper())
 
         forecaster_path  = ARTIFACTS_DIR / f"{asset}_prophet.pkl"
         classifier_path  = ARTIFACTS_DIR / f"{asset}_rf_classifier.pkl"
+        lstm_report_path = ARTIFACTS_DIR / f"{asset}_lstm_report.json"
 
         # ── Forecaster ────────────────────────────────────────────────────
         if forecaster_path.exists():
@@ -173,10 +183,22 @@ class ModelCache:
         features_df = build_features(raw)
         asset_df = features_df[features_df["asset"] == asset].copy()
 
+        # ── LSTM report (optional — populated when lstm.py has been run) ──
+        lstm_report = None
+        if lstm_report_path.exists():
+            import json
+            with open(lstm_report_path) as f:
+                lstm_report = json.load(f)
+            log.info("[%s] LSTM report loaded from artifact.", asset.upper())
+        else:
+            log.info("[%s] No LSTM artifact found — run: python models/lstm.py --asset %s",
+                     asset.upper(), asset)
+
         self._cache[asset] = {
             "forecaster":   forecaster,
             "classifier":   classifier,
             "features_df":  asset_df,
+            "lstm_report":  lstm_report,
         }
         log.info("[%s] Cache loaded successfully.", asset.upper())
 
@@ -384,6 +406,87 @@ async def get_prediction(
         confidence     = forecast["confidence"],
         risk_label     = risk["risk_label"],
         risk_score     = risk["risk_score"],
+    )
+
+
+@app.get(
+    "/models/{asset}",
+    response_model=ModelCompareResponse,
+    summary="A/B comparison: Prophet vs LSTM forecasts",
+    tags=["Prediction"],
+    responses={
+        200: {"description": "Both model results returned"},
+        404: {"description": "Asset not supported"},
+        503: {"description": "Prophet model not loaded"},
+    },
+)
+async def compare_models(
+    asset: str = FPath(
+        ...,
+        description="Asset ticker (btc or eth)",
+        example="btc",
+    ),
+) -> ModelCompareResponse:
+    """
+    Returns side-by-side predictions from Prophet and LSTM for A/B evaluation.
+
+    - **prophet** — always present (loaded at startup from .pkl artifact)
+    - **lstm** — present only if `python models/lstm.py --asset {asset}` has been run
+
+    Both share the same output schema so the backend can swap transparently:
+        prediction_30d, lower_bound, upper_bound, confidence
+    """
+    asset = asset.lower()
+
+    if asset not in SUPPORTED_ASSETS:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Asset '{asset}' not supported. Supported: {SUPPORTED_ASSETS}",
+        )
+
+    if asset not in cache.loaded_assets:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                f"Models for '{asset}' are not loaded. "
+                f"Run: python training/train.py --asset {asset}"
+            ),
+        )
+
+    entry      = cache.get(asset)
+    forecaster = entry["forecaster"]
+
+    # Prophet forecast
+    try:
+        prophet_result = forecaster.predict()
+    except Exception as exc:
+        log.error("[%s] Prophet prediction failed: %s", asset.upper(), exc)
+        raise HTTPException(status_code=500, detail=f"Prophet error: {exc}")
+
+    # LSTM — use cached report if available, otherwise attempt live inference
+    lstm_result = entry.get("lstm_report")
+    if lstm_result is None:
+        lstm_path = ARTIFACTS_DIR / f"{asset}_lstm.keras"
+        lstm_fallback = ARTIFACTS_DIR / f"{asset}_lstm_fallback.pkl"
+        if lstm_path.exists() or lstm_fallback.exists():
+            try:
+                lstm_result = lstm_module.predict(asset)
+                log.info("[%s] LSTM live inference complete.", asset.upper())
+            except Exception as exc:
+                log.warning("[%s] LSTM inference failed: %s", asset.upper(), exc)
+                lstm_result = None
+
+    log.info(
+        "[%s] /models comparison served. Prophet=%.2f  LSTM=%s",
+        asset.upper(),
+        prophet_result["prediction_30d"],
+        lstm_result["prediction_30d"] if lstm_result else "N/A",
+    )
+
+    return ModelCompareResponse(
+        asset   = asset,
+        prophet = prophet_result,
+        lstm    = lstm_result,
     )
 
 
