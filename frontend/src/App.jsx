@@ -5,6 +5,7 @@ import Sidebar from "./components/layout/Sidebar";
 import Topbar from "./components/layout/Topbar";
 import DashboardPage from "./pages/DashboardPage";
 import PortfolioPage from "./pages/PortfolioPage";
+import AssetDetailPage from "./pages/AssetDetailPage";
 
 function Shell() {
   const { tokens: t } = useTheme();
@@ -15,6 +16,8 @@ function Shell() {
     switch (activePage) {
       case "Portfolio":
         return <PortfolioPage />;
+      case "Asset Detail":
+        return <AssetDetailPage onNavigate={setActivePage} />;
       case "Dashboard":
       default:
         return <DashboardPage />;
