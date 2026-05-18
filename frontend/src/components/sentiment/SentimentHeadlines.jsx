@@ -11,8 +11,8 @@ export default function SentimentHeadlines() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        sentimentApi.getTopHeadlines().then(data => {
-            setHeadlines(data);
+        sentimentApi.getSentimentData().then(data => {
+            setHeadlines(data.headlines);
             setLoading(false);
         }).catch(console.error);
     }, []);

@@ -11,8 +11,8 @@ export default function SentimentSources() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        sentimentApi.getSentimentSources().then(data => {
-            setBreakdown(data);
+        sentimentApi.getSentimentData().then(data => {
+            setBreakdown(data.sources);
             setLoading(false);
         }).catch(console.error);
     }, []);

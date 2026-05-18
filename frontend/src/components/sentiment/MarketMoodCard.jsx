@@ -11,8 +11,8 @@ export default function MarketMoodCard() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        sentimentApi.getGlobalSentiment().then(val => {
-            setScore(val);
+        sentimentApi.getSentimentData().then(data => {
+            setScore(data.globalScore);
             setLoading(false);
         }).catch(console.error);
     }, []);
