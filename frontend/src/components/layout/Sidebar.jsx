@@ -53,8 +53,8 @@ export default function Sidebar({ activePage, onNavigate }) {
         flexDirection: collapsed ? "column" : "row",
         position: "relative"
       }}>
-        <div style={{ ...s.logoIcon }}>
-          <LogoIcon color={t.accentBlue} />
+        <div style={{ ...s.logoIcon, overflow: "hidden", background: "none" }}>
+          <img src="/altinvest_logo.png" alt="AltInvest Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
         </div>
         {!collapsed && <span style={{ ...s.logoText, flex: 1 }}>AltInvest</span>}
 

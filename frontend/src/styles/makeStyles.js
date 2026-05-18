@@ -83,11 +83,11 @@ export function makeStyles(t) {
 
     // ── Topbar ────────────────────────────────────────────────
     topbar: {
-      height: 52,
+      height: 58,
       background: t.topbarBg,
       borderBottom: `1px solid ${t.border}`,
       display: "flex", alignItems: "center",
-      padding: "0 20px 0 16px", gap: 14, flexShrink: 0,
+      padding: "0px 40px 0 40px", gap: 14, flexShrink: 0,
       transition: "background 0.25s, border-color 0.25s",
     },
     searchBox: {
@@ -115,9 +115,9 @@ export function makeStyles(t) {
     notifBtn: { background: "none", border: "none", cursor: "pointer", fontSize: 15, color: t.textSecondary, padding: 4 },
     themeToggle: { background: "none", border: "none", cursor: "pointer", padding: 0 },
     themeToggleTrack: {
-      width: 46, height: 24,
+      width: 50, height: 24,
       background: t.bgCard2, border: `1px solid ${t.borderLight}`,
-      borderRadius: 12, position: "relative", padding: 2,
+      borderRadius: 25, position: "relative", padding: 2,
       display: "flex", alignItems: "center",
     },
     themeToggleThumb: {
@@ -131,7 +131,7 @@ export function makeStyles(t) {
     userTier:  { fontSize: 9.5, color: t.textSecondary, textAlign: "right" },
     avatar: {
       width: 32, height: 32, borderRadius: "50%",
-      background: "linear-gradient(135deg,#4b8dff,#00c9b0)",
+      background: "linear-gradient(135deg,#4b8dff,#4b8dff)",
       display: "flex", alignItems: "center", justifyContent: "center",
       fontSize: 11, fontWeight: 700, color: "#fff",
     },
