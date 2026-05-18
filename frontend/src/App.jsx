@@ -7,11 +7,12 @@ import DashboardPage from "./pages/DashboardPage";
 import PortfolioPage from "./pages/PortfolioPage";
 import AssetDetailPage from "./pages/AssetDetailPage";
 import SentimentPage from "./pages/SentimentPage";
+import LandingPage from "./pages/LandingPage";
 
 function Shell() {
   const { tokens: t } = useTheme();
   const s = makeStyles(t);
-  const [activePage, setActivePage] = useState("Dashboard");
+  const [activePage, setActivePage] = useState("Landing");
 
   const renderPage = () => {
     switch (activePage) {
@@ -26,6 +27,10 @@ function Shell() {
         return <DashboardPage />;
     }
   };
+
+  if (activePage === "Landing") {
+    return <LandingPage onNavigate={setActivePage} />;
+  }
 
   return (
     <div style={s.root}>
