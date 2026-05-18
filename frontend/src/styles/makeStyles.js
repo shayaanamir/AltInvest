@@ -18,14 +18,14 @@ export function makeStyles(t) {
 
     // ── Sidebar ───────────────────────────────────────────────
     sidebar: {
-      width: 138,
-      minWidth: 138,
+      width: 220,
+      minWidth: 220,
       background: t.bgSidebar,
       borderRight: `1px solid ${t.border}`,
       display: "flex",
       flexDirection: "column",
       padding: "16px 0 12px",
-      transition: "background 0.25s, border-color 0.25s",
+      transition: "width 0.3s ease, min-width 0.3s ease, background 0.25s, border-color 0.25s",
     },
     logo: {
       display: "flex",
@@ -46,19 +46,18 @@ export function makeStyles(t) {
       letterSpacing: "0.08em", textTransform: "uppercase",
       padding: "12px 14px 5px",
     },
-    nav: { display: "flex", flexDirection: "column", gap: 1, padding: "0 6px" },
+    nav: { display: "flex", flexDirection: "column", gap: 3, padding: "0 10px" },
     navItem: {
-      display: "flex", alignItems: "center", gap: 7,
-      padding: "7px 10px", borderRadius: 7, cursor: "pointer",
-      fontSize: 11.5, color: t.textSecondary,
-      transition: "background 0.15s, color 0.15s",
+      display: "flex", alignItems: "center", gap: 10,
+      padding: "9px 12px", borderRadius: 8, cursor: "pointer",
+      fontSize: 13.5, color: t.textSecondary,
+      transition: "background 0.15s, color 0.15s, justify-content 0.3s ease",
     },
     navItemActive: {
       background: t.navActiveBg, color: t.textPrimary, fontWeight: 600,
-      borderLeft: `2px solid ${t.navActiveBorder}`, paddingLeft: 8,
     },
-    navIcon:  { fontSize: 13, width: 16, textAlign: "center", opacity: 0.8 },
-    navLabel: { fontSize: 11.5, fontWeight: 500 },
+    navIcon:  { fontSize: 15, width: 20, textAlign: "center", opacity: 0.8 },
+    navLabel: { fontSize: 13.5, fontWeight: 500, whiteSpace: "nowrap" },
     badge: {
       fontSize: 8, fontWeight: 700, padding: "1px 5px", borderRadius: 4,
       background: t.badgeNewBg, color: t.badgeNewText, letterSpacing: "0.04em",
