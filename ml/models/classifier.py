@@ -11,7 +11,6 @@ Design
 Output contract:
     {
         "asset":        "btc",
-        "risk_label":   "medium",   # one of: "low" | "medium" | "high"
         "risk_score":   67.5,       # 0–100 continuous score (higher = riskier, internal)
         "sharpe_ratio": 1.4         # annualised Sharpe ratio from return_1d
     }
@@ -37,8 +36,7 @@ This means the classifier learns to reproduce these human-interpretable
 thresholds from the raw feature values — avoiding data leakage while keeping
 the labeling logic transparent.
 
-At inference time the classifier predicts: label + class probability scores.
-risk_score = P(high) * 100, giving a 0–100 continuous risk signal.
+At inference time risk_score = P(high) * 100, giving a 0–100 continuous risk signal.
 
 Architecture
 ------------
@@ -59,7 +57,7 @@ Usage
     clf = RiskClassifier()
     clf.fit(df)
     result = clf.predict_latest(df)
-    # -> {"asset": "btc", "risk_label": "medium", "risk_score": 67.5}
+    # -> {"asset": "btc", "risk_score": 67.5, "sharpe_ratio": 1.4}
 
 CLI:
     python -m models.classifier --asset btc
@@ -290,9 +288,9 @@ class RiskClassifier:
         -------
         dict:
             {
-                "asset":      str,
-                "risk_label": str,    # "low" | "medium" | "high"
-                "risk_score": float   # 0–100 continuous
+                "asset":        str,
+                "risk_score":   float,   # 0–100 continuous
+                "sharpe_ratio": float,
             }
         """
         if not self.is_fitted:
@@ -306,11 +304,7 @@ class RiskClassifier:
 
         X = latest[CLASSIFIER_FEATURES].values
 
-        # Predicted class + probabilities
-        label_encoded = self._model.predict(X)[0]
-        proba         = self._model.predict_proba(X)[0]   # [P(low), P(med), P(high)]
-
-        label = self._encoder.inverse_transform([label_encoded])[0]
+        proba = self._model.predict_proba(X)[0]   # [P(low), P(med), P(high)]
 
         # risk_score = P(high) * 100  — continuous 0–100 signal (internal, higher = riskier)
         high_idx   = list(self._encoder.classes_).index("high")
@@ -321,14 +315,13 @@ class RiskClassifier:
 
         result = {
             "asset":        self._asset.upper(),
-            "risk_label":   label,
             "risk_score":   risk_score,
             "sharpe_ratio": sharpe,
         }
 
         log.info(
-            "[%s] Risk: %s  (score=%.1f)  sharpe=%.4f  probas=%s",
-            self._asset.upper(), label.upper(), risk_score, sharpe,
+            "[%s] Risk score=%.1f  sharpe=%.4f  probas=%s",
+            self._asset.upper(), risk_score, sharpe,
             {c: round(p, 3) for c, p in zip(self._encoder.classes_, proba)},
         )
         return result
@@ -526,10 +519,11 @@ def _parse_args() -> argparse.Namespace:
         epilog=(
             "Examples:\n"
             "  python -m models.classifier --asset btc\n"
-            "  python -m models.classifier --asset eth --no-save\n"
+            "  python -m models.classifier --asset eth\n"
+            "  python -m models.classifier --asset sol --no-save\n"
         ),
     )
-    parser.add_argument("--asset", choices=["btc", "eth"], required=True)
+    parser.add_argument("--asset", choices=["btc", "eth", "sol"], required=True)
     parser.add_argument(
         "--no-save", action="store_true",
         help="Skip saving model artifact (dry-run)"

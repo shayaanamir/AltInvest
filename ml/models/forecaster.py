@@ -459,10 +459,11 @@ def _parse_args() -> argparse.Namespace:
         epilog=(
             "Examples:\n"
             "  python -m models.forecaster --asset btc\n"
-            "  python -m models.forecaster --asset eth --no-save\n"
+            "  python -m models.forecaster --asset eth\n"
+            "  python -m models.forecaster --asset sol --no-save\n"
         ),
     )
-    parser.add_argument("--asset", choices=["btc", "eth"], required=True)
+    parser.add_argument("--asset", choices=["btc", "eth", "sol"], required=True)
     parser.add_argument(
         "--no-save", action="store_true",
         help="Skip saving the model artifact (dry-run)"

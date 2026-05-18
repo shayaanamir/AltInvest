@@ -28,14 +28,19 @@ Callable functions (importable without HTTP)
 
 Output contract for GET /prediction/{asset}:
     {
-        "asset":          "BTC",
-        "prediction_30d": 12.5,
-        "lower_bound":    103476.59,
-        "upper_bound":    108942.28,
-        "confidence":     0.95,
-        "risk_label":     "high",
-        "risk_score":     32.8,   # contract score = 100 - internal score
-        "timestamp":      "2026-05-18T14:00:00Z"
+        "asset":              "BTC",
+        "predicted_price":    106152.16,
+        "prediction_30d":     12.5,
+        "lower_bound":        103476.59,
+        "upper_bound":        108942.28,
+        "confidence":         0.95,
+        "risk_score":         32.8,         # contract score = 100 - internal
+        "timestamp":          "2026-05-18T14:00:00Z",
+        "trend":              "Bullish",    # Bullish | Bearish | Neutral
+        "agreement":          true,          # Prophet & LSTM same direction?
+        "signal":             "STRONG_BUY", # STRONG_BUY | STRONG_SELL | UNCERTAIN
+        "boosted_confidence": 0.95,          # 0.95 if agreement else 0.60
+        "ensemble_price":     106152.16     # confidence-weighted Prophet+LSTM avg
     }
 
 Output contract for GET /risk/{asset}:
@@ -89,7 +94,7 @@ log = logging.getLogger("prediction_service")
 
 # ─── Constants ────────────────────────────────────────────────────────────────
 ARTIFACTS_DIR   = _ML_ROOT / "models" / "artifacts"
-SUPPORTED_ASSETS = ["btc", "eth"]
+SUPPORTED_ASSETS = ["btc", "eth", "sol"]
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -98,29 +103,45 @@ SUPPORTED_ASSETS = ["btc", "eth"]
 
 class PredictionResponse(BaseModel):
     """Exact schema the backend expects from GET /prediction/{asset}."""
+    # ── Core forecast fields (unchanged) ──────────────────────────────────────
     asset:           str   = Field(..., example="BTC")
     predicted_price: float = Field(..., example=106152.16, description="Predicted absolute price in USD after 30 days")
     prediction_30d:  float = Field(..., example=12.5,      description="% price change from current price over 30 days")
     lower_bound:     float = Field(..., example=103476.59, description="80% prediction interval lower bound")
     upper_bound:     float = Field(..., example=108942.28, description="80% prediction interval upper bound")
     confidence:      float = Field(..., ge=0.0, le=1.0, example=0.95, description="Model confidence 0–1")
-    risk_label:      str   = Field(..., example="high", description="low | medium | high")
     risk_score:      float = Field(..., ge=0.0, le=100.0, example=32.8,
                                   description="Contract risk score 0–100 where higher = lower risk (100 - internal score)")
     timestamp:       str   = Field(..., example="2026-05-18T14:00:00Z", description="UTC time of prediction")
+    # ── Signal fields (Task A) ────────────────────────────────────────────────
+    trend:              str  = Field(..., example="Bullish",
+                                    description="Bullish if prediction_30d > 5, Bearish if < -5, else Neutral")
+    agreement:          bool = Field(..., example=True,
+                                    description="True if Prophet and LSTM predict the same direction")
+    signal:             str  = Field(..., example="STRONG_BUY",
+                                    description="STRONG_BUY | STRONG_SELL | UNCERTAIN")
+    boosted_confidence: float = Field(..., ge=0.0, le=1.0, example=0.95,
+                                     description="0.95 when models agree, 0.60 when they disagree")
+    # ── Ensemble field (Task B) ───────────────────────────────────────────────
+    ensemble_price:     float = Field(..., example=106152.16,
+                                     description="Confidence-weighted average of Prophet and LSTM price forecasts")
 
     class Config:
         json_schema_extra = {
             "example": {
-                "asset":           "BTC",
-                "predicted_price": 106152.16,
-                "prediction_30d":  12.5,
-                "lower_bound":     103476.59,
-                "upper_bound":     108942.28,
-                "confidence":      0.95,
-                "risk_label":      "high",
-                "risk_score":      32.8,
-                "timestamp":       "2026-05-18T14:00:00Z",
+                "asset":              "BTC",
+                "predicted_price":    106152.16,
+                "prediction_30d":     12.5,
+                "lower_bound":        103476.59,
+                "upper_bound":        108942.28,
+                "confidence":         0.95,
+                "risk_score":         32.8,
+                "timestamp":          "2026-05-18T14:00:00Z",
+                "trend":              "Bullish",
+                "agreement":          True,
+                "signal":             "STRONG_BUY",
+                "boosted_confidence": 0.95,
+                "ensemble_price":     106152.16,
             }
         }
 
@@ -303,7 +324,7 @@ app = FastAPI(
     title="AltInvest ML Prediction Service",
     description=(
         "Serves 30-day price forecasts and risk classifications "
-        "for BTC and ETH. Powered by Prophet + RandomForest."
+        "for BTC, ETH, and SOL. Powered by Prophet + RandomForest."
     ),
     version="1.0.0",
     lifespan=lifespan,
@@ -376,20 +397,21 @@ async def list_assets():
 async def get_prediction(
     asset: str = FPath(
         ...,
-        description="Asset ticker (btc or eth)",
+        description="Asset ticker (btc, eth, or sol)",
         example="btc",
     ),
 ) -> PredictionResponse:
     """
-    Returns a 30-day price forecast and risk classification for the given asset.
+    Returns a 30-day price forecast, risk classification, agreement signal,
+    and ensemble price for the given asset.
 
-    **Backend contract** — this is the exact response Person B's backend expects:
+    **New fields added to the contract:**
 
-    - `prediction_30d` — predicted price 30 days from now (USD)
-    - `lower_bound` / `upper_bound` — 80% prediction interval
-    - `confidence` — model confidence 0–1 (derived from interval width)
-    - `risk_label` — "low" | "medium" | "high"
-    - `risk_score` — continuous 0–100 risk score (P(high) × 100)
+    - `trend` — direction derived from `prediction_30d`: Bullish / Bearish / Neutral
+    - `agreement` — True if Prophet and LSTM predict the same price direction
+    - `signal` — STRONG_BUY | STRONG_SELL | UNCERTAIN
+    - `boosted_confidence` — 0.95 when models agree, 0.60 when they disagree
+    - `ensemble_price` — confidence-weighted average of Prophet + LSTM price forecasts
     """
     asset = asset.lower()
 
@@ -419,11 +441,24 @@ async def get_prediction(
         classifier  = entry["classifier"]
         features_df = entry["features_df"]
 
-        # 3. Get forecast prediction dict
+        # 3. Prophet forecast
         forecast = forecaster.predict()
 
-        # 4. Get risk classification on latest data point
+        # 4. Risk classification
         risk = classifier.predict_latest(features_df)
+
+        # 5. LSTM result — try cache first, then live inference
+        lstm_result = entry.get("lstm_report")
+        if lstm_result is None:
+            lstm_path     = ARTIFACTS_DIR / f"{asset}_lstm.keras"
+            lstm_fallback = ARTIFACTS_DIR / f"{asset}_lstm_fallback.pkl"
+            if lstm_path.exists() or lstm_fallback.exists():
+                try:
+                    lstm_result = lstm_module.predict(asset)
+                    log.info("[%s] LSTM live inference for /prediction.", asset.upper())
+                except Exception as exc:
+                    log.warning("[%s] LSTM inference failed: %s — using None.", asset.upper(), exc)
+                    lstm_result = None
 
     except Exception as exc:
         log.error("[%s] Prediction failed: %s", asset.upper(), exc)
@@ -432,30 +467,77 @@ async def get_prediction(
             detail=f"Prediction error for '{asset}': {str(exc)}",
         )
 
-    elapsed = time.perf_counter() - t0
-    log.info(
-        "[%s] Served prediction in %.3fs  "
-        "pred=$%.2f (%+.2f%%)  risk=%s(%.1f)",
-        asset.upper(), elapsed,
-        forecast["predicted_price"], forecast["prediction_30d"],
-        risk["risk_label"], risk["risk_score"],
-    )
+    # ── Task A: Agreement signal ───────────────────────────────────────────────
+    prophet_30d = forecast["prediction_30d"]   # % change
 
-    # 5. Invert risk_score: contract says higher score = lower risk
-    #    internal score: P(high)*100  →  contract score: 100 - internal
+    # trend from Prophet direction
+    if prophet_30d > 5:
+        trend = "Bullish"
+    elif prophet_30d < -5:
+        trend = "Bearish"
+    else:
+        trend = "Neutral"
+
+    # agreement requires both models to be available and same direction
+    if lstm_result is not None:
+        lstm_30d  = lstm_result.get("prediction_30d", 0.0)
+        agreement = (prophet_30d > 0) == (lstm_30d > 0)   # same sign = same direction
+    else:
+        agreement = False
+        lstm_30d  = None
+
+    if agreement and trend == "Bullish":
+        signal = "STRONG_BUY"
+    elif agreement and trend == "Bearish":
+        signal = "STRONG_SELL"
+    else:
+        signal = "UNCERTAIN"
+
+    boosted_confidence = 0.95 if agreement else 0.60
+
+    # ── Task B: Weighted ensemble price ───────────────────────────────────────
+    prophet_price = forecast["predicted_price"]
+    prophet_conf  = forecast.get("confidence", 0.95)
+
+    if lstm_result is not None:
+        lstm_price = lstm_result.get("predicted_price") or lstm_result.get("prediction_30d", prophet_price)
+        lstm_conf  = lstm_result.get("confidence", 0.85)
+        total_conf = prophet_conf + lstm_conf
+        ensemble_price = round(
+            (prophet_price * prophet_conf / total_conf) +
+            (lstm_price    * lstm_conf    / total_conf),
+            2,
+        )
+    else:
+        ensemble_price = round(prophet_price, 2)   # fallback: Prophet only
+
+    # ── Risk score inversion ──────────────────────────────────────────────────
     contract_risk_score = round(100.0 - risk["risk_score"], 1)
 
-    # 6. Merge and return — exact backend contract
+    elapsed = time.perf_counter() - t0
+    log.info(
+        "[%s] /prediction in %.3fs  $%.2f (%+.2f%%)  risk=%.1f  "
+        "trend=%s  agreement=%s  signal=%s  ensemble=$%.2f",
+        asset.upper(), elapsed,
+        prophet_price, prophet_30d,
+        contract_risk_score,
+        trend, agreement, signal, ensemble_price,
+    )
+
     return PredictionResponse(
-        asset           = forecast["asset"],
-        predicted_price = forecast["predicted_price"],
-        prediction_30d  = forecast["prediction_30d"],
-        lower_bound     = forecast["lower_bound"],
-        upper_bound     = forecast["upper_bound"],
-        confidence      = forecast["confidence"],
-        risk_label      = risk["risk_label"],
-        risk_score      = contract_risk_score,
-        timestamp       = forecast["timestamp"],
+        asset               = forecast["asset"],
+        predicted_price     = prophet_price,
+        prediction_30d      = prophet_30d,
+        lower_bound         = forecast["lower_bound"],
+        upper_bound         = forecast["upper_bound"],
+        confidence          = prophet_conf,
+        risk_score          = contract_risk_score,
+        timestamp           = forecast["timestamp"],
+        trend               = trend,
+        agreement           = agreement,
+        signal              = signal,
+        boosted_confidence  = boosted_confidence,
+        ensemble_price      = ensemble_price,
     )
 
 
@@ -473,7 +555,7 @@ async def get_prediction(
 async def compare_models(
     asset: str = FPath(
         ...,
-        description="Asset ticker (btc or eth)",
+        description="Asset ticker (btc, eth, or sol)",
         example="btc",
     ),
 ) -> ModelCompareResponse:
@@ -554,7 +636,7 @@ async def compare_models(
 async def get_risk_endpoint(
     asset: str = FPath(
         ...,
-        description="Asset ticker (btc or eth)",
+        description="Asset ticker (btc, eth, or sol)",
         example="btc",
     ),
 ) -> RiskResponse:
@@ -626,7 +708,7 @@ async def get_risk_endpoint(
     tags=["System"],
 )
 async def retrain(
-    asset: str = FPath(..., description="Asset to retrain (btc or eth)", example="btc"),
+    asset: str = FPath(..., description="Asset to retrain (btc, eth, or sol)", example="btc"),
 ):
     """
     Triggers full retraining for the given asset and reloads the model cache.
@@ -716,21 +798,25 @@ def get_prediction(asset: str) -> dict:
     Parameters
     ----------
     asset : str
-        Asset ticker — ``"btc"`` or ``"eth"`` (case-insensitive).
+        Asset ticker — ``"btc"``, ``"eth"``, or ``"sol"`` (case-insensitive).
 
     Returns
     -------
     dict matching PredictionResponse:
         {
-            "asset":           str,
-            "predicted_price": float,
-            "prediction_30d":  float,   # % change
-            "lower_bound":     float,
-            "upper_bound":     float,
-            "confidence":      float,
-            "risk_label":      str,     # "low" | "medium" | "high"
-            "risk_score":      float,   # 0–100, HIGHER = LOWER risk (contract)
-            "timestamp":       str,
+            "asset":              str,
+            "predicted_price":    float,
+            "prediction_30d":     float,   # % change
+            "lower_bound":        float,
+            "upper_bound":        float,
+            "confidence":         float,
+            "risk_score":         float,   # 0–100, HIGHER = LOWER risk (contract)
+            "timestamp":          str,
+            "trend":              str,     # "Bullish" | "Bearish" | "Neutral"
+            "agreement":          bool,    # Prophet & LSTM same direction?
+            "signal":             str,     # "STRONG_BUY" | "STRONG_SELL" | "UNCERTAIN"
+            "boosted_confidence": float,   # 0.95 if agreement else 0.60
+            "ensemble_price":     float,   # confidence-weighted Prophet+LSTM avg
         }
 
     Raises
@@ -755,19 +841,74 @@ def get_prediction(asset: str) -> dict:
     forecast = forecaster.predict()
     risk     = classifier.predict_latest(features_df)
 
-    # Apply contract inversion: higher score = lower risk
+    # LSTM — cache first, then live
+    lstm_result = entry.get("lstm_report")
+    if lstm_result is None:
+        lstm_path     = ARTIFACTS_DIR / f"{asset}_lstm.keras"
+        lstm_fallback = ARTIFACTS_DIR / f"{asset}_lstm_fallback.pkl"
+        if lstm_path.exists() or lstm_fallback.exists():
+            try:
+                lstm_result = lstm_module.predict(asset)
+            except Exception:
+                lstm_result = None
+
+    # Agreement signal
+    prophet_30d = forecast["prediction_30d"]
+    if prophet_30d > 5:
+        trend = "Bullish"
+    elif prophet_30d < -5:
+        trend = "Bearish"
+    else:
+        trend = "Neutral"
+
+    if lstm_result is not None:
+        lstm_30d  = lstm_result.get("prediction_30d", 0.0)
+        agreement = (prophet_30d > 0) == (lstm_30d > 0)
+    else:
+        agreement = False
+
+    if agreement and trend == "Bullish":
+        signal = "STRONG_BUY"
+    elif agreement and trend == "Bearish":
+        signal = "STRONG_SELL"
+    else:
+        signal = "UNCERTAIN"
+
+    boosted_confidence = 0.95 if agreement else 0.60
+
+    # Weighted ensemble price
+    prophet_price = forecast["predicted_price"]
+    prophet_conf  = forecast.get("confidence", 0.95)
+
+    if lstm_result is not None:
+        lstm_price = lstm_result.get("predicted_price") or lstm_result.get("prediction_30d", prophet_price)
+        lstm_conf  = lstm_result.get("confidence", 0.85)
+        total_conf = prophet_conf + lstm_conf
+        ensemble_price = round(
+            (prophet_price * prophet_conf / total_conf) +
+            (lstm_price    * lstm_conf    / total_conf),
+            2,
+        )
+    else:
+        ensemble_price = round(prophet_price, 2)
+
+    # Contract risk inversion
     contract_risk_score = round(100.0 - risk["risk_score"], 1)
 
     return {
-        "asset":           forecast["asset"],
-        "predicted_price": forecast["predicted_price"],
-        "prediction_30d":  forecast["prediction_30d"],
-        "lower_bound":     forecast["lower_bound"],
-        "upper_bound":     forecast["upper_bound"],
-        "confidence":      forecast["confidence"],
-        "risk_label":      risk["risk_label"],
-        "risk_score":      contract_risk_score,
-        "timestamp":       forecast["timestamp"],
+        "asset":              forecast["asset"],
+        "predicted_price":    prophet_price,
+        "prediction_30d":     prophet_30d,
+        "lower_bound":        forecast["lower_bound"],
+        "upper_bound":        forecast["upper_bound"],
+        "confidence":         prophet_conf,
+        "risk_score":         contract_risk_score,
+        "timestamp":          forecast["timestamp"],
+        "trend":              trend,
+        "agreement":          agreement,
+        "signal":             signal,
+        "boosted_confidence": boosted_confidence,
+        "ensemble_price":     ensemble_price,
     }
 
 
@@ -783,7 +924,7 @@ def get_risk(asset: str) -> dict:
     Parameters
     ----------
     asset : str
-        Asset ticker — ``"btc"`` or ``"eth"`` (case-insensitive).
+        Asset ticker — ``"btc"``, ``"eth"``, or ``"sol"`` (case-insensitive).
 
     Returns
     -------

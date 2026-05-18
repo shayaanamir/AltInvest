@@ -2,7 +2,7 @@
 
 > **Person C — `dev-shail` branch**  
 > FastAPI prediction service on **port 8001** · Prophet + RandomForest + LSTM  
-> Supports BTC and ETH · All artifacts pre-trained and committed
+> Supports BTC, ETH, and SOL · All artifacts pre-trained and committed
 
 ---
 
@@ -41,7 +41,7 @@ Raw CSV Data
 feature_engineering.py   ←── returns, volatility, MAs, volume signals
     │
     ├──▶ forecaster.py   (Prophet)       ──▶ 30-day price forecast
-    ├──▶ classifier.py   (RandomForest)  ──▶ risk label + score + Sharpe ratio
+    ├──▶ classifier.py   (RandomForest)  ──▶ risk score + Sharpe ratio
     └──▶ lstm.py         (LSTM / GBM)    ──▶ deep-learning price forecast
     │
     ▼
@@ -69,7 +69,8 @@ ml/
 │   ├── generate_mock_data.py   # GBM-based synthetic data generator
 │   └── raw/
 │       ├── btc_prices.csv      # ✅ Already generated
-│       └── eth_prices.csv      # ✅ Already generated
+│       ├── eth_prices.csv      # ✅ Already generated
+│       └── sol_prices.csv      # ✅ Already generated
 ├── features/
 │   └── feature_engineering.py  # Returns, volatility, MAs, volume features
 ├── models/
@@ -86,7 +87,12 @@ ml/
 │       ├── eth_rf_classifier.pkl
 │       ├── eth_lstm.keras
 │       ├── eth_lstm_report.json
-│       └── eth_training_report.json
+│       ├── eth_training_report.json
+│       ├── sol_prophet.pkl
+│       ├── sol_rf_classifier.pkl
+│       ├── sol_lstm.keras
+│       ├── sol_lstm_report.json
+│       └── sol_training_report.json
 ├── training/
 │   └── train.py                # End-to-end training orchestrator (CLI)
 ├── requirements.txt
@@ -129,13 +135,13 @@ Key packages:
 
 ### Step 1 — Generate Mock Data
 
-> ⚠️ **Skip this step** — `btc_prices.csv` and `eth_prices.csv` are already present in `ml/data/raw/`. Only run this if you need to regenerate fresh data.
+> ⚠️ **Skip this step** — `btc_prices.csv`, `eth_prices.csv`, and `sol_prices.csv` are already present in `ml/data/raw/`. Only run this if you need to regenerate fresh data.
 
 ```bash
 python data/generate_mock_data.py
 ```
 
-Generates `ml/data/raw/btc_prices.csv` and `ml/data/raw/eth_prices.csv` using Geometric Brownian Motion with regime shifts. Schema:
+Generates `ml/data/raw/btc_prices.csv`, `ml/data/raw/eth_prices.csv`, and `ml/data/raw/sol_prices.csv` using Geometric Brownian Motion with regime shifts. Schema:
 
 ```
 asset, price, volume, timestamp
@@ -155,6 +161,9 @@ python training/train.py --asset btc
 
 # Train both models for ETH
 python training/train.py --asset eth
+
+# Train both models for SOL
+python training/train.py --asset sol
 ```
 
 This runs the full pipeline:
@@ -181,6 +190,9 @@ python models/lstm.py --asset btc
 
 # Train LSTM for ETH
 python models/lstm.py --asset eth
+
+# Train LSTM for SOL
+python models/lstm.py --asset sol
 ```
 
 Saves:
@@ -206,7 +218,10 @@ INFO  [BTC] LSTM report loaded from artifact.
 INFO  [ETH] Prophet loaded from artifact.
 INFO  [ETH] Classifier loaded from artifact.
 INFO  [ETH] LSTM report loaded from artifact.
-INFO  Startup complete. Loaded assets: ['btc', 'eth']
+INFO  [SOL] Prophet loaded from artifact.
+INFO  [SOL] Classifier loaded from artifact.
+INFO  [SOL] LSTM report loaded from artifact.
+INFO  Startup complete. Loaded assets: ['btc', 'eth', 'sol']
 INFO  Uvicorn running on http://0.0.0.0:8001
 ```
 
@@ -250,9 +265,9 @@ curl http://127.0.0.1:8001/health
 ```json
 {
   "status": "healthy",
-  "loaded_assets": ["btc", "eth"],
+  "loaded_assets": ["btc", "eth", "sol"],
   "artifacts_dir": "/path/to/ml/models/artifacts",
-  "supported_assets": ["btc", "eth"]
+  "supported_assets": ["btc", "eth", "sol"]
 }
 ```
 
@@ -273,8 +288,8 @@ curl http://127.0.0.1:8001/assets
 
 ```json
 {
-  "supported": ["btc", "eth"],
-  "ready": ["btc", "eth"],
+  "supported": ["btc", "eth", "sol"],
+  "ready": ["btc", "eth", "sol"],
   "not_ready": []
 }
 ```
@@ -302,9 +317,13 @@ curl http://127.0.0.1:8001/prediction/eth
   "lower_bound": 103476.59,
   "upper_bound": 108942.28,
   "confidence": 0.95,
-  "risk_label": "high",
   "risk_score": 32.8,
-  "timestamp": "2026-05-18T14:00:00Z"
+  "timestamp": "2026-05-18T14:00:00Z",
+  "trend": "Bullish",
+  "agreement": true,
+  "signal": "STRONG_BUY",
+  "boosted_confidence": 0.95,
+  "ensemble_price": 88340.12
 }
 ```
 
@@ -312,15 +331,28 @@ curl http://127.0.0.1:8001/prediction/eth
 
 | Field | Type | Description |
 |---|---|---|
-| `asset` | string | Asset ticker (`"BTC"` or `"ETH"`) |
+| `asset` | string | Asset ticker (`"BTC"`, `"ETH"`, or `"SOL"`) |
 | `predicted_price` | float | Absolute price forecast in USD (30 days out) |
 | `prediction_30d` | float | % price change from today's price |
 | `lower_bound` | float | 80% prediction interval lower bound |
 | `upper_bound` | float | 80% prediction interval upper bound |
-| `confidence` | float | Model confidence 0–1 (derived from interval width) |
-| `risk_label` | string | `"low"` \| `"medium"` \| `"high"` |
+| `confidence` | float | Prophet model confidence 0–1 |
 | `risk_score` | float | **Contract score 0–100 where HIGHER = LOWER risk** |
 | `timestamp` | string | UTC ISO-8601 time of prediction |
+| `trend` | string | `"Bullish"` if `prediction_30d > 5`, `"Bearish"` if `< -5`, else `"Neutral"` |
+| `agreement` | bool | `true` if Prophet and LSTM predict the **same direction** |
+| `signal` | string | `"STRONG_BUY"` \| `"STRONG_SELL"` \| `"UNCERTAIN"` |
+| `boosted_confidence` | float | `0.95` when models agree, `0.60` when they disagree |
+| `ensemble_price` | float | Confidence-weighted average of Prophet + LSTM price forecasts |
+
+**Signal logic:**
+
+| agreement | trend | signal |
+|---|---|---|
+| `true` | `Bullish` | `STRONG_BUY` |
+| `true` | `Bearish` | `STRONG_SELL` |
+| `false` | any | `UNCERTAIN` |
+| LSTM unavailable | any | `UNCERTAIN` |
 
 > ⚠️ **Risk score note:** `risk_score` here is the **inverted** contract score. A score of `32.8` means HIGH risk (high internal probability → low contract score). See [Risk Score Contract Explained](#risk-score-contract-explained).
 
@@ -328,7 +360,7 @@ curl http://127.0.0.1:8001/prediction/eth
 
 | Code | Reason |
 |---|---|
-| `404` | Asset not in `["btc", "eth"]` |
+| `404` | Asset not in `["btc", "eth", "sol"]` |
 | `503` | Models not loaded — run training first |
 | `500` | Prediction pipeline error |
 
@@ -457,7 +489,6 @@ print(result)
 #   "lower_bound":     103476.59,
 #   "upper_bound":     108942.28,
 #   "confidence":      0.95,
-#   "risk_label":      "high",
 #   "risk_score":      32.8,       # contract score (higher = lower risk)
 #   "timestamp":       "2026-05-18T14:00:00Z"
 # }
@@ -596,7 +627,7 @@ contract_risk_score = 100 - internal_risk_score
 **Example:**
 
 ```
-Internal:  BTC risk_score = 67.2  →  label = "HIGH"
+Internal:  BTC risk_score = 67.2  (high internal risk)
 Contract:  BTC risk_score = 32.8  →  lower number = more dangerous
 ```
 
@@ -616,7 +647,7 @@ All artifacts live in `ml/models/artifacts/`. Both BTC and ETH are pre-trained.
 | `btc_lstm_scaler.pkl` | MinMaxScaler for LSTM inputs | ~1 KB |
 | `btc_lstm_report.json` | LSTM performance summary | — |
 | `btc_training_report.json` | Prophet + RF training summary | — |
-| `eth_*` | Same set for ETH | — |
+| `eth_*, sol_*` | Same set for ETH and SOL | — |
 
 ---
 
@@ -634,6 +665,7 @@ Artifacts are missing. Run training:
 ```bash
 python training/train.py --asset btc
 python training/train.py --asset eth
+python training/train.py --asset sol
 ```
 
 ### Port 8001 already in use

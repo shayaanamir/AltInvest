@@ -20,7 +20,6 @@
   },
   "classify": {
     "asset": "eth",
-    "risk_label": "medium",
     "risk_score": 21.8,
     "cv_accuracy": 0.79,
     "duration_sec": 5.08

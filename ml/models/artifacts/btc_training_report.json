@@ -20,7 +20,6 @@
   },
   "classify": {
     "asset": "btc",
-    "risk_label": "high",
     "risk_score": 67.2,
     "cv_accuracy": 0.83,
     "duration_sec": 4.96

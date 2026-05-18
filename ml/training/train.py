@@ -8,7 +8,7 @@ Coordinates the full training pipeline for one asset in a single command:
     Step 1  LOAD       Load raw price CSV (mock or real — same code path)
     Step 2  FEATURES   Run feature engineering -> processed CSV
     Step 3  FORECAST   Fit Prophet forecaster  -> .pkl artifact + prediction
-    Step 4  CLASSIFY   Fit RF risk classifier  -> .pkl artifact + risk label
+    Step 4  CLASSIFY   Fit RF risk classifier  -> .pkl artifact + risk score
     Step 5  REPORT     Write JSON training report to ml/models/artifacts/
 
 Usage
@@ -45,7 +45,6 @@ Training Report Schema
         },
         "classify": {
             "asset":          "btc",
-            "risk_label":     "medium",
             "risk_score":     67.5,
             "cv_accuracy":    0.83,
             "duration_sec":   8.1
@@ -258,7 +257,7 @@ def run_training(
 
     Parameters
     ----------
-    asset          : "btc" or "eth"
+    asset          : "btc", "eth", or "sol"
     skip_forecast  : skip Prophet step (useful when retraining classifier only)
     skip_classify  : skip RF classifier step
     dry_run        : run all steps but do not write any files
@@ -341,9 +340,8 @@ def _print_footer(report: dict, dry_run: bool) -> None:
               f"  conf={fc['confidence']}")
     if report.get("classify"):
         cl = report["classify"]
-        print(f"  Risk      : {cl['risk_label'].upper()}"
-              f"  (score={cl['risk_score']},"
-              f"  cv_acc={cl.get('cv_accuracy', 'N/A')})")
+        print(f"  Risk      : score={cl['risk_score']}"
+              f"  (cv_acc={cl.get('cv_accuracy', 'N/A')})")
     if not dry_run:
         print(f"  Artifacts : ml/models/artifacts/")
     print(sep)
@@ -390,12 +388,13 @@ def _parse_args() -> argparse.Namespace:
             "Examples:\n"
             "  python training/train.py --asset btc\n"
             "  python training/train.py --asset eth\n"
+            "  python training/train.py --asset sol\n"
             "  python training/train.py --asset btc --skip-forecast\n"
             "  python training/train.py --asset btc --dry-run\n"
         ),
     )
     parser.add_argument(
-        "--asset", choices=["btc", "eth"], required=True,
+        "--asset", choices=["btc", "eth", "sol"], required=True,
         help="Asset to train models for"
     )
     parser.add_argument(

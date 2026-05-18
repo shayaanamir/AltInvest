@@ -4,7 +4,7 @@ feature_engineering.py
 Computes all ML-ready features from the raw price DataFrame.
 
 Input schema (matches Person A's MongoDB 'prices' collection exactly):
-    asset     : str    — e.g. "btc" or "eth"
+    asset     : str    — e.g. "btc", "eth", or "sol"
     price     : float  — asset price in USD
     volume    : float  — trading volume (asset units)
     timestamp : str    — ISO-8601 UTC  "2024-01-01T00:00:00Z"
@@ -250,7 +250,7 @@ def load_raw_csv(asset: str, data_dir: Path = RAW_DIR) -> pd.DataFrame:
 
     Parameters
     ----------
-    asset    : "btc" or "eth" (case-insensitive)
+    asset    : "btc", "eth", or "sol" (case-insensitive)
     data_dir : override for testing or CI; defaults to ml/data/raw/
 
     Returns
@@ -282,7 +282,7 @@ def run_pipeline(
 
     Parameters
     ----------
-    asset      : "btc" or "eth"
+    asset      : "btc", "eth", or "sol"
     data_dir   : directory of raw CSVs
     output_dir : directory to write processed CSV
     save       : if True, write to output_dir/<asset>_features.csv
@@ -369,12 +369,13 @@ def _parse_args() -> argparse.Namespace:
             "Examples:\n"
             "  python -m features.feature_engineering --asset btc\n"
             "  python -m features.feature_engineering --asset eth\n"
+            "  python -m features.feature_engineering --asset sol\n"
             "  python -m features.feature_engineering --asset btc --no-save\n"
         ),
     )
     parser.add_argument(
-        "--asset", choices=["btc", "eth"], required=True,
-        help="Asset to process (btc or eth)"
+        "--asset", choices=["btc", "eth", "sol"], required=True,
+        help="Asset to process (btc, eth, or sol)"
     )
     parser.add_argument(
         "--no-save", action="store_true",
