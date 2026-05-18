@@ -4,7 +4,9 @@ import {
   assetSentiment,
   portfolioSnapshots,
   assetPriceHistory,
-  marketInsights
+  marketInsights,
+  trendingAssets,
+  assets
 } from '../data/sample_data';
 import { USE_MOCK, API_BASE_URL } from "../config";
 
@@ -111,6 +113,40 @@ export const dashboardApi = {
 
     const res = await fetch(`${API_BASE_URL}/dashboard/insights`);
     if (!res.ok) throw new Error("Failed to fetch market insights");
+    return res.json();
+  },
+
+  getTrendingAssets: async () => {
+    if (USE_MOCK) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          const result = trendingAssets.map(tAsset => {
+            const asset = assets.find(a => a.id === tAsset.asset_id) || {};
+            const marketData = assetMarketData.find(m => m.asset_id === tAsset.asset_id) || {};
+            
+            // Mock a sparkline data array of 20 points
+            const sparkline = Array.from({ length: 20 }, () => Math.floor(Math.random() * 20) + 40);
+
+            return {
+              id: tAsset.id,
+              sym: asset.symbol || "UNK",
+              name: asset.name || "Unknown",
+              cat: asset.asset_type || "Crypto",
+              price: marketData.price ? "$" + marketData.price.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : "$0.00",
+              chg: (tAsset.movement_percentage >= 0 ? "+" : "") + tAsset.movement_percentage + "%",
+              pos: tAsset.movement_percentage >= 0,
+              score: tAsset.trend_score,
+              sig: tAsset.movement_percentage >= 0 ? "Up" : "Down",
+              data: sparkline
+            };
+          });
+          resolve(result);
+        }, 500);
+      });
+    }
+
+    const res = await fetch(`${API_BASE_URL}/dashboard/trending`);
+    if (!res.ok) throw new Error("Failed to fetch trending assets");
     return res.json();
   }
 };

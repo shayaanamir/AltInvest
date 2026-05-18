@@ -132,6 +132,31 @@ export const assetMarketData = [
 // ASSET PRICE HISTORY
 // --------------------------------
 
+export const assetPricePredictions = [
+  { id: 8501, asset_id: 101, timestamp: "2026-05-18T00:00:00Z", price: 64230 },
+  { id: 8502, asset_id: 101, timestamp: "2026-05-19T00:00:00Z", price: 65100 },
+  { id: 8503, asset_id: 101, timestamp: "2026-05-20T00:00:00Z", price: 65800 },
+  { id: 8504, asset_id: 101, timestamp: "2026-05-21T00:00:00Z", price: 67200 },
+  { id: 8505, asset_id: 101, timestamp: "2026-05-22T00:00:00Z", price: 66900 },
+  { id: 8506, asset_id: 101, timestamp: "2026-05-23T00:00:00Z", price: 68500 },
+  { id: 8507, asset_id: 101, timestamp: "2026-05-24T00:00:00Z", price: 71000 }
+];
+
+// --------------------------------
+// AAI SCORES
+// --------------------------------
+
+export const aaiScores = [
+  { id: 8601, asset_id: 101, score: -0.85, confidence: 92.4, updated_at: "2026-05-18T12:00:00Z" },
+  { id: 8602, asset_id: 102, score: 0.35, confidence: 85.1, updated_at: "2026-05-18T12:00:00Z" },
+  { id: 8603, asset_id: 103, score: 0.91, confidence: 94.2, updated_at: "2026-05-18T12:00:00Z" },
+  { id: 8604, asset_id: 104, score: -0.45, confidence: 78.5, updated_at: "2026-05-18T12:00:00Z" },
+];
+
+// --------------------------------
+// ASSET PRICE HISTORY
+// --------------------------------
+
 export const assetPriceHistory = [
   {
     id: 8001,

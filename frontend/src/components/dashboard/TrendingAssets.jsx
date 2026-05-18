@@ -1,7 +1,8 @@
+import { useState, useEffect } from "react";
 import { useTheme } from "../../context/ThemeContext";
-import { TRENDING_ASSETS } from "../../data/constants";
 import { makeStyles } from "../../styles/makeStyles";
 import MiniChart from "../charts/MiniChart";
+import { dashboardApi } from "../../services/dashboardApi";
 
 const SIG_ARROW = { Up: "↑", Down: "↓", Hold: "—" };
 
@@ -46,6 +47,16 @@ function AssetCard({ sym, name, cat, price, chg, pos, score, sig, data, isLast }
 export default function TrendingAssets() {
   const { tokens: t } = useTheme();
   const s = makeStyles(t);
+  
+  const [assets, setAssets] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    dashboardApi.getTrendingAssets().then(res => {
+      setAssets(res);
+      setLoading(false);
+    }).catch(console.error);
+  }, []);
 
   return (
     <div style={s.card}>
@@ -54,13 +65,17 @@ export default function TrendingAssets() {
         <button style={s.viewAllBtn}>See Screener</button>
       </div>
       <div style={s.assetGrid}>
-        {TRENDING_ASSETS.map((asset, i) => (
-          <AssetCard
-            key={asset.sym}
-            {...asset}
-            isLast={i === TRENDING_ASSETS.length - 1}
-          />
-        ))}
+        {loading ? (
+          <div style={{ padding: "20px", color: t.textMuted, fontSize: 13 }}>Loading trending assets...</div>
+        ) : (
+          assets.map((asset, i) => (
+            <AssetCard
+              key={asset.id || asset.sym}
+              {...asset}
+              isLast={i === assets.length - 1}
+            />
+          ))
+        )}
       </div>
     </div>
   );

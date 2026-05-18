@@ -1,37 +1,71 @@
+import { useState, useEffect } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import { makeStyles } from "../../styles/makeStyles";
+import { assetApi } from "../../services/assetApi";
 
-function CubeIcon({ t }) {
-    return (
-        <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
-            {/* Isometric cube */}
-            <polygon points="36,10 62,25 62,47 36,62 10,47 10,25" fill={t.bgCard2} stroke={t.borderLight} strokeWidth="1.2" />
-            <polygon points="36,10 62,25 36,40 10,25" fill={t.accentBlue} fillOpacity="0.35" />
-            <polygon points="10,25 36,40 36,62 10,47" fill={t.accentTeal} fillOpacity="0.45" />
-            <polygon points="62,25 36,40 36,62 62,47" fill={t.accentBlue} fillOpacity="0.6" />
-            {/* Sparkle */}
-            <text x="34" y="32" fontSize="12" fill={t.textPrimary} opacity="0.8">✦</text>
-        </svg>
-    );
-}
-
-export default function AssetIntelligence() {
+export default function AssetIntelligence({ assetId = 101 }) {
     const { tokens: t } = useTheme();
     const s = makeStyles(t);
+
+    const [data, setData] = useState({ score: 0, confidence: 0 });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        assetApi.getAssetIntelligence(assetId).then(res => {
+            setData(res);
+            setLoading(false);
+        }).catch(console.error);
+    }, [assetId]);
+
+    let meaning = "NEUTRAL";
+    let color = t.textMuted;
+
+    if (data.score >= 0.6) {
+        meaning = "STRONG BUY";
+        color = t.accentGreen;
+    } else if (data.score >= 0.2) {
+        meaning = "BUY";
+        color = t.accentGreen;
+    } else if (data.score <= -0.6) {
+        meaning = "STRONG SELL";
+        color = t.accentRed;
+    } else if (data.score <= -0.2) {
+        meaning = "SELL";
+        color = t.accentRed;
+    }
+
+    if (loading) {
+        return (
+            <div style={s.card}>
+                <div style={{ padding: "12px 14px 10px", borderBottom: `1px solid ${t.border}` }}>
+                    <span style={s.cardTitle}>Alternative Asset Index Score</span>
+                </div>
+                <div style={{ padding: "24px 14px", color: t.textMuted, fontSize: 13, textAlign: "center" }}>
+                    Loading intelligence...
+                </div>
+            </div>
+        );
+    }
+
+    const formattedScore = (data.score > 0 ? "+" : "") + (data.score);
 
     return (
         <div style={s.card}>
             <div style={{ padding: "12px 14px 10px", borderBottom: `1px solid ${t.border}` }}>
-                <span style={s.cardTitle}>Alternative Asset Intelligence</span>
+                <span style={s.cardTitle}>Alternative Asset Index Score</span>
             </div>
 
-            {/* Cube visual */}
+            {/* Large Score Display */}
             <div style={{
-                display: "flex", flexDirection: "column", alignItems: "center",
-                padding: "24px 14px 16px", gap: 6,
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                padding: "36px 14px", gap: 4, height: 114
             }}>
-                <CubeIcon t={t} />
-                <span style={{ fontSize: 10.5, color: t.textMuted, fontWeight: 500 }}>AAI Score</span>
+                <div style={{ fontSize: 48, fontWeight: 800, color: t.textPrimary, letterSpacing: "-0.02em", lineHeight: 1, marginBottom: '10px' }}>
+                    {formattedScore}
+                </div>
+                <div style={{ fontSize: 12, color: t.accentBlue, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    AAI Score
+                </div>
             </div>
 
             {/* Bottom metrics */}
@@ -40,14 +74,16 @@ export default function AssetIntelligence() {
                 borderTop: `1px solid ${t.border}`,
             }}>
                 <div style={{ padding: "12px 14px", borderRight: `1px solid ${t.border}` }}>
-                    <div style={{ fontSize: 9.5, color: t.textMuted, fontWeight: 600, marginBottom: 6 }}>AI Recommendation</div>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: t.accentGreen, letterSpacing: "0.01em", lineHeight: 1.2 }}>
-                        STRONG<br />BUY
+                    <div style={{ fontSize: 9.5, color: t.textMuted, fontWeight: 600, marginBottom: 6 }}>Meaning</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: color, letterSpacing: "0.01em", lineHeight: 1.2 }}>
+                        {meaning.split(" ").map((word, i) => (
+                            <div key={i}>{word}</div>
+                        ))}
                     </div>
                 </div>
                 <div style={{ padding: "12px 14px" }}>
                     <div style={{ fontSize: 9.5, color: t.textMuted, fontWeight: 600, marginBottom: 6 }}>Confidence</div>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: t.accentGreen }}>92.4%</div>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: t.textPrimary }}>{data.confidence}%</div>
                 </div>
             </div>
         </div>

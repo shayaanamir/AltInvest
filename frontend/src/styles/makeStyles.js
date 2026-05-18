@@ -139,8 +139,8 @@ export function makeStyles(t) {
 
     // ── Page layout ───────────────────────────────────────────
     main:    { flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: t.bgBase, transition: "background 0.25s" },
-    content: { flex: 1, overflow: "auto", padding: "0px 40px 20px" },
-    pageHeader: { display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 0, padding: "40px 0px" },
+    content: { flex: 1, overflow: "auto", padding: "40px 40px 20px" },
+    pageHeader: { display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 0, paddingBottom: "40px" },
     pageTitle:  { fontSize: 30, fontWeight: 700, color: t.textPrimary, letterSpacing: "-0.5px", margin: 0 },
     pageSub:    { fontSize: 13, color: t.textSecondary, margin: 0, marginTop: 4 },
     pageActions:{ display: "flex", alignItems: "center", gap: 8 },
