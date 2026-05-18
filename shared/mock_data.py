@@ -37,12 +37,145 @@ def mock_prediction(asset: str) -> dict:
 
 
 def mock_sentiment(asset: str) -> dict:
-    """Placeholder — replaced by Person D's VADER output in Phase 4."""
+    """
+    Placeholder — replaced by Person D's sentiment engine in Phase 4.
+    Fully matches SentimentResponse schema.
+    """
+
     values = {
-        "BTC": {"sentiment_score": 0.72, "post_count": 100},
-        "ETH": {"sentiment_score": 0.55, "post_count": 85},
+        "BTC": {
+            "sentiment_score": 0.72,
+            "post_count": 100,
+
+            "confidence": 0.87,
+            "confidence_label": "high",
+            "signal_strength": "strong",
+            "trend": "bullish",
+
+            "source_count": 3,
+
+            "source_breakdown": {
+                "reddit": 45.0,
+                "twitter": 40.0,
+                "news": 15.0,
+            },
+
+            "sentiment_distribution": {
+                "positive": 70,
+                "negative": 10,
+                "neutral": 20,
+            },
+
+            "top_headlines": [
+                {
+                    "title": "Bitcoin ETF demand continues rising",
+                    "score": 0.91,
+                    "source": "CoinDesk",
+                    "age_hours": 2.5,
+                    "link": "https://example.com/btc-etf"
+                },
+                {
+                    "title": "BTC sentiment turns strongly positive",
+                    "score": 0.84,
+                    "source": "CoinTelegraph",
+                    "age_hours": 5.0,
+                    "link": "https://example.com/btc-sentiment"
+                }
+            ],
+
+            "market_signals": {
+                "price_change_24h": 4.2,
+                "volume_change_24h": 12.8,
+                "is_trending": True,
+                "btc_dominance": 53.4
+            },
+
+            "articles_by_source": {
+                "reddit": 45,
+                "twitter": 40,
+                "news": 15
+            }
+        },
+
+        "ETH": {
+            "sentiment_score": 0.55,
+            "post_count": 85,
+
+            "confidence": 0.74,
+            "confidence_label": "medium",
+            "signal_strength": "moderate",
+            "trend": "neutral",
+
+            "source_count": 3,
+
+            "source_breakdown": {
+                "reddit": 35.0,
+                "twitter": 35.0,
+                "news": 15.0,
+            },
+
+            "sentiment_distribution": {
+                "positive": 55,
+                "negative": 15,
+                "neutral": 30,
+            },
+
+            "top_headlines": [
+                {
+                    "title": "Ethereum gas fees stabilize",
+                    "score": 0.68,
+                    "source": "Decrypt",
+                    "age_hours": 4.0,
+                    "link": "https://example.com/eth-gas"
+                }
+            ],
+
+            "market_signals": {
+                "price_change_24h": 1.8,
+                "volume_change_24h": 6.1,
+                "is_trending": False,
+                "btc_dominance": 53.4
+            },
+
+            "articles_by_source": {
+                "reddit": 35,
+                "twitter": 35,
+                "news": 15
+            }
+        }
     }
-    data = values.get(asset, {"sentiment_score": 0.0, "post_count": 0})
+
+    data = values.get(asset, {
+        "sentiment_score": 0.0,
+        "post_count": 0,
+
+        "confidence": 0.0,
+        "confidence_label": "unknown",
+        "signal_strength": "weak",
+        "trend": "neutral",
+
+        "source_count": 0,
+
+        "source_breakdown": {},
+
+        "sentiment_distribution": {
+            "positive": 0,
+            "negative": 0,
+            "neutral": 0,
+        },
+
+        "top_headlines": [],
+
+        "market_signals": {
+            "price_change_24h": 0.0,
+            "volume_change_24h": 0.0,
+            "is_trending": False,
+            "btc_dominance": 0.0
+        },
+
+        "articles_by_source": {}
+    })
+
     return {
         "asset": asset,
         **data,
@@ -50,6 +183,7 @@ def mock_sentiment(asset: str) -> dict:
         "timestamp": _now(),
         "note": "Phase 1 mock data — not from sentiment engine",
     }
+
 
 
 def mock_risk(asset: str) -> dict:
