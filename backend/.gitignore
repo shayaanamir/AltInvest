@@ -1,0 +1,10 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.h5
+*.pkl
+node_modules/
+/frontend/build/
+.DS_Store
