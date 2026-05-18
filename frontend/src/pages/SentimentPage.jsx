@@ -5,6 +5,7 @@ import MarketMoodCard from "../components/sentiment/MarketMoodCard";
 import TrendingTopics from "../components/sentiment/TrendingTopics";
 import AssetSentimentRanking from "../components/sentiment/AssetSentimentRanking";
 import LiveAIFeed from "../components/sentiment/LiveAIFeed";
+import SentimentHeadlines from "../components/sentiment/SentimentHeadlines";
 
 export default function SentimentPage() {
     const { tokens: t } = useTheme();
@@ -15,8 +16,8 @@ export default function SentimentPage() {
             {/* Page header */}
             <div style={s.pageHeader}>
                 <div>
-                    <h1 style={s.pageTitle}>Sentiment Analytics</h1>
-                    <p style={s.pageSub}>AI-processed social and news sentiment across alternative markets.</p>
+                    <h1 style={s.pageTitle}>Market Sentiment</h1>
+                    <p style={s.pageSub}>Track market sentiment across news, market activity, and alternative assets.</p>
                 </div>
             </div>
 
@@ -34,6 +35,9 @@ export default function SentimentPage() {
                 <AssetSentimentRanking />
                 <LiveAIFeed />
             </div>
+
+            {/* Headlines Section */}
+            <SentimentHeadlines />
         </div>
     );
 }

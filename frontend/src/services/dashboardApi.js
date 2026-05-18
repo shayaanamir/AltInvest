@@ -1,7 +1,7 @@
 import { 
   portfolioHoldings, 
   assetMarketData, 
-  assetSentiment,
+  asset_sentiment,
   portfolioSnapshots,
   assetPriceHistory,
   marketInsights,
@@ -30,8 +30,8 @@ export const dashboardApi = {
 
           let totalSentiment = 0;
           let sentimentCount = 0;
-          assetSentiment.forEach(s => {
-            totalSentiment += s.fear_greed_index; 
+          asset_sentiment.forEach(s => {
+            totalSentiment += s.sentiment_score * 100; 
             sentimentCount++;
           });
           const avgSentiment = sentimentCount > 0 ? Math.round(totalSentiment / sentimentCount) : 0;
