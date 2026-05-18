@@ -36,15 +36,25 @@ export default function LandingNav({ onNavigate }) {
 
             {/* Links */}
             <div style={{ display: "flex", gap: 32 }}>
-                {["Platform", "Signals", "Analytics", "Portfolio"].map(label => (
+                {[
+                    { label: "Home", id: "home" },
+                    { label: "Platform", id: "platform" },
+                    { label: "Analytics", id: "analytics" },
+                    { label: "Capabilities", id: "capabilities" },
+                    { label: "Access", id: "access" }
+                ].map(item => (
                     <a
-                        key={label}
-                        href="#"
+                        key={item.label}
+                        href={`#${item.id}`}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth" });
+                        }}
                         style={{ fontSize: 13.5, color: L.ink2, textDecoration: "none", fontWeight: 500, transition: "color 0.15s" }}
                         onMouseEnter={e => e.target.style.color = L.ink}
                         onMouseLeave={e => e.target.style.color = L.ink2}
                     >
-                        {label}
+                        {item.label}
                     </a>
                 ))}
             </div>

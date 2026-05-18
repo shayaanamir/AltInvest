@@ -19,39 +19,6 @@ export default function DashboardMockup() {
             transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.5 }}
             style={{ width: "100%", maxWidth: 900, position: "relative" }}
         >
-            {/* Top-left floating pill */}
-            <motion.div
-                animate={{ y: [0, -6, 0] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                style={{
-                    position: "absolute", top: -20, left: 20, zIndex: 10,
-                    background: L.bg2, border: `1px solid ${L.border2}`,
-                    borderRadius: 10, padding: "10px 14px",
-                    display: "flex", alignItems: "center", gap: 8,
-                    boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
-                }}
-            >
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: L.blue, boxShadow: `0 0 8px ${L.blue}` }} />
-                <div>
-                    <div style={{ fontSize: 9.5, color: L.ink3, fontWeight: 600 }}>Active workflows</div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: L.ink }}>2,431 running</div>
-                </div>
-            </motion.div>
-
-            {/* Bottom-right floating pill */}
-            <motion.div
-                animate={{ y: [0, 5, 0] }}
-                transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}
-                style={{
-                    position: "absolute", bottom: -20, right: 20, zIndex: 10,
-                    background: L.bg2, border: `1px solid ${L.border2}`,
-                    borderRadius: 10, padding: "10px 16px",
-                    boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
-                }}
-            >
-                <div style={{ fontSize: 9.5, color: L.ink3, fontWeight: 600, marginBottom: 2 }}>Tasks automated today</div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: L.green }}>+18,294</div>
-            </motion.div>
 
             <div style={{
                 background: L.bg1,
@@ -94,10 +61,10 @@ export default function DashboardMockup() {
                     {/* Sidebar */}
                     <div style={{ background: L.bg2, borderRight: `1px solid ${L.border}`, padding: "20px 0" }}>
                         {[
-                            { icon: "↗", label: "Overview", active: true },
-                            { icon: "◎", label: "AI Signals" },
-                            { icon: "〜", label: "Markets" },
-                            { icon: "▦", label: "Portfolio" },
+                            { icon: "⊞", label: "Dashboard", active: true },
+                            { icon: "↗", label: "Asset Details" },
+                            { icon: "◉", label: "Sentiment" },
+                            { icon: "◈", label: "Portfolio" },
                         ].map(item => (
                             <div key={item.label} style={{
                                 display: "flex", alignItems: "center", gap: 10,
@@ -116,11 +83,12 @@ export default function DashboardMockup() {
                     {/* Main content */}
                     <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
                         {/* Stat cards */}
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10 }}>
                             {[
-                                { label: "Total AUM Tracked", val: "$1.24B", chg: "+2.4%", col: L.green },
-                                { label: "Active Signals", val: "1,247", chg: "+12", col: L.blue },
-                                { label: "Prediction Accuracy", val: "94.2%", chg: "+0.8%", col: L.purple },
+                                { label: "Total Portoflio Value", val: "$124k", chg: "+2.4%", col: L.green },
+                                { label: "24h Volume (Alt)", val: "$42.50B", chg: "-5.2%", col: L.blue },
+                                { label: "Global AAI Sentiment", val: "78.00/100", chg: "+2.1%", col: L.purple },
+                                { label: "Market Mood", val: "Bullish ↗", chg: "AI confidence: 84%", col: L.purple },
                             ].map(s => (
                                 <div key={s.label} style={{
                                     background: L.bg3, border: `1px solid ${L.border}`,
@@ -129,7 +97,7 @@ export default function DashboardMockup() {
                                     <div style={{ fontSize: 10, color: L.ink3, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
                                         {s.label}
                                     </div>
-                                    <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                                    <div style={{ display: "flex", flexDirection: "column", alignItems: "baseline", gap: 8 }}>
                                         <span style={{ fontSize: 22, fontWeight: 700, color: L.ink, letterSpacing: "-0.5px" }}>{s.val}</span>
                                         <span style={{ fontSize: 11, fontWeight: 600, color: s.col }}>{s.chg}</span>
                                     </div>
@@ -145,7 +113,7 @@ export default function DashboardMockup() {
                                 borderRadius: 10, padding: "14px 16px", overflow: "hidden",
                             }}>
                                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                                    <span style={{ fontSize: 12.5, fontWeight: 600, color: L.ink }}>Market Sentiment Index</span>
+                                    <span style={{ fontSize: 12.5, fontWeight: 600, color: L.ink }}>Portfolio Performance</span>
                                     <div style={{ display: "flex", gap: 4 }}>
                                         {["1D", "1W", "1M", "YTD"].map((t, i) => (
                                             <button key={t} style={{
@@ -178,7 +146,7 @@ export default function DashboardMockup() {
                                 background: L.bg3, border: `1px solid ${L.border}`,
                                 borderRadius: 10, padding: "14px 16px",
                             }}>
-                                <div style={{ fontSize: 12.5, fontWeight: 600, color: L.ink, marginBottom: 12 }}>Live Predictions</div>
+                                <div style={{ fontSize: 12.5, fontWeight: 600, color: L.ink, marginBottom: 12 }}>AI Market Insights</div>
                                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                                     {PREDICTIONS.map(p => (
                                         <div key={p.name} style={{

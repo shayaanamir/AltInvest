@@ -1,12 +1,10 @@
 import LandingNav from "../components/landingPage/LandingNav";
 import Hero from "../components/landingPage/Hero";
-import DashboardMockup from "../components/landingPage/DashboardMockup";
-import SocialProof from "../components/landingPage/SocialProof";
 import Features from "../components/landingPage/Features";
-import StatsStrip from "../components/landingPage/StatsStrip";
 import PlatformPreview from "../components/landingPage/PlatformPreview";
 import CTA from "../components/landingPage/CTA";
 import LandingFooter from "../components/landingPage/LandingFooter";
+import DashboardMockup from "@/components/landingPage/DashboardMockup";
 
 export default function LandingPage({ onNavigate }) {
     return (
@@ -18,15 +16,24 @@ export default function LandingPage({ onNavigate }) {
         }}>
             <div style={{ position: "relative", zIndex: 1 }}>
                 <LandingNav onNavigate={onNavigate} />
-                <Hero onNavigate={onNavigate} />
-                <div style={{ display: "flex", justifyContent: "center", padding: "0 48px 80px" }}>
+                <div id="home">
+                    <Hero onNavigate={onNavigate} />
+                </div>
+                <div id="platform" style={{
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    minHeight: "100vh", padding: "60px 48px 0", boxSizing: "border-box",
+                }}>
                     <DashboardMockup />
                 </div>
-                <SocialProof />
-                <Features />
-                <StatsStrip />
-                <PlatformPreview />
-                <CTA onNavigate={onNavigate} />
+                <div id="analytics">
+                    <Features />
+                </div>
+                <div id="capabilities">
+                    <PlatformPreview />
+                </div>
+                <div id="access">
+                    <CTA onNavigate={onNavigate} />
+                </div>
                 <LandingFooter />
             </div>
         </div>

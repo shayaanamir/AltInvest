@@ -7,10 +7,8 @@ function BuySignalVisual() {
         <div style={{
             background: L.bg4, borderRadius: 7, padding: "7px 14px",
             display: "flex", alignItems: "center", gap: 8, width: "100%",
-        }}>
-            <div style={{ width: 7, height: 7, borderRadius: "50%", background: L.green, boxShadow: `0 0 8px ${L.green}` }} />
-            <span style={{ fontSize: 10.5, fontWeight: 700, color: L.green, fontFamily: "monospace", letterSpacing: "0.06em" }}>
-                BUY SIGNAL DETECTED
+        }}><span style={{ textAlign: 'center', fontSize: 9.5, fontWeight: 700, color: L.green, fontFamily: "monospace", letterSpacing: "0.06em" }}>
+                Bullish momentum detected
             </span>
         </div>
     );
@@ -53,23 +51,23 @@ function MarketLineVisual() {
 
 const FEATURES = [
     {
-        icon: "🧠", title: "AI Predictions",
-        body: "Predictive signals across private markets powered by deep learning models trained on 10+ years of alternative asset data.",
+        icon: "₿", title: "Market Outlook",
+        body: "Analyze historical movement and market behavior through predictive analytics.",
         visual: <BuySignalVisual />,
     },
     {
-        icon: "〜", title: "Sentiment Intelligence",
-        body: "Real-time sentiment analysis from filings, news, and alternative data sources. 40M+ signals processed daily.",
+        icon: "〜", title: "Market Sentiment",
+        body: "Track sentiment trends across news, socials, and alternative market discussions.",
         visual: <SentimentBarsVisual />,
     },
     {
         icon: "▦", title: "Portfolio Analytics",
-        body: "Multi-asset visibility and risk assessment in one unified dashboard. AI-driven rebalancing recommendations.",
+        body: "Monitor exposure, performance, and asset distribution through one unified dashboard.",
         visual: <PortfolioRingVisual />,
     },
     {
         icon: "↗", title: "Market Signals",
-        body: "Early movement detection to position your portfolio ahead of the curve with conviction-scored entry points.",
+        body: "Spot unusual market movement and emerging trends before they gain broader attention.",
         visual: <MarketLineVisual />,
     },
 ];
@@ -90,14 +88,17 @@ function FeatureCard({ icon, title, body, visual, delay }) {
                 cursor: "default", transition: "border-color 0.25s",
             }}
         >
-            <div style={{
-                width: 40, height: 40, borderRadius: 10,
-                background: "rgba(91,110,245,0.12)",
-                border: `1px solid rgba(91,110,245,0.2)`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 18, marginBottom: 16,
-            }}>{icon}</div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: L.ink, marginBottom: 8 }}>{title}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+                <div style={{
+                    width: 40, height: 40, borderRadius: 10,
+                    background: "rgba(91,110,245,0.12)",
+                    border: `1px solid rgba(91,110,245,0.2)`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 18,
+                    color: 'white'
+                }}>{icon}</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: L.ink }}>{title}</div>
+            </div>
             <div style={{ fontSize: 13, color: L.ink2, lineHeight: 1.65, marginBottom: 20, flex: 1 }}>{body}</div>
             <div style={{
                 height: 80, borderRadius: "8px 8px 0 0",
@@ -128,11 +129,10 @@ export default function Features() {
                     fontSize: "clamp(32px, 4vw, 48px)", fontWeight: 800,
                     letterSpacing: "-1.5px", color: L.ink, marginBottom: 14,
                 }}>
-                    Intelligence at scale.
+                    Everything You Need to Track Modern Markets
                 </h2>
-                <p style={{ fontSize: 16, color: L.ink2, maxWidth: 520, margin: "0 auto", lineHeight: 1.65 }}>
-                    Everything you need to analyze, predict, and execute in alternative markets with unprecedented clarity.
-                </p>
+                <p style={{ fontSize: 16, color: L.ink2, margin: "0 auto", lineHeight: 1.65 }}>
+                    Monitor sentiment, track trends, and analyze alternative assets through one unified platform.                </p>
             </motion.div>
 
             <div style={{

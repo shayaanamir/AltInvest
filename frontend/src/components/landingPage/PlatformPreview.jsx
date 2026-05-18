@@ -3,12 +3,12 @@ import { L } from "./landingTokens";
 import { useScrollReveal } from "./landingAnimations";
 
 const CAPABILITIES = [
-    { icon: "⛓", title: "On-Chain Analytics", desc: "Whale tracking, wallet scoring, DeFi flow analysis, and smart money movement in real time." },
-    { icon: "⚠", title: "Risk Intelligence", desc: "Volatility, liquidity, regulatory, and counterparty risk — all scored and unified in one view." },
-    { icon: "✦", title: "AAI Engine", desc: "Proprietary Alternative Asset Intelligence scoring built on 36 months of backtested alpha." },
-    { icon: "🌍", title: "Market Discovery", desc: "Surface emerging opportunities across 500+ alternative assets before the crowd moves." },
-    { icon: "◎", title: "Portfolio Optimizer", desc: "AI-driven rebalancing with correlation analysis and volatility-adjusted return modeling." },
-    { icon: "〜", title: "Sentiment Engine", desc: "NLP across Twitter, Reddit, Bloomberg, and 80+ sources. Every signal quantified." },
+    { icon: "⛓", title: "Asset Analytics", desc: "Track wallet activity, market movement, and asset behavior across modern investment ecosystems." },
+    { icon: "⚠", title: "Risk Analytics", desc: "Analyze volatility, liquidity, and market exposure across different asset classes." },
+    { icon: "✦", title: "Alternative Asset Scoring", desc: "Compare alternative assets through unified scoring based on sentiment, momentum, and market activity." },
+    { icon: "₿", title: "Market Discovery", desc: "Discover emerging assets and market trends across crypto, commodities, NFTs, and tokenized markets." },
+    { icon: "◎", title: "Portfolio Optimizer", desc: "Track allocation, diversification, and portfolio performance across multiple asset categories." },
+    { icon: "〜", title: "Market Sentiment", desc: "Track discussions, sentiment trends, and market mood across socials, news, and media." },
 ];
 
 export default function PlatformPreview() {
@@ -28,7 +28,7 @@ export default function PlatformPreview() {
                         fontSize: 11, fontWeight: 700, letterSpacing: "0.1em",
                         textTransform: "uppercase", color: L.ink3, marginBottom: 12,
                     }}>
-                        Platform Capabilities
+                        What AltInvest Tracks
                     </div>
                     <h2 style={{
                         fontSize: "clamp(30px, 3.5vw, 44px)", fontWeight: 800,
@@ -57,7 +57,7 @@ export default function PlatformPreview() {
                                 transition: "background 0.2s",
                             }}
                         >
-                            <div style={{ fontSize: 20, marginBottom: 12 }}>{c.icon}</div>
+                            <div style={{ fontSize: 20, marginBottom: 12, color: L.ink }}>{c.icon}</div>
                             <div style={{ fontSize: 14.5, fontWeight: 700, color: L.ink, marginBottom: 8 }}>{c.title}</div>
                             <div style={{ fontSize: 12.5, color: L.ink2, lineHeight: 1.65 }}>{c.desc}</div>
                         </motion.div>

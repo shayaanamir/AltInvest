@@ -34,20 +34,19 @@ export default function CTA({ onNavigate }) {
                         fontSize: "clamp(36px, 5vw, 60px)", fontWeight: 800,
                         letterSpacing: "-2px", lineHeight: 1.05, marginBottom: 16,
                     }}>
-                        <span style={{ color: L.ink }}>Predict markets</span><br />
+                        <span style={{ color: L.ink }}>Unified Analytics</span><br />
                         <span style={{
                             background: `linear-gradient(135deg, ${L.blue}, ${L.purple}, ${L.purpleLight})`,
                             WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
                         }}>
-                            before they move.
+                            for Modern Assets
                         </span>
                     </h2>
                     <p style={{
                         fontSize: 16, color: L.ink2, marginBottom: 36,
                         maxWidth: 460, margin: "0 auto 36px", lineHeight: 1.65,
                     }}>
-                        Join leading allocators using AltInvest to uncover hidden signals
-                        and automate their intelligence workflows.
+                        Track sentiment, analyze trends, and explore alternative assets through one unified platform.
                     </p>
                     <motion.button
                         onClick={() => onNavigate && onNavigate("Signup")}
@@ -59,7 +58,7 @@ export default function CTA({ onNavigate }) {
                             cursor: "pointer", fontFamily: L.font,
                         }}
                     >
-                        Start Your Free Trial →
+                        Enter Platform
                     </motion.button>
                 </div>
             </motion.div>

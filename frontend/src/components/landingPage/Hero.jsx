@@ -14,7 +14,7 @@ function AnnouncementBar() {
                 border: `1px solid rgba(91,110,245,0.25)`,
                 borderRadius: 24, padding: "7px 16px",
                 fontSize: 13, fontWeight: 500, color: L.ink,
-                cursor: "pointer", marginBottom: 32,
+                marginBottom: 32,
             }}
         >
             <span style={{ fontSize: 14 }}>✦</span>
@@ -100,7 +100,7 @@ export default function Hero({ onNavigate }) {
 
                 <motion.div {...fadeUp(0.32)} style={{ display: "flex", gap: 12, justifyContent: "center", marginBottom: 16 }}>
                     <motion.button
-                        onClick={() => onNavigate && onNavigate("Signup")}
+                        onClick={() => onNavigate && onNavigate("Login")}
                         whileHover={{ scale: 1.04, boxShadow: `0 0 28px rgba(91,110,245,0.5)` }}
                         whileTap={{ scale: 0.97 }}
                         style={{
@@ -114,6 +114,7 @@ export default function Hero({ onNavigate }) {
                         Enter Platform
                     </motion.button>
                     <motion.button
+                        onClick={() => onNavigate && onNavigate("Signup")}
                         whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.97 }}
                         style={{
