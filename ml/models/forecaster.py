@@ -67,6 +67,7 @@ import pickle
 import logging
 import argparse
 import warnings
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -227,17 +228,23 @@ class ProphetForecaster:
         # 5. Derive confidence score from interval width
         confidence = self._compute_confidence(pred, lower, upper)
 
+        # 6. Compute % change from current price (last daily close)
+        current_price = float(self._daily_df["y"].iloc[-1])
+        pct_change    = round(((pred - current_price) / current_price) * 100, 2)
+
         result = {
-            "asset":          self._asset,
-            "prediction_30d": pred,
-            "lower_bound":    lower,
-            "upper_bound":    upper,
-            "confidence":     confidence,
+            "asset":           self._asset.upper(),
+            "predicted_price": pred,
+            "prediction_30d":  pct_change,    # % change from current price
+            "lower_bound":     lower,
+            "upper_bound":     upper,
+            "confidence":      confidence,
+            "timestamp":       datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         }
 
         log.info(
-            "[%s] Prediction: $%.2f  [%.2f – %.2f]  confidence=%.2f",
-            self._asset.upper(), pred, lower, upper, confidence,
+            "[%s] Prediction: $%.2f (%+.2f%%)  [%.2f – %.2f]  confidence=%.2f",
+            self._asset.upper(), pred, pct_change, lower, upper, confidence,
         )
         return result
 

@@ -27,6 +27,7 @@ Usage:
 
 import argparse
 import json
+from datetime import datetime, timezone
 import os
 import pickle
 import warnings
@@ -288,14 +289,17 @@ def train(asset: str):
         pickle.dump(scaler, f)
     print(f"[SAVED] Scaler        → {scaler_path}")
 
+    pct_change = round(((final_price - current_price) / current_price) * 100, 2)
     result = {
-        "asset"          : asset,
-        "model"          : "lstm" if TF_AVAILABLE else "lstm_fallback",
-        "architecture"   : "Conv1D(64)+LSTM(75)+Dense(16) — Murray et al. 2023",
-        "prediction_30d" : round(final_price, 2),
-        "lower_bound"    : round(lower, 2),
-        "upper_bound"    : round(upper, 2),
-        "confidence"     : CONFIDENCE,
+        "asset"           : asset.upper(),
+        "model"           : "lstm" if TF_AVAILABLE else "lstm_fallback",
+        "architecture"    : "Conv1D(64)+LSTM(75)+Dense(16) — Murray et al. 2023",
+        "predicted_price" : round(final_price, 2),
+        "prediction_30d"  : pct_change,    # % change from current price
+        "lower_bound"     : round(lower, 2),
+        "upper_bound"     : round(upper, 2),
+        "confidence"      : CONFIDENCE,
+        "timestamp"       : datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
 
     report_path = os.path.join(ARTIFACTS_DIR, f"{asset}_lstm_report.json")
@@ -366,13 +370,16 @@ def predict(asset: str) -> dict:
     daily_std     = float(df["return_1d"].dropna().tail(30).std() * current_price)
     margin        = daily_std * np.sqrt(FORECAST_DAYS) * 1.645
 
+    pct_change = round(((final_price - current_price) / current_price) * 100, 2)
     return {
-        "asset"          : asset,
-        "model"          : "lstm" if use_keras else "lstm_fallback",
-        "prediction_30d" : round(final_price, 2),
-        "lower_bound"    : round(max(0.0, final_price - margin), 2),
-        "upper_bound"    : round(final_price + margin, 2),
-        "confidence"     : CONFIDENCE,
+        "asset"           : asset.upper(),
+        "model"           : "lstm" if use_keras else "lstm_fallback",
+        "predicted_price" : round(final_price, 2),
+        "prediction_30d"  : pct_change,    # % change from current price
+        "lower_bound"     : round(max(0.0, final_price - margin), 2),
+        "upper_bound"     : round(final_price + margin, 2),
+        "confidence"      : CONFIDENCE,
+        "timestamp"       : datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
 
 

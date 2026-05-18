@@ -10,9 +10,10 @@ Design
 
 Output contract:
     {
-        "asset":      "btc",
-        "risk_label": "medium",   # one of: "low" | "medium" | "high"
-        "risk_score": 67.5        # 0–100 continuous score (higher = riskier)
+        "asset":        "btc",
+        "risk_label":   "medium",   # one of: "low" | "medium" | "high"
+        "risk_score":   67.5,       # 0–100 continuous score (higher = riskier, internal)
+        "sharpe_ratio": 1.4         # annualised Sharpe ratio from return_1d
     }
 
 Labeling Strategy
@@ -311,19 +312,23 @@ class RiskClassifier:
 
         label = self._encoder.inverse_transform([label_encoded])[0]
 
-        # risk_score = P(high) * 100  — continuous 0–100 signal
+        # risk_score = P(high) * 100  — continuous 0–100 signal (internal, higher = riskier)
         high_idx   = list(self._encoder.classes_).index("high")
         risk_score = round(float(proba[high_idx]) * 100, 1)
 
+        # Annualised Sharpe ratio from the daily return column
+        sharpe = compute_sharpe_ratio(df_sorted)
+
         result = {
-            "asset":      self._asset,
-            "risk_label": label,
-            "risk_score": risk_score,
+            "asset":        self._asset.upper(),
+            "risk_label":   label,
+            "risk_score":   risk_score,
+            "sharpe_ratio": sharpe,
         }
 
         log.info(
-            "[%s] Risk: %s  (score=%.1f)  probas=%s",
-            self._asset.upper(), label.upper(), risk_score,
+            "[%s] Risk: %s  (score=%.1f)  sharpe=%.4f  probas=%s",
+            self._asset.upper(), label.upper(), risk_score, sharpe,
             {c: round(p, 3) for c, p in zip(self._encoder.classes_, proba)},
         )
         return result
@@ -401,6 +406,48 @@ class RiskClassifier:
                 print(f"    {line}")
 
         print(sep)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  Sharpe ratio
+# ══════════════════════════════════════════════════════════════════════════════
+
+def compute_sharpe_ratio(df: pd.DataFrame) -> float:
+    """
+    Compute the annualised Sharpe ratio from the ``return_1d`` column.
+
+    Formula:
+        sharpe = mean(return_1d) / std(return_1d) * sqrt(252)
+
+    252 = conventional number of trading days in a year.
+    We use daily returns (return_1d) already present in the feature DataFrame.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Feature-engineered DataFrame containing a ``return_1d`` column.
+
+    Returns
+    -------
+    float  — annualised Sharpe ratio, rounded to 4 decimal places.
+             Returns 0.0 if std is zero (degenerate / constant price series).
+    """
+    if "return_1d" not in df.columns:
+        log.warning("return_1d column not found — Sharpe ratio will be 0.0")
+        return 0.0
+
+    returns = df["return_1d"].dropna()
+    if returns.empty:
+        return 0.0
+
+    mu  = returns.mean()
+    std = returns.std()
+
+    if std == 0:
+        return 0.0
+
+    sharpe = (mu / std) * np.sqrt(252)
+    return round(float(sharpe), 4)
 
 
 # ══════════════════════════════════════════════════════════════════════════════

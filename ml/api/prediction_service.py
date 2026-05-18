@@ -16,19 +16,35 @@ Endpoints
     GET /                          — health check
     GET /health                    — detailed system health
     GET /prediction/{asset}        — main prediction (Prophet) endpoint
+    GET /risk/{asset}              — dedicated risk + Sharpe ratio endpoint
     GET /models/{asset}            — A/B comparison: Prophet vs LSTM
     GET /assets                    — list supported assets
     POST /retrain/{asset}          — trigger fresh training (reloads cache)
 
+Callable functions (importable without HTTP)
+────────────────────────────────────────────
+    get_prediction(asset: str) -> dict   — mirrors GET /prediction/{asset}
+    get_risk(asset: str)       -> dict   — mirrors GET /risk/{asset}
+
 Output contract for GET /prediction/{asset}:
     {
-        "asset":          "btc",
-        "prediction_30d": 106152.16,
+        "asset":          "BTC",
+        "prediction_30d": 12.5,
         "lower_bound":    103476.59,
         "upper_bound":    108942.28,
         "confidence":     0.95,
         "risk_label":     "high",
-        "risk_score":     67.2
+        "risk_score":     32.8,   # contract score = 100 - internal score
+        "timestamp":      "2026-05-18T14:00:00Z"
+    }
+
+Output contract for GET /risk/{asset}:
+    {
+        "asset":        "BTC",
+        "risk_score":   32.8,   # [0,100] where higher = lower risk (better)
+        "volatility":   0.18,
+        "sharpe_ratio": 1.4,
+        "timestamp":    "2026-05-18T14:00:00Z"
     }
 
 Architecture
@@ -58,7 +74,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from models.forecaster  import ProphetForecaster
-from models.classifier  import RiskClassifier
+from models.classifier  import RiskClassifier, compute_sharpe_ratio
 from models              import lstm as lstm_module
 from features.feature_engineering import load_raw_csv, build_features
 from training.train import run_training
@@ -82,24 +98,52 @@ SUPPORTED_ASSETS = ["btc", "eth"]
 
 class PredictionResponse(BaseModel):
     """Exact schema the backend expects from GET /prediction/{asset}."""
-    asset:          str   = Field(..., example="btc")
-    prediction_30d: float = Field(..., example=106152.16, description="30-day price forecast in USD")
-    lower_bound:    float = Field(..., example=103476.59, description="80% prediction interval lower bound")
-    upper_bound:    float = Field(..., example=108942.28, description="80% prediction interval upper bound")
-    confidence:     float = Field(..., ge=0.0, le=1.0, example=0.95, description="Model confidence 0–1")
-    risk_label:     str   = Field(..., example="high", description="low | medium | high")
-    risk_score:     float = Field(..., ge=0.0, le=100.0, example=67.2, description="Continuous risk 0–100")
+    asset:           str   = Field(..., example="BTC")
+    predicted_price: float = Field(..., example=106152.16, description="Predicted absolute price in USD after 30 days")
+    prediction_30d:  float = Field(..., example=12.5,      description="% price change from current price over 30 days")
+    lower_bound:     float = Field(..., example=103476.59, description="80% prediction interval lower bound")
+    upper_bound:     float = Field(..., example=108942.28, description="80% prediction interval upper bound")
+    confidence:      float = Field(..., ge=0.0, le=1.0, example=0.95, description="Model confidence 0–1")
+    risk_label:      str   = Field(..., example="high", description="low | medium | high")
+    risk_score:      float = Field(..., ge=0.0, le=100.0, example=32.8,
+                                  description="Contract risk score 0–100 where higher = lower risk (100 - internal score)")
+    timestamp:       str   = Field(..., example="2026-05-18T14:00:00Z", description="UTC time of prediction")
 
     class Config:
         json_schema_extra = {
             "example": {
-                "asset":          "btc",
-                "prediction_30d": 106152.16,
-                "lower_bound":    103476.59,
-                "upper_bound":    108942.28,
-                "confidence":     0.95,
-                "risk_label":     "high",
-                "risk_score":     67.2,
+                "asset":           "BTC",
+                "predicted_price": 106152.16,
+                "prediction_30d":  12.5,
+                "lower_bound":     103476.59,
+                "upper_bound":     108942.28,
+                "confidence":      0.95,
+                "risk_label":      "high",
+                "risk_score":      32.8,
+                "timestamp":       "2026-05-18T14:00:00Z",
+            }
+        }
+
+
+class RiskResponse(BaseModel):
+    """Schema for GET /risk/{asset} — dedicated risk endpoint."""
+    asset:        str   = Field(..., example="BTC")
+    risk_score:   float = Field(
+        ..., ge=0.0, le=100.0, example=32.8,
+        description="Contract risk score [0,100] where HIGHER = LOWER risk (better)",
+    )
+    volatility:   float = Field(..., example=0.18, description="14-day rolling volatility (std of hourly log-returns)")
+    sharpe_ratio: float = Field(..., example=1.4,  description="Annualised Sharpe ratio from daily returns")
+    timestamp:    str   = Field(..., example="2026-05-18T14:00:00Z", description="UTC time of calculation")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "asset":        "BTC",
+                "risk_score":   32.8,
+                "volatility":   0.18,
+                "sharpe_ratio": 1.4,
+                "timestamp":    "2026-05-18T14:00:00Z",
             }
         }
 
@@ -391,21 +435,27 @@ async def get_prediction(
     elapsed = time.perf_counter() - t0
     log.info(
         "[%s] Served prediction in %.3fs  "
-        "pred=%.2f  risk=%s(%.1f)",
+        "pred=$%.2f (%+.2f%%)  risk=%s(%.1f)",
         asset.upper(), elapsed,
-        forecast["prediction_30d"],
+        forecast["predicted_price"], forecast["prediction_30d"],
         risk["risk_label"], risk["risk_score"],
     )
 
-    # 5. Merge and return — exact backend contract
+    # 5. Invert risk_score: contract says higher score = lower risk
+    #    internal score: P(high)*100  →  contract score: 100 - internal
+    contract_risk_score = round(100.0 - risk["risk_score"], 1)
+
+    # 6. Merge and return — exact backend contract
     return PredictionResponse(
-        asset          = asset,
-        prediction_30d = forecast["prediction_30d"],
-        lower_bound    = forecast["lower_bound"],
-        upper_bound    = forecast["upper_bound"],
-        confidence     = forecast["confidence"],
-        risk_label     = risk["risk_label"],
-        risk_score     = risk["risk_score"],
+        asset           = forecast["asset"],
+        predicted_price = forecast["predicted_price"],
+        prediction_30d  = forecast["prediction_30d"],
+        lower_bound     = forecast["lower_bound"],
+        upper_bound     = forecast["upper_bound"],
+        confidence      = forecast["confidence"],
+        risk_label      = risk["risk_label"],
+        risk_score      = contract_risk_score,
+        timestamp       = forecast["timestamp"],
     )
 
 
@@ -490,6 +540,85 @@ async def compare_models(
     )
 
 
+@app.get(
+    "/risk/{asset}",
+    response_model=RiskResponse,
+    summary="Get dedicated risk metrics for an asset",
+    tags=["Risk"],
+    responses={
+        200: {"description": "Risk metrics returned successfully"},
+        404: {"description": "Asset not found or not supported"},
+        503: {"description": "Model not loaded — run training first"},
+    },
+)
+async def get_risk_endpoint(
+    asset: str = FPath(
+        ...,
+        description="Asset ticker (btc or eth)",
+        example="btc",
+    ),
+) -> RiskResponse:
+    """
+    Returns dedicated risk metrics for the given asset.
+
+    **Contract note** — ``risk_score`` range is [0, 100] where:
+    - **higher score = lower risk (better)**
+    - This is the INVERSE of the internal classifier score.
+
+    ``volatility`` is the most recent 14-day rolling std of 1-hour log-returns.
+    ``sharpe_ratio`` is annualised using daily returns and 252 trading days.
+    """
+    asset = asset.lower()
+
+    if asset not in SUPPORTED_ASSETS:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Asset '{asset}' is not supported. Supported: {SUPPORTED_ASSETS}",
+        )
+
+    if asset not in cache.loaded_assets:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                f"Models for '{asset}' are not loaded. "
+                f"Run: python training/train.py --asset {asset}"
+            ),
+        )
+
+    try:
+        entry       = cache.get(asset)
+        classifier  = entry["classifier"]
+        features_df = entry["features_df"]
+        forecast    = entry["forecaster"].predict()
+
+        risk         = classifier.predict_latest(features_df)
+        sharpe       = risk.get("sharpe_ratio", compute_sharpe_ratio(features_df))
+        volatility   = round(float(features_df["volatility_14d"].iloc[-1]), 6)
+
+        # Contract inversion: higher = lower risk
+        contract_risk_score = round(100.0 - risk["risk_score"], 1)
+
+    except Exception as exc:
+        log.error("[%s] Risk calculation failed: %s", asset.upper(), exc)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Risk calculation error for '{asset}': {str(exc)}",
+        )
+
+    log.info(
+        "[%s] /risk served  contract_score=%.1f  volatility=%.6f  sharpe=%.4f",
+        asset.upper(), contract_risk_score, volatility, sharpe,
+    )
+
+    return RiskResponse(
+        asset        = asset.upper(),
+        risk_score   = contract_risk_score,
+        volatility   = volatility,
+        sharpe_ratio = sharpe,
+        timestamp    = forecast["timestamp"],
+    )
+
+
 @app.post(
     "/retrain/{asset}",
     response_model=RetrainResponse,
@@ -548,6 +677,161 @@ async def retrain(
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+#  Callable Python functions — importable without HTTP server
+# ══════════════════════════════════════════════════════════════════════════════
+#
+#  Person B can use these directly:
+#
+#      from ml.api.prediction_service import get_prediction, get_risk
+#
+#      result = get_prediction("BTC")
+#      risk   = get_risk("BTC")
+#
+#  Both functions lazy-load the model cache on first call (same as the API
+#  startup does) so they are safe to import in any Python context.
+# ══════════════════════════════════════════════════════════════════════════════
+
+def _ensure_asset_loaded(asset: str) -> None:
+    """
+    Load model artifacts into the global cache if not already present.
+    Safe to call multiple times — noop if already cached.
+    """
+    if asset not in cache.loaded_assets:
+        log.info(
+            "[%s] Cache miss on callable — loading models now ...", asset.upper()
+        )
+        cache.load_asset(asset)
+
+
+def get_prediction(asset: str) -> dict:
+    """
+    Return a 30-day price forecast + risk classification for *asset*.
+
+    This is the **callable** equivalent of ``GET /prediction/{asset}``.
+    Person B can import and call this directly without running the HTTP server:
+
+        from ml.api.prediction_service import get_prediction
+        result = get_prediction("BTC")
+
+    Parameters
+    ----------
+    asset : str
+        Asset ticker — ``"btc"`` or ``"eth"`` (case-insensitive).
+
+    Returns
+    -------
+    dict matching PredictionResponse:
+        {
+            "asset":           str,
+            "predicted_price": float,
+            "prediction_30d":  float,   # % change
+            "lower_bound":     float,
+            "upper_bound":     float,
+            "confidence":      float,
+            "risk_label":      str,     # "low" | "medium" | "high"
+            "risk_score":      float,   # 0–100, HIGHER = LOWER risk (contract)
+            "timestamp":       str,
+        }
+
+    Raises
+    ------
+    ValueError    — if asset is not supported.
+    RuntimeError  — if models cannot be loaded.
+    """
+    asset = asset.lower()
+
+    if asset not in SUPPORTED_ASSETS:
+        raise ValueError(
+            f"Asset '{asset}' not supported. Supported: {SUPPORTED_ASSETS}"
+        )
+
+    _ensure_asset_loaded(asset)
+
+    entry       = cache.get(asset)
+    forecaster  = entry["forecaster"]
+    classifier  = entry["classifier"]
+    features_df = entry["features_df"]
+
+    forecast = forecaster.predict()
+    risk     = classifier.predict_latest(features_df)
+
+    # Apply contract inversion: higher score = lower risk
+    contract_risk_score = round(100.0 - risk["risk_score"], 1)
+
+    return {
+        "asset":           forecast["asset"],
+        "predicted_price": forecast["predicted_price"],
+        "prediction_30d":  forecast["prediction_30d"],
+        "lower_bound":     forecast["lower_bound"],
+        "upper_bound":     forecast["upper_bound"],
+        "confidence":      forecast["confidence"],
+        "risk_label":      risk["risk_label"],
+        "risk_score":      contract_risk_score,
+        "timestamp":       forecast["timestamp"],
+    }
+
+
+def get_risk(asset: str) -> dict:
+    """
+    Return dedicated risk metrics for *asset*.
+
+    This is the **callable** equivalent of ``GET /risk/{asset}``:
+
+        from ml.api.prediction_service import get_risk
+        result = get_risk("BTC")
+
+    Parameters
+    ----------
+    asset : str
+        Asset ticker — ``"btc"`` or ``"eth"`` (case-insensitive).
+
+    Returns
+    -------
+    dict matching RiskResponse:
+        {
+            "asset":        str,
+            "risk_score":   float,  # [0,100] HIGHER = LOWER risk (contract)
+            "volatility":   float,  # 14-day rolling std of 1h log-returns
+            "sharpe_ratio": float,  # annualised Sharpe from daily returns
+            "timestamp":    str,
+        }
+
+    Raises
+    ------
+    ValueError    — if asset is not supported.
+    RuntimeError  — if models cannot be loaded.
+    """
+    asset = asset.lower()
+
+    if asset not in SUPPORTED_ASSETS:
+        raise ValueError(
+            f"Asset '{asset}' not supported. Supported: {SUPPORTED_ASSETS}"
+        )
+
+    _ensure_asset_loaded(asset)
+
+    entry       = cache.get(asset)
+    classifier  = entry["classifier"]
+    features_df = entry["features_df"]
+    forecast    = entry["forecaster"].predict()
+
+    risk       = classifier.predict_latest(features_df)
+    sharpe     = risk.get("sharpe_ratio", compute_sharpe_ratio(features_df))
+    volatility = round(float(features_df["volatility_14d"].iloc[-1]), 6)
+
+    # Contract inversion: higher = lower risk
+    contract_risk_score = round(100.0 - risk["risk_score"], 1)
+
+    return {
+        "asset":        asset.upper(),
+        "risk_score":   contract_risk_score,
+        "volatility":   volatility,
+        "sharpe_ratio": sharpe,
+        "timestamp":    forecast["timestamp"],
+    }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 #  Dev entrypoint  —  python api/prediction_service.py
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -559,3 +843,4 @@ if __name__ == "__main__":
         reload=True,
         log_level="info",
     )
+
