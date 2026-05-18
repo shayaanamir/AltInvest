@@ -36,9 +36,9 @@ export default function AuthLayout({ children, onNavigate }) {
 
             {/* Left panel — form */}
             <div style={{
-                width: 420, minWidth: 380, flexShrink: 0,
+                flex: 1,
                 display: "flex", alignItems: "center", justifyContent: "center",
-                background: "#0c0d1a",
+                background: "#08090F",
                 borderRight: `1px solid rgba(255,255,255,0.06)`,
                 paddingTop: 52,
             }}>

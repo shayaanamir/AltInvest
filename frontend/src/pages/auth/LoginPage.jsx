@@ -1,43 +1,61 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { L } from "../../components/landingPage/landingTokens";
 import AuthLayout from "./AuthLayout";
 import { AuthInput, AuthButton, OAuthButton, Divider, GoogleIcon, GitHubIcon } from "./AuthPrimitives";
+import { authApi } from "../../services/authApi";
 
 export default function LoginPage({ onNavigate }) {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-    const handleSignIn = () => {
-        // Navigate to dashboard on sign in
-        onNavigate && onNavigate("Dashboard");
+    const handleSignIn = async () => {
+        setError(null);
+        setLoading(true);
+        try {
+            const response = await authApi.login(email, password);
+            console.log("Logged in successfully:", response);
+            // Here you might typically save the token to localStorage/context
+            onNavigate && onNavigate("Dashboard");
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
         <AuthLayout onNavigate={onNavigate}>
             <motion.div
-                initial={{ opacity: 0, y: 24 }}
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
                 style={{
-                    width: "100%", maxWidth: 320,
-                    padding: "32px 28px",
-                    background: "rgba(255,255,255,0.03)",
-                    border: "1px solid rgba(255,255,255,0.07)",
+                    width: "100%", maxWidth: 420,
+                    padding: "40px 32px",
+                    background: "rgba(255,255,255,0.022)",
+                    border: "1px solid rgba(255,255,255,0.065)",
                     borderRadius: 16,
-                    boxShadow: "0 24px 64px rgba(0,0,0,0.4)",
+                    boxShadow: "0 24px 80px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)",
                 }}
             >
                 {/* Header */}
-                <div style={{ marginBottom: 24 }}>
+                <div style={{ marginBottom: 32 }}>
                     <h1 style={{
-                        fontSize: 26, fontWeight: 800, color: L.ink,
-                        letterSpacing: "-0.6px", margin: "0 0 6px",
+                        fontSize: 26, fontWeight: 700,
+                        color: "rgba(228,232,247,0.95)",
+                        letterSpacing: "-0.65px",
+                        margin: "0 0 10px", lineHeight: 1.2,
                     }}>
                         Welcome back.
                     </h1>
-                    <p style={{ fontSize: 13, color: L.ink2, margin: 0 }}>
-                        Sign in to access your intelligence workspace.
+                    <p style={{
+                        fontSize: 13, lineHeight: 1.6,
+                        color: "rgba(255,255,255,0.32)",
+                        margin: 0,
+                    }}>
+                        Access your investment intelligence workspace.
                     </p>
                 </div>
 
@@ -61,41 +79,58 @@ export default function LoginPage({ onNavigate }) {
                         style={{
                             position: "absolute", right: 0, top: 0,
                             background: "none", border: "none",
-                            fontSize: 11.5, color: L.ink2, cursor: "pointer",
-                            fontFamily: "inherit", padding: 0,
+                            fontSize: 11, color: "rgba(255,255,255,0.28)",
+                            cursor: "pointer", fontFamily: "inherit", padding: 0,
+                            transition: "color 0.15s",
                         }}
-                        onMouseEnter={e => e.currentTarget.style.color = L.ink}
-                        onMouseLeave={e => e.currentTarget.style.color = L.ink2}
+                        onMouseEnter={e => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
+                        onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.28)"}
                     >
-                        Forgot password?
+                        Forgot?
                     </button>
                 </div>
 
-                {/* Sign in */}
-                <div style={{ marginTop: 6 }}>
-                    <AuthButton onClick={handleSignIn}>Sign In</AuthButton>
+                <div style={{ marginTop: 8 }}>
+                    {error && (
+                        <div style={{
+                            color: "#ff5064", fontSize: 12, marginBottom: 12,
+                            background: "rgba(255,80,100,0.1)", padding: "8px 12px",
+                            borderRadius: 6, border: "1px solid rgba(255,80,100,0.2)"
+                        }}>
+                            {error}
+                        </div>
+                    )}
+                    <AuthButton onClick={handleSignIn} disabled={loading}>
+                        {loading ? "Authenticating..." : "Sign In"}
+                    </AuthButton>
                 </div>
 
-                <Divider label="Or continue with" />
+                <Divider label="or" />
 
-                <OAuthButton icon={<GoogleIcon />} label="Google" />
-                <OAuthButton icon={<GitHubIcon />} label="GitHub" />
+                <div style={{ display: "flex", gap: 8 }}>
+                    <OAuthButton icon={<GoogleIcon />} label="Google" />
+                    <OAuthButton icon={<GitHubIcon />} label="GitHub" />
+                </div>
 
-                {/* Footer link */}
                 <p style={{
-                    textAlign: "center", fontSize: 12.5, color: L.ink2, marginTop: 16, marginBottom: 0,
+                    textAlign: "center", fontSize: 12,
+                    color: "rgba(255,255,255,0.22)",
+                    marginTop: 24, marginBottom: 0,
                 }}>
-                    Don't have an account?{" "}
+                    No account?{" "}
                     <button
                         onClick={() => onNavigate && onNavigate("Signup")}
                         style={{
                             background: "none", border: "none", padding: 0,
-                            fontSize: 12.5, fontWeight: 700, color: L.blue,
+                            fontSize: 12, fontWeight: 600,
+                            color: "rgba(140,158,255,0.75)",
                             cursor: "pointer", fontFamily: "inherit",
-                            textDecoration: "none",
+                            transition: "color 0.15s",
                         }}
+                        onMouseEnter={e => e.currentTarget.style.color = "rgba(180,195,255,0.95)"}
+                        onMouseLeave={e => e.currentTarget.style.color = "rgba(140,158,255,0.75)"}
                     >
-                        Sign up
+                        Create account →
                     </button>
                 </p>
             </motion.div>

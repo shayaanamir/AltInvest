@@ -78,7 +78,7 @@ export default function Hero({ onNavigate }) {
                         Modern Market Intelligence for<br />
                         <ShinyText
                             text="Alternative Assets"
-                            speed={1}
+                            speed={2}
                             delay={0}
                             color={L.purpleLight}
                             shineColor={L.purple}
