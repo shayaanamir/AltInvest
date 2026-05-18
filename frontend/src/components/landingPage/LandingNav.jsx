@@ -30,18 +30,13 @@ export default function LandingNav({ onNavigate }) {
         >
             {/* Logo */}
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{
-                    width: 32, height: 32, borderRadius: 8,
-                    background: `linear-gradient(135deg, ${L.blue}, ${L.purple})`,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 13, fontWeight: 800, color: "#fff",
-                }}>A</div>
+                <img src="/altinvest_logo.png" alt="AltInvest Logo" style={{ height: 32, borderRadius: 8, objectFit: "contain" }} />
                 <span style={{ fontSize: 15, fontWeight: 700, color: L.ink, letterSpacing: "-0.3px" }}>AltInvest</span>
             </div>
 
             {/* Links */}
             <div style={{ display: "flex", gap: 32 }}>
-                {["Features", "Platform", "Pricing", "Insights"].map(label => (
+                {["Platform", "Signals", "Analytics", "Portfolio"].map(label => (
                     <a
                         key={label}
                         href="#"
@@ -56,8 +51,8 @@ export default function LandingNav({ onNavigate }) {
 
             {/* CTA */}
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                <a 
-                    href="#" 
+                <a
+                    href="#"
                     onClick={(e) => { e.preventDefault(); onNavigate && onNavigate("Login"); }}
                     style={{ fontSize: 13.5, color: L.ink2, textDecoration: "none", fontWeight: 500 }}
                 >
