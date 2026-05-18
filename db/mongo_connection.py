@@ -12,7 +12,6 @@ def get_client() -> MongoClient:
     global _client
     if _client is None:
         uri = os.getenv("MONGO_URI", "mongodb://localhost:27017")
-        print(f"Connecting to: {uri[:40]}...")  # remove this line after confirming
         _client = MongoClient(uri)
     return _client
 
