@@ -1,4 +1,4 @@
-import { assets, assetMarketData, trendingAssets, assetPriceHistory, assetPricePredictions, aaiScores } from '../data/sample_data';
+import { assets, assetMarketData, trendingAssets, assetPriceHistory, assetPricePredictions, aaiScores, assetRiskMetrics } from '../data/sample_data';
 import { USE_MOCK, API_BASE_URL } from "../config";
 
 export const assetApi = {
@@ -61,6 +61,36 @@ export const assetApi = {
 
     const res = await fetch(`${API_BASE_URL}/assets/${assetId}/intelligence`);
     if (!res.ok) throw new Error("Failed to fetch asset intelligence");
+    return res.json();
+  },
+
+  getAssetRiskMetrics: async (assetId = 101) => {
+    if (USE_MOCK) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          const data = assetRiskMetrics.find(r => r.asset_id === assetId);
+          resolve(data || null);
+        }, 500);
+      });
+    }
+
+    const res = await fetch(`${API_BASE_URL}/assets/${assetId}/risk`);
+    if (!res.ok) throw new Error("Failed to fetch risk metrics");
+    return res.json();
+  },
+
+  getAssetMarketStats: async (assetId = 101) => {
+    if (USE_MOCK) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          const data = assetMarketData.find(m => m.asset_id === assetId);
+          resolve(data || null);
+        }, 500);
+      });
+    }
+
+    const res = await fetch(`${API_BASE_URL}/assets/${assetId}/market-stats`);
+    if (!res.ok) throw new Error("Failed to fetch market stats");
     return res.json();
   }
 };

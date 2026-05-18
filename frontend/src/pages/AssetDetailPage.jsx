@@ -11,7 +11,7 @@ import { assetApi } from "../services/assetApi";
 export default function AssetDetailPage({ onNavigate }) {
     const { tokens: t } = useTheme();
     const s = makeStyles(t);
-    
+
     const [headerData, setHeaderData] = useState(null);
 
     useEffect(() => {
@@ -89,7 +89,7 @@ export default function AssetDetailPage({ onNavigate }) {
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     <AssetIntelligence />
                     <RiskAnalytics />
-                    <AboutAsset />
+                    {/* <AboutAsset /> */}
                 </div>
             </div>
         </div>
