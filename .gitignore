@@ -1,6 +1,15 @@
 # =========================
 # Python
 # =========================
+# ML artifacts and data
+ml/data/
+ml/experiments/
+*.pkl
+*.h5
+*.pt
+__pycache__/
+.env
+.env
 __pycache__/
 **/__pycache__/
 *.py[cod]

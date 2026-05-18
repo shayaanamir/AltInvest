@@ -1,0 +1,32 @@
+{
+  "asset": "sol",
+  "trained_at": "2026-05-18T17:24:08Z",
+  "data": {
+    "raw_rows": 17521,
+    "feature_rows": 16801,
+    "date_range": [
+      "2024-01-31",
+      "2025-12-31"
+    ],
+    "duration_sec": 0.06
+  },
+  "forecast": {
+    "asset": "SOL",
+    "predicted_price": 24.7,
+    "prediction_30d": -39.68,
+    "lower_bound": 16.11,
+    "upper_bound": 33.41,
+    "confidence": 0.3,
+    "timestamp": "2026-05-18T17:24:02Z",
+    "duration_sec": 1.15
+  },
+  "classify": {
+    "asset": "SOL",
+    "risk_score": 11.5,
+    "sharpe_ratio": -0.2354,
+    "cv_accuracy": 0.79,
+    "duration_sec": 5.43
+  },
+  "total_duration_sec": 6.66,
+  "status": "success"
+}

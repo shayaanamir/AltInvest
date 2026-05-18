@@ -1,0 +1,29 @@
+{
+  "asset": "btc",
+  "trained_at": "2026-05-16T19:48:11Z",
+  "data": {
+    "raw_rows": 17521,
+    "feature_rows": 16801,
+    "date_range": [
+      "2024-01-31",
+      "2025-12-31"
+    ],
+    "duration_sec": 0.04
+  },
+  "forecast": {
+    "asset": "btc",
+    "prediction_30d": 106152.16,
+    "lower_bound": 103476.59,
+    "upper_bound": 108942.28,
+    "confidence": 0.95,
+    "duration_sec": 0.46
+  },
+  "classify": {
+    "asset": "btc",
+    "risk_score": 67.2,
+    "cv_accuracy": 0.83,
+    "duration_sec": 4.96
+  },
+  "total_duration_sec": 5.48,
+  "status": "success"
+}

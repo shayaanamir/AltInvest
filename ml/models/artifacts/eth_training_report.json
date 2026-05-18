@@ -1,0 +1,29 @@
+{
+  "asset": "eth",
+  "trained_at": "2026-05-16T19:54:33Z",
+  "data": {
+    "raw_rows": 17521,
+    "feature_rows": 16801,
+    "date_range": [
+      "2024-01-31",
+      "2025-12-31"
+    ],
+    "duration_sec": 0.04
+  },
+  "forecast": {
+    "asset": "eth",
+    "prediction_30d": 1385.18,
+    "lower_bound": 1215.2,
+    "upper_bound": 1539.75,
+    "confidence": 0.77,
+    "duration_sec": 0.36
+  },
+  "classify": {
+    "asset": "eth",
+    "risk_score": 21.8,
+    "cv_accuracy": 0.79,
+    "duration_sec": 5.08
+  },
+  "total_duration_sec": 5.5,
+  "status": "success"
+}

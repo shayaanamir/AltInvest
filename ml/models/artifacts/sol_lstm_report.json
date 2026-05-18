@@ -1,0 +1,11 @@
+{
+  "asset": "SOL",
+  "model": "lstm",
+  "architecture": "Conv1D(64)+LSTM(75)+Dense(16) \u2014 Murray et al. 2023",
+  "predicted_price": 40.75,
+  "prediction_30d": -0.5,
+  "lower_bound": 20.16,
+  "upper_bound": 61.33,
+  "confidence": 0.85,
+  "timestamp": "2026-05-18T17:28:07Z"
+}
