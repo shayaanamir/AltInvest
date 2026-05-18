@@ -14,13 +14,13 @@ export default function DashboardPage() {
       {/* Page header */}
       <div style={s.pageHeader}>
         <div>
-          <h1 style={s.pageTitle}>Market Intelligence</h1>
-          <p style={s.pageSub}>AI-driven insights for alternative assets.</p>
+          <h1 style={s.pageTitle}>Market Overview</h1>
+          <p style={s.pageSub}>Track sentiment, trends, and movement across alternative assets.</p>
         </div>
-        <div style={s.pageActions}>
+        {/* <div style={s.pageActions}>
           <button style={s.btnOutline}>Generate Report</button>
           <button style={s.btnPrimary}>✦ AI Analysis</button>
-        </div>
+        </div> */}
       </div>
 
       <StatsRow />

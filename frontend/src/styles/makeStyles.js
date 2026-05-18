@@ -139,19 +139,19 @@ export function makeStyles(t) {
 
     // ── Page layout ───────────────────────────────────────────
     main:    { flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: t.bgBase, transition: "background 0.25s" },
-    content: { flex: 1, overflow: "auto", padding: "18px 20px 20px" },
-    pageHeader: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 },
-    pageTitle:  { fontSize: 22, fontWeight: 700, color: t.textPrimary, letterSpacing: "-0.5px" },
-    pageSub:    { fontSize: 11.5, color: t.textSecondary, marginTop: 2 },
-    pageActions:{ display: "flex", gap: 8 },
+    content: { flex: 1, overflow: "auto", padding: "0px 40px 20px" },
+    pageHeader: { display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 0, padding: "40px 0px" },
+    pageTitle:  { fontSize: 30, fontWeight: 700, color: t.textPrimary, letterSpacing: "-0.5px", margin: 0 },
+    pageSub:    { fontSize: 13, color: t.textSecondary, margin: 0, marginTop: 4 },
+    pageActions:{ display: "flex", alignItems: "center", gap: 8 },
     btnOutline: {
       background: "none", border: `1px solid ${t.btnOutlineBorder}`,
-      borderRadius: 8, padding: "7px 14px", fontSize: 12,
+      borderRadius: 8, padding: "10px 17px", fontSize: 14,
       color: t.btnOutlineText, cursor: "pointer", fontWeight: 500,
     },
     btnPrimary: {
       background: t.btnPrimaryBg, border: "none", borderRadius: 8,
-      padding: "7px 14px", fontSize: 12, color: "#fff",
+      padding: "10  px 17px", fontSize: 14, color: "#fff",
       cursor: "pointer", fontWeight: 600,
     },
 

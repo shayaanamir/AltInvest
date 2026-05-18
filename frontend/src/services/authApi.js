@@ -1,6 +1,5 @@
 // Authentication API Service
-const API_BASE_URL = "http://localhost:5000/api"; // Update this to your real backend URL
-const USE_MOCK = true; // CHANGE THIS TO FALSE WHEN YOUR BACKEND IS READY
+import { USE_MOCK, API_BASE_URL } from "../config";
 
 export const authApi = {
     /**
