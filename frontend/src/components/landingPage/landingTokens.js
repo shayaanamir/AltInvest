@@ -1,0 +1,22 @@
+// Landing page design tokens — dark-only, matches screenshots exactly
+export const L = {
+  bg0:          "#08090f",
+  bg1:          "#0d0e1a",
+  bg2:          "#12131f",
+  bg3:          "#191a2e",
+  bg4:          "#1e2038",
+  border:       "rgba(255,255,255,0.07)",
+  border2:      "rgba(255,255,255,0.12)",
+  ink:          "#e8eaf4",
+  ink2:         "#8b8faa",
+  ink3:         "#44475a",
+  blue:         "#5b6ef5",
+  blueDim:      "#3b4bb8",
+  purple:       "#9b6dff",
+  purpleLight:  "#c4a0ff",
+  green:        "#00d48b",
+  red:          "#ff4060",
+  amber:        "#f5b731",
+  teal:         "#00c9b0",
+  font:         "'DM Sans', 'Segoe UI', sans-serif",
+};
