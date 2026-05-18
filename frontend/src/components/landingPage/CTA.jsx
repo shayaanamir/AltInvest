@@ -50,7 +50,7 @@ export default function CTA({ onNavigate }) {
                         and automate their intelligence workflows.
                     </p>
                     <motion.button
-                        onClick={() => onNavigate && onNavigate("Dashboard")}
+                        onClick={() => onNavigate && onNavigate("Signup")}
                         whileHover={{ scale: 1.04, boxShadow: "0 0 0 1px rgba(255,255,255,0.15)" }}
                         whileTap={{ scale: 0.97 }}
                         style={{

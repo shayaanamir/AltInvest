@@ -76,7 +76,7 @@ export default function Hero({ onNavigate }) {
 
             <motion.div {...fadeUp(0.32)} style={{ display: "flex", gap: 12, justifyContent: "center", marginBottom: 16 }}>
                 <motion.button
-                    onClick={() => onNavigate && onNavigate("Dashboard")}
+                    onClick={() => onNavigate && onNavigate("Signup")}
                     whileHover={{ scale: 1.04, boxShadow: `0 0 28px rgba(91,110,245,0.5)` }}
                     whileTap={{ scale: 0.97 }}
                     style={{

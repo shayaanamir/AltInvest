@@ -8,6 +8,11 @@ import PortfolioPage from "./pages/PortfolioPage";
 import AssetDetailPage from "./pages/AssetDetailPage";
 import SentimentPage from "./pages/SentimentPage";
 import LandingPage from "./pages/LandingPage";
+import LoginPage from "./pages/auth/LoginPage";
+import SignupPage from "./pages/auth/SignupPage";
+
+// Pages that skip the app shell (no sidebar/topbar)
+const BARE_PAGES = ["Landing", "Login", "Signup"];
 
 function Shell() {
   const { tokens: t } = useTheme();
@@ -16,6 +21,12 @@ function Shell() {
 
   const renderPage = () => {
     switch (activePage) {
+      case "Landing":
+        return <LandingPage onNavigate={setActivePage} />;
+      case "Login":
+        return <LoginPage onNavigate={setActivePage} />;
+      case "Signup":
+        return <SignupPage onNavigate={setActivePage} />;
       case "Portfolio":
         return <PortfolioPage />;
       case "Asset Detail":
@@ -28,8 +39,10 @@ function Shell() {
     }
   };
 
-  if (activePage === "Landing") {
-    return <LandingPage onNavigate={setActivePage} />;
+  const isBare = BARE_PAGES.includes(activePage);
+
+  if (isBare) {
+    return renderPage();
   }
 
   return (

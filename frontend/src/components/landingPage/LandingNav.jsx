@@ -56,9 +56,15 @@ export default function LandingNav({ onNavigate }) {
 
             {/* CTA */}
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                <a href="#" style={{ fontSize: 13.5, color: L.ink2, textDecoration: "none", fontWeight: 500 }}>Sign In</a>
+                <a 
+                    href="#" 
+                    onClick={(e) => { e.preventDefault(); onNavigate && onNavigate("Login"); }}
+                    style={{ fontSize: 13.5, color: L.ink2, textDecoration: "none", fontWeight: 500 }}
+                >
+                    Sign In
+                </a>
                 <motion.button
-                    onClick={() => onNavigate && onNavigate("Dashboard")}
+                    onClick={() => onNavigate && onNavigate("Signup")}
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
                     style={{
