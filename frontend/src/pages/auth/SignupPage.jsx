@@ -17,7 +17,9 @@ export default function SignupPage({ onNavigate }) {
         try {
             const response = await authApi.signup(name, email, password);
             console.log("Signed up successfully:", response);
-            // Typically save the token here
+            if (response.token) {
+                localStorage.setItem("altinvest_token", response.token);
+            }
             onNavigate && onNavigate("Dashboard");
         } catch (err) {
             setError(err.message);

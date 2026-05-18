@@ -16,7 +16,9 @@ export default function LoginPage({ onNavigate }) {
         try {
             const response = await authApi.login(email, password);
             console.log("Logged in successfully:", response);
-            // Here you might typically save the token to localStorage/context
+            if (response.token) {
+                localStorage.setItem("altinvest_token", response.token);
+            }
             onNavigate && onNavigate("Dashboard");
         } catch (err) {
             setError(err.message);

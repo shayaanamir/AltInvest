@@ -1,7 +1,6 @@
-// Mock Authentication API Service
-// TODO: Replace these mock functions with actual fetch/axios calls to your backend when it's ready.
-
+// Authentication API Service
 const API_BASE_URL = "http://localhost:5000/api"; // Update this to your real backend URL
+const USE_MOCK = true; // CHANGE THIS TO FALSE WHEN YOUR BACKEND IS READY
 
 export const authApi = {
     /**
@@ -11,36 +10,28 @@ export const authApi = {
      * @returns {Promise<{ user: any, token: string }>}
      */
     login: async (email, password) => {
-        // SIMULATED BACKEND CALL
-        return new Promise((resolve, reject) => {
-            setTimeout(() => {
-                // Mock validation
-                if (!email || !password) {
-                    return reject(new Error("Email and password are required."));
-                }
-                
-                // Mock success response
-                resolve({
-                    user: { id: 1, name: "Test User", email },
-                    token: "mock-jwt-token-12345"
-                });
+        if (USE_MOCK) {
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    if (!email || !password) return reject(new Error("Email and password are required."));
+                    resolve({ user: { id: 1, name: "Test User", email }, token: "mock-jwt-token-12345" });
+                }, 800);
+            });
+        }
 
-                // --- REAL IMPLEMENTATION EXAMPLE ---
-                /*
-                fetch(`${API_BASE_URL}/auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                })
-                .then(res => {
-                    if (!res.ok) throw new Error("Invalid credentials");
-                    return res.json();
-                })
-                .then(data => resolve(data))
-                .catch(err => reject(err));
-                */
-            }, 800); // simulate network delay
+        const res = await fetch(`${API_BASE_URL}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
         });
+        
+        const data = await res.json().catch(() => ({})); // Handle cases where response isn't JSON
+        
+        if (!res.ok) {
+            throw new Error(data.message || data.error || "Invalid credentials");
+        }
+        
+        return data; // Expected to contain { user, token }
     },
 
     /**
@@ -51,35 +42,27 @@ export const authApi = {
      * @returns {Promise<{ user: any, token: string }>}
      */
     signup: async (name, email, password) => {
-        // SIMULATED BACKEND CALL
-        return new Promise((resolve, reject) => {
-            setTimeout(() => {
-                // Mock validation
-                if (!name || !email || !password) {
-                    return reject(new Error("All fields are required."));
-                }
-                
-                // Mock success response
-                resolve({
-                    user: { id: 2, name, email },
-                    token: "mock-jwt-token-67890"
-                });
+        if (USE_MOCK) {
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    if (!name || !email || !password) return reject(new Error("All fields are required."));
+                    resolve({ user: { id: 2, name, email }, token: "mock-jwt-token-67890" });
+                }, 800);
+            });
+        }
 
-                // --- REAL IMPLEMENTATION EXAMPLE ---
-                /*
-                fetch(`${API_BASE_URL}/auth/signup`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, password })
-                })
-                .then(res => {
-                    if (!res.ok) throw new Error("Error creating account");
-                    return res.json();
-                })
-                .then(data => resolve(data))
-                .catch(err => reject(err));
-                */
-            }, 800); // simulate network delay
+        const res = await fetch(`${API_BASE_URL}/auth/signup`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, password })
         });
+        
+        const data = await res.json().catch(() => ({})); // Handle cases where response isn't JSON
+        
+        if (!res.ok) {
+            throw new Error(data.message || data.error || "Error creating account");
+        }
+        
+        return data; // Expected to contain { user, token }
     }
 };
