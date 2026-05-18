@@ -10,27 +10,33 @@ import SentimentPage from "./pages/SentimentPage";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/auth/LoginPage";
 import SignupPage from "./pages/auth/SignupPage";
+import OnboardingPage from "./pages/onboarding/OnboardingPage";
 
-// Pages that skip the app shell (no sidebar/topbar)
-const BARE_PAGES = ["Landing", "Login", "Signup"];
+// Pages that render without sidebar/topbar shell
+const BARE_PAGES = ["Landing", "Login", "Signup", "Onboarding"];
 
 function Shell() {
   const { tokens: t } = useTheme();
   const s = makeStyles(t);
   const [activePage, setActivePage] = useState("Landing");
 
+  const navigate = (page) => setActivePage(page);
+
   const renderPage = () => {
     switch (activePage) {
       case "Landing":
-        return <LandingPage onNavigate={setActivePage} />;
+        return <LandingPage onNavigate={navigate} />;
       case "Login":
-        return <LoginPage onNavigate={setActivePage} />;
+        return <LoginPage onNavigate={navigate} />;
       case "Signup":
-        return <SignupPage onNavigate={setActivePage} />;
+        // After signup → Onboarding (not Dashboard)
+        return <SignupPage onNavigate={(p) => navigate(p === "Dashboard" ? "Onboarding" : p)} />;
+      case "Onboarding":
+        return <OnboardingPage onNavigate={navigate} />;
       case "Portfolio":
         return <PortfolioPage />;
       case "Asset Detail":
-        return <AssetDetailPage onNavigate={setActivePage} />;
+        return <AssetDetailPage onNavigate={navigate} />;
       case "Sentiment":
         return <SentimentPage />;
       case "Dashboard":
@@ -47,7 +53,7 @@ function Shell() {
 
   return (
     <div style={s.root}>
-      <Sidebar activePage={activePage} onNavigate={setActivePage} />
+      <Sidebar activePage={activePage} onNavigate={navigate} />
       <div style={s.main}>
         <Topbar />
         {renderPage()}
