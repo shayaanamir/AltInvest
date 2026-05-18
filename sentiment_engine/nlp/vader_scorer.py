@@ -27,9 +27,9 @@ def score_text(text: str) -> float:
 
     Returns:
         compound score in range [-1.0, 1.0]
-        -1.0 = maximally negative
+        -1.0 = maximally Negative
          0.0 = neutral
-        +1.0 = maximally positive
+        +1.0 = maximally Positive
     """
     if not text or not text.strip():
         return 0.0

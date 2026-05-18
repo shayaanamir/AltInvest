@@ -179,20 +179,20 @@ export function makeStyles(t) {
     },
     cardHeader: {
       display: "flex", alignItems: "center", justifyContent: "space-between",
-      padding: "12px 14px 10px", borderBottom: `1px solid ${t.border}`,
+      padding: "18px 14px 18px", borderBottom: `1px solid ${t.border}`,
     },
-    cardTitle:   { fontSize: 13, fontWeight: 700, color: t.textPrimary },
+    cardTitle:   { fontSize: 17, fontWeight: 700, color: t.textPrimary },
     timeFilters: { display: "flex", gap: 2, background: t.bgCard2, borderRadius: 7, padding: 2 },
     timeBtn:     { background: "none", border: "none", borderRadius: 5, padding: "3px 7px", fontSize: 10.5, color: t.textMuted, cursor: "pointer", fontWeight: 500 },
     timeBtnActive:{ background: t.bgHover, color: t.textPrimary, fontWeight: 700 },
     viewAllBtn:  { background: "none", border: "none", fontSize: 11, color: t.accentBlue, cursor: "pointer", fontWeight: 600 },
 
     // ── Insights ──────────────────────────────────────────────
-    insightItem: { padding: "9px 14px", borderBottom: `1px solid ${t.border}` },
-    insightMeta: { display: "flex", justifyContent: "space-between", marginBottom: 3 },
-    insightSrc:  { fontSize: 9.5, fontWeight: 700, color: t.textMuted, background: t.bgCard2, padding: "1px 6px", borderRadius: 4, border: `1px solid ${t.borderLight}` },
-    insightTime: { fontSize: 9.5, color: t.textMuted },
-    insightHL:   { fontSize: 11.5, color: t.textPrimary, fontWeight: 500, lineHeight: 1.4 },
+    insightItem: { padding: "16px 18px", borderBottom: `1px solid ${t.border}` },
+    insightMeta: { display: "flex", justifyContent: "space-between", marginBottom: 8 },
+    insightSrc:  { fontSize: 10, fontWeight: 700, color: t.textMuted, background: t.bgCard2, padding: "2px 8px", borderRadius: 4, border: `1px solid ${t.borderLight}` },
+    insightTime: { fontSize: 10, color: t.textMuted },
+    insightHL:   { fontSize: 13, color: t.textPrimary, fontWeight: 500, lineHeight: 1.5, marginBottom: 8 },
 
     // ── Trending assets ───────────────────────────────────────
     trendingHdr: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px 10px", borderBottom: `1px solid ${t.border}` },

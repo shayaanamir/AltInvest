@@ -94,7 +94,7 @@ def fetch_quote_signals(asset_id: str) -> Optional[dict]:
     price_score   = _normalise_pct((p1h * 0.2) + (p24h * 0.5) + (p7d * 0.3))
     volume_score  = _normalise_pct(vol, clip=100.0)
     # Dominance alone is not directionally meaningful, so we treat high dominance
-    # as moderately positive (market is consolidating to major assets)
+    # as moderately Positive (market is consolidating to major assets)
     dom_score     = min(1.0, dom / 60.0)
 
     composite = round(
@@ -173,7 +173,7 @@ def fetch_trending_assets() -> list[str]:
     """
     Fetches the current trending assets on CoinMarketCap.
     Returns a list of asset symbols (e.g. ['BTC', 'ETH', 'SOL']).
-    Used as a boolean boost: if an asset is trending, add a small positive signal.
+    Used as a boolean boost: if an asset is trending, add a small Positive signal.
     """
     data = _get("/cryptocurrency/trending/latest")
 

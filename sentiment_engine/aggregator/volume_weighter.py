@@ -61,19 +61,19 @@ def compute_signal_strength(scores: list[float]) -> str:
         "strong"    — most articles strongly agree on direction
         "moderate"  — moderate directional agreement
         "weak"      — mixed or near-neutral sentiment
-        "conflicted" — scores split roughly evenly between positive and negative
+        "conflicted" — scores split roughly evenly between Positive and Negative
     """
     if not scores:
         return "weak"
 
     n         = len(scores)
     mean      = sum(scores) / n
-    positives = sum(1 for s in scores if s > 0.1)
-    negatives = sum(1 for s in scores if s < -0.1)
-    neutrals  = n - positives - negatives
+    Positives = sum(1 for s in scores if s > 0.1)
+    Negatives = sum(1 for s in scores if s < -0.1)
+    neutrals  = n - Positives - Negatives
 
-    pos_ratio = positives / n
-    neg_ratio = negatives / n
+    pos_ratio = Positives / n
+    neg_ratio = Negatives / n
 
     # Both directions strongly represented
     if pos_ratio > 0.3 and neg_ratio > 0.3:
@@ -99,8 +99,8 @@ def compute_volume_metrics(articles: list[dict]) -> dict:
             "confidence": float,
             "confidence_label": str,
             "signal_strength": str,
-            "positive_count": int,
-            "negative_count": int,
+            "Positive_count": int,
+            "Negative_count": int,
             "neutral_count": int,
             "source_count": int,       # how many distinct sources contributed
         }
@@ -128,8 +128,8 @@ def compute_volume_metrics(articles: list[dict]) -> dict:
         "confidence":       confidence,
         "confidence_label": confidence_label(confidence),
         "signal_strength":  strength,
-        "positive_count":   pos,
-        "negative_count":   neg,
+        "Positive_count":   pos,
+        "Negative_count":   neg,
         "neutral_count":    neu,
         "source_count":     len(sources),
     }

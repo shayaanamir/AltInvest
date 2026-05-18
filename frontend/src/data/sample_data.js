@@ -176,8 +176,8 @@ export const assetSentiment = [
   {
     id: 9001,
     asset_id: 101,
-    positive_score: 72,
-    negative_score: 18,
+    Positive_score: 72,
+    Negative_score: 18,
     neutral_score: 10,
     overall_sentiment: "bullish",
     fear_greed_index: 78,
@@ -187,8 +187,8 @@ export const assetSentiment = [
   {
     id: 9002,
     asset_id: 102,
-    positive_score: 61,
-    negative_score: 24,
+    Positive_score: 61,
+    Negative_score: 24,
     neutral_score: 15,
     overall_sentiment: "neutral",
     fear_greed_index: 63,
@@ -209,7 +209,7 @@ export const sentimentPosts = [
     author: "@crypto_whale",
     content:
       "Institutional accumulation on BTC is increasing rapidly.",
-    sentiment: "positive",
+    sentiment: "Positive",
     engagement_score: 9200,
     posted_at: "2026-05-18T11:45:00Z",
     url: "https://twitter.com/example/status/123456",
@@ -221,7 +221,7 @@ export const sentimentPosts = [
     author: "u/nft_collector",
     content:
       "NFT liquidity has slowed significantly over the last month.",
-    sentiment: "negative",
+    sentiment: "Negative",
     engagement_score: 2400,
     posted_at: "2026-05-18T10:20:00Z",
     url: "https://reddit.com/r/nft/example",
@@ -240,7 +240,7 @@ export const marketInsights = [
     summary:
       "Large wallet activity and ETF demand continue driving bullish sentiment.",
     source: "CryptoBrief",
-    impact: "positive",
+    impact: "Positive",
     asset_id: 101,
     published_at: "2026-05-18T09:30:00Z",
   },
@@ -251,7 +251,51 @@ export const marketInsights = [
     summary:
       "NFT trading volume declines as uncertainty around digital asset regulation rises.",
     source: "Block Daily",
-    impact: "negative",
+    impact: "Negative",
+    asset_id: 104,
+    published_at: "2026-05-18T07:00:00Z",
+  },
+    {
+    id: 15001,
+    title:
+      "Institutional inflows push BTC sentiment higher",
+    summary:
+      "Large wallet activity and ETF demand continue driving bullish sentiment.",
+    source: "CryptoBrief",
+    impact: "Positive",
+    asset_id: 101,
+    published_at: "2026-05-18T09:30:00Z",
+  },
+  {
+    id: 15002,
+    title:
+      "Regulatory concerns impact NFT liquidity",
+    summary:
+      "NFT trading volume declines as uncertainty around digital asset regulation rises.",
+    source: "Block Daily",
+    impact: "Negative",
+    asset_id: 104,
+    published_at: "2026-05-18T07:00:00Z",
+  },
+    {
+    id: 15001,
+    title:
+      "Institutional inflows push BTC sentiment higher",
+    summary:
+      "Large wallet activity and ETF demand continue driving bullish sentiment.",
+    source: "CryptoBrief",
+    impact: "Positive",
+    asset_id: 101,
+    published_at: "2026-05-18T09:30:00Z",
+  },
+  {
+    id: 15002,
+    title:
+      "Regulatory concerns impact NFT liquidity",
+    summary:
+      "NFT trading volume declines as uncertainty around digital asset regulation rises.",
+    source: "Block Daily",
+    impact: "Negative",
     asset_id: 104,
     published_at: "2026-05-18T07:00:00Z",
   },
@@ -468,13 +512,25 @@ export const portfolioSnapshots = [
   {
     id: 9501,
     portfolio_id: 2001,
-    total_value: 124600,
+    total_value: 12,
     snapshot_date: "2026-05-18",
   },
   {
     id: 9502,
     portfolio_id: 2001,
-    total_value: 121200,
+    total_value: 10,
+    snapshot_date: "2026-05-17",
+  },
+  {
+    id: 9503,
+    portfolio_id: 2001,
+    total_value: 9,
+    snapshot_date: "2026-05-16",
+  },
+  {
+    id: 9504,
+    portfolio_id: 2001,
+    total_value: 8,
     snapshot_date: "2026-05-17",
   },
 ];
@@ -487,14 +543,14 @@ export const marketEvents = [
   {
     id: 9801,
     title: "SEC approves BTC ETF",
-    impact: "positive",
+    impact: "Positive",
     event_date: "2026-05-18",
   },
   {
     id: 9802,
     title:
       "Major exchange introduces tokenized commodities",
-    impact: "positive",
+    impact: "Positive",
     event_date: "2026-05-15",
   },
 ];

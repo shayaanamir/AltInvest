@@ -4,7 +4,7 @@ import { L } from "../../components/landingPage/landingTokens";
 
 const GOALS = [
     { key: "longterm", icon: "↗", title: "Long-term investing", desc: "Build wealth steadily over years" },
-    { key: "trading", icon: "⚡", title: "Active trading", desc: "Capitalize on short-term movements" },
+    { key: "trading", icon: "", title: "Active trading", desc: "Capitalize on short-term movements" },
     { key: "research", icon: "⌕", title: "Deep research", desc: "Analyze fundamentals and on-chain data" },
     { key: "discovery", icon: "◎", title: "Market discovery", desc: "Find new narratives and early trends" },
     { key: "portfolio", icon: "⊞", title: "Portfolio optimization", desc: "Balance risk across multiple assets" },

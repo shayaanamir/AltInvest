@@ -7,7 +7,7 @@ It understands phrases like "missed earnings", "bullish reversal", "liquidity cr
 far better than VADER.
 
 Model: ProsusAI/finbert
-Labels: positive, negative, neutral
+Labels: Positive, Negative, neutral
 Output: score in [-1, 1]
 
 NOTE: First run downloads the model (~400MB). Subsequent runs use local cache.
@@ -55,11 +55,11 @@ def score_text(text: str) -> float:
     Scores a single piece of text with FinBERT.
 
     FinBERT returns:
-        { "label": "positive"|"negative"|"neutral", "score": 0.0–1.0 }
+        { "label": "Positive"|"Negative"|"neutral", "score": 0.0–1.0 }
 
     We convert this to [-1, 1]:
-        positive → +score
-        negative → -score
+        Positive → +score
+        Negative → -score
         neutral  → 0.0
 
     Returns:
@@ -77,9 +77,9 @@ def score_text(text: str) -> float:
         label  = result["label"].lower()
         conf   = result["score"]
 
-        if label == "positive":
+        if label == "Positive":
             return round(conf, 4)
-        elif label == "negative":
+        elif label == "Negative":
             return round(-conf, 4)
         else:
             return 0.0

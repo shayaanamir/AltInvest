@@ -8,7 +8,7 @@ const FEED = [
         time: "10m ago",
         text: "Massive accumulation happening on $BTC right now. Institutional flows are undeniable.",
         signal: "Positive Signal",
-        signalType: "positive",
+        signalType: "Positive",
     },
     {
         handle: "u/investor_pro",
@@ -16,7 +16,7 @@ const FEED = [
         time: "45m ago",
         text: "The regulatory clarity around tokenized real estate is finally improving. Bullish on RWA index.",
         signal: "Positive Signal",
-        signalType: "positive",
+        signalType: "Positive",
     },
     {
         handle: "@nft_degen",
@@ -24,7 +24,7 @@ const FEED = [
         time: "1h ago",
         text: "Floor prices are dropping again. Liquidity is completely drying up in the mid-tier collections.",
         signal: "Negative Signal",
-        signalType: "negative",
+        signalType: "Negative",
     },
     {
         handle: "Bloomberg",
@@ -47,13 +47,13 @@ export default function LiveAIFeed() {
     const s = makeStyles(t);
 
     const signalStyle = (type) => {
-        if (type === "positive") return { background: "rgba(0,212,139,0.12)", color: t.accentGreen, border: `1px solid ${t.accentGreen}44` };
-        if (type === "negative") return { background: "rgba(255,64,96,0.12)", color: t.accentRed, border: `1px solid ${t.accentRed}44` };
+        if (type === "Positive") return { background: "rgba(0,212,139,0.12)", color: t.accentGreen, border: `1px solid ${t.accentGreen}44` };
+        if (type === "Negative") return { background: "rgba(255,64,96,0.12)", color: t.accentRed, border: `1px solid ${t.accentRed}44` };
         return { background: t.bgCard2, color: t.textMuted, border: `1px solid ${t.borderLight}` };
     };
 
     const signalIcon = (type) =>
-        type === "positive" ? "✦" : type === "negative" ? "✦" : "◆";
+        type === "Positive" ? "✦" : type === "Negative" ? "✦" : "◆";
 
     return (
         <div style={s.card}>

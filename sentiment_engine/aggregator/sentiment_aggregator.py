@@ -181,8 +181,8 @@ def run_pipeline(asset_id: str, history: Optional[list[dict]] = None) -> dict:
 
         # Volume detail
         "sentiment_distribution": {
-            "positive": volume_metrics["positive_count"],
-            "negative": volume_metrics["negative_count"],
+            "Positive": volume_metrics["Positive_count"],
+            "Negative": volume_metrics["Negative_count"],
             "neutral":  volume_metrics["neutral_count"],
         },
 
@@ -226,7 +226,7 @@ def _neutral_output(asset_id: str, timestamp: datetime) -> dict:
         "article_count":      0,
         "source_count":       0,
         "source_breakdown":   {"news_nlp": 0.5, "market_signals": 0.5},
-        "sentiment_distribution": {"positive": 0, "negative": 0, "neutral": 0},
+        "sentiment_distribution": {"Positive": 0, "Negative": 0, "neutral": 0},
         "top_headlines":      [],
         "market_signals":     {},
         "articles_by_source": {},

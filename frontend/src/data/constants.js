@@ -13,18 +13,18 @@ export const BOTTOM_NAV = [
   { icon: "→", label: "Logout" },
 ];
 
-export const STATS = [
-  { label: "Total Portfolio Value", value: "$124,600", change: "▲ 2.65%", positive: true },
-  { label: "24h Volume (Alt)",      value: "$42.50B",  change: "▼ 5.2%",  positive: false },
-  { label: "Global AAI Sentiment",  value: "78.00/100",change: "▲ 2.1%",  positive: true },
-];
+// export const STATS = [
+//   { label: "Total Portfolio Value", value: "$124,600", change: "▲ 2.65%", Positive: true },
+//   { label: "24h Volume (Alt)",      value: "$42.50B",  change: "▼ 5.2%",  Positive: false },
+//   { label: "Global AAI Sentiment",  value: "78.00/100",change: "▲ 2.1%",  Positive: true },
+// ];
 
-export const INSIGHTS = [
-  { source: "AltInvest AI", time: "2h ago", headline: "AI models predict strong Q3 for layer-1 protocols", impact: "positive" },
-  { source: "CryptoBrief",  time: "4h ago", headline: "Regulatory concerns impact NFT liquidity",           impact: "negative" },
-  { source: "Block Daily",  time: "5h ago", headline: "Institutional inflows to tokenized real estate hit ATH", impact: "positive" },
-  { source: "MarketWatch",  time: "7h ago", headline: "Bitcoin volatility drops to 6-month low",            impact: "neutral" },
-];
+// export const INSIGHTS = [
+//   { source: "AltInvest AI", time: "2h ago", headline: "AI models predict strong Q3 for layer-1 protocols", impact: "Positive" },
+//   { source: "CryptoBrief",  time: "4h ago", headline: "Regulatory concerns impact NFT liquidity",           impact: "Negative" },
+//   { source: "Block Daily",  time: "5h ago", headline: "Institutional inflows to tokenized real estate hit ATH", impact: "Positive" },
+//   { source: "MarketWatch",  time: "7h ago", headline: "Bitcoin volatility drops to 6-month low",            impact: "neutral" },
+// ];
 
 export const TRENDING_ASSETS = [
   { sym: "BTC",    name: "Bitcoin",      cat: "Crypto", price: "$64,230", chg: "+2.45%", pos: true,  score: 88, sig: "Up",   data: [42,44,41,46,48,45,50,52,49,54,55,53,57,58,56,60,61,59,63,62,64] },
@@ -35,4 +35,4 @@ export const TRENDING_ASSETS = [
 
 export const PERFORMANCE_DATA = [42,38,55,48,60,52,68,58,72,65,80,74,88,78,95,82,105,88,115,98,124.6];
 
-export const TIME_FILTERS = ["1D", "1W", "1M", "3M", "1Y", "ALL"];
+export const TIME_FILTERS = ["1D", "1W", "1M", "3M", "1Y"];
