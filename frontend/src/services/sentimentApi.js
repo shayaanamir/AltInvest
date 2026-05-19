@@ -1,5 +1,10 @@
 import { asset_sentiment } from '../data/sample_data';
-import { USE_MOCK, API_BASE_URL } from "../config";
+// import { USE_MOCK, API_BASE_URL } from "../config";
+
+import {API_BASE_URL } from "../config";
+
+const USE_MOCK = false;
+
 
 /**
  * sentimentApi
