@@ -12,6 +12,30 @@ from shared.mock_data import mock_prediction, mock_sentiment, mock_risk
 from aai_engine.aai import compute_aai, normalise_sentiment
 
 
+def _get_real_sentiment(asset: str) -> dict:
+    """
+    Fetches live sentiment from the engine (MongoDB cache → fresh pipeline).
+    Falls back to mock data if the engine is unavailable.
+    """
+    try:
+        from storage.mongo_handler import get_latest_sentiment, get_sentiment_history, save_sentiment
+        from aggregator.sentiment_aggregator import run_pipeline
+
+        asset_id = asset.lower()
+        cached = get_latest_sentiment(asset_id)
+        if cached:
+            return {"sentiment_score": cached.get("sentiment_score", 0.5)}
+
+        history = get_sentiment_history(asset_id, days=1)
+        result = run_pipeline(asset_id, history=history)
+        save_sentiment(result)
+        return {"sentiment_score": result.get("sentiment_score", 0.5)}
+
+    except Exception as exc:
+        print(f"[aai_controller] Sentiment engine unavailable ({exc}), using mock")
+        return mock_sentiment(asset)
+
+
 def compute_aai_response(asset: str) -> dict:
     """
     Fetches all three component scores and computes the AAI.
@@ -31,9 +55,8 @@ def compute_aai_response(asset: str) -> dict:
     # Phase 3 replacement: from ml_engine.predict import get_prediction; pred = get_prediction(asset)
     pred = mock_prediction(asset)
 
-    # --- Step 2: Get sentiment score ---
-    # Phase 4 replacement: from sentiment_engine.analyze import get_sentiment; sent = get_sentiment(asset)
-    sent = mock_sentiment(asset)
+    # --- Step 2: Get sentiment score (real engine with mock fallback) ---
+    sent = _get_real_sentiment(asset)
 
     # --- Step 3: Get risk score ---
     # Phase 3 replacement: from risk_engine.risk import calculate_risk; risk = calculate_risk(asset)
