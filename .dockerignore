@@ -1,0 +1,35 @@
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.mypy_cache
+**/.venv
+**/venv
+**/env
+**/ENV
+**/*.egg-info
+
+# Node
+**/node_modules
+frontend/dist
+frontend/build
+
+# ML processed/experiment data (regenerated on demand).
+# NOTE: ml/data/raw/*.csv and ml/models/artifacts/* are intentionally NOT
+# ignored - prediction_service.py reads them at runtime, not just at train time.
+ml/data/processed
+ml/experiments
+
+# Git / IDE / OS
+.git
+.gitignore
+.vscode
+.idea
+.DS_Store
+
+# Env files (pass secrets via docker-compose environment / --env-file instead)
+.env
+**/.env
+**/.env.*
+
+# Logs
+*.log

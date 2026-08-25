@@ -1,0 +1,102 @@
+version: "3.9"
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: altinvest-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - altinvest
+
+  # FastAPI backend (port 8000). Also directly imports sentiment_engine
+  # code (see backend/path_setup.py), so its Dockerfile is built from the
+  # repo root, not from backend/ alone.
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: altinvest-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # db/mongo_connection.py + sentiment_engine/utils/config.py
+      MONGO_URI: mongodb://mongodb:27017
+      MONGO_DB_NAME: aaip_db
+      MONGO_DB: altinvest
+      CMC_API_KEY: ${CMC_API_KEY:-}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    volumes:
+      # bind-mount source for live editing; installed pip packages live
+      # outside these paths so they aren't shadowed
+      - ./backend:/app/backend
+      - ./shared:/app/shared
+      - ./aai_engine:/app/aai_engine
+      - ./sentiment_engine:/app/sentiment_engine
+      - ./db:/app/db
+    working_dir: /app/backend
+    command: >
+      uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+      --reload-dir /app/backend --reload-dir /app/shared
+      --reload-dir /app/aai_engine --reload-dir /app/db
+    networks:
+      - altinvest
+
+  # Standalone ML prediction service (Prophet + RandomForest + LSTM), port 8001.
+  # Not wired into the backend by default (see ml/README.md "Backend
+  # Integration Guide" for how Person B's code would call it over HTTP).
+  ml:
+    build:
+      context: ./ml
+      dockerfile: Dockerfile
+    container_name: altinvest-ml
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./ml:/app/ml
+    command: >
+      uvicorn api.prediction_service:app --host 0.0.0.0 --port 8001 --reload
+    networks:
+      - altinvest
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: altinvest-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      # NOTE: current backend routes are mounted with NO "/api" prefix
+      # (see backend/main.py) and run on :8000, so point here rather than
+      # the frontend's built-in default (":5000/api") in src/config.js.
+      VITE_USE_MOCK: "false"
+      VITE_API_BASE_URL: "http://localhost:8000"
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - altinvest
+
+volumes:
+  mongo_data:
+  frontend_node_modules:
+
+networks:
+  altinvest:
+    driver: bridge
