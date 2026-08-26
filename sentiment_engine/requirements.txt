@@ -15,8 +15,8 @@ requests==2.33.1            # HTTP client for CMC API
 
 # ── NLP ───────────────────────────────────────────────────────
 vaderSentiment==3.3.2       # Rule-based sentiment scorer
+torch>=2.2.0                # Deep learning framework (required for FinBERT)
 transformers==5.8.1         # FinBERT and HuggingFace pipelines
-torch==2.12.0               # PyTorch backend for transformers
 
 # Key transitive deps for transformers — pin to avoid silent breakage
 huggingface-hub==1.15.0

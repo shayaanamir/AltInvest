@@ -31,7 +31,8 @@ export const dashboardApi = {
           let totalSentiment = 0;
           let sentimentCount = 0;
           asset_sentiment.forEach(s => {
-            totalSentiment += s.sentiment_score * 100; 
+            const score01 = (s.sentiment_score + 1.0) / 2.0;
+            totalSentiment += score01 * 100; 
             sentimentCount++;
           });
           const avgSentiment = sentimentCount > 0 ? Math.round(totalSentiment / sentimentCount) : 0;

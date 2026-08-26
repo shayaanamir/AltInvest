@@ -17,7 +17,7 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 SENTIMENT_ENGINE_DIR = os.path.join(PROJECT_ROOT, "sentiment_engine")
 
 if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
+    sys.path.append(PROJECT_ROOT)
 
 if SENTIMENT_ENGINE_DIR not in sys.path:
-    sys.path.insert(0, SENTIMENT_ENGINE_DIR)
+    sys.path.append(SENTIMENT_ENGINE_DIR)

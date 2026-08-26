@@ -128,8 +128,8 @@ def compute_volume_metrics(articles: list[dict]) -> dict:
         "confidence":       confidence,
         "confidence_label": confidence_label(confidence),
         "signal_strength":  strength,
-        "Positive_count":   pos,
-        "Negative_count":   neg,
+        "positive_count":   pos,
+        "negative_count":   neg,
         "neutral_count":    neu,
         "source_count":     len(sources),
     }

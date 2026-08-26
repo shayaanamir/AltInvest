@@ -44,7 +44,7 @@ def mock_sentiment(asset: str) -> dict:
 
     values = {
         "BTC": {
-            "sentiment_score": 0.72,
+            "sentiment_score": 0.44,
             "post_count": 100,
 
             "confidence": 0.87,
@@ -98,7 +98,7 @@ def mock_sentiment(asset: str) -> dict:
         },
 
         "ETH": {
-            "sentiment_score": 0.55,
+            "sentiment_score": 0.10,
             "post_count": 85,
 
             "confidence": 0.74,

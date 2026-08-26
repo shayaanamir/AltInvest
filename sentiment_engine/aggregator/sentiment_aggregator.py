@@ -16,6 +16,7 @@ This is the one function Person B's backend calls.
 
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -63,7 +64,7 @@ def _detect_trend(current_score: float, history: list[dict]) -> str:
     if not previous:
         return "stable"
 
-    prev_score = previous[0].get("sentiment_score", 0.5)
+    prev_score = previous[0].get("sentiment_score", 0.0)
     delta      = current_score - prev_score
 
     if delta > TREND_DELTA_THRESHOLD:
@@ -106,7 +107,11 @@ def _source_breakdown(articles: list[dict]) -> dict[str, int]:
     return breakdown
 
 
-def run_pipeline(asset_id: str, history: Optional[list[dict]] = None) -> dict:
+def run_pipeline(
+    asset_id: str,
+    history: Optional[list[dict]] = None,
+    return_raw_articles: bool = False,
+) -> dict | tuple[dict, list[dict]]:
     """
     Full sentiment pipeline for a single asset.
 
@@ -115,19 +120,30 @@ def run_pipeline(asset_id: str, history: Optional[list[dict]] = None) -> dict:
         history:  Previous sentiment scores for trend detection.
                   Pass in from MongoDB via storage/mongo_handler.py.
                   If None, trend will be "stable".
+        return_raw_articles: if True, returns (output, raw_articles) instead
+            of just output — lets callers reuse the articles already fetched
+            here instead of re-fetching for storage purposes.
 
     Returns:
-        Fully structured sentiment output dict (matches API contract).
+        Fully structured sentiment output dict (matches API contract),
+        or (output, raw_articles) tuple if return_raw_articles is True.
     """
     logger.info(f"═══ Running sentiment pipeline for {asset_id.upper()} ═══")
     timestamp = datetime.now(tz=timezone.utc)
 
-    # ── Step 1: Fetch articles ────────────────────────────────────────────────
-    raw_articles = fetch_articles_for_asset(asset_id)
+    # ── Steps 1 & 4: fetch RSS articles and CMC signals concurrently ──────────
+    # Independent I/O calls — no reason to pay their latency sequentially.
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        articles_future = executor.submit(fetch_articles_for_asset, asset_id)
+        cmc_future      = executor.submit(fetch_all_signals, asset_id)
+
+        raw_articles = articles_future.result()
+        cmc_data     = cmc_future.result()
 
     if not raw_articles:
         logger.warning(f"No articles found for {asset_id}. Returning neutral output.")
-        return _neutral_output(asset_id, timestamp)
+        neutral = _neutral_output(asset_id, timestamp)
+        return (neutral, raw_articles) if return_raw_articles else neutral
 
     # ── Step 2: NLP scoring ───────────────────────────────────────────────────
     scored_articles = ensemble_score(raw_articles)
@@ -135,8 +151,6 @@ def run_pipeline(asset_id: str, history: Optional[list[dict]] = None) -> dict:
     # ── Step 3: Recency weighting ─────────────────────────────────────────────
     weighted_articles = apply_recency_weights(scored_articles)
 
-    # ── Step 4: CMC market signals ────────────────────────────────────────────
-    cmc_data = fetch_all_signals(asset_id)
     cmc_score = cmc_data["final_cmc_score"]
 
     # ── Step 5: Volume / confidence metrics ───────────────────────────────────
@@ -151,11 +165,8 @@ def run_pipeline(asset_id: str, history: Optional[list[dict]] = None) -> dict:
     nlp_score_01  = _normalise_nlp_to_0_1(raw_nlp_score)
 
     # ── Step 7: Blend NLP + CMC ───────────────────────────────────────────────
-    final_score = round(
-        (NEWS_NLP_WEIGHT    * nlp_score_01) +
-        (MARKET_SIGNAL_WEIGHT * cmc_score),
-        4
-    )
+    final_score_01 = (NEWS_NLP_WEIGHT * nlp_score_01) + (MARKET_SIGNAL_WEIGHT * cmc_score)
+    final_score = round((final_score_01 * 2.0) - 1.0, 4)
 
     # ── Step 8: Trend detection ───────────────────────────────────────────────
     trend = _detect_trend(final_score, history or [])
@@ -181,8 +192,8 @@ def run_pipeline(asset_id: str, history: Optional[list[dict]] = None) -> dict:
 
         # Volume detail
         "sentiment_distribution": {
-            "Positive": volume_metrics["Positive_count"],
-            "Negative": volume_metrics["Negative_count"],
+            "positive": volume_metrics["positive_count"],
+            "negative": volume_metrics["negative_count"],
             "neutral":  volume_metrics["neutral_count"],
         },
 
@@ -199,6 +210,11 @@ def run_pipeline(asset_id: str, history: Optional[list[dict]] = None) -> dict:
 
         # Per-source article counts
         "articles_by_source": _source_breakdown(scored_articles),
+        "data_quality": {
+            "degraded": cmc_data.get("degraded", False),
+            "cmc_fallback": cmc_data.get("quote", {}).get("is_fallback", False)
+                            or cmc_data.get("global", {}).get("is_fallback", False),
+        },
     }
 
     logger.info(
@@ -207,7 +223,7 @@ def run_pipeline(asset_id: str, history: Optional[list[dict]] = None) -> dict:
         f"trend={trend} | articles={volume_metrics['article_count']}"
     )
 
-    return output
+    return (output, raw_articles) if return_raw_articles else output
 
 
 def _neutral_output(asset_id: str, timestamp: datetime) -> dict:
@@ -217,7 +233,7 @@ def _neutral_output(asset_id: str, timestamp: datetime) -> dict:
     """
     return {
         "asset_id":           asset_id,
-        "sentiment_score":    0.5,
+        "sentiment_score":    0.0,
         "confidence":         0.0,
         "confidence_label":   "low",
         "signal_strength":    "weak",
@@ -226,8 +242,9 @@ def _neutral_output(asset_id: str, timestamp: datetime) -> dict:
         "article_count":      0,
         "source_count":       0,
         "source_breakdown":   {"news_nlp": 0.5, "market_signals": 0.5},
-        "sentiment_distribution": {"Positive": 0, "Negative": 0, "neutral": 0},
+        "sentiment_distribution": {"positive": 0, "negative": 0, "neutral": 0},
         "top_headlines":      [],
         "market_signals":     {},
         "articles_by_source": {},
+        "data_quality":       {"degraded": True, "cmc_fallback": True, "reason": "no_articles"},
     }

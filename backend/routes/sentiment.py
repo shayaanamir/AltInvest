@@ -15,9 +15,12 @@ Endpoints:
 import path_setup  # noqa: F401  -- must be first
 
 from datetime import datetime, timezone, timedelta
+from typing import List
 
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse
+
+from models.schemas import SentimentResponse
 
 router = APIRouter(tags=["Sentiment"])
 
@@ -68,7 +71,7 @@ def _is_stale(result: dict) -> bool:
 def _neutral(asset_id: str, error: str = "") -> dict:
     return {
         "asset_id":               asset_id,
-        "sentiment_score":        0.5,
+        "sentiment_score":        0.0,
         "confidence":             0.0,
         "confidence_label":       "low",
         "signal_strength":        "weak",
@@ -77,7 +80,7 @@ def _neutral(asset_id: str, error: str = "") -> dict:
         "article_count":          0,
         "source_count":           0,
         "source_breakdown":       {"news_nlp": 0.5, "market_signals": 0.5},
-        "sentiment_distribution": {"Positive": 0, "Negative": 0, "neutral": 0},
+        "sentiment_distribution": {"positive": 0, "negative": 0, "neutral": 0},
         "top_headlines":          [],
         "market_signals":         {},
         "articles_by_source":     {},
@@ -85,9 +88,45 @@ def _neutral(asset_id: str, error: str = "") -> dict:
     }
 
 
+def _map_sentiment(result: dict) -> dict:
+    """
+    Maps the raw output of the sentiment engine to conform to the
+    SentimentResponse Pydantic schema (e.g. mapping asset_id to asset,
+    article_count to post_count, last_updated to timestamp).
+    """
+    if not result:
+        return {}
+
+    dist = result.get("sentiment_distribution") or {}
+    mapped_dist = {
+        "positive": dist.get("positive") or dist.get("Positive") or 0,
+        "negative": dist.get("negative") or dist.get("Negative") or 0,
+        "neutral": dist.get("neutral") or dist.get("Neutral") or 0,
+    }
+
+    return {
+        "asset": (result.get("asset_id") or result.get("asset") or "").upper(),
+        "sentiment_score": result.get("sentiment_score", 0.0),
+        "source": result.get("source", "Ensemble (VADER + FinBERT)"),
+        "post_count": result.get("article_count") or result.get("post_count") or 0,
+        "timestamp": result.get("last_updated") or result.get("timestamp") or "",
+        "confidence": result.get("confidence"),
+        "confidence_label": result.get("confidence_label"),
+        "signal_strength": result.get("signal_strength"),
+        "trend": result.get("trend"),
+        "source_count": result.get("source_count"),
+        "source_breakdown": result.get("source_breakdown"),
+        "sentiment_distribution": mapped_dist,
+        "top_headlines": result.get("top_headlines"),
+        "market_signals": result.get("market_signals"),
+        "articles_by_source": result.get("articles_by_source"),
+        "note": result.get("note") or result.get("error"),
+    }
+
+
 # ── GET /sentiment ─────────────────────────────────────────────────────────────
 
-@router.get("/sentiment")
+@router.get("/sentiment", response_model=List[SentimentResponse])
 def get_all_sentiment():
     """
     Returns latest sentiment for every configured asset.
@@ -111,12 +150,12 @@ def get_all_sentiment():
             except Exception as exc:
                 results.append(_neutral(asset_id, str(exc)))
 
-    return JSONResponse(content=results)
+    return [_map_sentiment(r) for r in results]
 
 
 # ── GET /sentiment/{asset} ─────────────────────────────────────────────────────
 
-@router.get("/sentiment/{asset}")
+@router.get("/sentiment/{asset}", response_model=SentimentResponse)
 def get_sentiment(asset: str):
     """
     Returns latest sentiment for a single asset.
@@ -133,12 +172,12 @@ def get_sentiment(asset: str):
 
     cached = get_latest_sentiment(asset_id)
     if cached and not _is_stale(cached):
-        return JSONResponse(content=cached)
+        return _map_sentiment(cached)
 
     history = get_sentiment_history(asset_id, days=1)
     result  = run_pipeline(asset_id, history=history)
     save_sentiment(result)
-    return JSONResponse(content=result)
+    return _map_sentiment(result)
 
 
 # ── GET /sentiment/{asset}/history ────────────────────────────────────────────
@@ -184,4 +223,4 @@ def refresh_sentiment(asset: str):
     history = get_sentiment_history(asset_id, days=1)
     result  = run_pipeline(asset_id, history=history)
     save_sentiment(result)
-    return JSONResponse(content={"status": "refreshed", "result": result})
+    return JSONResponse(content={"status": "refreshed", "result": _map_sentiment(result)})

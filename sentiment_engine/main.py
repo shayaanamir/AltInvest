@@ -29,6 +29,7 @@ from storage.mongo_handler import (
     save_raw_articles,
 )
 from collectors.rss_collector import fetch_articles_for_asset
+from nlp.finbert_scorer import warmup_pipeline
 from utils.config import ASSETS
 from utils.logger import get_logger
 
@@ -51,13 +52,12 @@ def run_asset(asset_id: str, save: bool = True) -> dict:
     # Load trend history from MongoDB (empty list if DB unavailable)
     history = get_sentiment_history(asset_id, days=1)
 
-    # Run the main pipeline
-    result = run_pipeline(asset_id, history=history)
+    # Run the main pipeline (returns output and raw_articles if return_raw_articles=True)
+    result, raw_articles = run_pipeline(asset_id, history=history, return_raw_articles=True)
 
     # Save to MongoDB
     if save:
         save_sentiment(result)
-        raw_articles = fetch_articles_for_asset(asset_id)
         save_raw_articles(raw_articles, asset_id)
 
     # Pretty-print to console
@@ -96,6 +96,13 @@ Examples:
     args = parser.parse_args()
     asset  = args.asset.lower()
     save   = not args.no_save
+
+    # ── Warm up FinBERT/PyTorch once before any pipeline runs ─────────────────
+    # The model is cached at module level in finbert_scorer.py, so it loads
+    # exactly once here and is reused for every subsequent asset in this process.
+    # When running --asset all, this saves N-1 model load cycles.
+    logger.info("Warming up NLP models (loads once, reused for all assets)...")
+    warmup_pipeline()
 
     if asset == "all":
         results = {}

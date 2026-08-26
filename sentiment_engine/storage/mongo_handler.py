@@ -14,6 +14,7 @@ All other modules are pure functions.
 
 from __future__ import annotations
 
+import time
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
@@ -37,20 +38,43 @@ logger = get_logger("mongo_handler")
 _client: Optional[MongoClient] = None
 _db = None
 
+# ── Circuit breaker ────────────────────────────────────────────────────────
+# If Mongo fails once, don't retry (and pay another 1s timeout) again for
+# this cooldown window. Every failed connection attempt costs a full
+# serverSelectionTimeoutMS.
+_FAILURE_COOLDOWN_SECONDS = 30
+_last_failure_time: float = 0.0
+
+
+def _mongo_recently_failed() -> bool:
+    return (time.monotonic() - _last_failure_time) < _FAILURE_COOLDOWN_SECONDS
+
 
 def _get_db():
     """Returns the MongoDB database, connecting if necessary."""
-    global _client, _db
-    if _client is None:
-        try:
-            _client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=3000)
-            _client.admin.command("ping")  # Test connection
-            _db = _client[MONGO_DB]
-            logger.info(f"Connected to MongoDB at {MONGO_URI} | db={MONGO_DB}")
-        except (ConnectionFailure, ServerSelectionTimeoutError) as e:
-            logger.error(f"MongoDB connection failed: {e}")
-            _client = None
-            _db = None
+    global _client, _db, _last_failure_time
+
+    if _db is not None:
+        return _db
+
+    if _mongo_recently_failed():
+        # Skip the attempt entirely — don't pay another timeout for a
+        # connection we already know is down.
+        return None
+
+    try:
+        # Reduced from 3000ms — local/dev Mongo either responds almost
+        # instantly or isn't running at all; no need to wait 3s to find out.
+        _client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=1000)
+        _client.admin.command("ping")
+        _db = _client[MONGO_DB]
+        logger.info(f"Connected to MongoDB at {MONGO_URI} | db={MONGO_DB}")
+    except (ConnectionFailure, ServerSelectionTimeoutError) as e:
+        logger.error(f"MongoDB connection failed: {e}")
+        _client = None
+        _db = None
+        _last_failure_time = time.monotonic()
+
     return _db
 
 

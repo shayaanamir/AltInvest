@@ -7,12 +7,14 @@ export default function MarketMoodCard() {
     const { tokens: t } = useTheme();
     const s = makeStyles(t);
 
-    const [score, setScore] = useState(0.5); // Default to 0.5 (Neutral)
+    const [score, setScore] = useState(0.0); // Default to 0.0 (Neutral)
+    const [confidence, setConfidence] = useState(0.0);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         sentimentApi.getSentimentData().then(data => {
             setScore(data.globalScore);
+            setConfidence(data.globalConfidence);
             setLoading(false);
         }).catch(console.error);
     }, []);
@@ -20,15 +22,17 @@ export default function MarketMoodCard() {
     let mood = "Neutral";
     let color = t.accentYellow;
 
-    if (score <= 0.45) {
+    const score01 = (score + 1.0) / 2.0;
+
+    if (score <= -0.10) {
         mood = "Bearish";
         color = t.accentRed;
-    } else if (score >= 0.55) {
+    } else if (score >= 0.10) {
         mood = "Bullish";
         color = t.accentGreen;
     }
 
-    const needlePct = score * 100;
+    const needlePct = score01 * 100;
 
     return (
         <div style={s.card}>
@@ -42,16 +46,21 @@ export default function MarketMoodCard() {
                         ...
                     </span>
                 ) : (
-                    <span style={{
-                        fontSize: 34, fontWeight: 800,
-                        color: color,
-                        letterSpacing: "-1px",
-                        lineHeight: 1.1,
-                        marginTop: 2,
-                        textTransform: "capitalize"
-                    }}>
-                        {mood}
-                    </span>
+                    <>
+                        <span style={{
+                            fontSize: 34, fontWeight: 800,
+                            color: color,
+                            letterSpacing: "-1px",
+                            lineHeight: 1.1,
+                            marginTop: 2,
+                            textTransform: "capitalize"
+                        }}>
+                            {mood}
+                        </span>
+                        <span style={{ fontSize: 10, color: t.textMuted, fontWeight: 500, marginTop: 2 }}>
+                            Confidence: {Math.round(confidence * 100)}%
+                        </span>
+                    </>
                 )}
 
                 {/* Bearish → Bullish gradient bar */}
