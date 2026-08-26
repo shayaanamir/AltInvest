@@ -613,6 +613,28 @@ curl http://127.0.0.1:8001/health
 
 This is a critical detail to avoid integration bugs.
 
+### Risk Labeling Methodology
+
+The risk classifier uses a **forward-looking** target — **forward realized volatility over the next 7 days** (168 hours), strictly after each observation:
+
+```
+Risk_t = Std(return_1h_{t+1}, ..., return_1h_{t+168})
+```
+
+Key properties:
+- **No circularity**: input features (e.g. `volatility_14d`) look backward; the target looks forward — no overlap.
+- **168-hour embargo**: training rows near the 80/20 split have their forward labels embargoed to prevent leakage into the test period.
+- **Thresholds from training data only**: the 33rd/67th percentile boundaries for Low/Medium/High are computed exclusively on the training split, then applied to both sets.
+- **TimeSeriesSplit CV**: `TimeSeriesSplit(n_splits=5, gap=168)` maintains temporal ordering and prevents forward-label overlap during validation.
+
+The internal `risk_score = P(high) × 100` is interpreted as:
+
+> "Probability that the asset will experience high realized volatility during the next 7 days."
+
+This is NOT a complete financial-risk measure (e.g. VaR or Expected Shortfall). It is a clean, forward-looking volatility-risk signal.
+
+### Score Inversion at API Boundary
+
 | Context | Score range | Meaning of HIGH score |
 |---|---|---|
 | **Internal classifier** (`classifier.py`) | 0–100 | HIGH score = HIGH risk (P(high) × 100) |
@@ -632,6 +654,7 @@ Contract:  BTC risk_score = 32.8  →  lower number = more dangerous
 ```
 
 So when the backend sees `risk_score = 10`, that means **very high risk**. When it sees `risk_score = 90`, that means **very safe**.
+
 
 ---
 

@@ -17,26 +17,28 @@ Output contract:
 
 Labeling Strategy
 -----------------
-Labels are derived from a COMPOSITE RISK SCORE computed from the features.
-This is intentionally percentile-based (not hardcoded thresholds) so the
-classifier adapts to any asset's price distribution:
+Labels are based on FORWARD REALIZED VOLATILITY over the next 7 days
+(168 hours), strictly after each observation row.
 
-    composite_risk = (
-        0.40 * normalised(|volatility_14d|)   +  # dominant driver
-        0.25 * normalised(|return_1d|)         +  # short-term momentum shock
-        0.20 * normalised(|return_7d|)         +  # weekly swing magnitude
-        0.15 * normalised(|return_30d|)           # monthly trend force
-    )
+    Risk_t = Std(return_1h_{t+1}, ..., return_1h_{t+168})
 
-    low    = bottom 33rd percentile
-    medium = 33rd – 67th percentile
-    high   = top 33rd percentile
+This is the standard-deviation of hourly log returns in a 168-hour window
+that begins AFTER row t. It does NOT overlap with the trailing 14-day
+volatility feature (volatility_14d), which looks backward.
 
-This means the classifier learns to reproduce these human-interpretable
-thresholds from the raw feature values — avoiding data leakage while keeping
-the labeling logic transparent.
+The continuous forward-vol values are bucketed into Low / Medium / High
+using the 33rd and 67th percentile thresholds derived ONLY from the
+training split. Those fixed thresholds are then applied to both training
+and test data.
 
-At inference time risk_score = P(high) * 100, giving a 0–100 continuous risk signal.
+At inference time risk_score = P(high) × 100, giving a 0–100 continuous
+risk signal interpretable as:
+
+    "Probability that the asset will experience high realized volatility
+     during the next 7 days."
+
+This is NOT a complete financial-risk measure (e.g. VaR or Expected
+Shortfall). It is a clean, forward-looking volatility-risk target.
 
 Architecture
 ------------
@@ -78,9 +80,9 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.model_selection import cross_val_score, TimeSeriesSplit
 from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, accuracy_score
 
 warnings.filterwarnings("ignore")
 
@@ -105,6 +107,8 @@ log = logging.getLogger("classifier")
 MODEL_DIR   = _ML_ROOT / "models" / "artifacts"
 RISK_LABELS = ["low", "medium", "high"]     # ordered low -> high
 
+FORWARD_HORIZON_HOURS = 24 * 7              # 168 hours = 7 days
+
 # Feature columns used for classification
 CLASSIFIER_FEATURES = [
     "return_1h",
@@ -115,14 +119,6 @@ CLASSIFIER_FEATURES = [
     "ma_cross",
     "volume_change_pct",
 ]
-
-# Composite risk score weights (must sum to 1.0)
-RISK_WEIGHTS = {
-    "volatility_14d": 0.40,
-    "return_1d":      0.25,
-    "return_7d":      0.20,
-    "return_30d":     0.15,
-}
 
 # Percentile boundaries for low/medium/high
 RISK_PERCENTILES = (33, 67)
@@ -152,7 +148,8 @@ class RiskClassifier:
         RandomForestClassifier kwargs. Defaults to RF_PARAMS.
     risk_percentiles : tuple
         (low_pct, high_pct) percentile boundaries for labeling.
-        Default (33, 67) gives balanced three-class distribution.
+        Default (33, 67) gives approximately balanced three-class
+        distribution on the training set.
     """
 
     def __init__(
@@ -166,7 +163,7 @@ class RiskClassifier:
         self._model:   Optional[RandomForestClassifier] = None
         self._encoder: Optional[LabelEncoder]           = None
         self._asset:   Optional[str]                    = None
-        self._thresholds: Optional[dict]                = None   # {low_p, high_p}
+        self._thresholds: Optional[dict]                = None   # {low_pct, high_pct}
         self._eval_report: Optional[str]                = None
 
     # ── Public interface ───────────────────────────────────────────────────────
@@ -192,11 +189,13 @@ class RiskClassifier:
 
         Steps:
             1. Validate input
-            2. Compute composite risk score per row
-            3. Assign low/medium/high labels via percentile thresholds
-            4. Train/test split (80/20, time-ordered — no shuffle to prevent leakage)
-            5. Fit RandomForest
-            6. Evaluate with cross-val + classification report
+            2. Compute forward realized volatility per row (next 168h)
+            3. Drop rows with no forward label (~168 final rows)
+            4. Chronological 80/20 split with 168h embargo
+            5. Compute 33rd/67th percentile thresholds from TRAINING data only
+            6. Assign low/medium/high labels to both sets using those thresholds
+            7. Fit RandomForest on training data
+            8. Evaluate: TimeSeriesSplit CV, test-set report, sanity check
 
         Parameters
         ----------
@@ -213,62 +212,173 @@ class RiskClassifier:
         self._asset = asset
         log.info("[%s] Starting RiskClassifier fit ...", asset.upper())
 
-        # 1. Compute composite risk score
+        # 1. Compute forward realized volatility
         df = df.copy()
-        df["_risk_score"] = _compute_composite_risk(df)
+        df["_risk_score"] = _compute_forward_risk(df)
 
-        # 2. Label via percentile thresholds (fitted on training data)
-        low_p  = float(np.percentile(df["_risk_score"], self._risk_percentiles[0]))
-        high_p = float(np.percentile(df["_risk_score"], self._risk_percentiles[1]))
+        # 2. Drop rows with NaN forward labels (final ~168 rows)
+        n_before = len(df)
+        df = df.dropna(subset=["_risk_score"]).reset_index(drop=True)
+        n_dropped = n_before - len(df)
+        log.info(
+            "[%s] Dropped %d rows with no forward label (need %dh of future data). "
+            "Remaining: %d rows.",
+            asset.upper(), n_dropped, FORWARD_HORIZON_HOURS, len(df),
+        )
+
+        # 3. Chronological split with embargo
+        split_idx = int(len(df) * 0.80)
+        embargo = FORWARD_HORIZON_HOURS
+
+        train_end = split_idx - embargo
+
+        train_df = df.iloc[:train_end].copy()
+        test_df_full = df.iloc[split_idx:].copy()
+
+        log.info(
+            "[%s] Split: train=%d rows (idx 0..%d), embargo=%d rows skipped, "
+            "test=%d rows (idx %d..%d)",
+            asset.upper(), len(train_df), train_end - 1, embargo,
+            len(test_df_full), split_idx, len(df) - 1,
+        )
+
+        # 4. Percentile thresholds from TRAINING data only
+        low_p  = float(np.percentile(train_df["_risk_score"], self._risk_percentiles[0]))
+        high_p = float(np.percentile(train_df["_risk_score"], self._risk_percentiles[1]))
         self._thresholds = {"low_pct": low_p, "high_pct": high_p}
 
-        df["_risk_label"] = df["_risk_score"].apply(
+        log.info(
+            "[%s] Thresholds (from training data): 33rd=%.6f  67th=%.6f",
+            asset.upper(), low_p, high_p,
+        )
+
+        # 5. Label both sets using those fixed thresholds
+        train_df["_risk_label"] = train_df["_risk_score"].apply(
+            lambda s: _score_to_label(s, low_p, high_p)
+        )
+        test_df_full["_risk_label"] = test_df_full["_risk_score"].apply(
             lambda s: _score_to_label(s, low_p, high_p)
         )
 
-        label_dist = df["_risk_label"].value_counts().to_dict()
-        log.info("[%s] Label distribution: %s", asset.upper(), label_dist)
+        train_dist = train_df["_risk_label"].value_counts().to_dict()
+        test_dist  = test_df_full["_risk_label"].value_counts().to_dict()
+        log.info("[%s] Training label distribution: %s", asset.upper(), train_dist)
+        log.info("[%s] Test label distribution:     %s", asset.upper(), test_dist)
 
-        # 3. Build X, y (time-ordered — no shuffle)
-        X = df[CLASSIFIER_FEATURES].values
-        y_raw = df["_risk_label"].values
+        # 6. Build X, y
+        X_train = train_df[CLASSIFIER_FEATURES].values
+        X_test  = test_df_full[CLASSIFIER_FEATURES].values
 
-        # Encode labels: low=0, medium=1, high=2
         self._encoder = LabelEncoder()
         self._encoder.fit(RISK_LABELS)          # fix class order across assets
-        y = self._encoder.transform(y_raw)
 
-        # 4. Train/test split (last 20% = most recent = held-out test)
-        split_idx = int(len(X) * 0.80)
-        X_train, X_test = X[:split_idx], X[split_idx:]
-        y_train, y_test = y[:split_idx], y[split_idx:]
+        y_train = self._encoder.transform(train_df["_risk_label"].values)
+        y_test  = self._encoder.transform(test_df_full["_risk_label"].values)
 
         log.info(
             "[%s] Train: %d rows | Test: %d rows",
             asset.upper(), len(X_train), len(X_test),
         )
 
-        # 5. Fit RandomForest
+        # 7. Fit RandomForest
         self._model = RandomForestClassifier(**self._rf_params)
         self._model.fit(X_train, y_train)
 
-        # 6. Evaluate
+        # 8a. Train accuracy
+        y_train_pred = self._model.predict(X_train)
+        train_acc = accuracy_score(y_train, y_train_pred)
+        log.info("[%s] Train accuracy: %.3f", asset.upper(), train_acc)
+
+        # 8b. Test accuracy + classification report
         y_pred = self._model.predict(X_test)
+        test_acc = accuracy_score(y_test, y_pred)
+
         self._eval_report = classification_report(
             y_test, y_pred,
             target_names=self._encoder.classes_,
             zero_division=0,
         )
+        log.info("[%s] Test accuracy:  %.3f", asset.upper(), test_acc)
 
+        # 8c. TimeSeriesSplit CV (with gap = FORWARD_HORIZON_HOURS)
+        #     Run on training data only to avoid look-ahead
+        tscv = TimeSeriesSplit(
+            n_splits=5,
+            gap=FORWARD_HORIZON_HOURS,
+        )
         cv_scores = cross_val_score(
-            self._model, X, y,
-            cv=5, scoring="accuracy", n_jobs=-1,
+            self._model, X_train, y_train,
+            cv=tscv, scoring="accuracy", n_jobs=-1,
+        )
+        log.info(
+            "[%s] TimeSeriesSplit CV Accuracy: %.3f (+/- %.3f)",
+            asset.upper(), cv_scores.mean(), cv_scores.std(),
+        )
+
+        # 8d. Sanity check: mean actual forward vol by predicted class
+        sanity_df = pd.DataFrame({
+            "predicted_label": self._encoder.inverse_transform(y_pred),
+            "actual_forward_vol": test_df_full["_risk_score"].values,
+        })
+
+        group_means = (
+            sanity_df
+            .groupby("predicted_label")["actual_forward_vol"]
+            .mean()
         )
 
         log.info(
-            "[%s] CV Accuracy: %.3f (+/- %.3f)",
-            asset.upper(), cv_scores.mean(), cv_scores.std(),
+            "[%s] Mean actual forward vol by predicted bucket:\n%s",
+            asset.upper(),
+            group_means.reindex(RISK_LABELS).to_string(),
         )
+
+        # Check monotonicity: High-predicted should have higher vol than Low-predicted
+        mean_high = group_means.get("high", float("nan"))
+        mean_low  = group_means.get("low", float("nan"))
+
+        if pd.notna(mean_high) and pd.notna(mean_low):
+            if mean_high > mean_low:
+                log.info(
+                    "[%s] ✓ SANITY CHECK PASSED: mean(High)=%.6f > mean(Low)=%.6f",
+                    asset.upper(), mean_high, mean_low,
+                )
+            else:
+                log.warning(
+                    "[%s] ✗ SANITY CHECK FAILED: mean(High)=%.6f <= mean(Low)=%.6f  "
+                    "— the classifier's predicted 'high' bucket does NOT have higher "
+                    "actual forward volatility than the 'low' bucket!",
+                    asset.upper(), mean_high, mean_low,
+                )
+        else:
+            log.warning(
+                "[%s] ✗ SANITY CHECK INCONCLUSIVE: one or both of high/low buckets "
+                "have no test predictions.",
+                asset.upper(),
+            )
+
+        # ── Summary report ────────────────────────────────────────────────
+        log.info(
+            "[%s] ── FIT SUMMARY ──\n"
+            "  Rows dropped (no forward label) : %d\n"
+            "  Training label distribution     : %s\n"
+            "  Test label distribution          : %s\n"
+            "  33rd percentile threshold        : %.6f\n"
+            "  67th percentile threshold        : %.6f\n"
+            "  Train accuracy                   : %.3f\n"
+            "  Test accuracy                    : %.3f\n"
+            "  TimeSeriesSplit CV accuracy       : %.3f (+/- %.3f)",
+            asset.upper(),
+            n_dropped,
+            train_dist,
+            test_dist,
+            low_p,
+            high_p,
+            train_acc,
+            test_acc,
+            cv_scores.mean(), cv_scores.std(),
+        )
+
         log.info("[%s] Fit complete.", asset.upper())
         return self
 
@@ -447,33 +557,43 @@ def compute_sharpe_ratio(df: pd.DataFrame) -> float:
 #  Labeling helpers
 # ══════════════════════════════════════════════════════════════════════════════
 
-def _minmax_norm(series: pd.Series) -> pd.Series:
-    """Min-max normalise a series to [0, 1]. Safe against zero-range series."""
-    lo, hi = series.min(), series.max()
-    if hi == lo:
-        return pd.Series(np.zeros(len(series)), index=series.index)
-    return (series - lo) / (hi - lo)
-
-
-def _compute_composite_risk(df: pd.DataFrame) -> pd.Series:
+def _compute_forward_risk(
+    df: pd.DataFrame,
+    horizon_hours: int = FORWARD_HORIZON_HOURS,
+) -> pd.Series:
     """
-    Compute a [0, 1] composite risk score per row using weighted feature norms.
+    Forward realized volatility: std of return_1h over the NEXT
+    `horizon_hours`, strictly after row t.
 
-    All components use absolute values (magnitude matters, not direction):
-        high volatility     = high risk
-        large return swings = high risk (up OR down — tail risk)
+    Risk_t = Std(r_{t+1}, ..., r_{t+168})
+
+    Implementation uses the reverse-rolling trick:
+      1. Reverse the series
+      2. Apply a trailing rolling window (which in reversed order = forward)
+      3. Reverse back
+      4. Shift by -1 to exclude row t itself (strictly after)
+
+    This does NOT overlap with the trailing volatility_14d feature
+    because volatility_14d looks backward while this looks forward.
     """
-    score = pd.Series(np.zeros(len(df)), index=df.index)
+    reversed_returns = df["return_1h"].iloc[::-1]
 
-    for col, weight in RISK_WEIGHTS.items():
-        if col in df.columns:
-            score += weight * _minmax_norm(df[col].abs())
+    fwd_vol = (
+        reversed_returns
+        .rolling(
+            window=horizon_hours,
+            min_periods=horizon_hours,
+        )
+        .std()
+        .iloc[::-1]
+        .shift(-1)
+    )
 
-    return score
+    return fwd_vol
 
 
 def _score_to_label(score: float, low_p: float, high_p: float) -> str:
-    """Map a composite risk score to a string label."""
+    """Map a forward-risk score to a string label."""
     if score < low_p:
         return "low"
     elif score < high_p:
@@ -528,6 +648,7 @@ def _parse_args() -> argparse.Namespace:
         "--no-save", action="store_true",
         help="Skip saving model artifact (dry-run)"
     )
+    
     return parser.parse_args()
 
 
