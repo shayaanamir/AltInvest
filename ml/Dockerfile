@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app/ml
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --timeout 1000 --retries 10 -r requirements.txt
 
 # Pre-build cmdstan at image build time instead of on first request.
 # If this fails on your platform, comment it out - prophet will build it

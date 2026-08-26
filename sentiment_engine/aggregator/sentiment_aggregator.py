@@ -106,7 +106,11 @@ def _source_breakdown(articles: list[dict]) -> dict[str, int]:
     return breakdown
 
 
-def run_pipeline(asset_id: str, history: Optional[list[dict]] = None) -> dict:
+def run_pipeline(
+    asset_id: str,
+    history: Optional[list[dict]] = None,
+    return_raw_articles: bool = False,
+) -> dict | tuple[dict, list[dict]]:
     """
     Full sentiment pipeline for a single asset.
 
@@ -115,9 +119,13 @@ def run_pipeline(asset_id: str, history: Optional[list[dict]] = None) -> dict:
         history:  Previous sentiment scores for trend detection.
                   Pass in from MongoDB via storage/mongo_handler.py.
                   If None, trend will be "stable".
+        return_raw_articles: if True, returns (output, raw_articles) instead
+            of just output — lets callers reuse the articles already fetched
+            here instead of re-fetching for storage purposes.
 
     Returns:
-        Fully structured sentiment output dict (matches API contract).
+        Fully structured sentiment output dict (matches API contract),
+        or (output, raw_articles) tuple if return_raw_articles is True.
     """
     logger.info(f"═══ Running sentiment pipeline for {asset_id.upper()} ═══")
     timestamp = datetime.now(tz=timezone.utc)
@@ -127,7 +135,8 @@ def run_pipeline(asset_id: str, history: Optional[list[dict]] = None) -> dict:
 
     if not raw_articles:
         logger.warning(f"No articles found for {asset_id}. Returning neutral output.")
-        return _neutral_output(asset_id, timestamp)
+        neutral = _neutral_output(asset_id, timestamp)
+        return (neutral, raw_articles) if return_raw_articles else neutral
 
     # ── Step 2: NLP scoring ───────────────────────────────────────────────────
     scored_articles = ensemble_score(raw_articles)
@@ -207,7 +216,7 @@ def run_pipeline(asset_id: str, history: Optional[list[dict]] = None) -> dict:
         f"trend={trend} | articles={volume_metrics['article_count']}"
     )
 
-    return output
+    return (output, raw_articles) if return_raw_articles else output
 
 
 def _neutral_output(asset_id: str, timestamp: datetime) -> dict:

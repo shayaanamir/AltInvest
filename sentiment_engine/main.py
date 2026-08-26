@@ -51,13 +51,12 @@ def run_asset(asset_id: str, save: bool = True) -> dict:
     # Load trend history from MongoDB (empty list if DB unavailable)
     history = get_sentiment_history(asset_id, days=1)
 
-    # Run the main pipeline
-    result = run_pipeline(asset_id, history=history)
+    # Run the main pipeline (returns output and raw_articles if return_raw_articles=True)
+    result, raw_articles = run_pipeline(asset_id, history=history, return_raw_articles=True)
 
     # Save to MongoDB
     if save:
         save_sentiment(result)
-        raw_articles = fetch_articles_for_asset(asset_id)
         save_raw_articles(raw_articles, asset_id)
 
     # Pretty-print to console

@@ -20,7 +20,7 @@ WORKDIR /app
 
 # ---- Install Python deps first (better layer caching) ----
 COPY backend/requirements.txt ./backend-requirements.txt
-RUN pip install --no-cache-dir -r backend-requirements.txt
+RUN pip install --no-cache-dir --timeout 1000 --retries 10 -r backend-requirements.txt
 
 # sentiment_engine is imported directly by backend/routes/sentiment.py and
 # backend/controllers/aai_controller.py, so its deps must be installed too.
@@ -28,7 +28,7 @@ RUN pip install --no-cache-dir -r backend-requirements.txt
 # and a slow first build. See README note in docker-compose.yml if you'd
 # rather run without real sentiment scoring for local dev.
 COPY sentiment_engine/requirements.txt ./sentiment-requirements.txt
-RUN pip install --no-cache-dir -r sentiment-requirements.txt
+RUN pip install --no-cache-dir --timeout 1000 --retries 10 -r sentiment-requirements.txt
 
 # ---- Copy source ----
 # Layout mirrors the repo root exactly, so path_setup.py's relative

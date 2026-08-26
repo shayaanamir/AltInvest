@@ -1,17 +1,18 @@
 """
 collectors/cmc_collector.py
 
-Fetches market signals from CoinMarketCap:
-  - Latest quote data (price change, volume change, dominance)
-  - Global market metrics (fear/greed index, BTC dominance, market cap change)
-  - Trending assets (used as a secondary signal for momentum)
-
-These signals are NOT NLP — they are numerical market sentiment indicators
-that get blended with news NLP scores in the aggregator.
+Fetches market signals from CoinMarketCap. Optimizations:
+  1. fetch_quote_signals + fetch_global_metrics + fetch_trending_assets
+     run CONCURRENTLY per asset instead of sequentially.
+  2. fetch_global_metrics() and fetch_trending_assets() are asset-independent,
+     so they're cached with a short TTL — no reason to refetch them for
+     every single asset in the same pipeline cycle.
 """
 
 from __future__ import annotations
 
+import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -27,12 +28,15 @@ HEADERS = {
     "Accept": "application/json",
 }
 
+# How long to reuse global metrics / trending data across assets & cycles.
+# These don't change meaningfully faster than this anyway.
+_CACHE_TTL_SECONDS = 90
+
+_global_cache: dict = {"data": None, "fetched_at": 0.0}
+_trending_cache: dict = {"data": None, "fetched_at": 0.0}
+
 
 def _get(endpoint: str, params: dict = {}) -> Optional[dict]:
-    """
-    Makes a GET request to the CMC API.
-    Returns parsed JSON or None on failure.
-    """
     url = f"{CMC_BASE_URL}{endpoint}"
     try:
         resp = requests.get(url, headers=HEADERS, params=params, timeout=CMC_TIMEOUT)
@@ -50,28 +54,12 @@ def _get(endpoint: str, params: dict = {}) -> Optional[dict]:
 
 
 def _normalise_pct(value: float, clip: float = 50.0) -> float:
-    """
-    Converts a percentage change (e.g. +12.5% or -30%) to a 0–1 sentiment score.
-    Clips extreme values at ±clip% to prevent outliers dominating.
-
-    Formula: score = (clipped_value + clip) / (2 * clip)
-    So  +50% → 1.0,  0% → 0.5,  -50% → 0.0
-    """
     clipped = max(-clip, min(clip, value))
     return round((clipped + clip) / (2 * clip), 4)
 
 
 def fetch_quote_signals(asset_id: str) -> Optional[dict]:
-    """
-    Fetches the latest quote for an asset and extracts sentiment-relevant signals.
-
-    Returns a dict with:
-        - price_change_1h, price_change_24h, price_change_7d  (raw %)
-        - volume_change_24h                                    (raw %)
-        - market_cap_dominance                                 (raw %)
-        - price_score, volume_score, dominance_score           (0–1 normalised)
-        - composite_market_score                               (0–1 blended)
-    """
+    """Per-asset — NOT cacheable across assets, always fetched fresh."""
     if asset_id not in ASSETS:
         raise ValueError(f"Unknown asset: {asset_id}")
 
@@ -93,8 +81,6 @@ def fetch_quote_signals(asset_id: str) -> Optional[dict]:
 
     price_score   = _normalise_pct((p1h * 0.2) + (p24h * 0.5) + (p7d * 0.3))
     volume_score  = _normalise_pct(vol, clip=100.0)
-    # Dominance alone is not directionally meaningful, so we treat high dominance
-    # as moderately Positive (market is consolidating to major assets)
     dom_score     = min(1.0, dom / 60.0)
 
     composite = round(
@@ -102,11 +88,6 @@ def fetch_quote_signals(asset_id: str) -> Optional[dict]:
         volume_score * 0.25 +
         dom_score    * 0.15,
         4
-    )
-
-    logger.info(
-        f"CMC quote signals for {symbol}: "
-        f"price_score={price_score}, vol_score={volume_score}, composite={composite}"
     )
 
     return {
@@ -125,92 +106,104 @@ def fetch_quote_signals(asset_id: str) -> Optional[dict]:
     }
 
 
-def fetch_global_metrics() -> Optional[dict]:
+def fetch_global_metrics(force_refresh: bool = False) -> Optional[dict]:
     """
-    Fetches global crypto market metrics from CMC.
-    Includes total market cap change and Bitcoin dominance.
+    Asset-independent — cached with a short TTL so N assets in one cycle
+    don't each trigger their own /global-metrics call.
+    """
+    now = time.monotonic()
+    if not force_refresh and _global_cache["data"] is not None:
+        if now - _global_cache["fetched_at"] < _CACHE_TTL_SECONDS:
+            return _global_cache["data"]
 
-    Returns a dict with:
-        - btc_dominance         (raw %)
-        - total_market_cap_change_24h (raw %)
-        - global_market_score   (0–1)
-    """
     data = _get("/global-metrics/quotes/latest")
 
     if not data or "data" not in data:
         logger.warning("Could not fetch CMC global metrics. Returning neutral.")
-        return {
+        result = {
             "btc_dominance": 50.0,
             "total_market_cap_change_24h": 0.0,
             "global_market_score": 0.5,
             "fetched_at": datetime.now(tz=timezone.utc).isoformat(),
         }
+    else:
+        gdata = data["data"]
+        quote = gdata.get("quote", {}).get("USD", {})
 
-    gdata = data["data"]
-    quote = gdata.get("quote", {}).get("USD", {})
+        btc_dom  = gdata.get("btc_dominance", 50.0) or 50.0
+        mcap_chg = quote.get("total_market_cap_yesterday_percentage_change", 0) or 0
 
-    btc_dom   = gdata.get("btc_dominance", 50.0) or 50.0
-    mcap_chg  = quote.get("total_market_cap_yesterday_percentage_change", 0) or 0
+        global_score = round(
+            _normalise_pct(mcap_chg) * 0.7 +
+            min(1.0, btc_dom / 60.0) * 0.3,
+            4
+        )
 
-    # High BTC dominance + rising market cap = cautiously bullish
-    global_score = round(
-        _normalise_pct(mcap_chg) * 0.7 +
-        min(1.0, btc_dom / 60.0) * 0.3,
-        4
-    )
+        result = {
+            "btc_dominance":               round(btc_dom, 4),
+            "total_market_cap_change_24h": round(mcap_chg, 4),
+            "global_market_score":         global_score,
+            "fetched_at":                  datetime.now(tz=timezone.utc).isoformat(),
+        }
 
-    logger.info(f"CMC global metrics: btc_dom={btc_dom}%, mcap_chg={mcap_chg}%, score={global_score}")
-
-    return {
-        "btc_dominance":               round(btc_dom, 4),
-        "total_market_cap_change_24h": round(mcap_chg, 4),
-        "global_market_score":         global_score,
-        "fetched_at":                  datetime.now(tz=timezone.utc).isoformat(),
-    }
+    _global_cache["data"] = result
+    _global_cache["fetched_at"] = now
+    return result
 
 
-def fetch_trending_assets() -> list[str]:
-    """
-    Fetches the current trending assets on CoinMarketCap.
-    Returns a list of asset symbols (e.g. ['BTC', 'ETH', 'SOL']).
-    Used as a boolean boost: if an asset is trending, add a small Positive signal.
-    """
+def fetch_trending_assets(force_refresh: bool = False) -> list[str]:
+    """Asset-independent — cached the same way as global metrics."""
+    now = time.monotonic()
+    if not force_refresh and _trending_cache["data"] is not None:
+        if now - _trending_cache["fetched_at"] < _CACHE_TTL_SECONDS:
+            return _trending_cache["data"]
+
     data = _get("/cryptocurrency/trending/latest")
 
     if not data or "data" not in data:
         logger.warning("Could not fetch CMC trending assets.")
-        return []
+        result = []
+    else:
+        raw_list = []
+        d_data = data["data"]
+        if isinstance(d_data, list):
+            raw_list = d_data
+        elif isinstance(d_data, dict):
+            if "trending" in d_data and isinstance(d_data["trending"], list):
+                raw_list = d_data["trending"]
+            else:
+                raw_list = list(d_data.values())
 
-    trending = []
-    for item in data["data"].get("trending", []):
-        if "symbol" in item:
-            trending.append(item["symbol"].upper())
+        result = [
+            item["symbol"].upper()
+            for item in raw_list
+            if isinstance(item, dict) and "symbol" in item
+        ]
 
-    logger.info(f"Trending assets: {trending}")
-    return trending
+    _trending_cache["data"] = result
+    _trending_cache["fetched_at"] = now
+    return result
 
 
 def fetch_all_signals(asset_id: str) -> dict:
     """
-    Master function — fetches all CMC signals for an asset in one call.
-
-    Returns:
-        {
-            "quote":   { ...quote signals... },
-            "global":  { ...global metrics... },
-            "is_trending": True/False,
-            "final_cmc_score": float (0–1)
-        }
+    Master function — fetches quote (per-asset), global metrics, and
+    trending assets CONCURRENTLY instead of sequentially. Global/trending
+    will usually hit the cache after the first asset in a multi-asset run.
     """
-    quote    = fetch_quote_signals(asset_id)
-    global_m = fetch_global_metrics()
-    trending = fetch_trending_assets()
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        quote_future    = executor.submit(fetch_quote_signals, asset_id)
+        global_future   = executor.submit(fetch_global_metrics)
+        trending_future = executor.submit(fetch_trending_assets)
 
-    symbol       = ASSETS[asset_id]["cmc_symbol"]
-    is_trending  = symbol in trending
-    trend_bonus  = 0.05 if is_trending else 0.0
+        quote    = quote_future.result()
+        global_m = global_future.result()
+        trending = trending_future.result()
 
-    # Blend quote score with global macro score
+    symbol      = ASSETS[asset_id]["cmc_symbol"]
+    is_trending = symbol in trending
+    trend_bonus = 0.05 if is_trending else 0.0
+
     cmc_score = round(
         min(1.0,
             quote["composite_market_score"] * 0.75 +
@@ -231,7 +224,6 @@ def fetch_all_signals(asset_id: str) -> dict:
 
 
 def _neutral_quote_signals(asset_id: str) -> dict:
-    """Returns perfectly neutral signals when the API is unavailable."""
     return {
         "asset_id":               asset_id,
         "symbol":                 ASSETS[asset_id]["cmc_symbol"],
