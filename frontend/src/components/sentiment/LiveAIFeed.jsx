@@ -3,7 +3,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { makeStyles } from "../../styles/makeStyles";
 import { sentimentApi } from "../../services/sentimentApi";
 
-export default function SentimentSources() {
+export default function LiveAIFeed() {
     const { tokens: t } = useTheme();
     const s = makeStyles(t);
 

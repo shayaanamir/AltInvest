@@ -63,7 +63,7 @@ def _detect_trend(current_score: float, history: list[dict]) -> str:
     if not previous:
         return "stable"
 
-    prev_score = previous[0].get("sentiment_score", 0.5)
+    prev_score = previous[0].get("sentiment_score", 0.0)
     delta      = current_score - prev_score
 
     if delta > TREND_DELTA_THRESHOLD:
@@ -160,11 +160,8 @@ def run_pipeline(
     nlp_score_01  = _normalise_nlp_to_0_1(raw_nlp_score)
 
     # ── Step 7: Blend NLP + CMC ───────────────────────────────────────────────
-    final_score = round(
-        (NEWS_NLP_WEIGHT    * nlp_score_01) +
-        (MARKET_SIGNAL_WEIGHT * cmc_score),
-        4
-    )
+    final_score_01 = (NEWS_NLP_WEIGHT * nlp_score_01) + (MARKET_SIGNAL_WEIGHT * cmc_score)
+    final_score = round((final_score_01 * 2.0) - 1.0, 4)
 
     # ── Step 8: Trend detection ───────────────────────────────────────────────
     trend = _detect_trend(final_score, history or [])
@@ -190,8 +187,8 @@ def run_pipeline(
 
         # Volume detail
         "sentiment_distribution": {
-            "Positive": volume_metrics["Positive_count"],
-            "Negative": volume_metrics["Negative_count"],
+            "positive": volume_metrics["positive_count"],
+            "negative": volume_metrics["negative_count"],
             "neutral":  volume_metrics["neutral_count"],
         },
 
@@ -226,7 +223,7 @@ def _neutral_output(asset_id: str, timestamp: datetime) -> dict:
     """
     return {
         "asset_id":           asset_id,
-        "sentiment_score":    0.5,
+        "sentiment_score":    0.0,
         "confidence":         0.0,
         "confidence_label":   "low",
         "signal_strength":    "weak",
@@ -235,7 +232,7 @@ def _neutral_output(asset_id: str, timestamp: datetime) -> dict:
         "article_count":      0,
         "source_count":       0,
         "source_breakdown":   {"news_nlp": 0.5, "market_signals": 0.5},
-        "sentiment_distribution": {"Positive": 0, "Negative": 0, "neutral": 0},
+        "sentiment_distribution": {"positive": 0, "negative": 0, "neutral": 0},
         "top_headlines":      [],
         "market_signals":     {},
         "articles_by_source": {},

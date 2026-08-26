@@ -10,7 +10,13 @@ load_dotenv()
 
 # ── API Keys ──────────────────────────────────────────────────────────────────
 
-CMC_API_KEY = os.getenv("CMC_API_KEY", "0b5037eae2454c3cb82a5ea5f28ee0dd")
+CMC_API_KEY = os.getenv("CMC_API_KEY")
+if not CMC_API_KEY:
+    import warnings
+    warnings.warn(
+        "CMC_API_KEY is not set. CoinMarketCap requests will fail and the "
+        "pipeline will fall back to neutral market signals for every asset."
+    )
 MONGO_URI   = os.getenv("MONGO_URI", "mongodb://localhost:27017")
 MONGO_DB    = os.getenv("MONGO_DB", "altinvest")
 

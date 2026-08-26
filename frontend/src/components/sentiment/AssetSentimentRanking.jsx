@@ -22,21 +22,20 @@ export default function AssetSentimentRanking() {
                     .sort((a, b) => b.sentiment_score - a.sentiment_score)
                     .map((asset, idx) => {
                         const dist = asset.sentiment_distribution ?? {};
-                        // Engine uses { Positive, Negative, neutral } (note caps)
-                        const pos = dist.Positive ?? dist.positive ?? 0;
-                        const neg = dist.Negative ?? dist.negative ?? 0;
-                        const neu = dist.neutral   ?? dist.Neutral  ?? 0;
+                        const pos = dist.positive ?? 0;
+                        const neg = dist.negative ?? 0;
+                        const neu = dist.neutral  ?? 0;
                         const total = pos + neg + neu || 1;
 
                         const bullish  = Math.round((pos / total) * 100);
                         const bearish  = Math.round((neg / total) * 100);
                         const neutral  = 100 - bullish - bearish;
-                        const score    = asset.sentiment_score ?? 0.5;
+                        const score    = asset.sentiment_score ?? 0.0;
 
                         let label      = "Neutral";
                         let labelColor = "neutral";
-                        if (score >= 0.55) { label = "Bullish"; labelColor = "green"; }
-                        else if (score <= 0.45) { label = "Bearish"; labelColor = "red"; }
+                        if (score >= 0.10) { label = "Bullish"; labelColor = "green"; }
+                        else if (score <= -0.10) { label = "Bearish"; labelColor = "red"; }
 
                         return {
                             rank:       idx + 1,

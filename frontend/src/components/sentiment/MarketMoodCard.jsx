@@ -7,7 +7,7 @@ export default function MarketMoodCard() {
     const { tokens: t } = useTheme();
     const s = makeStyles(t);
 
-    const [score, setScore] = useState(0.5); // Default to 0.5 (Neutral)
+    const [score, setScore] = useState(0.0); // Default to 0.0 (Neutral)
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -20,15 +20,17 @@ export default function MarketMoodCard() {
     let mood = "Neutral";
     let color = t.accentYellow;
 
-    if (score <= 0.45) {
+    const score01 = (score + 1.0) / 2.0;
+
+    if (score <= -0.10) {
         mood = "Bearish";
         color = t.accentRed;
-    } else if (score >= 0.55) {
+    } else if (score >= 0.10) {
         mood = "Bullish";
         color = t.accentGreen;
     }
 
-    const needlePct = score * 100;
+    const needlePct = score01 * 100;
 
     return (
         <div style={s.card}>

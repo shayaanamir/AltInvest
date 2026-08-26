@@ -24,12 +24,12 @@ def _get_real_sentiment(asset: str) -> dict:
         asset_id = asset.lower()
         cached = get_latest_sentiment(asset_id)
         if cached:
-            return {"sentiment_score": cached.get("sentiment_score", 0.5)}
+            return {"sentiment_score": cached.get("sentiment_score", 0.0)}
 
         history = get_sentiment_history(asset_id, days=1)
         result = run_pipeline(asset_id, history=history)
         save_sentiment(result)
-        return {"sentiment_score": result.get("sentiment_score", 0.5)}
+        return {"sentiment_score": result.get("sentiment_score", 0.0)}
 
     except Exception as exc:
         print(f"[aai_controller] Sentiment engine unavailable ({exc}), using mock")

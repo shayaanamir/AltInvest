@@ -214,7 +214,7 @@ export const asset_sentiment = [
   {
     asset_id: "btc",
 
-    sentiment_score: 0.5047,
+    sentiment_score: 0.0094,
 
     confidence: 1.0,
 
@@ -296,7 +296,7 @@ export const asset_sentiment = [
   {
     asset_id: "eth",
 
-    sentiment_score: 0.6721,
+    sentiment_score: 0.3442,
 
     confidence: 0.91,
 
@@ -367,7 +367,7 @@ export const asset_sentiment = [
   {
     asset_id: "sol",
 
-    sentiment_score: 0.742,
+    sentiment_score: 0.4840,
 
     confidence: 0.88,
 
@@ -437,7 +437,7 @@ export const asset_sentiment = [
   {
     asset_id: "bayc",
 
-    sentiment_score: 0.312,
+    sentiment_score: -0.3760,
 
     confidence: 0.79,
 

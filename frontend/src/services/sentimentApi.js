@@ -1,9 +1,5 @@
 import { asset_sentiment } from '../data/sample_data';
-// import { USE_MOCK, API_BASE_URL } from "../config";
-
-import {API_BASE_URL } from "../config";
-
-const USE_MOCK = false;
+import { USE_MOCK, API_BASE_URL } from "../config";
 
 
 /**
@@ -84,7 +80,7 @@ export const sentimentApi = {
     headlines.sort((a, b) => (a.age_hours ?? 0) - (b.age_hours ?? 0));
 
     return {
-      globalScore: scoreCount > 0 ? (totalScore / scoreCount) : 0.5,
+      globalScore: scoreCount > 0 ? (totalScore / scoreCount) : 0.0,
       sources: sourcesCount > 0
         ? {
             news:    (totalNews    / sourcesCount) * 100,
@@ -108,7 +104,7 @@ export const sentimentApi = {
     // json = { asset_id, days, count, history: [...] }
     return (json.history ?? []).map(h => ({
       date:  h.last_updated ?? h.timestamp ?? '',
-      score: h.sentiment_score ?? 0.5,
+      score: h.sentiment_score ?? 0.0,
     }));
   },
 

@@ -26,11 +26,14 @@ function buildPath(points, W, H, minY, rangeY) {
  * and its inverse (1 – score) * 100 as the negative signal.
  */
 function historyToChartPoints(history) {
-    return history.map(h => ({
-        pos: h.score * 100,
-        neg: (1 - h.score) * 100,
-        date: h.date,
-    }));
+    return history.map(h => {
+        const score01 = (h.score + 1.0) / 2.0;
+        return {
+            pos: score01 * 100,
+            neg: (1 - score01) * 100,
+            date: h.date,
+        };
+    });
 }
 
 // Build X-axis date labels from the history array
