@@ -4,3 +4,5 @@ pymongo
 python-dotenv
 pydantic
 httpx
+bcrypt
+PyJWT

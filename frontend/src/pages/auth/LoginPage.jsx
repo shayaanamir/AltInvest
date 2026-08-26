@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import AuthLayout from "./AuthLayout";
 import { AuthInput, AuthButton, OAuthButton, Divider, GoogleIcon, GitHubIcon } from "./AuthPrimitives";
 import { authApi } from "../../services/authApi";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function LoginPage({ onNavigate }) {
     const [email, setEmail] = useState("");
@@ -10,14 +12,43 @@ export default function LoginPage({ onNavigate }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
+    // Redirect away from /login if a session already exists.
+    // NOTE: this only checks for token *presence*, not validity — full
+    // protected-route/session verification is tracked under AUTH-06.
+    useEffect(() => {
+        const existingToken = localStorage.getItem("altinvest_token");
+        if (existingToken) {
+            onNavigate && onNavigate("Dashboard");
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const validate = () => {
+        if (!email.trim() || !password) {
+            return "Email and password are required.";
+        }
+        if (!EMAIL_RE.test(email.trim())) {
+            return "Enter a valid email address.";
+        }
+        return null;
+    };
+
     const handleSignIn = async () => {
+        const validationError = validate();
+        if (validationError) {
+            setError(validationError);
+            return;
+        }
+
         setError(null);
         setLoading(true);
         try {
-            const response = await authApi.login(email, password);
-            console.log("Logged in successfully:", response);
+            const response = await authApi.login(email.trim(), password);
             if (response.token) {
                 localStorage.setItem("altinvest_token", response.token);
+            }
+            if (response.user) {
+                localStorage.setItem("altinvest_user", JSON.stringify(response.user));
             }
             onNavigate && onNavigate("Dashboard");
         } catch (err) {
@@ -25,6 +56,10 @@ export default function LoginPage({ onNavigate }) {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === "Enter") handleSignIn();
     };
 
     return (
@@ -41,6 +76,7 @@ export default function LoginPage({ onNavigate }) {
                     borderRadius: 16,
                     boxShadow: "0 24px 80px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)",
                 }}
+                onKeyDown={handleKeyDown}
             >
                 {/* Header */}
                 <div style={{ marginBottom: 32 }}>
@@ -78,15 +114,15 @@ export default function LoginPage({ onNavigate }) {
                         onChange={e => setPassword(e.target.value)}
                     />
                     <button
+                        type="button"
+                        title="Password reset isn't available yet"
+                        disabled
                         style={{
                             position: "absolute", right: 0, top: 0,
                             background: "none", border: "none",
-                            fontSize: 11, color: "rgba(255,255,255,0.28)",
-                            cursor: "pointer", fontFamily: "inherit", padding: 0,
-                            transition: "color 0.15s",
+                            fontSize: 11, color: "rgba(255,255,255,0.16)",
+                            cursor: "not-allowed", fontFamily: "inherit", padding: 0,
                         }}
-                        onMouseEnter={e => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
-                        onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.28)"}
                     >
                         Forgot?
                     </button>
@@ -110,8 +146,18 @@ export default function LoginPage({ onNavigate }) {
                 <Divider label="or" />
 
                 <div style={{ display: "flex", gap: 8 }}>
-                    <OAuthButton icon={<GoogleIcon />} label="Google" />
-                    <OAuthButton icon={<GitHubIcon />} label="GitHub" />
+                    <OAuthButton
+                        icon={<GoogleIcon />}
+                        label="Google"
+                        disabled
+                        title="Google sign-in is coming soon"
+                    />
+                    <OAuthButton
+                        icon={<GitHubIcon />}
+                        label="GitHub"
+                        disabled
+                        title="GitHub sign-in is coming soon"
+                    />
                 </div>
 
                 <p style={{

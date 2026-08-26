@@ -55,3 +55,7 @@ def upsert_aai_score(asset: str, payload: dict) -> None:
         {"$set": payload},
         upsert=True
     )
+
+def get_user_by_email(email: str) -> dict | None:
+    db = get_db()
+    return db.users.find_one({"email": email.lower().strip()})

@@ -74,45 +74,52 @@ export function AuthInput({ label, type = "text", placeholder, value, onChange }
     );
 }
 
-export function AuthButton({ children, onClick, style: extra }) {
+export function AuthButton({ children, onClick, disabled = false, style: extra }) {
     return (
         <button
-            onClick={onClick}
+            onClick={disabled ? undefined : onClick}
+            disabled={disabled}
             style={{
                 width: "100%", padding: "12px",
                 background: `linear-gradient(135deg, ${L.blue}, ${L.purple})`,
                 border: "none", borderRadius: 8,
                 fontSize: 14, fontWeight: 700, color: "#fff",
-                cursor: "pointer", fontFamily: "inherit",
+                cursor: disabled ? "not-allowed" : "pointer",
+                opacity: disabled ? 0.65 : 1,
+                fontFamily: "inherit",
                 transition: "opacity 0.15s, transform 0.1s",
                 ...extra,
             }}
-            onMouseEnter={e => e.currentTarget.style.opacity = "0.9"}
-            onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-            onMouseDown={e => e.currentTarget.style.transform = "scale(0.985)"}
-            onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
+            onMouseEnter={e => { if (!disabled) e.currentTarget.style.opacity = "0.9"; }}
+            onMouseLeave={e => { if (!disabled) e.currentTarget.style.opacity = "1"; }}
+            onMouseDown={e => { if (!disabled) e.currentTarget.style.transform = "scale(0.985)"; }}
+            onMouseUp={e => { if (!disabled) e.currentTarget.style.transform = "scale(1)"; }}
         >
             {children}
         </button>
     );
 }
 
-export function OAuthButton({ icon, label, onClick }) {
+export function OAuthButton({ icon, label, onClick, disabled = false, title }) {
     const [hov, setHov] = useState(false);
     return (
         <button
-            onClick={onClick}
-            onMouseEnter={() => setHov(true)}
+            onClick={disabled ? undefined : onClick}
+            disabled={disabled}
+            title={title}
+            onMouseEnter={() => !disabled && setHov(true)}
             onMouseLeave={() => setHov(false)}
             style={{
                 width: "100%", padding: "11px",
-                background: hov ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.03)",
+                background: hov && !disabled ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.03)",
                 border: "1px solid rgba(255,255,255,0.1)",
                 borderRadius: 8, fontSize: 13, fontWeight: 500, color: L.ink,
-                cursor: "pointer", fontFamily: "inherit",
+                cursor: disabled ? "not-allowed" : "pointer",
+                opacity: disabled ? 0.5 : 1,
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                 transition: "background 0.15s",
                 marginBottom: 10,
+                fontFamily: "inherit",
             }}
         >
             {icon}

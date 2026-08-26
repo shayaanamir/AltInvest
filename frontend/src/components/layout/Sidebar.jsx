@@ -114,8 +114,8 @@ export default function Sidebar({ activePage, onNavigate }) {
             title={collapsed ? item.label : undefined}
             onClick={() => {
               if (item.label === "Logout") {
-                localStorage.removeItem("token");
-                localStorage.removeItem("user");
+                localStorage.removeItem("altinvest_token");
+                localStorage.removeItem("altinvest_user");
                 if (onNavigate) onNavigate("Landing");
               } else {
                 if (onNavigate) onNavigate(item.label);

@@ -10,7 +10,7 @@ services:
     volumes:
       - mongo_data:/data/db
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -46,10 +46,7 @@ services:
       - ./sentiment_engine:/app/sentiment_engine
       - ./db:/app/db
     working_dir: /app/backend
-    command: >
-      uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-      --reload-dir /app/backend --reload-dir /app/shared
-      --reload-dir /app/aai_engine --reload-dir /app/db
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
     networks:
       - altinvest
 

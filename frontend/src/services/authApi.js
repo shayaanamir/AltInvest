@@ -23,13 +23,13 @@ export const authApi = {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
         });
-        
+
         const data = await res.json().catch(() => ({})); // Handle cases where response isn't JSON
-        
+
         if (!res.ok) {
             throw new Error(data.message || data.error || "Invalid credentials");
         }
-        
+
         return data; // Expected to contain { user, token }
     },
 
@@ -55,13 +55,13 @@ export const authApi = {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, email, password })
         });
-        
+
         const data = await res.json().catch(() => ({})); // Handle cases where response isn't JSON
-        
+
         if (!res.ok) {
-            throw new Error(data.message || data.error || "Error creating account");
+            throw new Error(data.detail || data.message || data.error || "Invalid credentials");
         }
-        
+
         return data; // Expected to contain { user, token }
     }
 };

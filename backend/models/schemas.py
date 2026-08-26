@@ -78,3 +78,19 @@ class AAIResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     version: str
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class AuthUser(BaseModel):
+    id: str
+    name: str
+    email: str
+
+
+class AuthResponse(BaseModel):
+    user: AuthUser
+    token: str
