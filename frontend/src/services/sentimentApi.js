@@ -34,58 +34,47 @@ export const sentimentApi = {
   /** Fetch all-asset sentiment and reshape for the dashboard components. */
   getSentimentData: async () => {
     let data;
-
     if (USE_MOCK) {
-      data = await new Promise((resolve) => {
-        setTimeout(() => resolve(asset_sentiment), 500);
-      });
+      data = await new Promise((resolve) => setTimeout(() => resolve(asset_sentiment), 500));
     } else {
       const res = await fetch(`${API_BASE_URL}/sentiment`);
       if (!res.ok) throw new Error(`Failed to fetch sentiment data (${res.status})`);
       data = await res.json();
     }
 
-    // Normalise: real engine returns a plain array; mock may return the same.
     const list = Array.isArray(data) ? data : (data.assets ?? []);
 
-    let totalScore   = 0, scoreCount   = 0;
-    let totalNews    = 0, totalSignals = 0, sourcesCount = 0;
-    let headlines    = [];
+    let totalScore = 0, scoreCount = 0;
+    let totalConfidence = 0, confidenceCount = 0;
+    let totalNews = 0, totalSignals = 0, sourcesCount = 0;
+    let headlines = [];
 
     list.forEach(asset => {
-      // ── Global Sentiment ─────────────────────────────────────────────────
       if (typeof asset.sentiment_score === 'number') {
         totalScore += asset.sentiment_score;
         scoreCount++;
       }
-
-      // ── Source Breakdown ─────────────────────────────────────────────────
+      if (typeof asset.confidence === 'number') {
+        totalConfidence += asset.confidence;
+        confidenceCount++;
+      }
       if (asset.source_breakdown) {
-        totalNews    += asset.source_breakdown.news_nlp       ?? 0;
+        totalNews += asset.source_breakdown.news_nlp ?? 0;
         totalSignals += asset.source_breakdown.market_signals ?? 0;
         sourcesCount++;
       }
-
-      // ── Headlines ────────────────────────────────────────────────────────
       if (Array.isArray(asset.top_headlines)) {
-        const tagged = asset.top_headlines.map(h => ({
-          ...h,
-          asset_id: asset.asset_id ?? asset.asset ?? "?",
-        }));
-        headlines = [...headlines, ...tagged];
+        headlines = [...headlines, ...asset.top_headlines.map(h => ({ ...h, asset_id: asset.asset_id ?? asset.asset ?? "?" }))];
       }
     });
 
-    // Sort headlines: most recent first (smallest age_hours)
     headlines.sort((a, b) => (a.age_hours ?? 0) - (b.age_hours ?? 0));
 
     return {
       globalScore: scoreCount > 0 ? (totalScore / scoreCount) : 0.0,
+      globalConfidence: confidenceCount > 0 ? (totalConfidence / confidenceCount) : 0.0,
       sources: sourcesCount > 0
-        ? {
-            news:    (totalNews    / sourcesCount) * 100,
-            signals: (totalSignals / sourcesCount) * 100,
-          }
+        ? { news: (totalNews / sourcesCount) * 100, signals: (totalSignals / sourcesCount) * 100 }
         : { news: 0, signals: 0 },
       headlines,
       rawData: list,

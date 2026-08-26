@@ -70,6 +70,7 @@ class AAIResponse(BaseModel):
     aai_score: float                # always clamped to [0, 100]
     pred_score: float
     sentiment_score: float
+    sentiment_confidence: Optional[float] = None
     risk_score: float
     model_version: str
     timestamp: str

@@ -16,6 +16,9 @@ def _get_real_sentiment(asset: str) -> dict:
     """
     Fetches live sentiment from the engine (MongoDB cache → fresh pipeline).
     Falls back to mock data if the engine is unavailable.
+    Always returns both sentiment_score and confidence so the caller can
+    weight the score instead of treating a 3-article and a 40-article
+    reading as equally reliable.
     """
     try:
         from storage.mongo_handler import get_latest_sentiment, get_sentiment_history, save_sentiment
@@ -24,48 +27,42 @@ def _get_real_sentiment(asset: str) -> dict:
         asset_id = asset.lower()
         cached = get_latest_sentiment(asset_id)
         if cached:
-            return {"sentiment_score": cached.get("sentiment_score", 0.0)}
+            return {
+                "sentiment_score": cached.get("sentiment_score", 0.0),
+                "confidence": cached.get("confidence", 0.5),
+            }
 
         history = get_sentiment_history(asset_id, days=1)
         result = run_pipeline(asset_id, history=history)
         save_sentiment(result)
-        return {"sentiment_score": result.get("sentiment_score", 0.0)}
+        return {
+            "sentiment_score": result.get("sentiment_score", 0.0),
+            "confidence": result.get("confidence", 0.5),
+        }
 
     except Exception as exc:
         print(f"[aai_controller] Sentiment engine unavailable ({exc}), using mock")
-        return mock_sentiment(asset)
+        mock = mock_sentiment(asset)
+        return {
+            "sentiment_score": mock.get("sentiment_score", 0.0),
+            "confidence": mock.get("confidence", 0.5),
+        }
 
 
 def compute_aai_response(asset: str) -> dict:
-    """
-    Fetches all three component scores and computes the AAI.
-
-    Phase 1: uses mock data for all three modules.
-    Phase 3+: each mock_* call is replaced with a real module call.
-
-    Phase 5 error handling pattern (add here, not in the route):
-        try:
-            pred = real_ml_predict(asset)
-        except Exception as e:
-            logger.warning(f"ML engine failed: {e}")
-            pred = {"predicted_price": last_known_price, "confidence": None}
-    """
-
-    # --- Step 1: Get prediction score ---
-    # Phase 3 replacement: from ml_engine.predict import get_prediction; pred = get_prediction(asset)
     pred = mock_prediction(asset)
-
-    # --- Step 2: Get sentiment score (real engine with mock fallback) ---
     sent = _get_real_sentiment(asset)
-
-    # --- Step 3: Get risk score ---
-    # Phase 3 replacement: from risk_engine.risk import calculate_risk; risk = calculate_risk(asset)
     risk = mock_risk(asset)
 
-    # --- Step 4: Normalise inputs and compute AAI ---
-    pred_score  = _normalise_prediction(pred.get("predicted_price"), asset)
-    sent_score  = normalise_sentiment(sent.get("sentiment_score", 0.0))
-    risk_score  = float(risk.get("risk_score", 50.0))
+    pred_score = _normalise_prediction(pred.get("predicted_price"), asset)
+
+    # Shrink low-confidence sentiment toward neutral (50) so a handful of
+    # articles can't swing AAI as hard as a well-corroborated reading.
+    raw_sent_score = normalise_sentiment(sent.get("sentiment_score", 0.0))
+    confidence = float(sent.get("confidence", 0.5))
+    sent_score = round(confidence * raw_sent_score + (1 - confidence) * 50.0, 2)
+
+    risk_score = float(risk.get("risk_score", 50.0))
 
     aai_score = compute_aai(pred_score, sent_score, risk_score)
 
@@ -74,6 +71,7 @@ def compute_aai_response(asset: str) -> dict:
         "aai_score": aai_score,
         "pred_score": round(pred_score, 2),
         "sentiment_score": round(sent_score, 2),
+        "sentiment_confidence": round(confidence, 2),
         "risk_score": round(risk_score, 2),
         "model_version": pred.get("model_version", "mock-v1"),
         "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),

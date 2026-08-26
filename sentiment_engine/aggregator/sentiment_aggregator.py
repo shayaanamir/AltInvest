@@ -16,6 +16,7 @@ This is the one function Person B's backend calls.
 
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -130,8 +131,14 @@ def run_pipeline(
     logger.info(f"═══ Running sentiment pipeline for {asset_id.upper()} ═══")
     timestamp = datetime.now(tz=timezone.utc)
 
-    # ── Step 1: Fetch articles ────────────────────────────────────────────────
-    raw_articles = fetch_articles_for_asset(asset_id)
+    # ── Steps 1 & 4: fetch RSS articles and CMC signals concurrently ──────────
+    # Independent I/O calls — no reason to pay their latency sequentially.
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        articles_future = executor.submit(fetch_articles_for_asset, asset_id)
+        cmc_future      = executor.submit(fetch_all_signals, asset_id)
+
+        raw_articles = articles_future.result()
+        cmc_data     = cmc_future.result()
 
     if not raw_articles:
         logger.warning(f"No articles found for {asset_id}. Returning neutral output.")
@@ -144,8 +151,6 @@ def run_pipeline(
     # ── Step 3: Recency weighting ─────────────────────────────────────────────
     weighted_articles = apply_recency_weights(scored_articles)
 
-    # ── Step 4: CMC market signals ────────────────────────────────────────────
-    cmc_data = fetch_all_signals(asset_id)
     cmc_score = cmc_data["final_cmc_score"]
 
     # ── Step 5: Volume / confidence metrics ───────────────────────────────────
@@ -205,6 +210,11 @@ def run_pipeline(
 
         # Per-source article counts
         "articles_by_source": _source_breakdown(scored_articles),
+        "data_quality": {
+            "degraded": cmc_data.get("degraded", False),
+            "cmc_fallback": cmc_data.get("quote", {}).get("is_fallback", False)
+                            or cmc_data.get("global", {}).get("is_fallback", False),
+        },
     }
 
     logger.info(
@@ -236,4 +246,5 @@ def _neutral_output(asset_id: str, timestamp: datetime) -> dict:
         "top_headlines":      [],
         "market_signals":     {},
         "articles_by_source": {},
+        "data_quality":       {"degraded": True, "cmc_fallback": True, "reason": "no_articles"},
     }

@@ -39,6 +39,10 @@ def _get_pipeline():
     global _pipeline
     if _pipeline is None:
         try:
+            logger.info(
+                "Initializing PyTorch and Transformers. If this is the first run, "
+                "it will download the FinBERT model (~440MB) which may take a few minutes..."
+            )
             import torch
             from transformers import pipeline
 
@@ -61,6 +65,17 @@ def _get_pipeline():
             logger.error(f"Failed to load FinBERT: {e}. Scores will default to 0.0")
             _pipeline = None
     return _pipeline
+
+
+def warmup_pipeline() -> None:
+    """
+    Explicitly pre-load the FinBERT model and PyTorch into memory.
+
+    Call this once at process startup so the first scoring call bears zero
+    model-load latency.  Safe to call multiple times — subsequent calls are
+    instant because the pipeline is cached at module level.
+    """
+    _get_pipeline()
 
 
 def _label_to_signed_score(label: str, conf: float) -> float:

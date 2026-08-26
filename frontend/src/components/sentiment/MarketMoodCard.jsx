@@ -8,11 +8,13 @@ export default function MarketMoodCard() {
     const s = makeStyles(t);
 
     const [score, setScore] = useState(0.0); // Default to 0.0 (Neutral)
+    const [confidence, setConfidence] = useState(0.0);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         sentimentApi.getSentimentData().then(data => {
             setScore(data.globalScore);
+            setConfidence(data.globalConfidence);
             setLoading(false);
         }).catch(console.error);
     }, []);
@@ -44,16 +46,21 @@ export default function MarketMoodCard() {
                         ...
                     </span>
                 ) : (
-                    <span style={{
-                        fontSize: 34, fontWeight: 800,
-                        color: color,
-                        letterSpacing: "-1px",
-                        lineHeight: 1.1,
-                        marginTop: 2,
-                        textTransform: "capitalize"
-                    }}>
-                        {mood}
-                    </span>
+                    <>
+                        <span style={{
+                            fontSize: 34, fontWeight: 800,
+                            color: color,
+                            letterSpacing: "-1px",
+                            lineHeight: 1.1,
+                            marginTop: 2,
+                            textTransform: "capitalize"
+                        }}>
+                            {mood}
+                        </span>
+                        <span style={{ fontSize: 10, color: t.textMuted, fontWeight: 500, marginTop: 2 }}>
+                            Confidence: {Math.round(confidence * 100)}%
+                        </span>
+                    </>
                 )}
 
                 {/* Bearish → Bullish gradient bar */}

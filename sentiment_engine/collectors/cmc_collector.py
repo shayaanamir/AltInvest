@@ -102,6 +102,7 @@ def fetch_quote_signals(asset_id: str) -> Optional[dict]:
         "volume_score":       volume_score,
         "dominance_score":    round(dom_score, 4),
         "composite_market_score": composite,
+        "is_fallback":        False,
         "fetched_at":         datetime.now(tz=timezone.utc).isoformat(),
     }
 
@@ -124,6 +125,7 @@ def fetch_global_metrics(force_refresh: bool = False) -> Optional[dict]:
             "btc_dominance": 50.0,
             "total_market_cap_change_24h": 0.0,
             "global_market_score": 0.5,
+            "is_fallback": True,
             "fetched_at": datetime.now(tz=timezone.utc).isoformat(),
         }
     else:
@@ -143,6 +145,7 @@ def fetch_global_metrics(force_refresh: bool = False) -> Optional[dict]:
             "btc_dominance":               round(btc_dom, 4),
             "total_market_cap_change_24h": round(mcap_chg, 4),
             "global_market_score":         global_score,
+            "is_fallback":                 False,
             "fetched_at":                  datetime.now(tz=timezone.utc).isoformat(),
         }
 
@@ -213,13 +216,18 @@ def fetch_all_signals(asset_id: str) -> dict:
         4
     )
 
-    logger.info(f"Final CMC score for {asset_id.upper()}: {cmc_score} (trending={is_trending})")
+    degraded = bool(quote.get("is_fallback")) or bool(global_m.get("is_fallback"))
+    if degraded:
+        logger.warning(f"CMC data degraded for {asset_id.upper()} — using fallback component(s)")
+
+    logger.info(f"Final CMC score for {asset_id.upper()}: {cmc_score} (trending={is_trending}, degraded={degraded})")
 
     return {
         "quote":           quote,
         "global":          global_m,
         "is_trending":     is_trending,
         "final_cmc_score": cmc_score,
+        "degraded":        degraded,
     }
 
 
@@ -236,5 +244,6 @@ def _neutral_quote_signals(asset_id: str) -> dict:
         "volume_score":           0.5,
         "dominance_score":        0.5,
         "composite_market_score": 0.5,
+        "is_fallback":            True,
         "fetched_at":             datetime.now(tz=timezone.utc).isoformat(),
     }

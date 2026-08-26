@@ -29,6 +29,7 @@ from storage.mongo_handler import (
     save_raw_articles,
 )
 from collectors.rss_collector import fetch_articles_for_asset
+from nlp.finbert_scorer import warmup_pipeline
 from utils.config import ASSETS
 from utils.logger import get_logger
 
@@ -95,6 +96,13 @@ Examples:
     args = parser.parse_args()
     asset  = args.asset.lower()
     save   = not args.no_save
+
+    # ── Warm up FinBERT/PyTorch once before any pipeline runs ─────────────────
+    # The model is cached at module level in finbert_scorer.py, so it loads
+    # exactly once here and is reused for every subsequent asset in this process.
+    # When running --asset all, this saves N-1 model load cycles.
+    logger.info("Warming up NLP models (loads once, reused for all assets)...")
+    warmup_pipeline()
 
     if asset == "all":
         results = {}

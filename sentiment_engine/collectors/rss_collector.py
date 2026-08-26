@@ -10,6 +10,7 @@ fetch time is roughly max(single feed latency) instead of sum(all feeds).
 
 from __future__ import annotations
 
+import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
@@ -52,20 +53,112 @@ def _article_age_hours(published: datetime) -> float:
     return delta.total_seconds() / 3600
 
 
-def _entry_matches_asset(entry, keywords: list[str]) -> bool:
-    text = ""
-    if hasattr(entry, "title"):
-        text += entry.title.lower() + " "
-    if hasattr(entry, "summary"):
-        text += entry.summary.lower() + " "
-    if hasattr(entry, "tags"):
-        text += " ".join(t.term.lower() for t in entry.tags if hasattr(t, "term")) + " "
+# ── Near-duplicate clustering ────────────────────────────────────────────────
 
-    return any(kw.lower() in text for kw in keywords)
+NEAR_DUPLICATE_THRESHOLD = 0.6  # title-token Jaccard similarity
+
+def _title_tokens(title: str) -> set[str]:
+    return set(re.findall(r"[a-z0-9]+", title.lower()))
+
+
+def _jaccard(a: set[str], b: set[str]) -> float:
+    if not a or not b:
+        return 0.0
+    union = len(a | b)
+    return len(a & b) / union if union else 0.0
+
+
+def _cluster_near_duplicates(articles: list[dict]) -> list[dict]:
+    """
+    Folds near-duplicate articles (same underlying story, different outlets/
+    headlines — wire pickups, syndication, churnalism) into a single
+    representative article per cluster, so article_count (and therefore
+    confidence, which is derived from it) isn't inflated by republication.
+
+    Representative = highest trust_weight in the cluster, ties broken by
+    freshness. Each representative carries `duplicate_count` so callers can
+    still see how strongly the story was corroborated.
+    """
+    tokens = [_title_tokens(a.get("title", "")) for a in articles]
+    n = len(articles)
+    assigned = [-1] * n
+    clusters: list[list[int]] = []
+
+    for i in range(n):
+        if assigned[i] != -1:
+            continue
+        cluster = [i]
+        assigned[i] = len(clusters)
+        for j in range(i + 1, n):
+            if assigned[j] != -1:
+                continue
+            if _jaccard(tokens[i], tokens[j]) >= NEAR_DUPLICATE_THRESHOLD:
+                cluster.append(j)
+                assigned[j] = len(clusters)
+        clusters.append(cluster)
+
+    deduped = []
+    for cluster in clusters:
+        members = [articles[idx] for idx in cluster]
+        representative = max(
+            members,
+            key=lambda a: (a.get("trust_weight", 0.0), -a.get("age_hours", 0.0)),
+        )
+        deduped.append({**representative, "duplicate_count": len(members)})
+
+    if len(deduped) < len(articles):
+        logger.info(
+            f"Near-duplicate clustering: {len(articles)} articles -> "
+            f"{len(deduped)} unique stories"
+        )
+
+    return deduped
+
+
+def _entry_matches_asset(entry, keywords: list[str]) -> tuple[bool, float]:
+    """
+    Determines whether an RSS entry is actually about the target asset.
+
+    Improvements over plain substring matching:
+      - Word-boundary matching, so short ambiguous keywords ("sol") don't
+        match inside unrelated words ("solar", "console", "solution").
+      - Title matches are weighted 3x over summary/tag matches — a keyword
+        in the headline is a much stronger relevance signal than an
+        incidental mention in the body.
+      - Keywords <=3 chars (the collision-prone ones) require at least one
+        TITLE match to count; a body-only mention is discounted rather than
+        treated as a full match.
+
+    Returns:
+        (is_match, relevance_score)
+    """
+    title = (getattr(entry, "title", "") or "")
+    summary = (getattr(entry, "summary", "") or "")
+    tags = " ".join(t.term for t in getattr(entry, "tags", []) if hasattr(t, "term"))
+
+    title_lower = title.lower()
+    body_lower = f"{summary} {tags}".lower()
+
+    title_hits = 0
+    body_hits = 0
+    shortest_kw_len = min((len(kw) for kw in keywords), default=0)
+
+    for kw in keywords:
+        pattern = r"\b" + re.escape(kw.lower()) + r"\b"
+        title_hits += len(re.findall(pattern, title_lower))
+        body_hits += len(re.findall(pattern, body_lower))
+
+    relevance = title_hits * 3 + body_hits
+
+    if shortest_kw_len <= 3 and title_hits == 0 and body_hits > 0:
+        # Ambiguous short keyword with only a body mention — discount hard
+        # rather than admit it as a confident match.
+        return False, relevance * 0.3
+
+    return relevance > 0, float(relevance)
 
 
 def _clean_html(raw: str) -> str:
-    import re
     clean = re.sub(r"<[^>]+>", " ", raw)
     clean = re.sub(r"\s+", " ", clean).strip()
     return clean
@@ -121,7 +214,8 @@ def fetch_articles_for_asset(asset_id: str) -> list[dict]:
                 logger.warning(f"{feed_name} returned a malformed feed: {feed.bozo_exception}")
 
             for entry in feed.entries:
-                if not _entry_matches_asset(entry, keywords):
+                is_match, relevance = _entry_matches_asset(entry, keywords)
+                if not is_match:
                     continue
 
                 published = _parse_published_date(entry)
@@ -149,9 +243,12 @@ def fetch_articles_for_asset(asset_id: str) -> list[dict]:
                     "published":    published.isoformat(),
                     "age_hours":    round(age_hours, 2),
                     "asset_id":     asset_id,
+                    "relevance_score": relevance,
                 })
 
     articles.sort(key=lambda a: a["age_hours"])
+    articles = _cluster_near_duplicates(articles)
+    articles.sort(key=lambda a: a["age_hours"])  # re-sort after clustering
 
     elapsed = time.perf_counter() - t0
     logger.info(
