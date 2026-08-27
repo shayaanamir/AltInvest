@@ -73,7 +73,7 @@ async function fetchAllSentimentRaw() {
     const data = await res.json();
     return Array.isArray(data) && data.length ? data : asset_sentiment;
   } catch (e) {
-    console.warn("sentimentApi: backend unavailable, using sample data", e);
+    console.warn(`sentimentApi: backend unavailable, using sample data (${e.message})`);
     return asset_sentiment;
   }
 }
@@ -87,7 +87,7 @@ async function fetchHistoryRaw(assetId, days) {
         if (json.history?.length >= 2) return json.history;
       }
     } catch (e) {
-      console.warn("sentimentApi: history fetch failed, using synthetic series", e);
+      console.warn(`sentimentApi: history fetch failed, using synthetic series (${e.message})`);
     }
   }
   return null;
@@ -104,6 +104,11 @@ function moodLabel(score, kind) {
   if (kind === "nft") {
     if (score >= 10) return "Heating Up";
     if (score <= -10) return "Cooling";
+    return "Neutral";
+  }
+  if (kind === "realestate" || kind === "real_estate") {
+    if (score >= 10) return "Appreciating";
+    if (score <= -10) return "Declining";
     return "Neutral";
   }
   if (score >= 10) return "Bullish";
@@ -155,6 +160,7 @@ export const sentimentApi = {
 
     const cryptoRecords = records.filter((r) => (r.meta?.category ?? "crypto") === "crypto");
     const nftRecords = records.filter((r) => r.meta?.category === "nft");
+    const realEstateRecords = records.filter((r) => r.meta?.category === "realestate" || r.meta?.category === "real_estate");
 
     const buildSummary = (list) => {
       if (!list.length) return null;
@@ -165,6 +171,7 @@ export const sentimentApi = {
 
     const cryptoSummary = buildSummary(cryptoRecords) ?? { avgScore: 19, confidence: 0.55, count: 8 };
     const nftSummary = buildSummary(nftRecords);
+    const realEstateSummary = buildSummary(realEstateRecords);
 
     return {
       crypto: {
@@ -183,28 +190,65 @@ export const sentimentApi = {
             excludedCount: 1,
           }
         : { avgScore: 17, label: "Neutral", confidenceLabel: "medium", assetCount: 6, excludedCount: 1 },
+      realEstate: realEstateSummary
+        ? {
+            avgScore: realEstateSummary.avgScore,
+            label: moodLabel(realEstateSummary.avgScore, "realestate"),
+            confidenceLabel: confidenceLabelFromValue(realEstateSummary.confidence),
+            propertyCount: realEstateSummary.count,
+            excludedCount: 1,
+          }
+        : { avgScore: 12, label: "Neutral", confidenceLabel: "low", propertyCount: 4, excludedCount: 1 },
     };
   },
 
-  /** Line-chart series for "How the mood has moved". */
   getMoodTrend: async (scope = "crypto", days = 30) => {
+    if (scope === "both") {
+      const crypto = await sentimentApi.getMoodTrend("crypto", days);
+      const nft = await sentimentApi.getMoodTrend("nft", days);
+      const realEstate = await sentimentApi.getMoodTrend("realEstate", days);
+      return { crypto, nft, realEstate };
+    }
+
     const n = days === 7 ? 40 : days === 90 ? 120 : 80;
 
-    if (scope !== "nft") {
-      const history = await fetchHistoryRaw("btc", days);
-      if (history?.length >= 2) {
-        const series = [...history].reverse().map((h) => ({
+    const history = await fetchHistoryRaw("btc", days);
+    const hasHistory = history && history.length >= 2;
+
+    if (scope === "crypto") {
+      if (hasHistory) {
+        return [...history].reverse().map((h) => ({
           date: h.last_updated || h.timestamp,
           value: Math.round(((h.sentiment_score ?? 0) + 1) * 50),
         }));
-        if (scope === "crypto") return series;
-        const nftSeries = synthesizeWave(series.length, 55, 8);
-        return series.map((c, i) => ({ date: c.date, value: Math.round((c.value + nftSeries[i]) / 2) }));
       }
+      return synthesizeWave(n, 60, 14).map((v) => ({ date: null, value: v }));
     }
 
-    if (scope === "crypto") return synthesizeWave(n, 60, 14).map((v) => ({ date: null, value: v }));
-    if (scope === "nft") return synthesizeWave(n, 55, 10).map((v) => ({ date: null, value: v }));
+    if (scope === "nft") {
+      if (hasHistory) {
+        const length = history.length;
+        const nftVals = synthesizeWave(length, 55, 8);
+        return [...history].reverse().map((h, i) => ({
+          date: h.last_updated || h.timestamp,
+          value: nftVals[i],
+        }));
+      }
+      return synthesizeWave(n, 55, 10).map((v) => ({ date: null, value: v }));
+    }
+
+    if (scope === "realEstate" || scope === "realestate") {
+      if (hasHistory) {
+        const length = history.length;
+        const reVals = synthesizeWave(length, 56, 6);
+        return [...history].reverse().map((h, i) => ({
+          date: h.last_updated || h.timestamp,
+          value: reVals[i],
+        }));
+      }
+      return synthesizeWave(n, 56, 6).map((v) => ({ date: null, value: v }));
+    }
+
     return synthesizeWave(n, 58, 12).map((v) => ({ date: null, value: v }));
   },
 

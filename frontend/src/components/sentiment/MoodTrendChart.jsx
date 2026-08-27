@@ -4,7 +4,8 @@ import { sentimentApi } from "../../services/sentimentApi";
 const SCOPES = [
   { key: "crypto", label: "Crypto" },
   { key: "nft", label: "NFTs" },
-  { key: "both", label: "Both" },
+  { key: "realEstate", label: "Real Estate" },
+  { key: "both", label: "All" },
 ];
 const RANGES = [
   { key: 7, label: "7d" },
@@ -12,10 +13,28 @@ const RANGES = [
   { key: 90, label: "90d" },
 ];
 
+const LINE_META = {
+  crypto:     { label: "Crypto" },
+  nft:        { label: "NFTs" },
+  realEstate: { label: "Real Estate" },
+};
+
+function buildPath(values, W, H, min, max) {
+  const range = Math.max(1, max - min);
+  const pts = values.map((v, i) => ({
+    x: (i / (values.length - 1)) * W,
+    y: H - 24 - ((v - min) / range) * (H - 40),
+  }));
+  const linePath = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
+  const areaPath = `${linePath} L ${pts[pts.length - 1].x.toFixed(1)} ${H} L ${pts[0].x.toFixed(1)} ${H} Z`;
+  const last = pts[pts.length - 1];
+  return { linePath, areaPath, last };
+}
+
 export default function MoodTrendChart({ colors }) {
   const [scope, setScope] = useState("crypto");
   const [days, setDays] = useState(30);
-  const [series, setSeries] = useState([]);
+  const [series, setSeries] = useState(null);   // single-scope: array; "both": { crypto, nft, realEstate }
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,20 +46,26 @@ export default function MoodTrendChart({ colors }) {
   }, [scope, days]);
 
   const W = 900, H = 190;
-  let linePath = "", areaPath = "";
+  const isMulti = scope === "both";
 
-  if (series.length >= 2) {
-    const values = series.map((s) => s.value);
-    const min = Math.min(...values) - 4;
-    const max = Math.max(...values) + 4;
-    const range = Math.max(1, max - min);
-    const pts = series.map((s, i) => ({
-      x: (i / (series.length - 1)) * W,
-      y: H - 24 - ((s.value - min) / range) * (H - 40),
-    }));
-    linePath = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
-    areaPath = `${linePath} L ${pts[pts.length - 1].x.toFixed(1)} ${H} L ${pts[0].x.toFixed(1)} ${H} Z`;
-  }
+  // Normalize into { key: [{value}, ...] } shape for rendering, regardless of scope
+  // Prevents crashes during transition state where scope is updated but series still holds stale data of a different type
+  const lines = isMulti && series && !Array.isArray(series)
+    ? series
+    : !isMulti && series && Array.isArray(series)
+      ? { [scope]: series }
+      : {};
+
+  const lineColor = {
+    crypto: colors.accent,
+    nft: colors.purple,
+    realEstate: colors.teal,
+  };
+
+  // Shared y-scale across all visible lines so they're comparable
+  const allValues = Object.values(lines).flat().map((p) => p.value);
+  const min = allValues.length ? Math.min(...allValues) - 4 : 0;
+  const max = allValues.length ? Math.max(...allValues) + 4 : 1;
 
   return (
     <div className="sv2-card sv2-card-pad">
@@ -65,37 +90,46 @@ export default function MoodTrendChart({ colors }) {
       </div>
 
       <div style={{ marginTop: 20 }}>
-        {loading ? (
+        {loading || Object.keys(lines).length === 0 ? (
           <div className="sv2-muted sv2-small" style={{ height: H, display: "flex", alignItems: "center", justifyContent: "center" }}>
             Loading trend…
           </div>
         ) : (
           <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
             <defs>
-              <linearGradient id="sv2TrendGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={colors.accent} stopOpacity="0.16" />
-                <stop offset="100%" stopColor={colors.accent} stopOpacity="0" />
-              </linearGradient>
+              {Object.keys(lines).map((key) => (
+                <linearGradient key={key} id={`sv2TrendGrad-${key}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={lineColor[key]} stopOpacity={isMulti ? 0.08 : 0.16} />
+                  <stop offset="100%" stopColor={lineColor[key]} stopOpacity="0" />
+                </linearGradient>
+              ))}
             </defs>
+
             <line x1="0" y1={H - 24} x2={W} y2={H - 24} stroke={colors.border} strokeWidth="1" />
-            <path d={areaPath} fill="url(#sv2TrendGrad)" />
-            <path d={linePath} fill="none" stroke={colors.accent} strokeWidth="2.5" strokeLinecap="round" />
-            {series.length > 0 && (() => {
-              const last = series.length - 1;
-              const values = series.map((s) => s.value);
-              const min = Math.min(...values) - 4, max = Math.max(...values) + 4, range = Math.max(1, max - min);
-              const x = (last / (series.length - 1)) * W;
-              const y = H - 24 - ((series[last].value - min) / range) * (H - 40);
-              return <circle cx={x} cy={y} r="5" fill={colors.accent} />;
-            })()}
+
+            {Object.entries(lines).map(([key, values]) => {
+              if (!values || values.length < 2) return null;
+              const { linePath, areaPath, last } = buildPath(values.map((v) => v.value), W, H, min, max);
+              return (
+                <g key={key}>
+                  {!isMulti && <path d={areaPath} fill={`url(#sv2TrendGrad-${key})`} />}
+                  <path d={linePath} fill="none" stroke={lineColor[key]} strokeWidth={isMulti ? 2.2 : 2.5} strokeLinecap="round" />
+                  <circle cx={last.x} cy={last.y} r="5" fill={lineColor[key]} />
+                </g>
+              );
+            })}
           </svg>
         )}
       </div>
 
       <div className="sv2-flex-between sv2-mt-8">
-        <div className="sv2-flex sv2-gap-8" style={{ alignItems: "center" }}>
-          <span style={{ width: 20, height: 3, borderRadius: 2, background: colors.accent, display: "inline-block" }} />
-          <span className="sv2-small sv2-muted">{SCOPES.find((s) => s.key === scope)?.label}</span>
+        <div className="sv2-flex sv2-gap-16" style={{ alignItems: "center", flexWrap: "wrap" }}>
+          {Object.keys(lines).map((key) => (
+            <div key={key} className="sv2-flex sv2-gap-8" style={{ alignItems: "center" }}>
+              <span style={{ width: 20, height: 3, borderRadius: 2, background: lineColor[key], display: "inline-block" }} />
+              <span className="sv2-small sv2-muted">{LINE_META[key]?.label}</span>
+            </div>
+          ))}
         </div>
         <span className="sv2-tiny sv2-mute2">Above the line is net-positive sentiment</span>
       </div>

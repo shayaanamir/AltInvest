@@ -14,11 +14,12 @@ export default function MoodOverview({ colors }) {
       <div className="sv2-mood-grid">
         <div className="sv2-card sv2-card-pad sv2-muted sv2-small">Loading crypto mood…</div>
         <div className="sv2-card sv2-card-pad sv2-muted sv2-small">Loading NFT mood…</div>
+        <div className="sv2-card sv2-card-pad sv2-muted sv2-small">Loading real estate mood…</div>
       </div>
     );
   }
 
-  const { crypto, nft } = data;
+  const { crypto, nft, realEstate } = data;
 
   return (
     <div className="sv2-mood-grid">
@@ -49,6 +50,24 @@ export default function MoodOverview({ colors }) {
             : null
         }
       />
+      {realEstate && (
+        <MoodGaugeCard
+          eyebrow="Tokenized Real Estate Mood"
+          title={realEstate.label}
+          metaLine={`${realEstate.avgScore >= 0 ? "+" : ""}${realEstate.avgScore} average · ${cap(realEstate.confidenceLabel)} confidence · built from ${realEstate.propertyCount} properties`}
+          caption="Confidence here reflects listing & transaction volume."
+          axisLabels={["DECLINING", "NEUTRAL", "APPRECIATING"]}
+          score={realEstate.avgScore}
+          arcGreen={colors.arcGreen}
+          arcRed={colors.arcRed}
+          greyArc={colors.greyArc}
+          infoNote={
+            realEstate.excludedCount > 0
+              ? `${realEstate.excludedCount} tracked propert${realEstate.excludedCount > 1 ? "ies have" : "y has"} too little evidence to contribute and ${realEstate.excludedCount > 1 ? "are" : "is"} excluded from this reading.`
+              : null
+          }
+        />
+      )}
     </div>
   );
 }

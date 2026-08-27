@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { sentimentApi, WATCHLIST } from "../../services/sentimentApi";
-import { IconStar, IconArrowUpRight, IconArrowDownRight, IconArrowRight, IconListView, IconGrid2, IconGrid3 } from "./icons";
+import { IconStar, IconArrowUpRight, IconArrowDownRight, IconArrowRight, IconListView, IconGrid2 } from "./icons";
 
 const CATEGORY_TABS = [
   { key: "crypto", label: "Crypto" },
@@ -20,52 +20,62 @@ function barColor(score, colors) {
 
 export default function AssetSentimentList({ colors, onSelectAsset }) {
   const [tab, setTab] = useState("crypto");
-  const [subcat, setSubcat] = useState("All");
   const [watchlistOnly, setWatchlistOnly] = useState(false);
-  const [view, setView] = useState("list");
+  const [view, setView] = useState("list"); // "list" | "grid"
   const [favorites, setFavorites] = useState([]);
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // "all" (Everything) fetches the combined feed; "tokenized" is disabled/unreachable
+  const apiScope = tab === "all" ? "all" : tab === "tokenized" ? "crypto" : tab;
+
   useEffect(() => {
     setLoading(true);
-    sentimentApi.getAssetList(tab === "tokenized" ? "crypto" : tab).then((r) => {
+    sentimentApi.getAssetList(apiScope).then((r) => {
       setRows(r);
       setLoading(false);
     }).catch(console.error);
-  }, [tab]);
+  }, [apiScope]);
 
   const filtered = useMemo(() => {
     let r = rows;
-    if (subcat !== "All") r = r.filter((x) => x.subcategory === subcat);
     if (watchlistOnly) r = r.filter((x) => WATCHLIST.includes(x.assetId));
     return r;
-  }, [rows, subcat, watchlistOnly]);
+  }, [rows, watchlistOnly]);
 
-  const toggleFavorite = (id) => setFavorites((f) => (f.includes(id) ? f.filter((x) => x !== id) : [...f, id]));
-
-  const gridCols = view === "list" ? "1fr" : view === "grid2" ? "1fr 1fr" : "1fr 1fr 1fr";
+  const toggleFavorite = (id) =>
+    setFavorites((f) => (f.includes(id) ? f.filter((x) => x !== id) : [...f, id]));
 
   return (
     <div className="sv2-card sv2-card-pad">
-      <div className="sv2-flex-between" style={{ alignItems: "flex-start" }}>
+      <div className="sv2-flex-between" style={{ alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
         <div>
           <div className="sv2-card-title">What stands out</div>
           <div className="sv2-card-sub">Sorted by how positive the read is right now.</div>
         </div>
-        <div className="sv2-icon-toggle">
-          <button className={view === "list" ? "active" : ""} onClick={() => setView("list")} title="List view"><IconListView /></button>
-          <button className={view === "grid2" ? "active" : ""} onClick={() => setView("grid2")} title="Compact view"><IconGrid2 /></button>
-          <button className={view === "grid3" ? "active" : ""} onClick={() => setView("grid3")} title="Dense view"><IconGrid3 /></button>
+        <div className="sv2-flex sv2-gap-16" style={{ alignItems: "center" }}>
+          <label className="sv2-checkbox-row">
+            <input type="checkbox" checked={watchlistOnly} onChange={(e) => setWatchlistOnly(e.target.checked)} />
+            Only my watchlist
+          </label>
+          <div className="sv2-icon-toggle">
+            <button className={view === "list" ? "active" : ""} onClick={() => setView("list")} title="List view">
+              <IconListView />
+            </button>
+            <button className={view === "grid" ? "active" : ""} onClick={() => setView("grid")} title="Grid view">
+              <IconGrid2 />
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="sv2-flex-between sv2-mt-16" style={{ flexWrap: "wrap", gap: 10 }}>
-        <div className="sv2-chip-row">
+      <div className="sv2-mt-16">
+        <div className="sv2-category-tabs" style={{ display: "flex", width: "100%" }}>
           {CATEGORY_TABS.map((c) => (
             <button
               key={c.key}
-              className={`sv2-chip ${tab === c.key ? "active" : ""} ${c.disabled ? "disabled" : ""}`}
+              style={{ flex: 1, textAlign: "center" }}
+              className={`${tab === c.key ? "active" : ""} ${c.disabled ? "disabled" : ""}`}
               disabled={c.disabled}
               onClick={() => !c.disabled && setTab(c.key)}
             >
@@ -73,26 +83,14 @@ export default function AssetSentimentList({ colors, onSelectAsset }) {
             </button>
           ))}
         </div>
-        <label className="sv2-checkbox-row">
-          <input type="checkbox" checked={watchlistOnly} onChange={(e) => setWatchlistOnly(e.target.checked)} />
-          Only my watchlist
-        </label>
       </div>
 
-      <div className="sv2-chip-row sv2-mt-12">
-        {SUBCATEGORIES.map((c) => (
-          <button key={c} className={`sv2-chip ${subcat === c ? "active" : ""}`} onClick={() => setSubcat(c)}>
-            {c}
-          </button>
-        ))}
-      </div>
-
-      <div className="sv2-mt-16" style={{ display: "grid", gridTemplateColumns: gridCols, gap: 8 }}>
+      <div className={`sv2-mt-16 ${view === "grid" ? "sv2-asset-grid" : "sv2-flex-col"}`}>
         {loading ? (
           <div className="sv2-muted sv2-small" style={{ padding: "24px 0" }}>Loading assets…</div>
         ) : filtered.length === 0 ? (
           <div className="sv2-muted sv2-small" style={{ padding: "24px 0" }}>No assets match this filter yet.</div>
-        ) : (
+        ) : view === "list" ? (
           filtered.map((row) => {
             const covered = row.score != null;
             const positive = row.changePct >= 0;
@@ -102,7 +100,7 @@ export default function AssetSentimentList({ colors, onSelectAsset }) {
                 className={`sv2-asset-row ${covered ? "" : "not-covered"}`}
                 onClick={() => covered && onSelectAsset(row.assetId)}
               >
-                <div>
+                <div className="sv2-asset-name-col">
                   <div className="sv2-asset-name">
                     {row.name}
                     {row.held && <span className="sv2-tag-held">Held</span>}
@@ -110,7 +108,7 @@ export default function AssetSentimentList({ colors, onSelectAsset }) {
                   <div className="sv2-asset-sub">{row.subcategory}</div>
                 </div>
 
-                <div className="sv2-flex sv2-gap-10" style={{ alignItems: "center" }}>
+                <div className="sv2-asset-score-col">
                   <span className="sv2-score-num" style={{ color: covered ? barColor(row.score, colors) : colors.textMute }}>
                     {covered ? row.score : ""}
                   </span>
@@ -120,7 +118,7 @@ export default function AssetSentimentList({ colors, onSelectAsset }) {
                   <span className="sv2-bar-label">{row.readLabel}</span>
                 </div>
 
-                <div className="sv2-flex sv2-gap-10" style={{ justifySelf: "end", alignItems: "center" }}>
+                <div className="sv2-asset-change-col">
                   {covered ? positive ? <IconArrowUpRight /> : <IconArrowDownRight /> : <IconArrowRight />}
                   <span className={`sv2-change ${row.changePct > 0 ? "positive" : row.changePct < 0 ? "negative" : ""}`}>
                     {row.changePct >= 0 ? "+" : ""}{row.changePct.toFixed(2)}%
@@ -131,6 +129,50 @@ export default function AssetSentimentList({ colors, onSelectAsset }) {
                   >
                     <IconStar filled={favorites.includes(row.assetId)} />
                   </button>
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          filtered.map((row) => {
+            const covered = row.score != null;
+            const positive = row.changePct >= 0;
+            return (
+              <div
+                key={row.assetId}
+                className={`sv2-asset-card ${covered ? "" : "not-covered"}`}
+                onClick={() => covered && onSelectAsset(row.assetId)}
+              >
+                <div className="sv2-flex-between" style={{ alignItems: "flex-start" }}>
+                  <div>
+                    <div className="sv2-asset-name">
+                      {row.name}
+                      {row.held && <span className="sv2-tag-held">Held</span>}
+                    </div>
+                    <div className="sv2-asset-sub">{row.subcategory}</div>
+                  </div>
+                  <button
+                    className={`sv2-star-btn ${favorites.includes(row.assetId) ? "active" : ""}`}
+                    onClick={(e) => { e.stopPropagation(); toggleFavorite(row.assetId); }}
+                  >
+                    <IconStar filled={favorites.includes(row.assetId)} />
+                  </button>
+                </div>
+
+                <div className="sv2-flex sv2-gap-10 sv2-mt-12" style={{ alignItems: "center" }}>
+                  <span className="sv2-score-num" style={{ color: covered ? barColor(row.score, colors) : colors.textMute }}>
+                    {covered ? row.score : ""}
+                  </span>
+                  <div className="sv2-bar-track">
+                    <div className="sv2-bar-fill" style={{ width: `${row.score ?? 0}%`, background: barColor(row.score, colors) }} />
+                  </div>
+                </div>
+
+                <div className="sv2-flex-between sv2-mt-8">
+                  <span className="sv2-bar-label">{row.readLabel}</span>
+                  <span className={`sv2-change ${row.changePct > 0 ? "positive" : row.changePct < 0 ? "negative" : ""}`}>
+                    {covered ? (row.changePct >= 0 ? "+" : "") + row.changePct.toFixed(2) + "%" : "—"}
+                  </span>
                 </div>
               </div>
             );

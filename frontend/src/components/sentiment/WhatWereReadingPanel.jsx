@@ -3,7 +3,6 @@ import { sentimentApi, relativeTime, WATCHLIST } from "../../services/sentimentA
 import { IconExternal } from "./icons";
 
 export default function WhatWereReadingPanel() {
-  const [tab, setTab] = useState("news");
   const [items, setItems] = useState([]);
   const [watchlistOnly, setWatchlistOnly] = useState(false);
   const [showAll, setShowAll] = useState(false);
@@ -12,31 +11,26 @@ export default function WhatWereReadingPanel() {
   useEffect(() => {
     setLoading(true);
     setShowAll(false);
-    sentimentApi.getWhatWereReading(tab).then((r) => {
+    sentimentApi.getWhatWereReading("news").then((r) => {
       setItems(r);
       setLoading(false);
     }).catch(console.error);
-  }, [tab]);
+  }, []);
 
   const filtered = watchlistOnly ? items.filter((i) => WATCHLIST.includes(i.assetId)) : items;
   const visible = showAll ? filtered : filtered.slice(0, 4);
 
   return (
     <div className="sv2-card sv2-card-pad-sm">
-      <div className="sv2-flex-between">
+      <div className="sv2-flex-between" style={{ alignItems: "center" }}>
         <span className="sv2-card-title">What we're reading</span>
-        <div className="sv2-segmented">
-          <button className={tab === "news" ? "active" : ""} onClick={() => setTab("news")}>News</button>
-          <button className={tab === "nft" ? "active" : ""} onClick={() => setTab("nft")}>NFT chatter</button>
-        </div>
+        <label className="sv2-checkbox-row">
+          <input type="checkbox" checked={watchlistOnly} onChange={(e) => setWatchlistOnly(e.target.checked)} />
+          Only my watchlist
+        </label>
       </div>
 
-      <label className="sv2-checkbox-row sv2-mt-12">
-        <input type="checkbox" checked={watchlistOnly} onChange={(e) => setWatchlistOnly(e.target.checked)} />
-        Only my watchlist
-      </label>
-
-      <div className="sv2-mt-8">
+      <div className="sv2-mt-12">
         {loading ? (
           <div className="sv2-muted sv2-small" style={{ padding: "16px 0" }}>Loading…</div>
         ) : visible.length === 0 ? (
