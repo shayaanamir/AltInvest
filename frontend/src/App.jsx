@@ -79,7 +79,9 @@ function ShellRoutes() {
       <Sidebar activePage={activePage} onNavigate={navigate} />
       <div style={s.main}>
         <Topbar />
-        {pageContent}
+        <div style={s.content}>
+          {pageContent}
+        </div>
       </div>
     </div>
   );
