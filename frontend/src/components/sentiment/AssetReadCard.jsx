@@ -1,5 +1,6 @@
 export default function AssetReadCard({ detail, colors }) {
   const scoreColor = detail.score >= 58 ? colors.green : detail.score >= 45 ? colors.accent : colors.red;
+  const formattedScore = (detail.sentimentScore >= 0 ? "+" : "") + detail.sentimentScore.toFixed(2);
 
   return (
     <div className="sv2-card sv2-card-pad">
@@ -7,9 +8,9 @@ export default function AssetReadCard({ detail, colors }) {
 
       <div className="sv2-score-display">
         <div>
-          <div className="sv2-score-big" style={{ color: scoreColor }}>{detail.score}</div>
+          <div className="sv2-score-big" style={{ color: scoreColor }}>{formattedScore}</div>
           <div className="sv2-bold" style={{ fontSize: 15, color: scoreColor }}>{detail.label}</div>
-          <div className="sv2-score-of100">out of 100</div>
+          <div className="sv2-score-of100">Sentiment Score (-1.0 to +1.0)</div>
         </div>
         <div style={{ textAlign: "right" }}>
           <div className="sv2-tiny sv2-mute2">Confidence</div>
@@ -24,8 +25,24 @@ export default function AssetReadCard({ detail, colors }) {
         </div>
       </div>
 
-      <div className="sv2-progress sv2-mt-16">
-        <div className="sv2-progress-fill" style={{ width: `${detail.score}%`, background: scoreColor }} />
+      {/* Bipolar progress bar representing -1.0 to +1.0 */}
+      <div className="sv2-bipolar-progress-container sv2-mt-16">
+        <div className="sv2-bipolar-track">
+          <div
+            className="sv2-bipolar-fill"
+            style={{
+              left: detail.sentimentScore >= 0 ? "50%" : `${50 + detail.sentimentScore * 50}%`,
+              width: `${Math.abs(detail.sentimentScore) * 50}%`,
+              background: scoreColor,
+            }}
+          />
+          <div className="sv2-bipolar-center-line" />
+        </div>
+        <div className="sv2-bipolar-labels">
+          <span>-1.0</span>
+          <span>0.0</span>
+          <span>+1.0</span>
+        </div>
       </div>
 
       <p className="sv2-narrative">{detail.narrative}</p>

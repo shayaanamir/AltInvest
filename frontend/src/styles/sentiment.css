@@ -443,3 +443,57 @@
 }
 .sv2-asset-card.not-covered { cursor: default; opacity: 0.65; }
 .sv2-asset-card:hover:not(.not-covered) { background: var(--sv2-card-alt); }
+
+/* ---------- spinner loader animation ---------- */
+.sv2-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-bottom-color: transparent;
+  border-radius: 50%;
+  display: inline-block;
+  animation: sv2-rotation 1s linear infinite;
+}
+@keyframes sv2-rotation {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ---------- Bipolar progress bar for sentiment ---------- */
+.sv2-bipolar-progress-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+.sv2-bipolar-track {
+  position: relative;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--sv2-chip);
+  overflow: hidden;
+}
+.sv2-bipolar-fill {
+  position: absolute;
+  height: 100%;
+  border-radius: 5px;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.sv2-bipolar-center-line {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  background: var(--sv2-border-strong);
+  transform: translateX(-50%);
+  opacity: 0.8;
+}
+.sv2-bipolar-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--sv2-text-mute);
+  padding: 0 2px;
+}

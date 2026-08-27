@@ -71,7 +71,19 @@ async function fetchAllSentimentRaw() {
     const res = await fetch(`${API_BASE_URL}/sentiment`);
     if (!res.ok) throw new Error(`status ${res.status}`);
     const data = await res.json();
-    return Array.isArray(data) && data.length ? data : asset_sentiment;
+    if (Array.isArray(data) && data.length) {
+      const seen = new Set();
+      const unique = [];
+      for (const item of data) {
+        const id = (item.asset_id || item.asset || "").toLowerCase();
+        if (id && !seen.has(id)) {
+          seen.add(id);
+          unique.push(item);
+        }
+      }
+      return unique;
+    }
+    return asset_sentiment;
   } catch (e) {
     console.warn(`sentimentApi: backend unavailable, using sample data (${e.message})`);
     return asset_sentiment;
@@ -327,6 +339,7 @@ export const sentimentApi = {
     const filler = FILLER_ROWS.find((f) => f.assetId === assetId);
 
     const score = record ? Math.round((record.sentimentScore + 1) * 50) : filler?.score ?? 50;
+    const sentimentScore = record ? record.sentimentScore : (filler?.score != null ? (filler.score / 50) - 1 : 0.0);
     const confidence = record ? record.confidence : 0.5;
     const confidenceLabel = record ? record.confidenceLabel : "medium";
     const label = qualitativeLabel(score) ?? "Neutral";
@@ -363,6 +376,7 @@ export const sentimentApi = {
       price: meta.price ?? 3418.02,
       priceChangePct: record?.marketSignals?.price_change_24h ?? filler?.changePct ?? 0,
       score,
+      sentimentScore,
       label,
       confidencePct: Math.round(confidence * 100),
       confidenceLabel,

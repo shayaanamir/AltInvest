@@ -4,6 +4,7 @@ services:
   mongodb:
     image: mongo:7
     container_name: altinvest-mongo
+    command: mongod --quiet 
     restart: unless-stopped
     ports:
       - "27017:27017"
