@@ -5,7 +5,7 @@ def get_latest_price(asset: str) -> dict | None:
     db = get_db()
     return db.prices.find_one(
         {"asset": asset.upper()},
-        sort=[("date", -1)],
+        sort=[("timestamp", -1)],
         projection={"_id": 0}
     )
 
@@ -13,7 +13,7 @@ def get_price_history(asset: str, days: int = 365) -> list:
     db = get_db()
     cursor = db.prices.find(
         {"asset": asset.upper()},
-        sort=[("date", -1)],
+        sort=[("timestamp", -1)],
         limit=days,
         projection={"_id": 0}
     )
@@ -31,7 +31,7 @@ def get_latest_prediction(asset: str) -> dict | None:
     db = get_db()
     return db.predictions.find_one(
         {"asset": asset.upper()},
-        sort=[("date", -1)],
+        sort=[("timestamp", -1)],
         projection={"_id": 0}
     )
 
@@ -39,7 +39,7 @@ def get_latest_risk(asset: str) -> dict | None:
     db = get_db()
     return db.risk_scores.find_one(
         {"asset": asset.upper()},
-        sort=[("date", -1)],
+        sort=[("timestamp", -1)],
         projection={"_id": 0}
     )
 

@@ -14,6 +14,14 @@ class PredictionResponse(BaseModel):
     confidence: Optional[float]
     model_version: Optional[str]
     timestamp: str
+    lower_bound: Optional[float] = None
+    upper_bound: Optional[float] = None
+    risk_score: Optional[float] = None
+    trend: Optional[str] = None
+    agreement: Optional[bool] = None
+    signal: Optional[str] = None
+    boosted_confidence: Optional[float] = None
+    ensemble_price: Optional[float] = None
     note: Optional[str] = None
 
 class HeadlineItem(BaseModel):
