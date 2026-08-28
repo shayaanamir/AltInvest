@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { compareApi } from "../../services/compareApi";
 import { formatAssetPrice } from "../../utils/formatters";
-import { IconX, IconCheck, IconSearch } from "./icons";
+import { IconX, IconCheck, IconSearch } from "../icons";
 
 export default function CompareAssetModal({ initialSelected = [], onClose, onConfirm }) {
   const [query, setQuery] = useState("");

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { L } from "../../components/landingPage/landingTokens";
+import { IconCheck2 } from "../../components/icons";
 
 const MARKETS = [
     {
@@ -128,7 +129,7 @@ export default function Step1Markets({ answers, setAnswer }) {
                                     background: L.blue,
                                     display: "flex", alignItems: "center", justifyContent: "center",
                                 }}>
-                                    <span style={{ color: "#fff", fontSize: 10, fontWeight: 800 }}>✓</span>
+                                    <IconCheck2 size={12} style={{ color: "#fff" }} />
                                 </div>
                             )}
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { sentimentApi, WATCHLIST } from "../../services/sentimentApi";
-import { IconStar, IconArrowUpRight, IconArrowDownRight, IconArrowRight, IconListView, IconGrid2 } from "./icons";
+import { IconStar, IconArrowUpRight, IconArrowDownRight, IconArrowRight, IconListView, IconGrid2 } from "../icons";
 
 const CATEGORY_TABS = [
   { key: "crypto", label: "Crypto" },

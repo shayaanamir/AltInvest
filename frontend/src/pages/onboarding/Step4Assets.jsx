@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { L } from "../../components/landingPage/landingTokens";
+import { IconCheck2 } from "../../components/icons";
 
 const ALL_ASSETS = [
     { sym: "BTC", name: "Bitcoin", chg: "+2.4%", pos: true, aiPick: true, spark: "M0,12 C5,10 10,6 15,4 C20,2 25,8 30,6 C35,4 38,2 42,1" },
@@ -144,7 +145,7 @@ export default function Step4Assets({ answers, setAnswer }) {
                                         fontSize: 11, color: active ? "#fff" : L.ink3,
                                         transition: "all 0.18s",
                                     }}>
-                                        {active ? "✓" : "+"}
+                                        {active ? <IconCheck2 size={13} style={{ color: "#fff" }} /> : "+"}
                                     </div>
                                 </div>
                             </motion.div>

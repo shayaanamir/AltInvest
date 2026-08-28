@@ -5,7 +5,7 @@ import { alertsApi } from "../services/alertsApi";
 import AlertSection from "../components/alerts/AlertSection";
 import AlertRow from "../components/alerts/AlertRow";
 import HowAlertsWorkCard from "../components/alerts/HowAlertsWorkCard";
-import { IconPlus } from "../components/alerts/icons";
+import { IconPlus } from "../components/icons";
 
 export default function AlertsPage() {
   const [alerts, setAlerts] = useState([]);

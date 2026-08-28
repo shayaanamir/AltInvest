@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { sentimentApi } from "../../services/sentimentApi";
-import { IconArrowUpRight, IconArrowDownRight } from "./icons";
+import { IconArrowUpRight, IconArrowDownRight } from "../icons";
 
 export default function ThemesPanel() {
   const [themes, setThemes] = useState([]);

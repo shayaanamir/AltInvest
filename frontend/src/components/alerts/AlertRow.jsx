@@ -1,6 +1,5 @@
 import { relativeTime } from "../../services/sentimentApi";
-import { IconTrash } from "../sentiment/icons";
-import { IconPlay, IconPause, IconPencil } from "./icons";
+import { IconTrash, IconPlay, IconPause, IconPencil } from "../icons";
 
 export default function AlertRow({ alert, onToggle, onEdit, onDelete }) {
   const isPaused = alert.status === "paused";

@@ -4,8 +4,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { sv2Colors } from "../../utils/sv2Colors";
 import { portfolioApi } from "../../services/portfolioApi";
 import { formatAssetPrice, formatPct } from "../../utils/formatters";
-import { IconBell, IconTrash } from "../sentiment/icons";
-import { IconPencil } from "./icons";
+import { IconBell, IconTrash, IconPencil } from "../icons";
 
 function aaiColor(score, colors) {
   if (score >= 70) return colors.green;

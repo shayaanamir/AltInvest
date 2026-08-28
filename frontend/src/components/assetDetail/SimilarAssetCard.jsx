@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import AssetAvatar from "../shared/AssetAvatar";
 import MiniChart from "../charts/MiniChart";
 import { formatAssetPrice, formatPct } from "../../utils/formatters";
+import { IconStar } from "../icons";
 
 const SIGNAL_CLASS = { BUY: "positive", HOLD: "neutral", SELL: "negative" };
 const SIGNAL_LABEL = { BUY: "Buy", HOLD: "Hold", SELL: "Sell" };
@@ -21,9 +22,7 @@ export default function SimilarAssetCard({ asset }) {
           </div>
         </div>
         <button className={`sv2-star-btn ${asset.watching ? "active" : ""}`} onClick={(e) => e.stopPropagation()}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill={asset.watching ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8">
-            <path d="M12 2.5l2.9 6.4 6.9.7-5.2 4.7 1.5 6.9L12 17.6l-6.1 3.6 1.5-6.9-5.2-4.7 6.9-.7z" />
-          </svg>
+          <IconStar size={15} filled={asset.watching} />
         </button>
       </div>
 

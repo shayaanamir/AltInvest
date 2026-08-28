@@ -5,7 +5,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { sv2Colors } from "../../utils/sv2Colors";
 import { formatAssetPrice, formatPct } from "../../utils/formatters";
 import MiniChart from "../charts/MiniChart";
-import { IconStar } from "../sentiment/icons";
+import { IconStar } from "../icons";
 
 function aaiTier(score) {
   if (score >= 65) return "";

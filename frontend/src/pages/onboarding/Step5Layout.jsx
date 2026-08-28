@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { L } from "../../components/landingPage/landingTokens";
+import { IconCheck2 } from "../../components/icons";
 
 const LAYOUTS = [
     {
@@ -146,7 +147,7 @@ export default function Step5Layout({ answers, setAnswer }) {
                                     fontSize: 10, color: "#fff",
                                     transition: "all 0.2s",
                                 }}>
-                                    {active && "✓"}
+                                    {active && <IconCheck2 size={13} style={{ color: "#fff" }} />}
                                 </div>
                             </div>
                         </motion.div>

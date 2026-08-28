@@ -7,7 +7,7 @@ import CompareAssetCard from "../components/compare/CompareAssetCard";
 import CompareAaiChart from "../components/compare/CompareAaiChart";
 import CompareRiskReturnChart from "../components/compare/CompareRiskReturnChart";
 import CompareSentimentTable from "../components/compare/CompareSentimentTable";
-import { IconColumns } from "../components/compare/icons";
+import { IconColumns } from "../components/icons";
 import { compareApi } from "../services/compareApi";
 
 export default function ComparePage() {

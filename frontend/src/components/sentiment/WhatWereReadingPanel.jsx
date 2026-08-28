@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { sentimentApi, relativeTime, WATCHLIST } from "../../services/sentimentApi";
-import { IconExternal } from "./icons";
+import { IconExternal } from "../icons";
 
 export default function WhatWereReadingPanel() {
   const [items, setItems] = useState([]);

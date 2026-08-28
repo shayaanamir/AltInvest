@@ -1,4 +1,5 @@
 import AssetAvatar from "../shared/AssetAvatar";
+import { IconBell, IconTrash } from "../icons";
 
 const SIGNAL_CLASS = { BUY: "signal-buy", HOLD: "signal-hold", SELL: "signal-sell" };
 const SIGNAL_LABEL = { BUY: "Buy", HOLD: "Hold", SELL: "Sell" };
@@ -49,13 +50,10 @@ export default function WatchlistRow({ item, onAddToPortfolio, onRemove }) {
           Add to portfolio
         </button>
         <button className="wl-icon-btn" title="Set alert">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-            <path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
-            <path d="M13.7 21a2 2 0 01-3.4 0" />
-          </svg>
+          <IconBell size={15} />
         </button>
         <button className="wl-icon-btn danger" onClick={() => onRemove(item)} title="Remove">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          <IconTrash size={15} />
         </button>
       </div>
     </div>

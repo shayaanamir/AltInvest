@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { relativeTime } from "../../services/sentimentApi";
-import { IconSearch, IconRefresh, IconStar, IconChevronDown } from "./icons";
+import { IconSearch, IconRefresh, IconStar, IconChevronDown } from "../icons";
 
 export default function AssetDetailHeader({ detail, switchable, onBack, onSwitchAsset, onRefresh, refreshing, watching, onToggleWatching }) {
   const [ago, setAgo] = useState(relativeTime(detail.lastUpdated));

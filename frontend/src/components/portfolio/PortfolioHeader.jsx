@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { IconCompareColumns, IconPlus } from "./icons";
+import { IconColumns, IconPlus } from "../icons";
 
 export default function PortfolioHeader() {
   const navigate = useNavigate();
@@ -12,7 +12,7 @@ export default function PortfolioHeader() {
       </div>
       <div className="dv2-hero-actions">
         <button className="dv2-btn-ghost" type="button" onClick={() => navigate("/compare")}>
-          <IconCompareColumns size={14} />
+          <IconColumns size={14} />
           Compare holdings
         </button>
         <button className="dv2-btn-accent" type="button">
