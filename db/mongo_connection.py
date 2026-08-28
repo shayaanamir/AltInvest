@@ -11,11 +11,11 @@ _client = None
 def get_client() -> MongoClient:
     global _client
     if _client is None:
-        uri = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+        uri = os.getenv("MONGO_URI")
         _client = MongoClient(uri)
     return _client
 
 def get_db():
     client = get_client()
-    db_name = os.getenv("MONGO_DB_NAME", "aaip_db")
+    db_name = os.getenv("MONGO_DB_NAME")
     return client[db_name]

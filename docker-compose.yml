@@ -30,9 +30,9 @@ services:
     ports:
       - "8000:8000"
     environment:
-      # db/mongo_connection.py + sentiment_engine/utils/config.py
-      MONGO_URI: mongodb://mongodb:27017
-      MONGO_DB_NAME: aaip_db
+      MONGO_URI: ${MONGO_URI:-mongodb://mongodb:27017}
+      MONGO_DB_NAME: ${MONGO_DB_NAME:-aaip_db}
+
       MONGO_DB: altinvest
       CMC_API_KEY: ${CMC_API_KEY:-}
     depends_on:
