@@ -1,0 +1,134 @@
+/* Portfolio v2 — layout classes only. Relies on --sv2-* tokens from
+   sentiment.css and .dv2-* helpers from dashboard.css for color/theme,
+   so light and dark mode both work without any extra work here. */
+
+.pv2-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.3fr;
+  gap: 14px;
+  margin-top: 16px;
+  margin-bottom: 14px;
+}
+@media (max-width: 900px) {
+  .pv2-stats-grid { grid-template-columns: 1fr; }
+}
+
+.pv2-value-row { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+
+.pv2-diversification-card { display: flex; align-items: center; gap: 16px; }
+.pv2-ring-wrap { flex-shrink: 0; color: var(--sv2-text); }
+.pv2-diversification-text { min-width: 0; }
+.pv2-diversification-title {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--sv2-text);
+  margin: 4px 0 4px;
+  letter-spacing: -0.3px;
+}
+.pv2-diversification-note { font-size: 11.5px; color: var(--sv2-text-soft); line-height: 1.4; }
+.pv2-diversification-note.warn { color: var(--sv2-red); }
+
+/* ---------- crypto holdings table ---------- */
+.pv2-holdings-row {
+  display: grid;
+  grid-template-columns: 2fr 0.8fr 1fr 1fr 0.9fr 1fr 100px;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 4px;
+  border-top: 1px solid var(--sv2-border);
+  cursor: pointer;
+}
+.pv2-holdings-row:hover:not(.pv2-holdings-head) { background: var(--sv2-card-alt); border-radius: 10px; }
+.pv2-holdings-head {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--sv2-text-mute);
+  cursor: default;
+  border-top: none;
+}
+
+.pv2-asset-cell { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.pv2-avatar {
+  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9.5px; font-weight: 800; color: #fff;
+}
+.pv2-asset-name { font-size: 13px; font-weight: 700; color: var(--sv2-text); white-space: nowrap; }
+.pv2-asset-symbol { font-size: 10.5px; color: var(--sv2-text-mute); margin-top: 1px; }
+
+.pv2-aai-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--sv2-text); }
+.pv2-aai-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+.pv2-suggested-btn {
+  display: inline-flex;
+  width: fit-content;
+  background: var(--sv2-chip);
+  border: 1px solid var(--sv2-chip-border);
+  color: var(--sv2-text);
+  border-radius: 20px;
+  padding: 6px 13px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.pv2-manage-icons { display: flex; align-items: center; gap: 4px; justify-content: flex-end; }
+.pv2-manage-icons button {
+  background: none; border: none; padding: 5px; cursor: pointer;
+  color: var(--sv2-text-mute); display: flex; border-radius: 6px;
+}
+.pv2-manage-icons button:hover { background: var(--sv2-chip); color: var(--sv2-text); }
+
+@media (max-width: 900px) {
+  .pv2-holdings-row { grid-template-columns: 1.6fr 1fr 1fr; row-gap: 8px; }
+  .pv2-holdings-row > span:nth-child(4),
+  .pv2-holdings-row > span:nth-child(5),
+  .pv2-holdings-row > span:nth-child(6),
+  .pv2-holdings-row .pv2-manage-icons { display: none; }
+}
+
+/* ---------- NFT grid ---------- */
+.pv2-nft-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+@media (max-width: 1200px) { .pv2-nft-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .pv2-nft-grid { grid-template-columns: 1fr; } }
+
+.pv2-nft-card { overflow: hidden; padding: 0; cursor: pointer; }
+.pv2-nft-art { aspect-ratio: 1 / 1; width: 100%; overflow: hidden; }
+.pv2-nft-body { padding: 14px 16px 16px; }
+.pv2-nft-name { font-size: 13.5px; font-weight: 700; color: var(--sv2-text); }
+.pv2-nft-token { font-size: 10.5px; color: var(--sv2-text-mute); margin: 1px 0 10px; }
+.pv2-nft-price-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; }
+.pv2-nft-price { font-size: 15px; font-weight: 800; color: var(--sv2-text); }
+.pv2-nft-cost { font-size: 10.5px; color: var(--sv2-text-mute); margin-top: 2px; }
+
+/* ---------- portfolio intelligence ---------- */
+.pv2-intel-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+@media (max-width: 800px) { .pv2-intel-grid { grid-template-columns: 1fr; } }
+
+.pv2-intel-card { border: 1px solid var(--sv2-border); border-radius: 12px; padding: 14px 16px; }
+.pv2-intel-value { font-size: 22px; font-weight: 800; color: var(--sv2-text); letter-spacing: -0.4px; margin: 4px 0 4px; }
+.pv2-intel-unit { font-size: 13px; font-weight: 600; color: var(--sv2-text-mute); margin-left: 2px; }
+
+.pv2-signal-row { display: flex; gap: 8px; margin: 6px 0 4px; flex-wrap: wrap; }
+.pv2-signal-pill {
+  font-size: 11.5px; font-weight: 700; padding: 5px 11px; border-radius: 20px;
+  background: var(--sv2-chip); color: var(--sv2-text);
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.pv2-signal-pill.buy { background: var(--sv2-green-soft); color: var(--sv2-green); }
+.pv2-signal-pill.hold { background: var(--sv2-chip); color: var(--sv2-text-soft); }
+.pv2-signal-pill.sell,
+.pv2-signal-pill.reduce { background: var(--sv2-red-soft); color: var(--sv2-red); }
+.pv2-signal-count { opacity: 0.75; }
+
+.pv2-bullet-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.pv2-bullet-item { position: relative; padding-left: 18px; font-size: 13px; color: var(--sv2-text-soft); line-height: 1.55; }
+.pv2-bullet-item::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 7px;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--sv2-accent);
+}

@@ -1,58 +1,126 @@
+import { useState, useEffect, useRef } from "react";
 import { useTheme } from "../../context/ThemeContext";
-import { makeStyles } from "../../styles/makeStyles";
+import { sv2Colors } from "../../utils/sv2Colors";
+import { portfolioApi } from "../../services/portfolioApi";
 
-// Minimal sparkline data for the chart
-const PERF_DATA = [
-    { x: 0, y: 60 }, { x: 1, y: 55 }, { x: 2, y: 65 }, { x: 3, y: 58 },
-    { x: 4, y: 72 }, { x: 5, y: 68 }, { x: 6, y: 80 }, { x: 7, y: 75 },
-    { x: 8, y: 85 }, { x: 9, y: 78 }, { x: 10, y: 90 }, { x: 11, y: 88 },
-];
-
-function buildPath(data, width, height) {
-    const minY = Math.min(...data.map(d => d.y));
-    const maxY = Math.max(...data.map(d => d.y));
-    const rangeY = maxY - minY || 1;
-    const points = data.map(d => ({
-        px: (d.x / (data.length - 1)) * width,
-        py: height - ((d.y - minY) / rangeY) * height,
-    }));
-    const line = points.map((p, i) => `${i === 0 ? "M" : "L"}${p.px.toFixed(1)},${p.py.toFixed(1)}`).join(" ");
-    const area = `${line} L${(data.length - 1) / (data.length - 1) * width},${height} L0,${height} Z`;
-    return { line, area };
-}
+const RANGES = ["1M", "3M", "1Y"];
 
 export default function PerformanceHistory() {
-    const { tokens: t } = useTheme();
-    const s = makeStyles(t);
-    const W = 520, H = 160;
-    const { line, area } = buildPath(PERF_DATA, W, H);
+  const { isDark } = useTheme();
+  const colors = isDark ? sv2Colors.dark : sv2Colors.light;
 
-    return (
-        <div style={s.card}>
-            <div style={s.cardHeader}>
-                <span style={s.cardTitle}>Performance History</span>
-            </div>
-            <div style={{ padding: "14px 14px 10px", height: 200, position: "relative" }}>
-                <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
-                    <defs>
-                        <linearGradient id="perfGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor={t.accentBlue} stopOpacity="0.25" />
-                            <stop offset="100%" stopColor={t.accentBlue} stopOpacity="0.0" />
-                        </linearGradient>
-                    </defs>
-                    <path d={area} fill="url(#perfGrad)" />
-                    <path d={line} fill="none" stroke={t.accentBlue} strokeWidth="2" strokeLinejoin="round" />
-                </svg>
-                {/* X-axis labels */}
-                <div style={{
-                    display: "flex", justifyContent: "space-between",
-                    padding: "4px 0 0", position: "absolute", bottom: 6, left: 14, right: 14,
-                }}>
-                    {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map(m => (
-                        <span key={m} style={{ fontSize: 9, color: t.textMuted }}>{m}</span>
-                    ))}
-                </div>
-            </div>
-        </div>
+  const [range, setRange] = useState("3M");
+  const [series, setSeries] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const containerRef = useRef(null);
+  const [dims, setDims] = useState({ W: 560, H: 220 });
+
+  useEffect(() => {
+    const ob = new ResizeObserver((entries) => {
+      if (entries[0]) {
+        setDims({
+          W: Math.max(120, entries[0].contentRect.width),
+          H: Math.max(120, entries[0].contentRect.height),
+        });
+      }
+    });
+    if (containerRef.current) ob.observe(containerRef.current);
+    return () => ob.disconnect();
+  }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    portfolioApi.getPerformanceHistory(range).then((s) => {
+      setSeries(s);
+      setLoading(false);
+    }).catch(console.error);
+  }, [range]);
+
+  const { W, H } = dims;
+  const PAD_L = 46, PAD_R = 10, PAD_T = 10, PAD_B = 22;
+
+  let content = null;
+
+  if (!loading && series.length >= 2) {
+    const now = Date.now();
+    const vals = series.map((d) => d.value);
+    const minVal = Math.min(...vals) * 0.98;
+    const maxVal = Math.max(...vals) * 1.02;
+    const range2 = Math.max(1, maxVal - minVal);
+
+    const toPoint = (v, i) => ({
+      x: PAD_L + (i / (series.length - 1)) * (W - PAD_L - PAD_R),
+      y: H - PAD_B - ((v - minVal) / range2) * (H - PAD_T - PAD_B),
+    });
+    const pts = series.map((d, i) => toPoint(d.value, i));
+    const last = pts[pts.length - 1];
+    const linePath = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
+    const areaPath = `${linePath} L ${last.x.toFixed(1)} ${H - PAD_B} L ${pts[0].x.toFixed(1)} ${H - PAD_B} Z`;
+
+    const yLabels = [0, 1, 2, 3].map((i) => minVal + (range2 * i) / 3);
+    const xIdxs = [0, Math.floor((series.length - 1) / 2), series.length - 1];
+
+    const formatY = (v) => (v >= 1000 ? `$${(v / 1000).toFixed(1)}K` : `$${v.toFixed(0)}`);
+    const daysAgo = (dateStr) => {
+      const diff = Math.round((now - new Date(dateStr).getTime()) / 86400000);
+      return diff <= 0 ? "Today" : `${diff}d`;
+    };
+
+    content = (
+      <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="pv2PerfGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={colors.accent} stopOpacity="0.28" />
+            <stop offset="100%" stopColor={colors.accent} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+
+        {yLabels.map((v, i) => {
+          const y = H - PAD_B - ((v - minVal) / range2) * (H - PAD_T - PAD_B);
+          return (
+            <g key={i}>
+              <line x1={PAD_L} y1={y} x2={W - PAD_R} y2={y} stroke={colors.greyArc} strokeWidth="0.7" strokeDasharray="4,4" />
+              <text x={PAD_L - 8} y={y + 4} fontSize="9.5" fill={colors.greyArc} textAnchor="end">{formatY(v)}</text>
+            </g>
+          );
+        })}
+
+        {xIdxs.map((idx, i) => (
+          <text key={i} x={pts[idx].x} y={H - 5} fontSize="9.5" fill={colors.greyArc} textAnchor="middle">
+            {daysAgo(series[idx].date)}
+          </text>
+        ))}
+
+        <path d={areaPath} fill="url(#pv2PerfGrad)" />
+        <path d={linePath} fill="none" stroke={colors.accent} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx={last.x} cy={last.y} r="4" fill={colors.accent} />
+      </svg>
     );
+  } else if (!loading) {
+    content = (
+      <div className="sv2-muted sv2-small" style={{ height: H, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        Not enough data
+      </div>
+    );
+  }
+
+  return (
+    <div className="sv2-card sv2-card-pad">
+      <div className="dv2-perf-head">
+        <span className="sv2-card-title">Performance history</span>
+        <div className="sv2-segmented">
+          {RANGES.map((r) => (
+            <button key={r} className={range === r ? "active" : ""} onClick={() => setRange(r)}>{r}</button>
+          ))}
+        </div>
+      </div>
+      <div style={{ height: 240, position: "relative" }} ref={containerRef}>
+        {loading ? (
+          <div className="sv2-muted sv2-small" style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            Loading…
+          </div>
+        ) : content}
+      </div>
+    </div>
+  );
 }
