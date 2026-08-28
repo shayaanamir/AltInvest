@@ -9,30 +9,23 @@
 # import run_pipeline` / `from storage.mongo_handler import ...` /
 # `from utils.config import ASSETS` which live inside sentiment_engine/.
 
+# syntax=docker/dockerfile:1
 FROM python:3.11-slim
 
-# build-essential needed for a couple of pymongo/transitive C extensions
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        build-essential \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# ---- Install Python deps first (better layer caching) ----
 COPY backend/requirements.txt ./backend-requirements.txt
-RUN pip install --no-cache-dir --timeout 1000 --retries 10 -r backend-requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --timeout 1000 --retries 10 -r backend-requirements.txt
 
-# sentiment_engine is imported directly by backend/routes/sentiment.py and
-# backend/controllers/aai_controller.py, so its deps must be installed too.
-# NOTE: this pulls in torch + transformers (FinBERT) -> large image (a few GB)
-# and a slow first build. See README note in docker-compose.yml if you'd
-# rather run without real sentiment scoring for local dev.
 COPY sentiment_engine/requirements.txt ./sentiment-requirements.txt
-RUN pip install --no-cache-dir --timeout 1000 --retries 10 -r sentiment-requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --timeout 1000 --retries 10 -r sentiment-requirements.txt
 
-# ---- Copy source ----
-# Layout mirrors the repo root exactly, so path_setup.py's relative
-# path math (PROJECT_ROOT = one level above backend/) keeps working.
 COPY backend/         ./backend/
 COPY shared/          ./shared/
 COPY aai_engine/      ./aai_engine/
@@ -40,7 +33,5 @@ COPY sentiment_engine/ ./sentiment_engine/
 COPY db/              ./db/
 
 WORKDIR /app/backend
-
 EXPOSE 8000
-
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
