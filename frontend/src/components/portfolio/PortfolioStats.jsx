@@ -1,70 +1,87 @@
+import { useState, useEffect } from "react";
 import { useTheme } from "../../context/ThemeContext";
-import { makeStyles } from "../../styles/makeStyles";
+import { sv2Colors } from "../../utils/sv2Colors";
+import { portfolioApi } from "../../services/portfolioApi";
+import { formatCurrencyFull, formatCurrencyWhole, formatPct } from "../../utils/formatters";
+
+const RING_R = 30;
+const RING_CIRC = 2 * Math.PI * RING_R;
+
+function DiversificationRing({ score, color, track }) {
+  const pct = Math.max(0, Math.min(100, score));
+  const dash = (pct / 100) * RING_CIRC;
+  return (
+    <svg width="76" height="76" viewBox="0 0 76 76">
+      <circle cx="38" cy="38" r={RING_R} fill="none" stroke={track} strokeWidth="7" />
+      <circle
+        cx="38" cy="38" r={RING_R} fill="none"
+        stroke={color} strokeWidth="7" strokeLinecap="round"
+        strokeDasharray={`${dash} ${RING_CIRC}`}
+        transform="rotate(-90 38 38)"
+      />
+      <text x="38" y="35" textAnchor="middle" fontSize="18" fontWeight="800" fill="currentColor">
+        {Math.round(score)}
+      </text>
+      <text x="38" y="49" textAnchor="middle" fontSize="7" fontWeight="700" letterSpacing="0.06em" fill="currentColor" opacity="0.55">
+        SCORE
+      </text>
+    </svg>
+  );
+}
 
 export default function PortfolioStats() {
-    const { tokens: t } = useTheme();
-    const s = makeStyles(t);
+  const { isDark } = useTheme();
+  const colors = isDark ? sv2Colors.dark : sv2Colors.light;
+  const [summary, setSummary] = useState(null);
 
+  useEffect(() => {
+    portfolioApi.getSummary().then(setSummary).catch(console.error);
+  }, []);
+
+  if (!summary) {
     return (
-        <div style={s.portfolioStatsRow}>
-            {/* Total Balance */}
-            <div style={s.statCard}>
-                <div style={s.statLabel}>Total Balance</div>
-                <div style={{
-                    ...s.statBadge,
-                    background: t.tagGreenBg,
-                    color: t.accentGreen,
-                    marginBottom: 8,
-                }}>
-                    ↗ 2.85%
-                </div>
-                <div style={s.statValue}>$124,600</div>
-            </div>
-
-            {/* Total Profit / Loss */}
-            <div style={s.statCard}>
-                <div style={s.statLabel}>Total Profit/Loss</div>
-                <div style={{
-                    ...s.statBadge,
-                    background: t.tagGreenBg,
-                    color: t.accentGreen,
-                    marginBottom: 8,
-                }}>
-                    ↗ 12.4%
-                </div>
-                <div style={s.statValue}>$14,250</div>
-            </div>
-
-            {/* Diversification Score */}
-            <div style={{ ...s.statCard, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div>
-                    <div style={s.statLabel}>Diversification Score</div>
-                    <div style={{ display: "flex", alignItems: "baseline", gap: 3, margin: "10px 0 6px" }}>
-                        <span style={{ ...s.statValue, fontSize: 32 }}>72</span>
-                        <span style={{ fontSize: 13, color: t.textMuted, fontWeight: 500 }}>/100</span>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                        <span style={{ fontSize: 11, color: t.accentYellow }}>⚠</span>
-                        <span style={{ fontSize: 10.5, color: t.accentYellow }}>Needs rebalancing</span>
-                    </div>
-                </div>
-                {/* Score ring */}
-                <div style={s.diversificationRing}>
-                    <svg width="64" height="64" viewBox="0 0 64 64">
-                        <circle cx="32" cy="32" r="26" fill="none" stroke={t.border} strokeWidth="5" />
-                        <circle
-                            cx="32" cy="32" r="26"
-                            fill="none"
-                            stroke={t.accentYellow}
-                            strokeWidth="5"
-                            strokeDasharray={`${(72 / 100) * 163.4} 163.4`}
-                            strokeLinecap="round"
-                            transform="rotate(-90 32 32)"
-                        />
-                    </svg>
-                    <div style={s.diversificationRingLabel}>Fair</div>
-                </div>
-            </div>
-        </div>
+      <div className="pv2-stats-grid">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="sv2-card dv2-stat-card sv2-muted sv2-small">Loading…</div>
+        ))}
+      </div>
     );
+  }
+
+  return (
+    <div className="pv2-stats-grid">
+      <div className="sv2-card dv2-stat-card">
+        <div className="dv2-stat-label">Total Balance</div>
+        <div className="dv2-stat-value">{formatCurrencyFull(summary.totalBalance)}</div>
+        <div className="dv2-stat-sub">Cost basis {formatCurrencyWhole(summary.totalCostBasis)}</div>
+      </div>
+
+      <div className="sv2-card dv2-stat-card">
+        <div className="dv2-stat-label">Total Profit / Loss</div>
+        <div className="pv2-value-row">
+          <span className="dv2-stat-value">
+            {summary.totalProfitLossPositive ? "+" : "-"}
+            {formatCurrencyWhole(Math.abs(summary.totalProfitLoss))}
+          </span>
+          <span className={`dv2-asset-change ${summary.totalProfitLossPositive ? "positive" : "negative"}`}>
+            {summary.totalProfitLossPositive ? "↗" : "↘"} {formatPct(summary.totalProfitLossPct, { withSign: true })}
+          </span>
+        </div>
+        <div className="dv2-stat-sub">Unrealised, across {summary.positionsCount} positions</div>
+      </div>
+
+      <div className="sv2-card dv2-stat-card pv2-diversification-card">
+        <div className="pv2-ring-wrap">
+          <DiversificationRing score={summary.diversificationScore} color={colors.accent} track={colors.greyArc} />
+        </div>
+        <div className="pv2-diversification-text">
+          <div className="dv2-stat-label">Diversification</div>
+          <div className="pv2-diversification-title">{summary.diversificationLabel}</div>
+          <div className={`pv2-diversification-note ${summary.needsRebalancing ? "warn" : ""}`}>
+            {summary.rebalanceNote}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

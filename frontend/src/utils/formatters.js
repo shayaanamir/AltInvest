@@ -3,6 +3,12 @@ export function formatCurrencyFull(value) {
   return "$" + value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+// Whole-dollar, comma-separated, no cents — for compact summary rows.
+export function formatCurrencyWhole(value) {
+  if (value == null || Number.isNaN(value)) return "$0";
+  return "$" + Math.round(value).toLocaleString();
+}
+
 export function formatCurrencyCompact(value) {
   if (value == null || Number.isNaN(value)) return "$0";
   const abs = Math.abs(value);
