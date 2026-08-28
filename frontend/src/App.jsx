@@ -14,6 +14,8 @@ import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/auth/LoginPage";
 import SignupPage from "./pages/auth/SignupPage";
 import OnboardingPage from "./pages/onboarding/OnboardingPage";
+import ComparePage from "./pages/ComparePage";
+import AlertsPage from "./pages/AlertsPage";
 
 const BARE_PAGES = ["Landing", "Login", "Signup", "Onboarding"];
 
@@ -105,8 +107,8 @@ function ShellRoutes() {
       <Route path="/dashboard" element={<DashboardPage />} />
       <Route path="/discover" element={<DiscoverPage />} />
       <Route path="/watchlists" element={<WatchlistsPage />} />
-      <Route path="/compare" element={<PlaceholderPage title="Compare" />} />
-      <Route path="/alerts" element={<PlaceholderPage title="Alerts" description="Set threshold conditions and AltInvest will send you push or email notifications immediately when they trigger." />} />
+      <Route path="/compare" element={<ComparePage />} />
+      <Route path="/alerts" element={<AlertsPage />} />
       <Route path="/settings" element={<PlaceholderPage title="Settings" description="Customize display currency, appearance theme preferences, notification channels, and connect Web3 wallets." />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
