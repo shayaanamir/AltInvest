@@ -1,15 +1,15 @@
 export const NAV_ITEMS = [
-  { icon: "⊞", label: "Dashboard", active: true },
-  { icon: "↗", label: "Asset Detail" },
+  { icon: "⊞", label: "Dashboard" },
+  { icon: "🧭", label: "Discover" },
   { icon: "◉", label: "Sentiment" },
-  // { icon: "⬡", label: "AI Prediction" },
-  // { icon: "⊕", label: "Market Map" },
+  { icon: "⇄", label: "Compare" },
   { icon: "◈", label: "Portfolio" },
+  { icon: "☆", label: "Watchlists" },
+  { icon: "🔔", label: "Alerts" },
 ];
 
 export const BOTTOM_NAV = [
   { icon: "⚙", label: "Settings" },
-  { icon: "→", label: "Logout" },
 ];
 
 // export const STATS = [

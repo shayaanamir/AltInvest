@@ -14,6 +14,32 @@ import OnboardingPage from "./pages/onboarding/OnboardingPage";
 
 const BARE_PAGES = ["Landing", "Login", "Signup", "Onboarding"];
 
+function PlaceholderPage({ title, description }) {
+  return (
+    <div style={{
+      maxWidth: 500, margin: "60px auto", textAlign: "center",
+      display: "flex", flexDirection: "column", gap: 16, alignItems: "center",
+      border: "1px dashed var(--sv2-border, rgba(0,0,0,0.1))", borderRadius: 16,
+      padding: "40px 30px", background: "var(--sv2-card, #ffffff)",
+      fontFamily: "'DM Sans', sans-serif"
+    }}>
+      <div style={{
+        fontSize: 32, width: 64, height: 64, borderRadius: "50%",
+        background: "var(--sv2-accent-soft, rgba(191,93,56,0.1))", color: "var(--sv2-accent, #bf5d38)",
+        display: "flex", alignItems: "center", justifyContent: "center"
+      }}>
+        ✦
+      </div>
+      <div>
+        <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0, color: "var(--sv2-text, #24211c)" }}>{title} Desk</h2>
+        <p style={{ fontSize: 13, color: "var(--sv2-text-soft, #6c6555)", marginTop: 8, lineHeight: 1.5 }}>
+          {description || `The ${title} engine is running sync tests. Full asset mapping will be active soon.`}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // Map logical string paths to router paths
 const getPath = (page) => {
   switch (page) {
@@ -25,6 +51,11 @@ const getPath = (page) => {
     case "Asset Detail": return "/asset-detail";
     case "Sentiment": return "/sentiment";
     case "Dashboard": return "/dashboard";
+    case "Discover": return "/discover";
+    case "Compare": return "/compare";
+    case "Watchlists": return "/watchlists";
+    case "Alerts": return "/alerts";
+    case "Settings": return "/settings";
     default: return "/";
   }
 };
@@ -38,6 +69,11 @@ const getPageName = (pathname) => {
   if (pathname.startsWith("/asset-detail")) return "Asset Detail";
   if (pathname.startsWith("/sentiment")) return "Sentiment";
   if (pathname.startsWith("/dashboard")) return "Dashboard";
+  if (pathname.startsWith("/discover")) return "Discover";
+  if (pathname.startsWith("/compare")) return "Compare";
+  if (pathname.startsWith("/watchlists")) return "Watchlists";
+  if (pathname.startsWith("/alerts")) return "Alerts";
+  if (pathname.startsWith("/settings")) return "Settings";
   return "Dashboard";
 };
 
@@ -66,6 +102,11 @@ function ShellRoutes() {
       <Route path="/asset-detail" element={<AssetDetailPage onNavigate={navigate} />} />
       <Route path="/sentiment" element={<SentimentPage />} />
       <Route path="/dashboard" element={<DashboardPage />} />
+      <Route path="/discover" element={<PlaceholderPage title="Discover" />} />
+      <Route path="/compare" element={<PlaceholderPage title="Compare" />} />
+      <Route path="/watchlists" element={<PlaceholderPage title="Watchlists" description="Track assets you're considering without adding them to your portfolio. Custom watchlist options will be active here." />} />
+      <Route path="/alerts" element={<PlaceholderPage title="Alerts" description="Set threshold conditions and AltInvest will send you push or email notifications immediately when they trigger." />} />
+      <Route path="/settings" element={<PlaceholderPage title="Settings" description="Customize display currency, appearance theme preferences, notification channels, and connect Web3 wallets." />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
@@ -75,7 +116,7 @@ function ShellRoutes() {
   }
 
   return (
-    <div style={s.root}>
+    <div className="sv2" style={s.root}>
       <Sidebar activePage={activePage} onNavigate={navigate} />
       <div style={s.main}>
         <Topbar />

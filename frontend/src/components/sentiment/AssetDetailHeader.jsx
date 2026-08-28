@@ -57,7 +57,7 @@ export default function AssetDetailHeader({ detail, switchable, onBack, onSwitch
               onChange={(e) => onSwitchAsset(e.target.value)}
               style={{ paddingRight: 26 }}
             >
-              {switchable.map((s) => (
+              {Array.from(new Map(switchable.map((s) => [s.id, s])).values()).map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </select>

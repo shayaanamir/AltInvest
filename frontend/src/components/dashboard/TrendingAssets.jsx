@@ -70,7 +70,7 @@ export default function TrendingAssets() {
         ) : (
           assets.map((asset, i) => (
             <AssetCard
-              key={asset.id || asset.sym}
+              key={asset.id || asset.sym || i}
               {...asset}
               isLast={i === assets.length - 1}
             />
