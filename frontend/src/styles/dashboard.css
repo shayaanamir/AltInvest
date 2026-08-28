@@ -1,0 +1,173 @@
+/* Dashboard v2 — layout/component classes only. All colors come from the
+   --sv2-* custom properties defined in sentiment.css, so this file must be
+   used alongside a "sv2" root wrapper to inherit the light/dark palette. */
+
+.dv2-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.dv2-hero-title {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.6px;
+  color: var(--sv2-text);
+  margin: 6px 0 6px;
+}
+.dv2-hero-sub {
+  font-size: 13.5px;
+  color: var(--sv2-text-soft);
+  margin: 0;
+}
+.dv2-hero-actions {
+  display: flex;
+  gap: 10px;
+}
+.dv2-btn-ghost,
+.dv2-btn-accent {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.dv2-btn-ghost {
+  background: var(--sv2-card);
+  border: 1px solid var(--sv2-border-strong);
+  color: var(--sv2-text);
+}
+.dv2-btn-accent {
+  background: var(--sv2-accent);
+  border: none;
+  color: var(--sv2-accent-contrast);
+}
+
+/* Get started banner */
+.dv2-getstarted {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 22px 24px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.dv2-getstarted-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: var(--sv2-accent-soft);
+  color: var(--sv2-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.dv2-getstarted-body { flex: 1; min-width: 240px; }
+.dv2-getstarted-title { font-size: 15px; font-weight: 700; color: var(--sv2-text); margin: 0 0 4px; }
+.dv2-getstarted-desc { font-size: 12.5px; color: var(--sv2-text-soft); margin: 0; line-height: 1.55; }
+.dv2-getstarted-actions { display: flex; gap: 10px; flex-shrink: 0; }
+
+/* Stat cards */
+.dv2-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+.dv2-stat-card { padding: 18px 20px; }
+.dv2-stat-label {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+  color: var(--sv2-text-mute); margin-bottom: 10px;
+}
+.dv2-stat-value { font-size: 26px; font-weight: 800; color: var(--sv2-text); letter-spacing: -0.5px; }
+.dv2-stat-value-row { display: flex; align-items: baseline; gap: 6px; }
+.dv2-stat-value-unit { font-size: 14px; font-weight: 600; color: var(--sv2-text-mute); }
+.dv2-stat-sub { font-size: 11.5px; color: var(--sv2-text-soft); margin-top: 6px; }
+.dv2-stat-mood-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+
+@media (max-width: 1200px) { .dv2-stats-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 640px) { .dv2-stats-grid { grid-template-columns: 1fr; } }
+
+/* Chart + insights row */
+.dv2-main-grid { display: grid; grid-template-columns: 1fr 360px; gap: 14px; margin-bottom: 26px; }
+@media (max-width: 1100px) { .dv2-main-grid { grid-template-columns: 1fr; } }
+
+.dv2-perf-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+.dv2-perf-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  border: 1px dashed var(--sv2-border-strong); border-radius: 14px;
+}
+.dv2-perf-empty-icon {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--sv2-accent-soft); color: var(--sv2-accent);
+  display: flex; align-items: center; justify-content: center;
+}
+.dv2-perf-empty-text { font-size: 13.5px; font-weight: 600; color: var(--sv2-text); }
+
+/* Market insights */
+.dv2-insight-item { padding: 13px 2px; border-top: 1px solid var(--sv2-border); }
+.dv2-insight-item:first-child { border-top: none; padding-top: 0; }
+.dv2-insight-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.dv2-insight-src { font-size: 10.5px; font-weight: 700; color: var(--sv2-text-mute); }
+.dv2-insight-badge { font-size: 9.5px; font-weight: 700; padding: 2px 8px; border-radius: 20px; flex-shrink: 0; }
+.dv2-insight-badge.positive { color: var(--sv2-green); background: var(--sv2-green-soft); }
+.dv2-insight-badge.negative { color: var(--sv2-red); background: var(--sv2-red-soft); }
+.dv2-insight-title { font-size: 12.5px; color: var(--sv2-text); line-height: 1.5; margin: 0 0 8px; font-weight: 500; }
+.dv2-insight-links { display: flex; gap: 14px; }
+.dv2-insight-link {
+  font-size: 11px; font-weight: 700; color: var(--sv2-accent); text-decoration: none;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 4px;
+  background: none; border: none; padding: 0; font-family: inherit;
+}
+
+/* Section headers (trending assets / collections) */
+.dv2-section-head { display: flex; align-items: baseline; justify-content: space-between; margin: 4px 0 14px; }
+.dv2-section-title { font-size: 19px; font-weight: 800; color: var(--sv2-text); margin: 0; }
+.dv2-section-sub { font-size: 12px; color: var(--sv2-text-soft); margin: 3px 0 0; }
+.dv2-section-link { font-size: 12px; font-weight: 700; color: var(--sv2-text-soft); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+
+/* Trending assets */
+.dv2-asset-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 30px; }
+@media (max-width: 1200px) { .dv2-asset-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 640px) { .dv2-asset-grid { grid-template-columns: 1fr; } }
+
+.dv2-asset-card { padding: 18px 18px 16px; }
+.dv2-asset-card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+.dv2-asset-id { display: flex; align-items: center; gap: 10px; }
+.dv2-asset-avatar {
+  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800; color: #fff;
+}
+.dv2-asset-name { font-size: 14px; font-weight: 700; color: var(--sv2-text); }
+.dv2-asset-sym { font-size: 11px; color: var(--sv2-text-mute); }
+.dv2-asset-price-row { display: flex; align-items: baseline; justify-content: space-between; margin: 2px 0 10px; }
+.dv2-asset-price { font-size: 19px; font-weight: 800; color: var(--sv2-text); }
+.dv2-asset-price-label { font-size: 10.5px; color: var(--sv2-text-mute); margin-top: 2px; }
+.dv2-asset-change { font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+.dv2-asset-change.positive { color: var(--sv2-green); background: var(--sv2-green-soft); }
+.dv2-asset-change.negative { color: var(--sv2-red); background: var(--sv2-red-soft); }
+.dv2-asset-chart { margin: 8px 0 14px; }
+.dv2-asset-badges { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; border-top: 1px solid var(--sv2-border); padding-top: 12px; margin-top: 4px; }
+.dv2-badge { font-size: 10.5px; font-weight: 700; padding: 4px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px; }
+.dv2-badge-aai { color: var(--sv2-green); background: var(--sv2-green-soft); }
+.dv2-badge-aai.medium { color: var(--sv2-accent); background: var(--sv2-accent-soft); }
+.dv2-badge-aai.low { color: var(--sv2-red); background: var(--sv2-red-soft); }
+.dv2-badge-watching { margin-left: auto; }
+
+/* Trending collections */
+.dv2-collection-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+@media (max-width: 1200px) { .dv2-collection-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 640px) { .dv2-collection-grid { grid-template-columns: 1fr; } }
+
+.dv2-collection-card { overflow: hidden; padding: 0; }
+.dv2-collection-art { height: 148px; }
+.dv2-collection-body { padding: 14px 16px 16px; }
+.dv2-collection-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.dv2-collection-name { font-size: 13.5px; font-weight: 700; color: var(--sv2-text); }
+.dv2-collection-price-row { display: flex; align-items: baseline; justify-content: space-between; }
+.dv2-collection-price { font-size: 16px; font-weight: 800; color: var(--sv2-text); }
+.dv2-collection-price-label { font-size: 10.5px; color: var(--sv2-text-mute); margin-top: 2px; }

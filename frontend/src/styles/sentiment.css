@@ -20,7 +20,7 @@
   --sv2-chip: rgba(255, 255, 255, 0.05);
   --sv2-chip-border: rgba(255, 255, 255, 0.1);
   --sv2-input: rgba(255, 255, 255, 0.05);
-  --sv2-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  --sv2-shadow: none;
 }
 
 [data-theme="light"] .sv2 {
@@ -43,7 +43,7 @@
   --sv2-chip: #f1ede3;
   --sv2-chip-border: #e4ddd0;
   --sv2-input: #f4f0e7;
-  --sv2-shadow: 0 16px 40px rgba(30, 20, 10, 0.06);
+  --sv2-shadow: none;
 }
 
 .sv2 {

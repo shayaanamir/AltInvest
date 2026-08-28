@@ -1,36 +1,29 @@
-import { useTheme } from "../context/ThemeContext";
-import { makeStyles } from "../styles/makeStyles";
-import StatsRow from "../components/dashboard/StatsRow";
-import InsightsPanel from "../components/dashboard/InsightsPanel";
-import TrendingAssets from "../components/dashboard/TrendingAssets";
-import PerformanceChart from "../components/charts/PerformanceChart";
+import "../styles/sentiment.css";
+import "../styles/dashboard.css";
+import DashboardHeroHeader from "../components/dashboard/DashboardHeroHeader";
+import GetStartedBanner from "../components/dashboard/GetStartedBanner";
+import DashboardStatCards from "../components/dashboard/DashboardStatCards";
+import PortfolioPerformanceCard from "../components/dashboard/PortfolioPerformanceCard";
+import MarketInsightsCard from "../components/dashboard/MarketInsightsCard";
+import TrendingAssetsSection from "../components/dashboard/TrendingAssetsSection";
+import TrendingCollectionsSection from "../components/dashboard/TrendingCollectionsSection";
 
 export default function DashboardPage() {
-  const { tokens: t } = useTheme();
-  const s = makeStyles(t);
-
   return (
-    <div style={s.content}>
-      {/* Page header */}
-      <div style={s.pageHeader}>
-        <div>
-          <h1 style={s.pageTitle}>Market Overview</h1>
-          <p style={s.pageSub}>Track sentiment, trends, and movement across alternative assets.</p>
+    <div className="sv2">
+      <div className="sv2-page">
+        <DashboardHeroHeader />
+        <GetStartedBanner />
+        <DashboardStatCards />
+
+        <div className="dv2-main-grid">
+          <PortfolioPerformanceCard />
+          <MarketInsightsCard />
         </div>
-        {/* <div style={s.pageActions}>
-          <button style={s.btnOutline}>Generate Report</button>
-          <button style={s.btnPrimary}>✦ AI Analysis</button>
-        </div> */}
+
+        <TrendingAssetsSection />
+        <TrendingCollectionsSection />
       </div>
-
-      <StatsRow />
-
-      <div style={s.chartsRow}>
-        <PerformanceChart />
-        <InsightsPanel />
-      </div>
-
-      <TrendingAssets />
     </div>
   );
 }
