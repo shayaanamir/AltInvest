@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import "../styles/sentiment.css";
 import "../styles/alerts.css";
 import { alertsApi } from "../services/alertsApi";
 import AlertSection from "../components/alerts/AlertSection";

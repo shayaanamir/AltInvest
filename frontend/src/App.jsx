@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { ThemeProvider } from "./context/ThemeContext";
-import "./styles/sentiment.css";
+import "./styles/tokens.css";
 import Sidebar from "./components/layout/Sidebar";
 import Topbar from "./components/layout/Topbar";
 import DashboardPage from "./pages/DashboardPage";

@@ -5,7 +5,6 @@ import ScoreShowcase from "../components/landingPage/ScoreShowcase";
 import CapabilitiesGrid from "../components/landingPage/CapabilitiesGrid";
 import CTA from "../components/landingPage/CTA";
 import LandingFooter from "../components/landingPage/LandingFooter";
-import "../styles/sentiment.css";
 import "../styles/landing.css";
 
 export default function LandingPage({ onNavigate }) {

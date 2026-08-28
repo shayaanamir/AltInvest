@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import "../styles/sentiment.css";
 import "../styles/assetDetail.css";
 import { assetDetailApi } from "../services/assetDetailApi";
 import AssetHeaderCard from "../components/assetDetail/AssetHeaderCard";

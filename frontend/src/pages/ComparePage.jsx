@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import "../styles/sentiment.css";
 import "../styles/compare.css";
 import CompareEmptyState from "../components/compare/CompareEmptyState";
 import CompareAssetModal from "../components/compare/CompareAssetModal";

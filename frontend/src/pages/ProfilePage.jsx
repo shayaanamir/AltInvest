@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import "../styles/sentiment.css";
 import "../styles/settingsProfile.css";
 import { profileApi } from "../services/profileApi";
 import ProfileHeaderCard from "../components/profile/ProfileHeaderCard";

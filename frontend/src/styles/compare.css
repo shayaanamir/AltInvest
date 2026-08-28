@@ -45,7 +45,7 @@
 
 /* Modal */
 .cmp-modal-overlay {
-  position: fixed; inset: 0; background: rgba(20, 16, 10, 0.45);
+  position: fixed; inset: 0; background: var(--sv2-overlay);
   display: flex; align-items: center; justify-content: center;
   z-index: 200; padding: 20px;
 }

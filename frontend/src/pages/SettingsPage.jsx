@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import "../styles/sentiment.css";
 import "../styles/settingsProfile.css";
 import { settingsApi } from "../services/settingsApi";
 import SettingsSidebar from "../components/settings/SettingsSidebar";
