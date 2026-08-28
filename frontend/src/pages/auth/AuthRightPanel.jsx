@@ -1,13 +1,22 @@
 import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
-import { useLandingTheme } from "../../components/landingPage/landingTokens";
+import { useLandingTheme, ACCENT_HEX } from "../../components/landingPage/landingTokens";
+
+function hexToRgba(hex, alpha) {
+    const h = hex.replace("#", "");
+    const r = parseInt(h.slice(0, 2), 16);
+    const g = parseInt(h.slice(2, 4), 16);
+    const b = parseInt(h.slice(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
 
 function MarketLine() {
     const canvasRef = useRef(null);
     const rafRef = useRef(null);
     const offsetRef = useRef(0);
     const { isDark } = useTheme();
+    const accentHex = isDark ? ACCENT_HEX.dark : ACCENT_HEX.light;
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -33,16 +42,10 @@ function MarketLine() {
                 y: (v + Math.sin(t + i * 0.4) * 0.018 + Math.cos(t * 0.7 + i * 0.3) * 0.012) * H,
             }));
 
-            // Fill
             const grad = ctx.createLinearGradient(0, 0, 0, H);
-            if (isDark) {
-                grad.addColorStop(0, "rgba(91,110,245,0.10)");
-                grad.addColorStop(0.7, "rgba(91,110,245,0.02)");
-            } else {
-                grad.addColorStop(0, "rgba(91,110,245,0.08)");
-                grad.addColorStop(0.7, "rgba(91,110,245,0.01)");
-            }
-            grad.addColorStop(1, "rgba(91,110,245,0.00)");
+            grad.addColorStop(0, hexToRgba(accentHex, isDark ? 0.10 : 0.08));
+            grad.addColorStop(0.7, hexToRgba(accentHex, isDark ? 0.02 : 0.01));
+            grad.addColorStop(1, hexToRgba(accentHex, 0));
 
             ctx.beginPath();
             ctx.moveTo(pts[0].x, pts[0].y);
@@ -56,7 +59,6 @@ function MarketLine() {
             ctx.fillStyle = grad;
             ctx.fill();
 
-            // Line
             ctx.beginPath();
             ctx.moveTo(pts[0].x, pts[0].y);
             for (let i = 1; i < pts.length - 1; i++) {
@@ -65,24 +67,23 @@ function MarketLine() {
                 ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
             }
             ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
-            ctx.strokeStyle = isDark ? "rgba(110,130,255,0.5)" : "rgba(91,110,245,0.65)";
+            ctx.strokeStyle = hexToRgba(accentHex, isDark ? 0.5 : 0.65);
             ctx.lineWidth = 1.2;
             ctx.lineJoin = "round";
             ctx.stroke();
 
-            // End dot
             const lx = pts[pts.length - 1].x, ly = pts[pts.length - 1].y;
             ctx.beginPath(); ctx.arc(lx, ly, 2.8, 0, Math.PI * 2);
-            ctx.fillStyle = isDark ? "rgba(140,158,255,0.95)" : "rgba(91,110,245,0.95)"; ctx.fill();
+            ctx.fillStyle = hexToRgba(accentHex, 0.95); ctx.fill();
             ctx.beginPath(); ctx.arc(lx, ly, 6, 0, Math.PI * 2);
-            ctx.strokeStyle = isDark ? "rgba(110,130,255,0.22)" : "rgba(91,110,245,0.22)"; ctx.lineWidth = 1; ctx.stroke();
+            ctx.strokeStyle = hexToRgba(accentHex, 0.22); ctx.lineWidth = 1; ctx.stroke();
 
             rafRef.current = requestAnimationFrame(draw);
         };
 
         draw();
         return () => cancelAnimationFrame(rafRef.current);
-    }, [isDark]);
+    }, [isDark, accentHex]);
 
     return (
         <canvas
@@ -130,11 +131,10 @@ export default function AuthRightPanel() {
     return (
         <div style={{
             flex: 1, position: "relative", overflow: "hidden",
-            background: isDark ? "#07091a" : "#f1ede3",
-            display: "flex", alignItems: "center", justifySpaceBetween: "center",
+            background: "var(--sv2-bg)",
+            display: "flex", alignItems: "center",
             justifyContent: "center",
         }}>
-            {/* Grid texture */}
             <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: isDark ? 0.022 : 0.06 }} xmlns="http://www.w3.org/2000/svg">
                 <defs>
                     <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
@@ -144,24 +144,19 @@ export default function AuthRightPanel() {
                 <rect width="100%" height="100%" fill="url(#grid)" />
             </svg>
 
-            {/* Central radial glow */}
             <div style={{
                 position: "absolute", top: "42%", left: "50%",
                 transform: "translate(-50%, -50%)",
                 width: 640, height: 640, borderRadius: "50%",
-                background: isDark 
-                    ? "radial-gradient(ellipse, rgba(68,82,230,0.13) 0%, rgba(90,55,190,0.06) 45%, transparent 70%)"
-                    : "radial-gradient(ellipse, rgba(91,110,245,0.08) 0%, rgba(139,92,246,0.04) 45%, transparent 70%)",
+                background: "radial-gradient(ellipse, color-mix(in srgb, var(--sv2-accent) 13%, transparent) 0%, color-mix(in srgb, var(--sv2-accent) 6%, transparent) 45%, transparent 70%)",
                 pointerEvents: "none",
             }} />
 
-            {/* Content */}
             <div style={{
                 position: "relative", zIndex: 1,
                 display: "flex", flexDirection: "column", alignItems: "flex-start",
                 width: "72%", maxWidth: 520,
             }}>
-                {/* Live label */}
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -171,14 +166,13 @@ export default function AuthRightPanel() {
                     <motion.div
                         animate={{ opacity: [1, 0.25, 1] }}
                         transition={{ repeat: Infinity, duration: 2.8, ease: "easeInOut" }}
-                        style={{ width: 5, height: 5, borderRadius: "50%", background: "#10d9a0" }}
+                        style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--sv2-green)" }}
                     />
                     <span style={{ fontSize: 10, fontWeight: 600, color: T.ink3, letterSpacing: "0.18em", textTransform: "uppercase" }}>
                         Live Markets
                     </span>
                 </motion.div>
 
-                {/* Chart */}
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -188,7 +182,6 @@ export default function AuthRightPanel() {
                     <MarketLine />
                 </motion.div>
 
-                {/* Ticker */}
                 <motion.div
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -198,7 +191,6 @@ export default function AuthRightPanel() {
                     <Ticker />
                 </motion.div>
 
-                {/* Divider */}
                 <motion.div
                     initial={{ scaleX: 0, opacity: 0 }}
                     animate={{ scaleX: 1, opacity: 1 }}
@@ -210,7 +202,6 @@ export default function AuthRightPanel() {
                     }}
                 />
 
-                {/* Headline block */}
                 <motion.div
                     initial={{ opacity: 0, y: 14 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -243,10 +234,9 @@ export default function AuthRightPanel() {
                 </motion.div>
             </div>
 
-            {/* Bottom fade */}
             <div style={{
                 position: "absolute", bottom: 0, left: 0, right: 0, height: 72,
-                background: `linear-gradient(to top, ${isDark ? "#07091a" : "#f1ede3"}, transparent)`,
+                background: "linear-gradient(to top, var(--sv2-bg), transparent)",
                 pointerEvents: "none",
             }} />
         </div>

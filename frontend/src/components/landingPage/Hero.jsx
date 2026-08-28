@@ -5,14 +5,15 @@ import { fadeUp, fadeIn } from "./landingAnimations";
 import SoftAurora from "./motionEffects/SoftAurora";
 import ShinyText from "./motionEffects/ShinyText";
 
+
 function AnnouncementBar({ T }) {
     return (
         <motion.div
             {...fadeIn(0.3)}
             style={{
                 display: "inline-flex", alignItems: "center", gap: 8,
-                background: `${T.blue}1a`,
-                border: `1px solid ${T.blue}40`,
+                background: "color-mix(in srgb, var(--sv2-accent) 10%, transparent)",
+                border: "1px solid color-mix(in srgb, var(--sv2-accent) 25%, transparent)",
                 borderRadius: 24, padding: "7px 16px",
                 fontSize: 13, fontWeight: 500, color: T.ink,
                 marginBottom: 32,
@@ -25,26 +26,23 @@ function AnnouncementBar({ T }) {
     );
 }
 
-// NOTE: structure, copy, and every dark-mode value here are unchanged
-// from the original Hero. The only addition is branching on `isDark`
-// so the same section also renders sensibly in light mode.
 export default function Hero({ onNavigate }) {
     const { isDark } = useTheme();
     const T = useLandingTheme();
 
     return (
+
         <section style={{
             minHeight: "100vh",
             display: "flex", flexDirection: "column",
             alignItems: "center", justifyContent: "center",
-            padding: "60px 48px 0", // Offset for fixed navbar
+            padding: "60px 48px 0",
             boxSizing: "border-box",
             position: "relative", overflow: "hidden",
             textAlign: "center",
             fontFamily: T.font,
             background: T.bg0,
         }}>
-            {/* SoftAurora Background */}
             <div style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none" }}>
                 <SoftAurora
                     speed={0.7}
@@ -62,7 +60,6 @@ export default function Hero({ onNavigate }) {
                     enableMouseInteraction
                     mouseInfluence={0.1}
                 />
-                {/* Glassmorphism Overlay */}
                 <div style={{
                     position: "absolute", inset: 0,
                     background: isDark ? "rgba(8, 9, 15, 0.3)" : "rgba(250, 247, 241, 0.55)",
@@ -87,8 +84,8 @@ export default function Hero({ onNavigate }) {
                             text="Alternative Assets"
                             speed={2}
                             delay={0}
-                            color={T.purpleLight}
-                            shineColor={isDark ? T.purple : "#4c1d95"}
+                            color={isDark ? "#c4a0ff" : "#6d28d9"}
+                            shineColor={isDark ? "#9b6dff" : "#4c1d95"}
                             spread={120}
                             direction="left"
                             yoyo={false}
@@ -96,6 +93,7 @@ export default function Hero({ onNavigate }) {
                             disabled={false}
                         />
                     </h1>
+
                 </motion.div>
 
                 <motion.p {...fadeUp(0.22)} style={{
@@ -108,14 +106,14 @@ export default function Hero({ onNavigate }) {
                 <motion.div {...fadeUp(0.32)} style={{ display: "flex", gap: 12, justifyContent: "center", marginBottom: 16 }}>
                     <motion.button
                         onClick={() => onNavigate && onNavigate("Login")}
-                        whileHover={{ scale: 1.04, boxShadow: `0 0 28px rgba(91,110,245,0.5)` }}
+                        whileHover={{ scale: 1.04, boxShadow: "0 0 28px color-mix(in srgb, var(--sv2-accent) 50%, transparent)" }}
                         whileTap={{ scale: 0.97 }}
                         style={{
-                            background: `linear-gradient(135deg, ${T.blue}, ${T.blueDim})`,
+                            background: "linear-gradient(135deg, var(--sv2-accent), color-mix(in srgb, var(--sv2-accent) 70%, black))",
                             border: "none", borderRadius: 12,
                             padding: "13px 28px", fontSize: 15, fontWeight: 700, color: "#fff",
                             cursor: "pointer", fontFamily: T.font,
-                            boxShadow: `0 4px 24px rgba(91,110,245,0.35)`,
+                            boxShadow: "0 4px 24px color-mix(in srgb, var(--sv2-accent) 35%, transparent)",
                         }}
                     >
                         Enter Platform
@@ -125,7 +123,7 @@ export default function Hero({ onNavigate }) {
                         whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.97 }}
                         style={{
-                            background: isDark ? "rgba(255,255,255,0.05)" : "rgba(36,33,28,0.04)",
+                            background: "var(--sv2-card-alt)",
                             border: `1px solid ${T.border2}`,
                             borderRadius: 12, padding: "13px 24px",
                             fontSize: 15, fontWeight: 600, color: T.ink,

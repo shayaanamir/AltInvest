@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";
-import { ThemeProvider, useTheme } from "./context/ThemeContext";
-import { makeStyles } from "./styles/makeStyles";
+import { ThemeProvider } from "./context/ThemeContext";
 import "./styles/sentiment.css";
 import Sidebar from "./components/layout/Sidebar";
 import Topbar from "./components/layout/Topbar";
@@ -21,33 +20,8 @@ import ProfilePage from "./pages/ProfilePage";
 
 const BARE_PAGES = ["Landing", "Login", "Signup", "Onboarding"];
 
-function PlaceholderPage({ title, description }) {
-  return (
-    <div style={{
-      maxWidth: 500, margin: "60px auto", textAlign: "center",
-      display: "flex", flexDirection: "column", gap: 16, alignItems: "center",
-      border: "1px dashed var(--sv2-border, rgba(0,0,0,0.1))", borderRadius: 16,
-      padding: "40px 30px", background: "var(--sv2-card, #ffffff)",
-      fontFamily: "'DM Sans', sans-serif"
-    }}>
-      <div style={{
-        fontSize: 32, width: 64, height: 64, borderRadius: "50%",
-        background: "var(--sv2-accent-soft, rgba(191,93,56,0.1))", color: "var(--sv2-accent, #bf5d38)",
-        display: "flex", alignItems: "center", justifyContent: "center"
-      }}>
-        ✦
-      </div>
-      <div>
-        <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0, color: "var(--sv2-text, #24211c)" }}>{title} Desk</h2>
-        <p style={{ fontSize: 13, color: "var(--sv2-text-soft, #6c6555)", marginTop: 8, lineHeight: 1.5 }}>
-          {description || `The ${title} engine is running sync tests. Full asset mapping will be active soon.`}
-        </p>
-      </div>
-    </div>
-  );
-}
-
 const getPath = (page) => {
+
   switch (page) {
     case "Landing": return "/";
     case "Login": return "/login";
@@ -86,9 +60,6 @@ const getPageName = (pathname) => {
 };
 
 function ShellRoutes() {
-  const { tokens: t } = useTheme();
-  const s = makeStyles(t);
-
   const location = useLocation();
   const navigateRouter = useNavigate();
 
@@ -124,11 +95,26 @@ function ShellRoutes() {
   }
 
   return (
-    <div className="sv2" style={s.root}>
+    <div
+      className="sv2"
+      style={{
+        display: "flex",
+        height: "100vh",
+        width: "100vw",
+        background: "var(--sv2-bg)",
+        fontFamily: "'DM Sans','Segoe UI',sans-serif",
+        color: "var(--sv2-text)",
+        overflow: "hidden",
+        transition: "background 0.25s, color 0.25s",
+      }}
+    >
       <Sidebar activePage={activePage} onNavigate={navigate} />
-      <div style={s.main}>
+      <div style={{
+        flex: 1, display: "flex", flexDirection: "column",
+        overflow: "hidden", background: "var(--sv2-bg)", transition: "background 0.25s",
+      }}>
         <Topbar />
-        <div style={s.content}>
+        <div style={{ flex: 1, overflow: "auto", padding: "40px 40px 20px" }}>
           {pageContent}
         </div>
       </div>

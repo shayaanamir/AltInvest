@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import AuthLayout from "./AuthLayout";
 import { AuthInput, AuthButton, OAuthButton, Divider, GoogleIcon, GitHubIcon } from "./AuthPrimitives";
 import { authApi } from "../../services/authApi";
-import { useTheme } from "../../context/ThemeContext";
 import { useLandingTheme } from "../../components/landingPage/landingTokens";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -14,7 +13,6 @@ export default function LoginPage({ onNavigate }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    const { isDark } = useTheme();
     const T = useLandingTheme();
 
     useEffect(() => {
@@ -73,16 +71,13 @@ export default function LoginPage({ onNavigate }) {
                 style={{
                     width: "100%", maxWidth: 420,
                     padding: "40px 32px",
-                    background: isDark ? "rgba(255,255,255,0.022)" : "rgba(36,33,28,0.015)",
+                    background: "var(--sv2-card-alt)",
                     border: `1px solid ${T.border2}`,
                     borderRadius: 16,
-                    boxShadow: isDark 
-                        ? "0 24px 80px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)"
-                        : "0 24px 80px rgba(36,33,28,0.05), inset 0 1px 0 rgba(255,255,255,0.8)",
+                    boxShadow: "0 24px 80px color-mix(in srgb, var(--sv2-bg) 45%, transparent), inset 0 1px 0 color-mix(in srgb, var(--sv2-text) 6%, transparent)",
                 }}
                 onKeyDown={handleKeyDown}
             >
-                {/* Header */}
                 <div style={{ marginBottom: 32 }}>
                     <h1 style={{
                         fontSize: 26, fontWeight: 700,
@@ -101,7 +96,6 @@ export default function LoginPage({ onNavigate }) {
                     </p>
                 </div>
 
-                {/* Fields */}
                 <AuthInput
                     label="Email"
                     type="email"
@@ -135,9 +129,9 @@ export default function LoginPage({ onNavigate }) {
                 <div style={{ marginTop: 8 }}>
                     {error && (
                         <div style={{
-                            color: "#ff5064", fontSize: 12, marginBottom: 12,
-                            background: "rgba(255,80,100,0.1)", padding: "8px 12px",
-                            borderRadius: 6, border: "1px solid rgba(255,80,100,0.2)"
+                            color: "var(--sv2-red)", fontSize: 12, marginBottom: 12,
+                            background: "var(--sv2-red-soft)", padding: "8px 12px",
+                            borderRadius: 6, border: "1px solid color-mix(in srgb, var(--sv2-red) 20%, transparent)"
                         }}>
                             {error}
                         </div>
@@ -175,12 +169,12 @@ export default function LoginPage({ onNavigate }) {
                         style={{
                             background: "none", border: "none", padding: 0,
                             fontSize: 12, fontWeight: 600,
-                            color: isDark ? "rgba(140,158,255,0.75)" : "rgba(91,110,245,0.85)",
+                            color: "var(--sv2-accent)",
                             cursor: "pointer", fontFamily: "inherit",
-                            transition: "color 0.15s",
+                            transition: "opacity 0.15s",
                         }}
-                        onMouseEnter={e => e.currentTarget.style.color = isDark ? "rgba(180,195,255,0.95)" : "rgba(91,110,245,1.0)"}
-                        onMouseLeave={e => e.currentTarget.style.color = isDark ? "rgba(140,158,255,0.75)" : "rgba(91,110,245,0.85)"}
+                        onMouseEnter={e => e.currentTarget.style.opacity = "0.8"}
+                        onMouseLeave={e => e.currentTarget.style.opacity = "1"}
                     >
                         Create account →
                     </button>

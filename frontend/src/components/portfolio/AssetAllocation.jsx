@@ -1,16 +1,14 @@
 import { useState, useEffect } from "react";
-import { useTheme } from "../../context/ThemeContext";
-import { sv2Colors } from "../../utils/sv2Colors";
 import { portfolioApi } from "../../services/portfolioApi";
 
-const CATEGORY_COLOR_KEY = {
-  Crypto: "accent",
-  NFTs: "green",
-  RWA: "red",
-  Commodities: "greyArc",
+const CATEGORY_COLOR_VAR = {
+  Crypto: "var(--sv2-accent)",
+  NFTs: "var(--sv2-green)",
+  RWA: "var(--sv2-red)",
+  Commodities: "var(--sv2-grey-arc)",
 };
 
-function DonutChart({ data, colors, track }) {
+function DonutChart({ data, track }) {
   const cx = 80, cy = 80, r = 60, stroke = 22;
   const circumference = 2 * Math.PI * r;
   let offset = 0;
@@ -23,7 +21,7 @@ function DonutChart({ data, colors, track }) {
         const gap = circumference - dash;
         const segOffset = offset;
         offset += dash;
-        const color = colors[CATEGORY_COLOR_KEY[seg.label] || "accent"];
+        const color = CATEGORY_COLOR_VAR[seg.label] || "var(--sv2-accent)";
         return (
           <circle
             key={seg.label}
@@ -42,8 +40,6 @@ function DonutChart({ data, colors, track }) {
 }
 
 export default function AssetAllocation() {
-  const { isDark } = useTheme();
-  const colors = isDark ? sv2Colors.dark : sv2Colors.light;
   const [allocation, setAllocation] = useState(null);
 
   useEffect(() => {
@@ -59,13 +55,13 @@ export default function AssetAllocation() {
         <div className="sv2-muted sv2-small" style={{ padding: "24px 0" }}>Loading…</div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
-          <DonutChart data={allocation} colors={colors} track={colors.greyArc} />
+          <DonutChart data={allocation} track="var(--sv2-grey-arc)" />
           <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 7 }}>
             {allocation.map((a) => (
               <div key={a.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                   <span
-                    style={{ width: 8, height: 8, borderRadius: "50%", background: colors[CATEGORY_COLOR_KEY[a.label] || "accent"], flexShrink: 0 }}
+                    style={{ width: 8, height: 8, borderRadius: "50%", background: CATEGORY_COLOR_VAR[a.label] || "var(--sv2-accent)", flexShrink: 0 }}
                   />
                   <span className="sv2-small sv2-muted">{a.label}</span>
                 </div>

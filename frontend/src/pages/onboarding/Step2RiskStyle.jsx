@@ -54,7 +54,6 @@ export default function Step2RiskStyle({ answers, setAnswer }) {
                 Drag the slider to set your risk appetite.
             </motion.p>
 
-            {/* Slider */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.15, duration: 0.5 }}
@@ -63,13 +62,13 @@ export default function Step2RiskStyle({ answers, setAnswer }) {
                 <style>{`
           .risk-slider { -webkit-appearance: none; appearance: none; width: 100%; height: 4px;
             border-radius: 2px; outline: none; cursor: pointer;
-            background: linear-gradient(90deg, #5b6ef5 ${sliderVal}%, rgba(255,255,255,0.12) ${sliderVal}%);
+            background: linear-gradient(90deg, var(--sv2-accent) ${sliderVal}%, var(--sv2-chip) ${sliderVal}%);
           }
           .risk-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px;
-            border-radius: 50%; background: #5b6ef5; border: 3px solid #fff;
-            box-shadow: 0 2px 8px rgba(91,110,245,0.5); cursor: pointer; }
+            border-radius: 50%; background: var(--sv2-accent); border: 3px solid #fff;
+            box-shadow: 0 2px 8px color-mix(in srgb, var(--sv2-accent) 50%, transparent); cursor: pointer; }
           .risk-slider::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%;
-            background: #5b6ef5; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(91,110,245,0.5); cursor: pointer; }
+            background: var(--sv2-accent); border: 3px solid #fff; box-shadow: 0 2px 8px color-mix(in srgb, var(--sv2-accent) 50%, transparent); cursor: pointer; }
         `}</style>
                 <input
                     type="range" min="0" max="100"
@@ -78,7 +77,6 @@ export default function Step2RiskStyle({ answers, setAnswer }) {
                     className="risk-slider"
                 />
 
-                {/* Labels */}
                 <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10 }}>
                     {PROFILES.map(p => (
                         <span key={p.label} style={{
@@ -92,18 +90,16 @@ export default function Step2RiskStyle({ answers, setAnswer }) {
                 </div>
             </motion.div>
 
-            {/* Profile card */}
             <motion.div
                 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2, duration: 0.5 }}
                 style={{
                     width: "100%", maxWidth: 500,
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.09)",
+                    background: "var(--sv2-card-alt)",
+                    border: "1px solid var(--sv2-border)",
                     borderRadius: 14, overflow: "hidden",
                 }}
             >
-                {/* Chart */}
                 <div style={{ padding: "20px 20px 0", position: "relative", height: 80 }}>
                     <svg width="100%" height="60" viewBox="0 0 230 48" preserveAspectRatio="none">
                         <defs>
@@ -129,20 +125,18 @@ export default function Step2RiskStyle({ answers, setAnswer }) {
                     </svg>
                 </div>
 
-                {/* Stats */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
-                    <div style={{ padding: "16px 20px", borderTop: "1px solid rgba(255,255,255,0.06)", borderRight: "1px solid rgba(255,255,255,0.06)" }}>
+                    <div style={{ padding: "16px 20px", borderTop: "1px solid var(--sv2-border)", borderRight: "1px solid var(--sv2-border)" }}>
                         <div style={{ fontSize: 10.5, color: L.ink3, fontWeight: 600, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>Expected Return</div>
                         <div style={{ fontSize: 22, fontWeight: 700, color: L.ink, letterSpacing: "-0.5px" }}>{profile.returns}</div>
                     </div>
-                    <div style={{ padding: "16px 20px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                    <div style={{ padding: "16px 20px", borderTop: "1px solid var(--sv2-border)" }}>
                         <div style={{ fontSize: 10.5, color: L.ink3, fontWeight: 600, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>Volatility</div>
                         <div style={{ fontSize: 22, fontWeight: 700, color: L.ink, letterSpacing: "-0.5px" }}>{profile.vol}</div>
                     </div>
                 </div>
 
-                {/* AI rec */}
-                <div style={{ padding: "14px 20px", borderTop: "1px solid rgba(255,255,255,0.06)", background: "rgba(91,110,245,0.06)" }}>
+                <div style={{ padding: "14px 20px", borderTop: "1px solid var(--sv2-border)", background: "color-mix(in srgb, var(--sv2-accent) 6%, transparent)" }}>
                     <div style={{ fontSize: 10, color: L.blue, fontWeight: 700, marginBottom: 4, letterSpacing: "0.05em" }}>AI Recommendation</div>
                     <div style={{ fontSize: 13, color: L.ink }}>{profile.rec}</div>
                 </div>

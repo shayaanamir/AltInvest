@@ -12,7 +12,7 @@ const MARKETS = [
         visual: (
             <svg width="100%" height="36" viewBox="0 0 120 36" preserveAspectRatio="none">
                 <path d="M0,28 C15,26 25,18 40,20 C55,22 65,30 80,24 C95,18 105,12 120,8"
-                    fill="none" stroke={`rgba(91,110,245,0.7)`} strokeWidth="2" strokeLinecap="round" />
+                    fill="none" stroke="color-mix(in srgb, var(--sv2-accent) 70%, transparent)" strokeWidth="2" strokeLinecap="round" />
             </svg>
         ),
     },
@@ -54,9 +54,9 @@ const MARKETS = [
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <div style={{
                     width: 28, height: 28, borderRadius: "50%",
-                    background: `linear-gradient(135deg, ${L.blue}, ${L.purple})`,
+                    background: "var(--sv2-accent)",
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    boxShadow: `0 0 12px rgba(91,110,245,0.4)`,
+                    boxShadow: "0 0 12px color-mix(in srgb, var(--sv2-accent) 40%, transparent)",
                 }}>
                     <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#fff", opacity: 0.9 }} />
                 </div>
@@ -111,22 +111,21 @@ export default function Step1Markets({ answers, setAnswer }) {
                             transition={{ delay: 0.1 + i * 0.07, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                             onClick={() => toggle(m.key)}
                             style={{
-                                background: active ? "rgba(91,110,245,0.12)" : "rgba(255,255,255,0.04)",
-                                border: `1px solid ${active ? "rgba(91,110,245,0.5)" : "rgba(255,255,255,0.09)"}`,
+                                background: active ? "color-mix(in srgb, var(--sv2-accent) 12%, transparent)" : "var(--sv2-card-alt)",
+                                border: `1px solid ${active ? "color-mix(in srgb, var(--sv2-accent) 50%, transparent)" : "var(--sv2-border)"}`,
                                 borderRadius: 14,
                                 padding: "20px 18px 16px",
                                 cursor: "pointer",
                                 transition: "all 0.2s",
                                 position: "relative",
-                                boxShadow: active ? `0 0 0 1px rgba(91,110,245,0.3), 0 8px 24px rgba(91,110,245,0.15)` : "none",
+                                boxShadow: active ? "0 0 0 1px color-mix(in srgb, var(--sv2-accent) 30%, transparent), 0 8px 24px color-mix(in srgb, var(--sv2-accent) 15%, transparent)" : "none",
                             }}
                         >
-                            {/* Selected indicator */}
                             {active && (
                                 <div style={{
                                     position: "absolute", top: 12, right: 12,
                                     width: 18, height: 18, borderRadius: "50%",
-                                    background: L.blue,
+                                    background: "var(--sv2-accent)",
                                     display: "flex", alignItems: "center", justifyContent: "center",
                                 }}>
                                     <IconCheck2 size={12} style={{ color: "#fff" }} />

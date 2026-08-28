@@ -42,7 +42,6 @@ export default function Step3Goals({ answers, setAnswer }) {
                 Choose what matters most. You can change this anytime.
             </motion.p>
 
-            {/* 3-col top row + 2-col bottom row */}
             <div style={{ width: "100%", maxWidth: 640 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 10 }}>
                     {GOALS.slice(0, 3).map((g, i) => <GoalCard key={g.key} g={g} i={i} selected={selected} toggle={toggle} />)}
@@ -64,18 +63,18 @@ function GoalCard({ g, i, selected, toggle }) {
             transition={{ delay: 0.1 + i * 0.06, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             onClick={() => toggle(g.key)}
             style={{
-                background: active ? "rgba(91,110,245,0.1)" : "rgba(255,255,255,0.04)",
-                border: `1px solid ${active ? "rgba(91,110,245,0.45)" : "rgba(255,255,255,0.08)"}`,
+                background: active ? "color-mix(in srgb, var(--sv2-accent) 10%, transparent)" : "var(--sv2-card-alt)",
+                border: `1px solid ${active ? "color-mix(in srgb, var(--sv2-accent) 45%, transparent)" : "var(--sv2-border)"}`,
                 borderRadius: 12, padding: "16px 16px",
                 cursor: "pointer", display: "flex", alignItems: "flex-start", gap: 12,
                 transition: "all 0.2s",
-                boxShadow: active ? `0 0 0 1px rgba(91,110,245,0.25), 0 4px 16px rgba(91,110,245,0.12)` : "none",
+                boxShadow: active ? "0 0 0 1px color-mix(in srgb, var(--sv2-accent) 25%, transparent), 0 4px 16px color-mix(in srgb, var(--sv2-accent) 12%, transparent)" : "none",
             }}
         >
             <div style={{
                 width: 34, height: 34, borderRadius: 8, flexShrink: 0,
-                background: active ? "rgba(91,110,245,0.2)" : "rgba(255,255,255,0.06)",
-                border: `1px solid ${active ? "rgba(91,110,245,0.3)" : "rgba(255,255,255,0.08)"}`,
+                background: active ? "color-mix(in srgb, var(--sv2-accent) 20%, transparent)" : "var(--sv2-chip)",
+                border: `1px solid ${active ? "color-mix(in srgb, var(--sv2-accent) 30%, transparent)" : "var(--sv2-border)"}`,
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 15, color: active ? L.blue : L.ink2,
                 transition: "all 0.2s",

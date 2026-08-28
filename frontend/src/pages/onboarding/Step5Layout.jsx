@@ -9,10 +9,10 @@ const LAYOUTS = [
         desc: "Clean focus on core metrics",
         preview: (
             <div style={{ display: "flex", flexDirection: "column", gap: 6, height: "100%" }}>
-                <div style={{ height: "45%", background: "rgba(255,255,255,0.07)", borderRadius: 5 }} />
+                <div style={{ height: "45%", background: "var(--sv2-chip)", borderRadius: 5 }} />
                 <div style={{ display: "flex", gap: 6, flex: 1 }}>
-                    <div style={{ flex: 1, background: "rgba(255,255,255,0.05)", borderRadius: 5 }} />
-                    <div style={{ flex: 1, background: "rgba(255,255,255,0.05)", borderRadius: 5 }} />
+                    <div style={{ flex: 1, background: "var(--sv2-card-alt)", borderRadius: 5 }} />
+                    <div style={{ flex: 1, background: "var(--sv2-card-alt)", borderRadius: 5 }} />
                 </div>
             </div>
         ),
@@ -24,13 +24,13 @@ const LAYOUTS = [
         preview: (
             <div style={{ display: "flex", gap: 6, height: "100%" }}>
                 <div style={{ width: "35%", display: "flex", flexDirection: "column", gap: 6 }}>
-                    <div style={{ flex: 1, background: "rgba(255,255,255,0.07)", borderRadius: 5 }} />
-                    <div style={{ flex: 1, background: "rgba(255,255,255,0.05)", borderRadius: 5 }} />
-                    <div style={{ flex: 1, background: "rgba(255,255,255,0.05)", borderRadius: 5 }} />
+                    <div style={{ flex: 1, background: "var(--sv2-chip)", borderRadius: 5 }} />
+                    <div style={{ flex: 1, background: "var(--sv2-card-alt)", borderRadius: 5 }} />
+                    <div style={{ flex: 1, background: "var(--sv2-card-alt)", borderRadius: 5 }} />
                 </div>
                 <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
-                    <div style={{ flex: 2, background: "rgba(255,255,255,0.07)", borderRadius: 5 }} />
-                    <div style={{ flex: 1, background: "rgba(255,255,255,0.05)", borderRadius: 5 }} />
+                    <div style={{ flex: 2, background: "var(--sv2-chip)", borderRadius: 5 }} />
+                    <div style={{ flex: 1, background: "var(--sv2-card-alt)", borderRadius: 5 }} />
                 </div>
             </div>
         ),
@@ -41,10 +41,10 @@ const LAYOUTS = [
         desc: "Order books and fast execution",
         preview: (
             <div style={{ display: "flex", flexDirection: "column", gap: 6, height: "100%" }}>
-                <div style={{ flex: 2, background: "rgba(255,255,255,0.07)", borderRadius: 5 }} />
+                <div style={{ flex: 2, background: "var(--sv2-chip)", borderRadius: 5 }} />
                 <div style={{ display: "flex", gap: 6, flex: 1 }}>
-                    <div style={{ flex: 1, background: "rgba(232,48,74,0.25)", borderRadius: 5 }} />
-                    <div style={{ flex: 1, background: "rgba(0,212,139,0.2)", borderRadius: 5 }} />
+                    <div style={{ flex: 1, background: "color-mix(in srgb, var(--sv2-red) 25%, transparent)", borderRadius: 5 }} />
+                    <div style={{ flex: 1, background: "color-mix(in srgb, var(--sv2-green) 20%, transparent)", borderRadius: 5 }} />
                 </div>
             </div>
         ),
@@ -56,19 +56,19 @@ const LAYOUTS = [
         preview: (
             <div style={{ display: "flex", gap: 6, height: "100%" }}>
                 <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
-                    <div style={{ flex: 1, background: "rgba(91,110,245,0.2)", borderRadius: 5 }} />
-                    <div style={{ flex: 1, background: "rgba(255,255,255,0.06)", borderRadius: 5 }} />
+                    <div style={{ flex: 1, background: "color-mix(in srgb, var(--sv2-accent) 20%, transparent)", borderRadius: 5 }} />
+                    <div style={{ flex: 1, background: "var(--sv2-chip)", borderRadius: 5 }} />
                 </div>
                 <div style={{ width: "40%", display: "flex", flexDirection: "column", gap: 6 }}>
-                    <div style={{ flex: 2, background: "rgba(91,110,245,0.15)", borderRadius: 5, position: "relative", overflow: "hidden" }}>
+                    <div style={{ flex: 2, background: "color-mix(in srgb, var(--sv2-accent) 15%, transparent)", borderRadius: 5, position: "relative", overflow: "hidden" }}>
                         <div style={{
                             position: "absolute", top: 8, left: 10,
                             width: 8, height: 8, borderRadius: "50%",
                             background: L.blue, boxShadow: `0 0 8px ${L.blue}`,
                         }} />
                     </div>
-                    <div style={{ flex: 1, background: "rgba(255,255,255,0.06)", borderRadius: 5 }} />
-                    <div style={{ flex: 1, background: "rgba(255,255,255,0.06)", borderRadius: 5 }} />
+                    <div style={{ flex: 1, background: "var(--sv2-chip)", borderRadius: 5 }} />
+                    <div style={{ flex: 1, background: "var(--sv2-chip)", borderRadius: 5 }} />
                 </div>
             </div>
         ),
@@ -115,25 +115,23 @@ export default function Step5Layout({ answers, setAnswer }) {
                             transition={{ delay: 0.1 + i * 0.07, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                             onClick={() => setAnswer("layout", layout.key)}
                             style={{
-                                background: active ? "rgba(91,110,245,0.1)" : "rgba(255,255,255,0.03)",
-                                border: `1px solid ${active ? "rgba(91,110,245,0.45)" : "rgba(255,255,255,0.08)"}`,
+                                background: active ? "color-mix(in srgb, var(--sv2-accent) 10%, transparent)" : "var(--sv2-card-alt)",
+                                border: `1px solid ${active ? "color-mix(in srgb, var(--sv2-accent) 45%, transparent)" : "var(--sv2-border)"}`,
                                 borderRadius: 14, padding: "16px",
                                 cursor: "pointer", transition: "all 0.2s",
-                                boxShadow: active ? `0 0 0 1px rgba(91,110,245,0.25), 0 8px 24px rgba(91,110,245,0.15)` : "none",
+                                boxShadow: active ? "0 0 0 1px color-mix(in srgb, var(--sv2-accent) 25%, transparent), 0 8px 24px color-mix(in srgb, var(--sv2-accent) 15%, transparent)" : "none",
                                 position: "relative",
                             }}
                         >
-                            {/* Preview box */}
                             <div style={{
                                 height: 140,
-                                background: "rgba(8,9,18,0.7)",
+                                background: "var(--sv2-bg)",
                                 borderRadius: 8, padding: 10, marginBottom: 12,
-                                border: "1px solid rgba(255,255,255,0.06)",
+                                border: "1px solid var(--sv2-border)",
                             }}>
                                 {layout.preview}
                             </div>
 
-                            {/* Label row */}
                             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                                 <div>
                                     <div style={{ fontSize: 13.5, fontWeight: 700, color: L.ink }}>{layout.title}</div>
@@ -141,8 +139,8 @@ export default function Step5Layout({ answers, setAnswer }) {
                                 </div>
                                 <div style={{
                                     width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
-                                    background: active ? L.blue : "rgba(255,255,255,0.08)",
-                                    border: `1px solid ${active ? L.blue : "rgba(255,255,255,0.15)"}`,
+                                    background: active ? L.blue : "var(--sv2-chip)",
+                                    border: `1px solid ${active ? L.blue : "var(--sv2-border-strong)"}`,
                                     display: "flex", alignItems: "center", justifyContent: "center",
                                     fontSize: 10, color: "#fff",
                                     transition: "all 0.2s",

@@ -25,22 +25,18 @@ export default function LandingNav({ onNavigate }) {
                 height: 60,
                 display: "flex", alignItems: "center", justifyContent: "space-between",
                 padding: "0 48px",
-                background: scrolled
-                    ? (isDark ? "rgba(8,9,15,0.92)" : "rgba(250,247,241,0.92)")
-                    : "transparent",
+                background: scrolled ? "color-mix(in srgb, var(--sv2-bg) 92%, transparent)" : "transparent",
                 backdropFilter: scrolled ? "blur(18px)" : "none",
                 borderBottom: scrolled ? `1px solid ${T.border}` : "1px solid transparent",
                 transition: "background 0.4s, backdrop-filter 0.4s, border-color 0.4s",
                 fontFamily: T.font,
             }}
         >
-            {/* Logo */}
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <img src="/altinvest_logo.png" alt="AltInvest Logo" style={{ height: 32, borderRadius: 8, objectFit: "contain" }} />
                 <span style={{ fontSize: 15, fontWeight: 700, color: T.ink, letterSpacing: "-0.3px" }}>AltInvest</span>
             </div>
 
-            {/* Links */}
             <div style={{ display: "flex", gap: 32 }}>
                 {[
                     { label: "Home", id: "home" },
@@ -65,7 +61,6 @@ export default function LandingNav({ onNavigate }) {
                 ))}
             </div>
 
-            {/* CTA */}
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                 <button
                     onClick={toggle}
@@ -77,7 +72,7 @@ export default function LandingNav({ onNavigate }) {
                     }}
                     onMouseEnter={e => {
                         e.currentTarget.style.color = T.ink;
-                        e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.06)" : "rgba(36,33,28,0.04)";
+                        e.currentTarget.style.background = "var(--sv2-chip)";
                     }}
                     onMouseLeave={e => {
                         e.currentTarget.style.color = T.ink2;
@@ -99,10 +94,10 @@ export default function LandingNav({ onNavigate }) {
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
                     style={{
-                        background: isDark ? "#fff" : T.ink,
+                        background: "var(--sv2-accent)",
                         border: "none", borderRadius: 24,
                         padding: "8px 20px", fontSize: 13.5, fontWeight: 700,
-                        color: isDark ? T.bg0 : "#fff",
+                        color: "#fff",
                         cursor: "pointer", fontFamily: T.font,
                     }}
                 >

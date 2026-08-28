@@ -2,7 +2,6 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { L } from "../../components/landingPage/landingTokens";
 
-// Step components
 import Step1Markets from "./Step1Markets";
 import Step2RiskStyle from "./Step2RiskStyle";
 import Step3Goals from "./Step3Goals";
@@ -14,7 +13,7 @@ const TOTAL_STEPS = 5;
 const STEPS = [Step1Markets, Step2RiskStyle, Step3Goals, Step4Assets, Step5Layout];
 
 export default function OnboardingPage({ onNavigate }) {
-    const [step, setStep] = useState(0); // 0-indexed
+    const [step, setStep] = useState(0);
     const [answers, setAnswers] = useState({});
 
     const stepNum = step + 1;
@@ -34,36 +33,32 @@ export default function OnboardingPage({ onNavigate }) {
     const StepComponent = STEPS[step];
 
     return (
-        <div style={{
+        <div className="sv2" style={{
             minHeight: "100vh", width: "100vw",
-            background: "#0a0b18",
+            background: L.bg0,
             fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
             color: L.ink,
             display: "flex", flexDirection: "column",
             overflow: "hidden",
         }}>
-            {/* Top bar */}
             <div style={{
                 display: "flex", alignItems: "center", justifyContent: "space-between",
                 padding: "0 32px", height: 52, flexShrink: 0,
             }}>
-                {/* Logo */}
                 <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
                     <div style={{
                         width: 30, height: 30, borderRadius: 8,
-                        background: `linear-gradient(135deg, ${L.blue}, ${L.purple})`,
+                        background: "var(--sv2-accent)",
                         display: "flex", alignItems: "center", justifyContent: "center",
                         fontSize: 13, fontWeight: 800, color: "#fff",
                     }}>A</div>
                     <span style={{ fontSize: 15, fontWeight: 700, color: L.ink, letterSpacing: "-0.3px" }}>AltInvest</span>
                 </div>
 
-                {/* Step counter */}
                 <span style={{ fontSize: 13, color: L.ink2, fontWeight: 500 }}>
                     Step {stepNum} of {TOTAL_STEPS}
                 </span>
 
-                {/* Skip */}
                 <button
                     onClick={() => onNavigate && onNavigate("Dashboard")}
                     style={{
@@ -79,20 +74,18 @@ export default function OnboardingPage({ onNavigate }) {
                 </button>
             </div>
 
-            {/* Progress bar */}
-            <div style={{ height: 3, background: "rgba(255,255,255,0.06)", flexShrink: 0 }}>
+            <div style={{ height: 3, background: "var(--sv2-chip)", flexShrink: 0 }}>
                 <motion.div
                     animate={{ width: `${progress}%` }}
                     transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                     style={{
                         height: "100%",
-                        background: `linear-gradient(90deg, ${L.blue}, ${L.purple})`,
+                        background: "var(--sv2-accent)",
                         borderRadius: 2,
                     }}
                 />
             </div>
 
-            {/* Step content */}
             <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }}>
                 <AnimatePresence mode="wait">
                     <motion.div
@@ -111,7 +104,6 @@ export default function OnboardingPage({ onNavigate }) {
                 </AnimatePresence>
             </div>
 
-            {/* Bottom nav */}
             <div style={{
                 display: "flex", alignItems: "center",
                 justifyContent: step === 0 ? "flex-end" : "space-between",
@@ -134,11 +126,11 @@ export default function OnboardingPage({ onNavigate }) {
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
                     style={{
-                        background: `linear-gradient(135deg, ${L.blue}, ${L.purple})`,
+                        background: "var(--sv2-accent)",
                         border: "none", borderRadius: 10,
                         padding: "11px 28px", fontSize: 14, fontWeight: 700, color: "#fff",
                         cursor: "pointer", fontFamily: "inherit",
-                        boxShadow: `0 4px 20px rgba(91,110,245,0.35)`,
+                        boxShadow: "0 4px 20px color-mix(in srgb, var(--sv2-accent) 35%, transparent)",
                     }}
                 >
                     Continue

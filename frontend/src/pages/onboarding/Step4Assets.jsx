@@ -64,7 +64,6 @@ export default function Step4Assets({ answers, setAnswer }) {
                 Add assets to track. AI will surface signals on what matters.
             </motion.p>
 
-            {/* Search */}
             <motion.div
                 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.14, duration: 0.5 }}
@@ -78,18 +77,17 @@ export default function Step4Assets({ answers, setAnswer }) {
                     onChange={e => setQuery(e.target.value)}
                     style={{
                         width: "100%", boxSizing: "border-box",
-                        background: "rgba(255,255,255,0.04)",
-                        border: "1px solid rgba(255,255,255,0.1)",
+                        background: "var(--sv2-card-alt)",
+                        border: "1px solid var(--sv2-border)",
                         borderRadius: 10, padding: "11px 14px 11px 38px",
                         fontSize: 13.5, color: L.ink, outline: "none", fontFamily: "inherit",
                         transition: "border-color 0.2s",
                     }}
-                    onFocus={e => e.target.style.borderColor = "rgba(91,110,245,0.5)"}
-                    onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.1)"}
+                    onFocus={e => e.target.style.borderColor = "color-mix(in srgb, var(--sv2-accent) 50%, transparent)"}
+                    onBlur={e => e.target.style.borderColor = "var(--sv2-border)"}
                 />
             </motion.div>
 
-            {/* Grid */}
             <motion.div
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                 transition={{ delay: 0.2, duration: 0.5 }}
@@ -111,8 +109,8 @@ export default function Step4Assets({ answers, setAnswer }) {
                                 transition={{ delay: i * 0.03, duration: 0.35 }}
                                 onClick={() => toggle(a.sym)}
                                 style={{
-                                    background: active ? "rgba(91,110,245,0.1)" : "rgba(255,255,255,0.04)",
-                                    border: `1px solid ${active ? "rgba(91,110,245,0.4)" : "rgba(255,255,255,0.08)"}`,
+                                    background: active ? "color-mix(in srgb, var(--sv2-accent) 10%, transparent)" : "var(--sv2-card-alt)",
+                                    border: `1px solid ${active ? "color-mix(in srgb, var(--sv2-accent) 40%, transparent)" : "var(--sv2-border)"}`,
                                     borderRadius: 10, padding: "11px 12px",
                                     cursor: "pointer", display: "flex", alignItems: "center",
                                     justifyContent: "space-between", gap: 8,
@@ -125,8 +123,8 @@ export default function Step4Assets({ answers, setAnswer }) {
                                         {a.aiPick && (
                                             <span style={{
                                                 fontSize: 8, fontWeight: 700, padding: "1px 5px", borderRadius: 4,
-                                                background: "rgba(91,110,245,0.2)", color: L.blue,
-                                                border: "1px solid rgba(91,110,245,0.3)", letterSpacing: "0.03em",
+                                                background: "color-mix(in srgb, var(--sv2-accent) 20%, transparent)", color: L.blue,
+                                                border: "1px solid color-mix(in srgb, var(--sv2-accent) 30%, transparent)", letterSpacing: "0.03em",
                                             }}>AI Pick</span>
                                         )}
                                     </div>
@@ -139,8 +137,8 @@ export default function Step4Assets({ answers, setAnswer }) {
                                     </div>
                                     <div style={{
                                         width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
-                                        background: active ? L.blue : "rgba(255,255,255,0.08)",
-                                        border: `1px solid ${active ? L.blue : "rgba(255,255,255,0.15)"}`,
+                                        background: active ? L.blue : "var(--sv2-chip)",
+                                        border: `1px solid ${active ? L.blue : "var(--sv2-border-strong)"}`,
                                         display: "flex", alignItems: "center", justifyContent: "center",
                                         fontSize: 11, color: active ? "#fff" : L.ink3,
                                         transition: "all 0.18s",

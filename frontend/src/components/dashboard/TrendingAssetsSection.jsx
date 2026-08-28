@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { dashboardApi } from "../../services/dashboardApi";
-import { useTheme } from "../../context/ThemeContext";
-import { sv2Colors } from "../../utils/sv2Colors";
 import { formatAssetPrice, formatPct } from "../../utils/formatters";
 import MiniChart from "../charts/MiniChart";
 import { IconStar } from "../icons";
@@ -16,8 +14,6 @@ function aaiTier(score) {
 export default function TrendingAssetsSection() {
   const [assets, setAssets] = useState(null);
   const [favorites, setFavorites] = useState([]);
-  const { isDark } = useTheme();
-  const colors = isDark ? sv2Colors.dark : sv2Colors.light;
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -55,7 +51,7 @@ export default function TrendingAssetsSection() {
               >
                 <div className="dv2-asset-card-top">
                   <div className="dv2-asset-id">
-                    <div className="dv2-asset-avatar" style={{ background: a.logoColor || colors.accent }}>
+                    <div className="dv2-asset-avatar" style={{ background: a.logoColor || "var(--sv2-accent)" }}>
                       {a.symbol.slice(0, 3)}
                     </div>
                     <div>
@@ -82,7 +78,7 @@ export default function TrendingAssetsSection() {
                 </div>
 
                 <div className="dv2-asset-chart">
-                  <MiniChart color={positive ? colors.green : colors.red} data={a.sparkline} width={220} height={44} />
+                  <MiniChart color={positive ? "var(--sv2-green)" : "var(--sv2-red)"} data={a.sparkline} width={220} height={44} />
                 </div>
 
                 <div className="dv2-asset-badges">

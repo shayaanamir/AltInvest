@@ -1,14 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { useTheme } from "../../context/ThemeContext";
-import { sv2Colors } from "../../utils/sv2Colors";
 import { portfolioApi } from "../../services/portfolioApi";
 
 const RANGES = ["1M", "3M", "1Y"];
 
 export default function PerformanceHistory() {
-  const { isDark } = useTheme();
-  const colors = isDark ? sv2Colors.dark : sv2Colors.light;
-
   const [range, setRange] = useState("3M");
   const [series, setSeries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -70,8 +65,8 @@ export default function PerformanceHistory() {
       <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
         <defs>
           <linearGradient id="pv2PerfGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={colors.accent} stopOpacity="0.28" />
-            <stop offset="100%" stopColor={colors.accent} stopOpacity="0" />
+            <stop offset="0%" stopColor="var(--sv2-accent)" stopOpacity="0.28" />
+            <stop offset="100%" stopColor="var(--sv2-accent)" stopOpacity="0" />
           </linearGradient>
         </defs>
 
@@ -79,21 +74,21 @@ export default function PerformanceHistory() {
           const y = H - PAD_B - ((v - minVal) / range2) * (H - PAD_T - PAD_B);
           return (
             <g key={i}>
-              <line x1={PAD_L} y1={y} x2={W - PAD_R} y2={y} stroke={colors.greyArc} strokeWidth="0.7" strokeDasharray="4,4" />
-              <text x={PAD_L - 8} y={y + 4} fontSize="9.5" fill={colors.greyArc} textAnchor="end">{formatY(v)}</text>
+              <line x1={PAD_L} y1={y} x2={W - PAD_R} y2={y} stroke="var(--sv2-grey-arc)" strokeWidth="0.7" strokeDasharray="4,4" />
+              <text x={PAD_L - 8} y={y + 4} fontSize="9.5" fill="var(--sv2-grey-arc)" textAnchor="end">{formatY(v)}</text>
             </g>
           );
         })}
 
         {xIdxs.map((idx, i) => (
-          <text key={i} x={pts[idx].x} y={H - 5} fontSize="9.5" fill={colors.greyArc} textAnchor="middle">
+          <text key={i} x={pts[idx].x} y={H - 5} fontSize="9.5" fill="var(--sv2-grey-arc)" textAnchor="middle">
             {daysAgo(series[idx].date)}
           </text>
         ))}
 
         <path d={areaPath} fill="url(#pv2PerfGrad)" />
-        <path d={linePath} fill="none" stroke={colors.accent} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx={last.x} cy={last.y} r="4" fill={colors.accent} />
+        <path d={linePath} fill="none" stroke="var(--sv2-accent)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx={last.x} cy={last.y} r="4" fill="var(--sv2-accent)" />
       </svg>
     );
   } else if (!loading) {
