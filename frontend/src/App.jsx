@@ -16,6 +16,8 @@ import SignupPage from "./pages/auth/SignupPage";
 import OnboardingPage from "./pages/onboarding/OnboardingPage";
 import ComparePage from "./pages/ComparePage";
 import AlertsPage from "./pages/AlertsPage";
+import SettingsPage from "./pages/SettingsPage";
+import ProfilePage from "./pages/ProfilePage";
 
 const BARE_PAGES = ["Landing", "Login", "Signup", "Onboarding"];
 
@@ -60,6 +62,7 @@ const getPath = (page) => {
     case "Watchlists": return "/watchlists";
     case "Alerts": return "/alerts";
     case "Settings": return "/settings";
+    case "Profile": return "/profile";
     default: return "/";
   }
 };
@@ -78,6 +81,7 @@ const getPageName = (pathname) => {
   if (pathname.startsWith("/watchlists")) return "Watchlists";
   if (pathname.startsWith("/alerts")) return "Alerts";
   if (pathname.startsWith("/settings")) return "Settings";
+  if (pathname.startsWith("/profile")) return "Profile";
   return "Dashboard";
 };
 
@@ -109,7 +113,8 @@ function ShellRoutes() {
       <Route path="/watchlists" element={<WatchlistsPage />} />
       <Route path="/compare" element={<ComparePage />} />
       <Route path="/alerts" element={<AlertsPage />} />
-      <Route path="/settings" element={<PlaceholderPage title="Settings" description="Customize display currency, appearance theme preferences, notification channels, and connect Web3 wallets." />} />
+      <Route path="/settings" element={<SettingsPage />} />
+      <Route path="/profile" element={<ProfilePage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
