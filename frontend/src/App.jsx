@@ -1,12 +1,15 @@
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import { makeStyles } from "./styles/makeStyles";
+import "./styles/sentiment.css";
 import Sidebar from "./components/layout/Sidebar";
 import Topbar from "./components/layout/Topbar";
 import DashboardPage from "./pages/DashboardPage";
 import PortfolioPage from "./pages/PortfolioPage";
 import AssetDetailPage from "./pages/AssetDetailPage";
 import SentimentPage from "./pages/SentimentPage";
+import DiscoverPage from "./pages/DiscoverPage";
+import WatchlistsPage from "./pages/WatchlistsPage";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/auth/LoginPage";
 import SignupPage from "./pages/auth/SignupPage";
@@ -40,7 +43,6 @@ function PlaceholderPage({ title, description }) {
   );
 }
 
-// Map logical string paths to router paths
 const getPath = (page) => {
   switch (page) {
     case "Landing": return "/";
@@ -80,14 +82,13 @@ const getPageName = (pathname) => {
 function ShellRoutes() {
   const { tokens: t } = useTheme();
   const s = makeStyles(t);
-  
+
   const location = useLocation();
   const navigateRouter = useNavigate();
-  
+
   const activePage = getPageName(location.pathname);
   const isBare = BARE_PAGES.includes(activePage);
 
-  // Wrapper around react-router navigate to support legacy string navigation
   const navigate = (page) => {
     navigateRouter(getPath(page));
   };
@@ -102,9 +103,9 @@ function ShellRoutes() {
       <Route path="/asset-detail" element={<AssetDetailPage onNavigate={navigate} />} />
       <Route path="/sentiment" element={<SentimentPage />} />
       <Route path="/dashboard" element={<DashboardPage />} />
-      <Route path="/discover" element={<PlaceholderPage title="Discover" />} />
+      <Route path="/discover" element={<DiscoverPage />} />
+      <Route path="/watchlists" element={<WatchlistsPage />} />
       <Route path="/compare" element={<PlaceholderPage title="Compare" />} />
-      <Route path="/watchlists" element={<PlaceholderPage title="Watchlists" description="Track assets you're considering without adding them to your portfolio. Custom watchlist options will be active here." />} />
       <Route path="/alerts" element={<PlaceholderPage title="Alerts" description="Set threshold conditions and AltInvest will send you push or email notifications immediately when they trigger." />} />
       <Route path="/settings" element={<PlaceholderPage title="Settings" description="Customize display currency, appearance theme preferences, notification channels, and connect Web3 wallets." />} />
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,0 +1,92 @@
+.disc-page {}
+
+.disc-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 20px; gap: 12px; flex-wrap: wrap;
+}
+.disc-title { font-size: 32px; font-weight: 800; letter-spacing: -0.5px; margin: 0 0 6px; color: var(--sv2-text); }
+.disc-sub { font-size: 13.5px; color: var(--sv2-text-soft); margin: 0; }
+.disc-toggle-btn {
+  background: var(--sv2-card); border: 1px solid var(--sv2-border-strong); border-radius: 10px;
+  padding: 9px 16px; font-size: 13px; font-weight: 600; color: var(--sv2-text); cursor: pointer;
+}
+
+.disc-tabs { display: inline-flex; background: var(--sv2-chip); border-radius: 12px; padding: 4px; gap: 2px; margin-bottom: 20px; }
+.disc-tabs button {
+  border: none; background: none; padding: 9px 18px; border-radius: 9px;
+  font-size: 13.5px; font-weight: 600; color: var(--sv2-text-soft); cursor: pointer; font-family: inherit;
+}
+.disc-tabs button.active { background: var(--sv2-card); color: var(--sv2-text); box-shadow: var(--sv2-shadow); }
+.disc-tabs button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.disc-layout { display: grid; grid-template-columns: 280px 1fr; gap: 20px; align-items: flex-start; }
+.disc-layout.no-filters { grid-template-columns: 1fr; }
+
+.disc-filters-card { background: var(--sv2-card); border: 1px solid var(--sv2-border); border-radius: 16px; padding: 20px; position: sticky; top: 20px; }
+.disc-filters-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+.disc-filters-head h3 { font-size: 15px; font-weight: 700; margin: 0; color: var(--sv2-text); }
+.disc-reset-btn { background: none; border: none; color: var(--sv2-red); font-size: 12.5px; font-weight: 600; cursor: pointer; padding: 0; }
+
+.disc-field { margin-bottom: 20px; }
+.disc-field-label { display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 600; color: var(--sv2-text-soft); margin-bottom: 10px; }
+.disc-field-label span:last-child { color: var(--sv2-text); font-weight: 700; }
+
+.disc-slider { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; border-radius: 2px; outline: none; cursor: pointer; }
+.disc-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--sv2-accent); border: 3px solid var(--sv2-card); box-shadow: 0 0 0 1px var(--sv2-accent); cursor: pointer;
+}
+.disc-slider::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--sv2-accent); border: 3px solid var(--sv2-card); cursor: pointer; }
+
+.disc-select { width: 100%; background: var(--sv2-input); border: 1px solid var(--sv2-border-strong); border-radius: 9px; padding: 9px 10px; font-size: 12.5px; color: var(--sv2-text); font-family: inherit; cursor: pointer; }
+
+.disc-count { font-size: 13px; color: var(--sv2-text-soft); margin-bottom: 14px; }
+
+.disc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+@media (max-width: 1200px) { .disc-grid { grid-template-columns: repeat(2, 1fr); } .disc-layout { grid-template-columns: 1fr; } }
+@media (max-width: 700px) { .disc-grid { grid-template-columns: 1fr; } }
+
+.disc-card { background: var(--sv2-card); border: 1px solid var(--sv2-border); border-radius: 16px; padding: 16px; transition: border-color 0.15s; }
+.disc-card:hover { border-color: var(--sv2-border-strong); }
+.disc-card.in-compare { border-color: var(--sv2-accent); }
+
+.disc-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 8px; }
+.disc-avatar-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.disc-name-col { min-width: 0; }
+.disc-name-col .disc-name { font-size: 14.5px; font-weight: 700; color: var(--sv2-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.disc-name-col .disc-symbol { font-size: 11px; color: var(--sv2-text-mute); }
+
+.disc-card-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.disc-compare-btn { border: 1px solid var(--sv2-border-strong); background: var(--sv2-chip); color: var(--sv2-text-soft); border-radius: 20px; padding: 5px 12px; font-size: 11px; font-weight: 700; cursor: pointer; font-family: inherit; white-space: nowrap; }
+.disc-compare-btn.active { background: var(--sv2-accent); border-color: var(--sv2-accent); color: var(--sv2-accent-contrast); }
+.disc-star-btn { background: none; border: none; cursor: pointer; color: var(--sv2-text-mute); padding: 2px; display: flex; }
+.disc-star-btn.active { color: var(--sv2-accent); }
+
+.disc-price-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 2px; }
+.disc-price { font-size: 22px; font-weight: 800; color: var(--sv2-text); letter-spacing: -0.3px; }
+.disc-change { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+.disc-change.positive { background: var(--sv2-green-soft); color: var(--sv2-green); }
+.disc-change.negative { background: var(--sv2-red-soft); color: var(--sv2-red); }
+.disc-price-label { font-size: 11px; color: var(--sv2-text-mute); margin-bottom: 12px; }
+
+.disc-spark { display: block; margin-bottom: 14px; }
+
+.disc-card-bottom { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--sv2-border); }
+.disc-badge { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 5px; }
+.disc-badge.aai { background: var(--sv2-chip); color: var(--sv2-text); }
+.disc-badge-dot { width: 6px; height: 6px; border-radius: 50%; }
+.disc-badge.signal-buy { background: var(--sv2-green-soft); color: var(--sv2-green); }
+.disc-badge.signal-hold { background: var(--sv2-accent-soft); color: var(--sv2-accent); }
+.disc-badge.signal-sell { background: var(--sv2-red-soft); color: var(--sv2-red); }
+.disc-badge.watching { background: var(--sv2-chip); color: var(--sv2-text-soft); margin-left: auto; }
+
+.disc-empty, .disc-comingsoon { background: var(--sv2-card); border: 1px dashed var(--sv2-border-strong); border-radius: 16px; padding: 48px 24px; text-align: center; }
+.disc-empty h3, .disc-comingsoon h3 { color: var(--sv2-text); margin: 0 0 8px; }
+.disc-empty p, .disc-comingsoon p { color: var(--sv2-text-soft); margin: 0; font-size: 13px; }
+
+.disc-compare-bar {
+  position: sticky; bottom: 16px; margin-top: 16px;
+  background: var(--sv2-accent); color: var(--sv2-accent-contrast); border-radius: 14px;
+  padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--sv2-shadow);
+}
+.disc-compare-bar button { background: var(--sv2-accent-contrast); color: var(--sv2-accent); border: none; border-radius: 9px; padding: 8px 16px; font-weight: 700; font-size: 12.5px; cursor: pointer; }
