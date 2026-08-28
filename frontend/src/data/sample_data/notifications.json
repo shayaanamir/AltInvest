@@ -1,0 +1,77 @@
+{
+  "notifications": [
+    {
+      "id": "notif_9001",
+      "type": "alert_triggered",
+      "title": "SOL AAI dropped below your 55 threshold",
+      "message": "Solana's AAI Score fell to 53.1, driven by cooling sentiment and rising short-term volatility.",
+      "read": true,
+      "timestamp": "2026-08-26T09:14:00Z",
+      "deepLink": { "page": "AssetDetail", "symbol": "SOL" }
+    },
+    {
+      "id": "notif_9002",
+      "type": "market_event",
+      "title": "Bitcoin ETF inflows accelerate",
+      "message": "Spot BTC ETF net inflows topped $1.2B this week — the strongest since January.",
+      "read": true,
+      "timestamp": "2026-08-27T14:22:00Z",
+      "deepLink": { "page": "AssetDetail", "symbol": "BTC" }
+    },
+    {
+      "id": "notif_9003",
+      "type": "market_event",
+      "title": "BAYC floor price fell 4.5% in 24h",
+      "message": "Liquidity across blue-chip NFT collections thinned this week, pressuring BAYC's floor toward 14.2 ETH.",
+      "read": false,
+      "timestamp": "2026-08-28T02:50:00Z",
+      "deepLink": { "page": "NFTCollectionDetail", "slug": "boredapeyachtclub" }
+    },
+    {
+      "id": "notif_9004",
+      "type": "system",
+      "title": "Weekly portfolio summary is ready",
+      "message": "Your portfolio is up 68.3% overall since you started tracking it on AltInvest.",
+      "read": false,
+      "timestamp": "2026-08-25T08:00:00Z",
+      "deepLink": { "page": "Portfolio" }
+    },
+    {
+      "id": "notif_9005",
+      "type": "market_event",
+      "title": "Dogecoin rallies on renewed retail interest",
+      "message": "DOGE posted its strongest weekly gain in five months.",
+      "read": true,
+      "timestamp": "2026-08-26T11:20:00Z",
+      "deepLink": { "page": "AssetDetail", "symbol": "DOGE" }
+    },
+    {
+      "id": "notif_9006",
+      "type": "system",
+      "title": "New AAI methodology note published",
+      "message": "We've refined how confidence-weighting is applied to sentiment inputs — no action needed.",
+      "read": true,
+      "timestamp": "2026-08-20T10:00:00Z",
+      "deepLink": null
+    },
+    {
+      "id": "notif_9007",
+      "type": "alert_triggered",
+      "title": "Watchlist asset LINK crossed $16",
+      "message": "Chainlink is up 1.1% today and continues to trend toward your watched range.",
+      "read": false,
+      "timestamp": "2026-08-28T06:12:00Z",
+      "deepLink": { "page": "AssetDetail", "symbol": "LINK" }
+    },
+    {
+      "id": "notif_9008",
+      "type": "system",
+      "title": "Welcome to AltInvest",
+      "message": "Your account is set up. Explore Discover to find your first assets to track.",
+      "read": true,
+      "timestamp": "2026-05-18T10:43:00Z",
+      "deepLink": { "page": "Discover" }
+    }
+  ],
+  "unreadCount": 3
+}

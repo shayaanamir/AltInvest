@@ -1,0 +1,352 @@
+{
+  "BTC": {
+    "header": { "symbol": "BTC", "name": "Bitcoin", "assetType": "crypto", "price": 71450.30, "change24h": 2.14 },
+    "priceHistory": [
+      { "date": "2026-08-15", "price": 66200.10 },
+      { "date": "2026-08-17", "price": 67840.55 },
+      { "date": "2026-08-19", "price": 66910.30 },
+      { "date": "2026-08-21", "price": 68570.90 },
+      { "date": "2026-08-23", "price": 69640.20 },
+      { "date": "2026-08-25", "price": 70280.75 },
+      { "date": "2026-08-27", "price": 69890.40 },
+      { "date": "2026-08-28", "price": 71450.30 }
+    ],
+    "forecast": [
+      { "date": "2026-08-28", "price": 71450.30 },
+      { "date": "2026-09-07", "price": 74100.00 },
+      { "date": "2026-09-17", "price": 76280.00 },
+      { "date": "2026-09-27", "price": 78452.71 }
+    ],
+    "aaiPanel": { "score": 78.4, "signal": "BUY", "confidence": 0.81, "weights": { "prediction": 0.40, "sentiment": 0.30, "risk": 0.30 }, "componentScores": { "predScore": 84.2, "sentimentScore": 65.5, "riskScore": 71.2 } },
+    "riskOverview": [
+      { "label": "Volatility Index", "value": 41, "tag": "Medium (41)", "level": "medium" },
+      { "label": "Liquidity Score", "value": 96, "tag": "Excellent (96)", "level": "excellent" },
+      { "label": "Regulatory Risk", "value": 30, "tag": "Low (30)", "level": "low" },
+      { "label": "Market Risk", "value": 38, "tag": "Low (38)", "level": "low" }
+    ],
+    "marketStats": [
+      { "label": "Market Rank", "value": "#1 by Cap" },
+      { "label": "Market Cap", "value": "$1.42T" },
+      { "label": "24h Volume", "value": "$38.20B" },
+      { "label": "Circulating Supply", "value": "19.8M" },
+      { "label": "All Time High", "value": "$108,950" }
+    ],
+    "signalCard": { "regime": "TRENDING", "probUp30d": 0.71, "probDown30d": 0.29, "riskBucket": "Low", "volatilityForecast7d": 0.028, "priceReference": { "current": 71450.30, "prophet30d": 78452.71, "lower": 75100.00, "upper": 81900.00 } },
+    "trackRecord": {
+      "windowDays": 90,
+      "signalSharpe": 1.34,
+      "signalMaxDrawdown": -0.12,
+      "hitRate": 0.68,
+      "equityCurve": [
+        { "date": "2026-05-30", "value": 1.00 },
+        { "date": "2026-06-13", "value": 1.05 },
+        { "date": "2026-06-27", "value": 1.03 },
+        { "date": "2026-07-11", "value": 1.11 },
+        { "date": "2026-07-25", "value": 1.09 },
+        { "date": "2026-08-08", "value": 1.17 },
+        { "date": "2026-08-22", "value": 1.24 },
+        { "date": "2026-08-28", "value": 1.28 }
+      ]
+    },
+    "modelComparison": {
+      "prophet": { "price30d": 78452.71, "mae": 1842.30, "mape": 1.87 },
+      "lstm": { "price30d": 76980.40, "mae": 2105.60, "mape": 2.14 },
+      "agreement": true
+    },
+    "about": "Bitcoin is the original decentralized digital currency, operating without a central bank or single administrator. Transactions are verified by network nodes through cryptographic proof-of-work and recorded on a public blockchain. Since its 2009 launch, BTC has established itself as the largest cryptocurrency by market capitalization and is widely treated as a macro store-of-value asset.",
+    "relatedAssets": ["ETH", "LINK"],
+    "sentimentSnippet": { "score": 0.31, "label": "Positive", "confidence": 87, "trend": "stable" }
+  },
+  "ETH": {
+    "header": { "symbol": "ETH", "name": "Ethereum", "assetType": "crypto", "price": 3845.60, "change24h": -0.85 },
+    "priceHistory": [
+      { "date": "2026-08-15", "price": 3690.20 },
+      { "date": "2026-08-17", "price": 3720.80 },
+      { "date": "2026-08-19", "price": 3810.40 },
+      { "date": "2026-08-21", "price": 3780.10 },
+      { "date": "2026-08-23", "price": 3855.70 },
+      { "date": "2026-08-25", "price": 3902.30 },
+      { "date": "2026-08-27", "price": 3878.90 },
+      { "date": "2026-08-28", "price": 3845.60 }
+    ],
+    "forecast": [
+      { "date": "2026-08-28", "price": 3845.60 },
+      { "date": "2026-09-07", "price": 3930.00 },
+      { "date": "2026-09-17", "price": 4010.00 },
+      { "date": "2026-09-27", "price": 4080.00 }
+    ],
+    "aaiPanel": { "score": 68.2, "signal": "HOLD", "confidence": 0.69, "weights": { "prediction": 0.40, "sentiment": 0.30, "risk": 0.30 }, "componentScores": { "predScore": 71.5, "sentimentScore": 57.0, "riskScore": 62.5 } },
+    "riskOverview": [
+      { "label": "Volatility Index", "value": 52, "tag": "Medium (52)", "level": "medium" },
+      { "label": "Liquidity Score", "value": 93, "tag": "Excellent (93)", "level": "excellent" },
+      { "label": "Regulatory Risk", "value": 34, "tag": "Low (34)", "level": "low" },
+      { "label": "Market Risk", "value": 45, "tag": "Medium (45)", "level": "medium" }
+    ],
+    "marketStats": [
+      { "label": "Market Rank", "value": "#2 by Cap" },
+      { "label": "Market Cap", "value": "$463.74B" },
+      { "label": "24h Volume", "value": "$19.60B" },
+      { "label": "Circulating Supply", "value": "120.6M" },
+      { "label": "All Time High", "value": "$4,860" }
+    ],
+    "signalCard": { "regime": "CHOPPY", "probUp30d": 0.63, "probDown30d": 0.37, "riskBucket": "Medium", "volatilityForecast7d": 0.035, "priceReference": { "current": 3845.60, "prophet30d": 4080.00, "lower": 3920.00, "upper": 4260.00 } },
+    "trackRecord": {
+      "windowDays": 90,
+      "signalSharpe": 0.91,
+      "signalMaxDrawdown": -0.19,
+      "hitRate": 0.58,
+      "equityCurve": [
+        { "date": "2026-05-30", "value": 1.00 },
+        { "date": "2026-06-13", "value": 1.02 },
+        { "date": "2026-06-27", "value": 0.98 },
+        { "date": "2026-07-11", "value": 1.06 },
+        { "date": "2026-07-25", "value": 1.04 },
+        { "date": "2026-08-08", "value": 1.09 },
+        { "date": "2026-08-22", "value": 1.13 },
+        { "date": "2026-08-28", "value": 1.11 }
+      ]
+    },
+    "modelComparison": {
+      "prophet": { "price30d": 4080.00, "mae": 96.40, "mape": 2.31 },
+      "lstm": { "price30d": 3990.15, "mae": 112.80, "mape": 2.68 },
+      "agreement": true
+    },
+    "about": "Ethereum is a decentralized, programmable blockchain that introduced smart contracts, enabling developers to build applications ranging from decentralized finance to NFT marketplaces. ETH is the native asset used to pay for transaction and computation fees on the network, and its supply dynamics are influenced by network activity and validator issuance.",
+    "relatedAssets": ["BTC", "ARB", "UNI"],
+    "sentimentSnippet": { "score": 0.14, "label": "Mixed", "confidence": 74, "trend": "stable" }
+  },
+  "SOL": {
+    "header": { "symbol": "SOL", "name": "Solana", "assetType": "crypto", "price": 178.92, "change24h": 1.83 },
+    "priceHistory": [
+      { "date": "2026-08-15", "price": 189.40 },
+      { "date": "2026-08-17", "price": 186.10 },
+      { "date": "2026-08-19", "price": 183.70 },
+      { "date": "2026-08-21", "price": 180.90 },
+      { "date": "2026-08-23", "price": 182.50 },
+      { "date": "2026-08-25", "price": 179.60 },
+      { "date": "2026-08-27", "price": 175.80 },
+      { "date": "2026-08-28", "price": 178.92 }
+    ],
+    "forecast": [
+      { "date": "2026-08-28", "price": 178.92 },
+      { "date": "2026-09-07", "price": 177.10 },
+      { "date": "2026-09-17", "price": 175.90 },
+      { "date": "2026-09-27", "price": 174.63 }
+    ],
+    "aaiPanel": { "score": 53.1, "signal": "HOLD", "confidence": 0.58, "weights": { "prediction": 0.40, "sentiment": 0.30, "risk": 0.30 }, "componentScores": { "predScore": 55.0, "sentimentScore": 46.0, "riskScore": 38.4 } },
+    "riskOverview": [
+      { "label": "Volatility Index", "value": 74, "tag": "High (74)", "level": "high" },
+      { "label": "Liquidity Score", "value": 84, "tag": "Good (84)", "level": "good" },
+      { "label": "Regulatory Risk", "value": 41, "tag": "Medium (41)", "level": "medium" },
+      { "label": "Market Risk", "value": 58, "tag": "Medium (58)", "level": "medium" }
+    ],
+    "marketStats": [
+      { "label": "Market Rank", "value": "#5 by Cap" },
+      { "label": "Market Cap", "value": "$86.10B" },
+      { "label": "24h Volume", "value": "$6.80B" },
+      { "label": "Circulating Supply", "value": "481.2M" },
+      { "label": "All Time High", "value": "$260" }
+    ],
+    "signalCard": { "regime": "VOLATILE", "probUp30d": 0.47, "probDown30d": 0.53, "riskBucket": "High", "volatilityForecast7d": 0.061, "priceReference": { "current": 178.92, "prophet30d": 174.63, "lower": 158.40, "upper": 191.20 } },
+    "trackRecord": {
+      "windowDays": 90,
+      "signalSharpe": 0.52,
+      "signalMaxDrawdown": -0.31,
+      "hitRate": 0.51,
+      "equityCurve": [
+        { "date": "2026-05-30", "value": 1.00 },
+        { "date": "2026-06-13", "value": 1.09 },
+        { "date": "2026-06-27", "value": 1.21 },
+        { "date": "2026-07-11", "value": 1.18 },
+        { "date": "2026-07-25", "value": 1.32 },
+        { "date": "2026-08-08", "value": 1.29 },
+        { "date": "2026-08-22", "value": 1.14 },
+        { "date": "2026-08-28", "value": 1.08 }
+      ]
+    },
+    "modelComparison": {
+      "prophet": { "price30d": 174.63, "mae": 6.90, "mape": 3.44 },
+      "lstm": { "price30d": 168.20, "mae": 8.15, "mape": 4.02 },
+      "agreement": true
+    },
+    "about": "Solana is a high-throughput Layer 1 blockchain designed for fast, low-cost transactions using a proof-of-history consensus mechanism. It has become a hub for meme-coin trading, consumer applications, and high-frequency DeFi activity, which contributes to sharper volatility swings than most other large-cap networks.",
+    "relatedAssets": ["BTC", "ETH"],
+    "sentimentSnippet": { "score": -0.08, "label": "Cautious", "confidence": 81, "trend": "deteriorating" }
+  },
+  "LINK": {
+    "header": { "symbol": "LINK", "name": "Chainlink", "assetType": "crypto", "price": 16.40, "change24h": 1.10 },
+    "priceHistory": [
+      { "date": "2026-08-21", "price": 15.60 },
+      { "date": "2026-08-23", "price": 15.85 },
+      { "date": "2026-08-25", "price": 16.10 },
+      { "date": "2026-08-27", "price": 16.22 },
+      { "date": "2026-08-28", "price": 16.40 }
+    ],
+    "forecast": [
+      { "date": "2026-08-28", "price": 16.40 },
+      { "date": "2026-09-17", "price": 16.80 },
+      { "date": "2026-09-27", "price": 17.22 }
+    ],
+    "aaiPanel": { "score": 66.7, "signal": "HOLD", "confidence": 0.64, "weights": { "prediction": 0.40, "sentiment": 0.30, "risk": 0.30 }, "componentScores": { "predScore": 68.0, "sentimentScore": 61.0, "riskScore": 58.0 } },
+    "riskOverview": [
+      { "label": "Volatility Index", "value": 47, "tag": "Medium (47)", "level": "medium" },
+      { "label": "Liquidity Score", "value": 78, "tag": "Good (78)", "level": "good" },
+      { "label": "Regulatory Risk", "value": 28, "tag": "Low (28)", "level": "low" },
+      { "label": "Market Risk", "value": 42, "tag": "Medium (42)", "level": "medium" }
+    ],
+    "marketStats": [
+      { "label": "Market Rank", "value": "#14 by Cap" },
+      { "label": "Market Cap", "value": "$9.63B" },
+      { "label": "24h Volume", "value": "$612M" },
+      { "label": "Circulating Supply", "value": "587.0M" },
+      { "label": "All Time High", "value": "$52.70" }
+    ],
+    "signalCard": { "regime": "STABLE", "probUp30d": 0.61, "probDown30d": 0.39, "riskBucket": "Medium", "volatilityForecast7d": 0.044, "priceReference": { "current": 16.40, "prophet30d": 17.22, "lower": 16.10, "upper": 18.40 } },
+    "trackRecord": { "windowDays": 90, "signalSharpe": 0.83, "signalMaxDrawdown": -0.15, "hitRate": 0.60, "equityCurve": [ { "date": "2026-05-30", "value": 1.00 }, { "date": "2026-06-27", "value": 1.04 }, { "date": "2026-07-25", "value": 1.08 }, { "date": "2026-08-28", "value": 1.12 } ] },
+    "modelComparison": { "prophet": { "price30d": 17.22, "mae": 0.41, "mape": 2.50 }, "lstm": { "price30d": 16.95, "mae": 0.52, "mape": 3.17 }, "agreement": true },
+    "about": "Chainlink is a decentralized oracle network that connects smart contracts to real-world data, powering price feeds for a large share of DeFi protocols across multiple blockchains. LINK is used to pay node operators for delivering verified off-chain data on-chain.",
+    "relatedAssets": ["ETH", "ARB"],
+    "sentimentSnippet": { "score": 0.22, "label": "Positive", "confidence": 55, "trend": "stable" }
+  },
+  "DOGE": {
+    "header": { "symbol": "DOGE", "name": "Dogecoin", "assetType": "crypto", "price": 0.187, "change24h": 11.62 },
+    "priceHistory": [
+      { "date": "2026-08-21", "price": 0.152 },
+      { "date": "2026-08-23", "price": 0.161 },
+      { "date": "2026-08-25", "price": 0.170 },
+      { "date": "2026-08-27", "price": 0.168 },
+      { "date": "2026-08-28", "price": 0.187 }
+    ],
+    "forecast": [
+      { "date": "2026-08-28", "price": 0.187 },
+      { "date": "2026-09-17", "price": 0.198 },
+      { "date": "2026-09-27", "price": 0.2098 }
+    ],
+    "aaiPanel": { "score": 61.3, "signal": "HOLD", "confidence": 0.55, "weights": { "prediction": 0.40, "sentiment": 0.30, "risk": 0.30 }, "componentScores": { "predScore": 66.0, "sentimentScore": 64.0, "riskScore": 22.7 } },
+    "riskOverview": [
+      { "label": "Volatility Index", "value": 81, "tag": "High (81)", "level": "high" },
+      { "label": "Liquidity Score", "value": 71, "tag": "Good (71)", "level": "good" },
+      { "label": "Regulatory Risk", "value": 47, "tag": "Medium (47)", "level": "medium" },
+      { "label": "Market Risk", "value": 66, "tag": "High (66)", "level": "high" }
+    ],
+    "marketStats": [
+      { "label": "Market Rank", "value": "#9 by Cap" },
+      { "label": "Market Cap", "value": "$27.68B" },
+      { "label": "24h Volume", "value": "$2.10B" },
+      { "label": "Circulating Supply", "value": "148.0B" },
+      { "label": "All Time High", "value": "$0.74" }
+    ],
+    "signalCard": { "regime": "VOLATILE", "probUp30d": 0.55, "probDown30d": 0.45, "riskBucket": "High", "volatilityForecast7d": 0.089, "priceReference": { "current": 0.187, "prophet30d": 0.2098, "lower": 0.178, "upper": 0.241 } },
+    "trackRecord": { "windowDays": 90, "signalSharpe": 0.29, "signalMaxDrawdown": -0.38, "hitRate": 0.47, "equityCurve": [ { "date": "2026-05-30", "value": 1.00 }, { "date": "2026-06-27", "value": 0.91 }, { "date": "2026-07-25", "value": 1.14 }, { "date": "2026-08-28", "value": 1.22 } ] },
+    "modelComparison": { "prophet": { "price30d": 0.2098, "mae": 0.011, "mape": 5.90 }, "lstm": { "price30d": 0.2015, "mae": 0.014, "mape": 7.10 }, "agreement": true },
+    "about": "Dogecoin began as a lighthearted, meme-inspired cryptocurrency but has retained a large, active community and consistent liquidity. Its price movements tend to be driven heavily by social sentiment and retail trading activity rather than protocol fundamentals.",
+    "relatedAssets": ["BTC"],
+    "sentimentSnippet": { "score": 0.28, "label": "Positive", "confidence": 44, "trend": "rising" }
+  },
+  "ARB": {
+    "header": { "symbol": "ARB", "name": "Arbitrum", "assetType": "crypto", "price": 1.28, "change24h": 3.87 },
+    "priceHistory": [
+      { "date": "2026-08-21", "price": 1.19 },
+      { "date": "2026-08-23", "price": 1.22 },
+      { "date": "2026-08-25", "price": 1.24 },
+      { "date": "2026-08-27", "price": 1.23 },
+      { "date": "2026-08-28", "price": 1.28 }
+    ],
+    "forecast": [ { "date": "2026-08-28", "price": 1.28 }, { "date": "2026-09-17", "price": 1.29 }, { "date": "2026-09-27", "price": 1.30 } ],
+    "aaiPanel": { "score": 49.8, "signal": "HOLD", "confidence": 0.51, "weights": { "prediction": 0.40, "sentiment": 0.30, "risk": 0.30 }, "componentScores": { "predScore": 50.0, "sentimentScore": 51.0, "riskScore": 47.3 } },
+    "riskOverview": [
+      { "label": "Volatility Index", "value": 55, "tag": "Medium (55)", "level": "medium" },
+      { "label": "Liquidity Score", "value": 66, "tag": "Good (66)", "level": "good" },
+      { "label": "Regulatory Risk", "value": 39, "tag": "Medium (39)", "level": "medium" },
+      { "label": "Market Risk", "value": 55, "tag": "Medium (55)", "level": "medium" }
+    ],
+    "marketStats": [
+      { "label": "Market Rank", "value": "#38 by Cap" },
+      { "label": "Market Cap", "value": "$5.07B" },
+      { "label": "24h Volume", "value": "$284M" },
+      { "label": "Circulating Supply", "value": "3.96B" },
+      { "label": "All Time High", "value": "$2.39" }
+    ],
+    "signalCard": { "regime": "CHOPPY", "probUp30d": 0.50, "probDown30d": 0.50, "riskBucket": "Medium", "volatilityForecast7d": 0.052, "priceReference": { "current": 1.28, "prophet30d": 1.30, "lower": 1.19, "upper": 1.42 } },
+    "trackRecord": { "windowDays": 90, "signalSharpe": 0.34, "signalMaxDrawdown": -0.22, "hitRate": 0.52, "equityCurve": [ { "date": "2026-05-30", "value": 1.00 }, { "date": "2026-06-27", "value": 0.97 }, { "date": "2026-07-25", "value": 1.05 }, { "date": "2026-08-28", "value": 1.03 } ] },
+    "modelComparison": { "prophet": { "price30d": 1.30, "mae": 0.06, "mape": 4.70 }, "lstm": { "price30d": 1.22, "mae": 0.08, "mape": 6.30 }, "agreement": false },
+    "about": "Arbitrum is a Layer 2 scaling network for Ethereum that uses optimistic rollups to reduce transaction costs while inheriting Ethereum's security guarantees. ARB is primarily a governance token for the Arbitrum DAO.",
+    "relatedAssets": ["ETH"],
+    "sentimentSnippet": { "score": 0.02, "label": "Neutral", "confidence": 39, "trend": "stable" }
+  },
+  "DAI": {
+    "header": { "symbol": "DAI", "name": "Dai", "assetType": "crypto", "price": 1.00, "change24h": 0.00 },
+    "priceHistory": [ { "date": "2026-08-24", "price": 1.00 }, { "date": "2026-08-25", "price": 1.00 }, { "date": "2026-08-26", "price": 1.00 }, { "date": "2026-08-27", "price": 1.00 }, { "date": "2026-08-28", "price": 1.00 } ],
+    "forecast": [ { "date": "2026-08-28", "price": 1.00 }, { "date": "2026-09-27", "price": 1.001 } ],
+    "aaiPanel": { "score": 50.2, "signal": "HOLD", "confidence": 0.60, "weights": { "prediction": 0.40, "sentiment": 0.30, "risk": 0.30 }, "componentScores": { "predScore": 51.0, "sentimentScore": 50.0, "riskScore": 92.1 } },
+    "riskOverview": [
+      { "label": "Volatility Index", "value": 3, "tag": "Low (3)", "level": "low" },
+      { "label": "Liquidity Score", "value": 88, "tag": "Excellent (88)", "level": "excellent" },
+      { "label": "Regulatory Risk", "value": 52, "tag": "Medium (52)", "level": "medium" },
+      { "label": "Market Risk", "value": 12, "tag": "Low (12)", "level": "low" }
+    ],
+    "marketStats": [
+      { "label": "Market Rank", "value": "#19 by Cap" },
+      { "label": "Market Cap", "value": "$5.30B" },
+      { "label": "24h Volume", "value": "$3.90B" },
+      { "label": "Circulating Supply", "value": "5.30B" },
+      { "label": "All Time High", "value": "$1.01" }
+    ],
+    "signalCard": { "regime": "STABLE", "probUp30d": 0.51, "probDown30d": 0.49, "riskBucket": "Low", "volatilityForecast7d": 0.003, "priceReference": { "current": 1.00, "prophet30d": 1.001, "lower": 0.995, "upper": 1.006 } },
+    "trackRecord": { "windowDays": 90, "signalSharpe": 0.05, "signalMaxDrawdown": -0.01, "hitRate": 0.50, "equityCurve": [ { "date": "2026-05-30", "value": 1.00 }, { "date": "2026-08-28", "value": 1.00 } ] },
+    "modelComparison": { "prophet": { "price30d": 1.001, "mae": 0.001, "mape": 0.10 }, "lstm": { "price30d": 0.999, "mae": 0.002, "mape": 0.20 }, "agreement": true },
+    "about": "Dai is a decentralized, crypto-collateralized stablecoin soft-pegged to the US dollar and managed through an over-collateralized vault system. It is widely used across DeFi for lending, borrowing, and as a stable base pair.",
+    "relatedAssets": ["ETH"],
+    "sentimentSnippet": { "score": 0.00, "label": "Neutral", "confidence": 30, "trend": "stable" }
+  },
+  "UNI": {
+    "header": { "symbol": "UNI", "name": "Uniswap", "assetType": "crypto", "price": 9.14, "change24h": -4.06 },
+    "priceHistory": [ { "date": "2026-08-21", "price": 10.20 }, { "date": "2026-08-23", "price": 9.95 }, { "date": "2026-08-25", "price": 9.60 }, { "date": "2026-08-27", "price": 9.53 }, { "date": "2026-08-28", "price": 9.14 } ],
+    "forecast": [ { "date": "2026-08-28", "price": 9.14 }, { "date": "2026-09-17", "price": 8.80 }, { "date": "2026-09-27", "price": 8.52 } ],
+    "aaiPanel": { "score": 33.6, "signal": "SELL", "confidence": 0.67, "weights": { "prediction": 0.40, "sentiment": 0.30, "risk": 0.30 }, "componentScores": { "predScore": 26.0, "sentimentScore": 40.5, "riskScore": 44.6 } },
+    "riskOverview": [
+      { "label": "Volatility Index", "value": 58, "tag": "Medium (58)", "level": "medium" },
+      { "label": "Liquidity Score", "value": 69, "tag": "Good (69)", "level": "good" },
+      { "label": "Regulatory Risk", "value": 44, "tag": "Medium (44)", "level": "medium" },
+      { "label": "Market Risk", "value": 57, "tag": "Medium (57)", "level": "medium" }
+    ],
+    "marketStats": [
+      { "label": "Market Rank", "value": "#22 by Cap" },
+      { "label": "Market Cap", "value": "$6.88B" },
+      { "label": "24h Volume", "value": "$198M" },
+      { "label": "Circulating Supply", "value": "753.0M" },
+      { "label": "All Time High", "value": "$44.92" }
+    ],
+    "signalCard": { "regime": "CHOPPY", "probUp30d": 0.36, "probDown30d": 0.64, "riskBucket": "Medium", "volatilityForecast7d": 0.047, "priceReference": { "current": 9.14, "prophet30d": 8.52, "lower": 7.65, "upper": 9.30 } },
+    "trackRecord": { "windowDays": 90, "signalSharpe": -0.18, "signalMaxDrawdown": -0.29, "hitRate": 0.44, "equityCurve": [ { "date": "2026-05-30", "value": 1.00 }, { "date": "2026-06-27", "value": 0.94 }, { "date": "2026-07-25", "value": 0.89 }, { "date": "2026-08-28", "value": 0.83 } ] },
+    "modelComparison": { "prophet": { "price30d": 8.52, "mae": 0.38, "mape": 4.20 }, "lstm": { "price30d": 8.71, "mae": 0.44, "mape": 4.90 }, "agreement": true },
+    "about": "Uniswap is the largest decentralized exchange protocol on Ethereum, using an automated market maker model to enable permissionless token swaps. UNI is a governance token controlling protocol parameters and treasury decisions.",
+    "relatedAssets": ["ETH", "ARB"],
+    "sentimentSnippet": { "score": -0.19, "label": "Negative", "confidence": 48, "trend": "falling" }
+  },
+  "BASE": {
+    "header": { "symbol": "BASE", "name": "Base Ecosystem Index", "assetType": "crypto", "price": 22.35, "change24h": 0.42 },
+    "priceHistory": [ { "date": "2026-08-21", "price": 21.80 }, { "date": "2026-08-23", "price": 22.05 }, { "date": "2026-08-25", "price": 22.20 }, { "date": "2026-08-27", "price": 22.25 }, { "date": "2026-08-28", "price": 22.35 } ],
+    "forecast": [ { "date": "2026-08-28", "price": 22.35 }, { "date": "2026-09-17", "price": 22.70 }, { "date": "2026-09-27", "price": 23.07 } ],
+    "aaiPanel": { "score": 57.9, "signal": "HOLD", "confidence": 0.53, "weights": { "prediction": 0.40, "sentiment": 0.30, "risk": 0.30 }, "componentScores": { "predScore": 60.5, "sentimentScore": 52.5, "riskScore": 55.9 } },
+    "riskOverview": [
+      { "label": "Volatility Index", "value": 49, "tag": "Medium (49)", "level": "medium" },
+      { "label": "Liquidity Score", "value": 52, "tag": "Fair (52)", "level": "fair" },
+      { "label": "Regulatory Risk", "value": 46, "tag": "Medium (46)", "level": "medium" },
+      { "label": "Market Risk", "value": 50, "tag": "Medium (50)", "level": "medium" }
+    ],
+    "marketStats": [
+      { "label": "Market Rank", "value": "#102 by Cap" },
+      { "label": "Market Cap", "value": "$1.12B" },
+      { "label": "24h Volume", "value": "$41M" },
+      { "label": "Circulating Supply", "value": "50.0M" },
+      { "label": "All Time High", "value": "$58.20" }
+    ],
+    "signalCard": { "regime": "STABLE", "probUp30d": 0.58, "probDown30d": 0.42, "riskBucket": "Medium", "volatilityForecast7d": 0.039, "priceReference": { "current": 22.35, "prophet30d": 23.07, "lower": 21.40, "upper": 24.85 } },
+    "trackRecord": { "windowDays": 90, "signalSharpe": 0.44, "signalMaxDrawdown": -0.20, "hitRate": 0.54, "equityCurve": [ { "date": "2026-05-30", "value": 1.00 }, { "date": "2026-06-27", "value": 1.03 }, { "date": "2026-07-25", "value": 1.08 }, { "date": "2026-08-28", "value": 1.06 } ] },
+    "modelComparison": { "prophet": { "price30d": 23.07, "mae": 0.95, "mape": 4.10 }, "lstm": { "price30d": 22.40, "mae": 1.10, "mape": 4.80 }, "agreement": false },
+    "about": "The Base Ecosystem Index tracks a basket of leading tokens built on the Base Layer 2 network, offering diversified exposure to the network's DeFi and consumer application growth without concentrating risk in a single protocol.",
+    "relatedAssets": ["ETH", "ARB"],
+    "sentimentSnippet": { "score": 0.06, "label": "Neutral", "confidence": 35, "trend": "stable" }
+  }
+}

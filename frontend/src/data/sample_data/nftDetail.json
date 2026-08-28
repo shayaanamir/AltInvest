@@ -1,0 +1,168 @@
+{
+  "boredapeyachtclub": {
+    "header": { "name": "Bored Ape Yacht Club", "symbol": "BAYC", "floorEth": 14.2, "floorUsd": 54607.52, "change24h": -4.5, "verified": true },
+    "floorHistory": [
+      { "date": "2026-08-08", "floorEth": 17.1 },
+      { "date": "2026-08-12", "floorEth": 16.4 },
+      { "date": "2026-08-16", "floorEth": 15.8 },
+      { "date": "2026-08-20", "floorEth": 15.2 },
+      { "date": "2026-08-24", "floorEth": 14.9 },
+      { "date": "2026-08-26", "floorEth": 14.6 },
+      { "date": "2026-08-28", "floorEth": 14.2 }
+    ],
+    "salesVolume": {
+      "volume24hEth": 182,
+      "sales24hCount": 13,
+      "avgSalePriceEth": 14.0,
+      "recentSales": [
+        { "tokenId": "8821", "priceEth": 13.8, "buyer": "0x7fA...c2e1", "seller": "0x91B...8f4a", "timestamp": "2026-08-28T02:40:00Z" },
+        { "tokenId": "5502", "priceEth": 14.5, "buyer": "0x4dC...a301", "seller": "0x22E...9b7c", "timestamp": "2026-08-27T21:15:00Z" },
+        { "tokenId": "1190", "priceEth": 14.1, "buyer": "0x88F...11d2", "seller": "0x0aB...44e9", "timestamp": "2026-08-27T15:52:00Z" },
+        { "tokenId": "6734", "priceEth": 13.9, "buyer": "0x5c2...7a10", "seller": "0x3fD...c890", "timestamp": "2026-08-26T19:30:00Z" }
+      ]
+    },
+    "holders": { "count": 5412, "uniqueHolderPct": 54.1, "top10Pct": 21.4, "top1Pct": 6.8 },
+    "rarityTraits": {
+      "categories": ["Background", "Fur", "Clothes", "Eyes", "Mouth", "Hat"],
+      "distribution": [
+        { "trait": "Fur", "value": "Solid Gold", "rarityPct": 0.8 },
+        { "trait": "Fur", "value": "Trippy", "rarityPct": 1.2 },
+        { "trait": "Eyes", "value": "Laser Eyes", "rarityPct": 0.9 },
+        { "trait": "Hat", "value": "King's Crown", "rarityPct": 1.4 },
+        { "trait": "Mouth", "value": "Bored Unshaven Party Horn", "rarityPct": 2.1 }
+      ]
+    },
+    "liquidity": { "sellThroughRate": 0.034, "illiquidityRiskScore": 58.2, "riskBucket": "High", "washTradingFlag": false },
+    "riskSection": [
+      { "label": "Floor Volatility (30d)", "value": 62, "tag": "High (62)", "level": "high" },
+      { "label": "Holder Concentration", "value": 55, "tag": "Medium (55)", "level": "medium" },
+      { "label": "Liquidity Depth", "value": 41, "tag": "Medium (41)", "level": "medium" }
+    ],
+    "aai": { "score": 45.0, "signal": "HOLD", "confidence": 0.61, "regime": "STABLE", "probFloorUp30d": 0.55, "prophetFloor30dEth": 15.8 },
+    "sentiment": { "score": -0.376, "confidence": 79, "confidenceLabel": "medium", "trend": "falling", "narrative": "Coverage has turned cautious — liquidity outflows and softening blue-chip demand dominate the narrative, with little pushback in the comments." },
+    "tokens": [
+      { "tokenId": "4271", "rarityRank": 1842, "listedPriceEth": null, "owned": true, "imageDescription": "Ape with blue fur, laser eyes, captain's hat" },
+      { "tokenId": "8821", "rarityRank": 640, "listedPriceEth": 15.9, "owned": false, "imageDescription": "Ape with gold fur, bored expression, party hat" },
+      { "tokenId": "5502", "rarityRank": 2210, "listedPriceEth": 14.7, "owned": false, "imageDescription": "Ape with black fur, sunglasses, striped shirt" },
+      { "tokenId": "1190", "rarityRank": 990, "listedPriceEth": 16.2, "owned": false, "imageDescription": "Ape with dmt fur, crown, gold chain" },
+      { "tokenId": "6734", "rarityRank": 3355, "listedPriceEth": 14.1, "owned": false, "imageDescription": "Ape with cream fur, bandana, cigarette" }
+    ]
+  },
+  "neondrifters": {
+    "header": { "name": "Neon Drifters", "symbol": "NDRFT", "floorEth": 3.8, "floorUsd": 14613.28, "change24h": 5.4, "verified": true },
+    "floorHistory": [
+      { "date": "2026-08-08", "floorEth": 3.1 },
+      { "date": "2026-08-14", "floorEth": 3.3 },
+      { "date": "2026-08-20", "floorEth": 3.5 },
+      { "date": "2026-08-24", "floorEth": 3.65 },
+      { "date": "2026-08-28", "floorEth": 3.8 }
+    ],
+    "salesVolume": { "volume24hEth": 64, "sales24hCount": 22, "avgSalePriceEth": 3.7, "recentSales": [
+      { "tokenId": "2210", "priceEth": 3.9, "buyer": "0x9aC...1120", "seller": "0x74B...8830", "timestamp": "2026-08-28T04:10:00Z" },
+      { "tokenId": "0987", "priceEth": 3.6, "buyer": "0x11D...7f21", "seller": "0x62A...5c40", "timestamp": "2026-08-27T22:05:00Z" }
+    ] },
+    "holders": { "count": 2890, "uniqueHolderPct": 48.2, "top10Pct": 17.9, "top1Pct": 4.2 },
+    "rarityTraits": { "categories": ["Palette", "Grid", "Motion", "Glow"], "distribution": [
+      { "trait": "Palette", "value": "Ultraviolet", "rarityPct": 1.1 },
+      { "trait": "Glow", "value": "Full Spectrum", "rarityPct": 0.6 }
+    ] },
+    "liquidity": { "sellThroughRate": 0.061, "illiquidityRiskScore": 34.5, "riskBucket": "Medium", "washTradingFlag": false },
+    "riskSection": [
+      { "label": "Floor Volatility (30d)", "value": 38, "tag": "Medium (38)", "level": "medium" },
+      { "label": "Holder Concentration", "value": 29, "tag": "Low (29)", "level": "low" },
+      { "label": "Liquidity Depth", "value": 64, "tag": "Good (64)", "level": "good" }
+    ],
+    "aai": { "score": 74.0, "signal": "BUY", "confidence": 0.70, "regime": "TRENDING", "probFloorUp30d": 0.68, "prophetFloor30dEth": 4.35 },
+    "sentiment": { "score": 0.44, "confidence": 62, "confidenceLabel": "medium", "trend": "rising", "narrative": "Coverage is broadly constructive — growing collector interest and a string of generative-art features are driving renewed floor demand." },
+    "tokens": [
+      { "tokenId": "2210", "rarityRank": 340, "listedPriceEth": 4.1, "owned": false, "imageDescription": "Ultraviolet gradient grid with full-spectrum glow trail" },
+      { "tokenId": "0987", "rarityRank": 1120, "listedPriceEth": 3.7, "owned": false, "imageDescription": "Magenta gradient grid, partial glow" }
+    ]
+  },
+  "genesispunks": {
+    "header": { "name": "Genesis Punks", "symbol": "GPUNK", "floorEth": 42.6, "floorUsd": 163862.56, "change24h": 0.8, "verified": true },
+    "floorHistory": [
+      { "date": "2026-08-08", "floorEth": 39.2 },
+      { "date": "2026-08-14", "floorEth": 40.5 },
+      { "date": "2026-08-20", "floorEth": 41.8 },
+      { "date": "2026-08-24", "floorEth": 42.1 },
+      { "date": "2026-08-28", "floorEth": 42.6 }
+    ],
+    "salesVolume": { "volume24hEth": 96, "sales24hCount": 6, "avgSalePriceEth": 42.3, "recentSales": [
+      { "tokenId": "0044", "priceEth": 43.0, "buyer": "0x2fE...9012", "seller": "0x81C...3391", "timestamp": "2026-08-28T01:20:00Z" }
+    ] },
+    "holders": { "count": 1890, "uniqueHolderPct": 47.3, "top10Pct": 26.8, "top1Pct": 9.1 },
+    "rarityTraits": { "categories": ["Skin", "Accessory", "Headwear"], "distribution": [
+      { "trait": "Accessory", "value": "Golden Pipe", "rarityPct": 0.4 }
+    ] },
+    "liquidity": { "sellThroughRate": 0.019, "illiquidityRiskScore": 62.8, "riskBucket": "High", "washTradingFlag": false },
+    "riskSection": [
+      { "label": "Floor Volatility (30d)", "value": 45, "tag": "Medium (45)", "level": "medium" },
+      { "label": "Holder Concentration", "value": 61, "tag": "High (61)", "level": "high" },
+      { "label": "Liquidity Depth", "value": 33, "tag": "Low (33)", "level": "low" }
+    ],
+    "aai": { "score": 81.0, "signal": "BUY", "confidence": 0.75, "regime": "TRENDING", "probFloorUp30d": 0.66, "prophetFloor30dEth": 45.9 },
+    "sentiment": { "score": 0.51, "confidence": 71, "confidenceLabel": "medium", "trend": "rising", "narrative": "Coverage is strongly constructive — blue-chip rotation into scarce generative collections is the dominant theme this week." },
+    "tokens": [
+      { "tokenId": "0044", "rarityRank": 12, "listedPriceEth": 48.0, "owned": false, "imageDescription": "Genesis punk with golden pipe and crown headwear" }
+    ]
+  },
+  "pixelwardens": {
+    "header": { "name": "Pixel Wardens", "symbol": "PXLW", "floorEth": 1.1, "floorUsd": 4230.16, "change24h": -1.1, "verified": false },
+    "floorHistory": [ { "date": "2026-08-14", "floorEth": 1.18 }, { "date": "2026-08-21", "floorEth": 1.14 }, { "date": "2026-08-28", "floorEth": 1.1 } ],
+    "salesVolume": { "volume24hEth": 21, "sales24hCount": 19, "avgSalePriceEth": 1.08, "recentSales": [] },
+    "holders": { "count": 3204, "uniqueHolderPct": 36.0, "top10Pct": 19.2, "top1Pct": 5.5 },
+    "rarityTraits": { "categories": ["Class", "Weapon", "Armor"], "distribution": [] },
+    "liquidity": { "sellThroughRate": 0.028, "illiquidityRiskScore": 49.7, "riskBucket": "Medium", "washTradingFlag": false },
+    "riskSection": [
+      { "label": "Floor Volatility (30d)", "value": 40, "tag": "Medium (40)", "level": "medium" },
+      { "label": "Holder Concentration", "value": 24, "tag": "Low (24)", "level": "low" },
+      { "label": "Liquidity Depth", "value": 47, "tag": "Fair (47)", "level": "fair" }
+    ],
+    "aai": { "score": 52.0, "signal": "HOLD", "confidence": 0.49, "regime": "CHOPPY", "probFloorUp30d": 0.51, "prophetFloor30dEth": 1.14 },
+    "sentiment": { "score": 0.03, "confidence": 41, "confidenceLabel": "low", "trend": "stable", "narrative": "Coverage is mixed — modest gaming-utility updates are offset by a broader slowdown in smaller collection volume." },
+    "tokens": []
+  },
+  "astralcats": {
+    "header": { "name": "Astral Cats", "symbol": "ACAT", "floorEth": 0.65, "floorUsd": 2499.64, "change24h": -6.7, "verified": false },
+    "floorHistory": [ { "date": "2026-08-14", "floorEth": 0.82 }, { "date": "2026-08-21", "floorEth": 0.71 }, { "date": "2026-08-28", "floorEth": 0.65 } ],
+    "salesVolume": { "volume24hEth": 9, "sales24hCount": 8, "avgSalePriceEth": 0.63, "recentSales": [] },
+    "holders": { "count": 4120, "uniqueHolderPct": 41.2, "top10Pct": 31.6, "top1Pct": 12.4 },
+    "rarityTraits": { "categories": ["Fur", "Eyes", "Accessory"], "distribution": [] },
+    "liquidity": { "sellThroughRate": 0.012, "illiquidityRiskScore": 74.3, "riskBucket": "High", "washTradingFlag": true },
+    "riskSection": [
+      { "label": "Floor Volatility (30d)", "value": 78, "tag": "High (78)", "level": "high" },
+      { "label": "Holder Concentration", "value": 69, "tag": "High (69)", "level": "high" },
+      { "label": "Liquidity Depth", "value": 22, "tag": "Low (22)", "level": "low" }
+    ],
+    "aai": { "score": 31.0, "signal": "SELL", "confidence": 0.58, "regime": "VOLATILE", "probFloorUp30d": 0.29, "prophetFloor30dEth": 0.52 },
+    "sentiment": { "score": -0.41, "confidence": 46, "confidenceLabel": "low", "trend": "deteriorating", "narrative": "Coverage has turned negative — suspected wash-trading patterns and thinning organic volume are the main concerns raised by collectors." },
+    "tokens": []
+  },
+  "individualTokens": {
+    "boredapeyachtclub_4271": {
+      "collectionSlug": "boredapeyachtclub",
+      "tokenId": "4271",
+      "name": "Bored Ape #4271",
+      "imageDescription": "Ape with blue fur, laser eyes, captain's hat, gold chain",
+      "traits": [
+        { "category": "Background", "value": "Aquamarine", "rarityPct": 8.4 },
+        { "category": "Fur", "value": "Blue", "rarityPct": 4.1 },
+        { "category": "Eyes", "value": "Laser Eyes", "rarityPct": 0.9 },
+        { "category": "Mouth", "value": "Grin", "rarityPct": 6.2 },
+        { "category": "Hat", "value": "Captain's Hat", "rarityPct": 3.0 },
+        { "category": "Clothes", "value": "Gold Chain", "rarityPct": 2.7 }
+      ],
+      "rarityRank": 1842,
+      "rarityScore": 92.4,
+      "floorComparison": { "collectionFloorEth": 14.2, "tokenEstValueEth": 15.6, "premiumPct": 9.9 },
+      "saleHistory": [
+        { "priceEth": 11.5, "type": "Purchase", "counterparty": "0x4bA...2f10", "timestamp": "2022-03-14T18:22:00Z" }
+      ],
+      "ownershipHistory": [
+        { "owner": "0x2c8...91Aa (You)", "since": "2022-03-14T18:22:00Z" },
+        { "owner": "0x4bA...2f10", "since": "2021-09-02T11:05:00Z" }
+      ]
+    }
+  }
+}

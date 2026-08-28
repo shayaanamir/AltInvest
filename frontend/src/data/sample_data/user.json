@@ -1,0 +1,31 @@
+{
+  "id": "usr_1001",
+  "name": "John Doe",
+  "email": "john.doe@altinvest.io",
+  "avatarInitials": "JD",
+  "avatarColor": "#5b6ef5",
+  "memberSince": "2026-05-18T10:30:00Z",
+  "riskProfile": "balanced",
+  "investmentGoal": "market_discovery",
+  "layoutPreference": "ai-first",
+  "displayCurrency": "USD",
+  "sessionToken": "altinvest_demo_token_9f21a7",
+  "onboarding": {
+    "completed": true,
+    "completedAt": "2026-05-18T10:42:11Z",
+    "skipped": false,
+    "answers": {
+      "markets": ["crypto", "nfts"],
+      "risk": 55,
+      "goals": ["research", "discovery", "portfolio"],
+      "assets": ["BTC", "ETH", "SOL"],
+      "layout": "ai-first"
+    }
+  },
+  "accountSummary": {
+    "holdingsCount": 3,
+    "watchlistsCount": 2,
+    "alertsCount": 5,
+    "emailVerified": true
+  }
+}

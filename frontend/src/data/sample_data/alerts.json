@@ -1,0 +1,91 @@
+{
+  "alerts": [
+    {
+      "id": "alt_3001",
+      "targetType": "crypto",
+      "targetSymbol": "SOL",
+      "targetName": "Solana",
+      "metricType": "aai_score",
+      "condition": "below",
+      "thresholdValue": 55,
+      "status": "triggered",
+      "deliveryChannel": "push",
+      "createdAt": "2026-08-15T16:40:00Z",
+      "lastTriggeredAt": "2026-08-26T09:14:00Z",
+      "lastObservedValue": 53.1
+    },
+    {
+      "id": "alt_3002",
+      "targetType": "crypto",
+      "targetSymbol": "BTC",
+      "targetName": "Bitcoin",
+      "metricType": "price",
+      "condition": "above",
+      "thresholdValue": 100000,
+      "status": "active",
+      "deliveryChannel": "push",
+      "createdAt": "2026-07-02T12:00:00Z",
+      "lastTriggeredAt": null,
+      "lastObservedValue": 71450.30
+    },
+    {
+      "id": "alt_3003",
+      "targetType": "crypto",
+      "targetSymbol": "ETH",
+      "targetName": "Ethereum",
+      "metricType": "sentiment",
+      "condition": "shifts_bearish",
+      "thresholdValue": null,
+      "status": "active",
+      "deliveryChannel": "in-app",
+      "createdAt": "2026-06-25T19:20:00Z",
+      "lastTriggeredAt": null,
+      "lastObservedValue": 0.14
+    },
+    {
+      "id": "alt_3004",
+      "targetType": "nft",
+      "targetSlug": "boredapeyachtclub",
+      "targetName": "Bored Ape Yacht Club",
+      "metricType": "price",
+      "condition": "below",
+      "thresholdValue": 12.0,
+      "status": "active",
+      "deliveryChannel": "push",
+      "createdAt": "2026-06-10T13:45:00Z",
+      "lastTriggeredAt": null,
+      "lastObservedValue": 14.2
+    },
+    {
+      "id": "alt_3005",
+      "targetType": "crypto",
+      "targetSymbol": "DOGE",
+      "targetName": "Dogecoin",
+      "metricType": "aai_score",
+      "condition": "above",
+      "thresholdValue": 75,
+      "status": "paused",
+      "deliveryChannel": "in-app",
+      "createdAt": "2026-08-01T08:10:00Z",
+      "lastTriggeredAt": null,
+      "lastObservedValue": 61.3
+    }
+  ],
+  "metricTypeOptions": [
+    { "key": "price", "label": "Price" },
+    { "key": "aai_score", "label": "AAI Score" },
+    { "key": "sentiment", "label": "Sentiment" },
+    { "key": "risk", "label": "Risk Score" }
+  ],
+  "conditionOptions": [
+    { "key": "above", "label": "crosses above" },
+    { "key": "below", "label": "crosses below" },
+    { "key": "shifts_bearish", "label": "shifts bearish" },
+    { "key": "shifts_bullish", "label": "shifts bullish" }
+  ],
+  "emptyState": {
+    "title": "No alerts yet",
+    "subtitle": "Set a threshold and AltInvest will watch it for you.",
+    "cta": "Create your first alert"
+  }
+}

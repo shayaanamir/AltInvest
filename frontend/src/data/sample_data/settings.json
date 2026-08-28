@@ -1,0 +1,52 @@
+{
+  "preferences": {
+    "displayCurrency": "USD",
+    "currencyOptions": [
+      { "code": "USD", "label": "US Dollar ($)" },
+      { "code": "EUR", "label": "Euro (€)" },
+      { "code": "GBP", "label": "British Pound (£)" },
+      { "code": "INR", "label": "Indian Rupee (₹)" },
+      { "code": "JPY", "label": "Japanese Yen (¥)" }
+    ],
+    "dateFormat": "MM/DD/YYYY",
+    "dateFormatOptions": ["MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD"],
+    "defaultLandingPage": "Dashboard",
+    "landingPageOptions": ["Dashboard", "Portfolio", "Sentiment"],
+    "defaultDashboardLayout": "ai-first"
+  },
+  "appearance": {
+    "theme": "dark",
+    "density": "comfortable",
+    "densityOptions": ["comfortable", "compact"]
+  },
+  "notifications": {
+    "channels": { "inApp": true, "push": true, "email": false },
+    "alertTypes": {
+      "aaiThresholdOnly": true,
+      "priceAlerts": true,
+      "sentimentShifts": false,
+      "minorPriceWiggles": false,
+      "marketNews": true,
+      "systemMessages": true
+    },
+    "quietHours": { "enabled": true, "start": "22:00", "end": "07:00", "timezone": "America/New_York" }
+  },
+  "security": {
+    "twoFactorEnabled": false,
+    "twoFactorStatus": "coming_soon",
+    "activeSessions": [
+      { "id": "sess_001", "device": "Chrome on macOS", "location": "New York, US", "lastActive": "2026-08-28T05:00:00Z", "current": true },
+      { "id": "sess_002", "device": "AltInvest iOS App", "location": "New York, US", "lastActive": "2026-08-27T21:30:00Z", "current": false }
+    ]
+  },
+  "connectedAccounts": {
+    "google": { "connected": false, "status": "coming_soon" },
+    "github": { "connected": false, "status": "coming_soon" },
+    "wallet": { "connected": false, "status": "proposed" }
+  },
+  "dataControls": {
+    "exportFormats": ["CSV", "JSON"],
+    "lastExportAt": null,
+    "accountDeletion": { "requiresTypedConfirmation": true, "confirmationPhrase": "DELETE MY ACCOUNT" }
+  }
+}

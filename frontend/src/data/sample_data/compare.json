@@ -1,0 +1,32 @@
+{
+  "presets": [
+    {
+      "id": "cmp_sol_eth",
+      "title": "SOL vs. ETH",
+      "type": "same-category",
+      "items": [
+        { "symbol": "SOL", "category": "crypto", "aai": 53.1, "risk": 38.4, "riskBucket": "High", "sentiment": -0.08, "liquidityScore": 84, "return30dPct": -3.10, "isHeldByUser": false, "isWatchedByUser": true },
+        { "symbol": "ETH", "category": "crypto", "aai": 68.2, "risk": 62.5, "riskBucket": "Medium", "sentiment": 0.14, "liquidityScore": 93, "return30dPct": 1.94, "isHeldByUser": true, "isWatchedByUser": false }
+      ],
+      "verdict": "ETH currently edges out SOL on AAI (68.2 vs 53.1), driven mainly by a steadier risk profile and more stable sentiment. SOL's prediction and sentiment components have both cooled over the past week, while its volatility forecast remains meaningfully higher."
+    },
+    {
+      "id": "cmp_sol_bayc",
+      "title": "SOL vs. Bored Ape Yacht Club",
+      "type": "cross-category",
+      "items": [
+        { "symbol": "SOL", "category": "crypto", "aai": 53.1, "risk": 38.4, "riskBucket": "High", "sentiment": -0.08, "liquidityScore": 84, "return30dPct": -3.10, "categorySpecific": { "marketCap": 86101000000, "volume24h": 6800000000 } },
+        { "slug": "boredapeyachtclub", "category": "nft", "aai": 45.0, "risk": 41.8, "riskBucket": "High", "sentiment": -0.376, "liquidityScore": 41, "return30dPct": -16.8, "categorySpecific": { "floorEth": 14.2, "holders": 5412, "sellThroughRate": 0.034 } }
+      ],
+      "verdict": "Both assets currently carry High risk buckets and negative-leaning sentiment, but for different reasons — SOL's risk stems from price volatility, while BAYC's stems from thinning liquidity and holder concentration. Neither presents a strong opportunity right now; SOL retains a modestly better AAI score."
+    }
+  ],
+  "riskReturnScatter": [
+    { "symbol": "BTC", "risk": 28.8, "expectedReturn30dPct": 9.8 },
+    { "symbol": "ETH", "risk": 37.5, "expectedReturn30dPct": 6.1 },
+    { "symbol": "SOL", "risk": 61.6, "expectedReturn30dPct": -2.4 },
+    { "symbol": "LINK", "risk": 42.0, "expectedReturn30dPct": 5.0 },
+    { "symbol": "DOGE", "risk": 77.3, "expectedReturn30dPct": 12.2 },
+    { "symbol": "BAYC", "risk": 58.2, "expectedReturn30dPct": -16.8 }
+  ]
+}

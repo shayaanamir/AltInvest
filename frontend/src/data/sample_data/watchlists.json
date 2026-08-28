@@ -1,0 +1,28 @@
+{
+  "lists": [
+    {
+      "id": "wl_2001",
+      "name": "Considering",
+      "createdAt": "2026-08-14T10:05:00Z",
+      "items": [
+        { "type": "crypto", "symbol": "SOL", "name": "Solana", "price": 178.92, "change24h": 1.83, "aai": 53.1 },
+        { "type": "crypto", "symbol": "DOGE", "name": "Dogecoin", "price": 0.187, "change24h": 11.62, "aai": 61.3 },
+        { "type": "nft", "slug": "genesispunks", "name": "Genesis Punks", "floorEth": 42.6, "change24h": 0.8, "aai": 81.0 }
+      ]
+    },
+    {
+      "id": "wl_2002",
+      "name": "Core Watch",
+      "createdAt": "2026-06-20T08:30:00Z",
+      "items": [
+        { "type": "crypto", "symbol": "LINK", "name": "Chainlink", "price": 16.40, "change24h": 1.10, "aai": 66.7 },
+        { "type": "nft", "slug": "astralcats", "name": "Astral Cats", "floorEth": 0.65, "change24h": -6.7, "aai": 31.0 }
+      ]
+    }
+  ],
+  "emptyState": {
+    "title": "You have no watchlists yet",
+    "subtitle": "Track assets you're considering without adding them to your portfolio.",
+    "cta": "Create Watchlist"
+  }
+}

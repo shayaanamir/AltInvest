@@ -1,0 +1,35 @@
+{
+  "categoryTabs": [
+    { "key": "crypto", "label": "Crypto" },
+    { "key": "nft", "label": "NFTs" },
+    { "key": "tokenized", "label": "Tokenized Assets", "disabled": true, "disabledReason": "Coming soon" }
+  ],
+  "sortOptions": [
+    { "key": "aai_desc", "label": "AAI Score (High to Low)" },
+    { "key": "aai_asc", "label": "AAI Score (Low to High)" },
+    { "key": "change24h_desc", "label": "24h Change (High to Low)" },
+    { "key": "change24h_asc", "label": "24h Change (Low to High)" },
+    { "key": "marketCap_desc", "label": "Market Cap (High to Low)" },
+    { "key": "name_asc", "label": "Name (A–Z)" }
+  ],
+  "filters": {
+    "marketCapRange": { "min": 0, "max": 1500000000000, "step": 1000000000, "unit": "USD" },
+    "sentimentRange": { "min": -1, "max": 1, "step": 0.05 },
+    "aaiScoreRange": { "min": 0, "max": 100, "step": 1 },
+    "volatilityRange": { "min": 0, "max": 100, "step": 1 },
+    "subcategories": [
+      "Layer 1", "Layer 2", "DeFi", "Infrastructure", "Meme/Community",
+      "Stablecoin-adjacent", "Blue-chip", "Generative Art", "Gaming", "PFP/Community"
+    ],
+    "signalOptions": [
+      { "key": "BUY", "label": "Buy", "color": "#00d48b" },
+      { "key": "HOLD", "label": "Hold", "color": "#f5b731" },
+      { "key": "SELL", "label": "Sell", "color": "#ff4060" }
+    ]
+  },
+  "emptyState": {
+    "title": "No assets match these filters",
+    "subtitle": "Try widening your AAI score or market cap range.",
+    "cta": "Reset filters"
+  }
+}

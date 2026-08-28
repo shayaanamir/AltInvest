@@ -1,0 +1,20 @@
+{
+  "recentSearches": ["sol", "bayc floor", "chainlink", "genesis punks"],
+  "sampleResults": {
+    "query": "sol",
+    "assets": [
+      { "symbol": "SOL", "name": "Solana", "type": "crypto", "price": 178.92, "aai": 53.1 }
+    ],
+    "collections": [
+      { "slug": "astralcats", "name": "Astral Cats", "type": "nft", "floorEth": 0.65, "aai": 31.0 }
+    ],
+    "news": [
+      { "title": "Solana network activity cools after month-long meme-coin surge", "source": "MarketWatch", "publishedAt": "2026-08-26T18:40:00Z" }
+    ]
+  },
+  "emptyState": {
+    "title": "No results",
+    "subtitle": "Try a different asset name, symbol, or collection.",
+    "cta": "Browse Discover instead"
+  }
+}

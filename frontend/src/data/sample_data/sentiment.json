@@ -1,0 +1,155 @@
+{
+  "moodOverview": {
+    "crypto": { "avgScore": 21, "label": "Neutral", "confidenceLabel": "medium", "assetCount": 9, "excludedCount": 0 },
+    "nft": { "avgScore": -8, "label": "Cooling", "confidenceLabel": "medium", "assetCount": 5, "excludedCount": 0 },
+    "realEstate": { "avgScore": 0, "label": "Neutral", "confidenceLabel": "low", "propertyCount": 0, "excludedCount": 0, "note": "Tokenized real estate coverage is coming soon and is not yet reflected in this reading." }
+  },
+  "moodTrend": {
+    "crypto": [
+      { "date": "2026-08-14", "value": 34 },
+      { "date": "2026-08-16", "value": 31 },
+      { "date": "2026-08-18", "value": 28 },
+      { "date": "2026-08-20", "value": 30 },
+      { "date": "2026-08-22", "value": 26 },
+      { "date": "2026-08-24", "value": 24 },
+      { "date": "2026-08-26", "value": 22 },
+      { "date": "2026-08-28", "value": 21 }
+    ],
+    "nft": [
+      { "date": "2026-08-14", "value": 12 },
+      { "date": "2026-08-16", "value": 9 },
+      { "date": "2026-08-18", "value": 5 },
+      { "date": "2026-08-20", "value": 2 },
+      { "date": "2026-08-22", "value": -1 },
+      { "date": "2026-08-24", "value": -4 },
+      { "date": "2026-08-26", "value": -6 },
+      { "date": "2026-08-28", "value": -8 }
+    ],
+    "realEstate": []
+  },
+  "themes": [
+    { "label": "Spot ETF inflows", "direction": "up" },
+    { "label": "L2 fee compression", "direction": "up" },
+    { "label": "Meme-coin retail resurgence", "direction": "up" },
+    { "label": "Blue-chip NFT liquidity outflows", "direction": "down" },
+    { "label": "DeFi governance disputes", "direction": "down" }
+  ],
+  "assetRanking": [
+    { "assetId": "btc", "name": "Bitcoin", "symbol": "BTC", "category": "crypto", "subcategory": "Layer 1", "held": true, "score": 65, "readLabel": "Positive, well corroborated", "changePct": 2.14 },
+    { "assetId": "genesispunks", "name": "Genesis Punks", "symbol": "GPUNK", "category": "nft", "subcategory": "Blue-chip", "held": false, "score": 76, "readLabel": "Strongly Positive, fairly supported", "changePct": 0.8 },
+    { "assetId": "neondrifters", "name": "Neon Drifters", "symbol": "NDRFT", "category": "nft", "subcategory": "Generative Art", "held": false, "score": 72, "readLabel": "Positive, fairly supported", "changePct": 5.4 },
+    { "assetId": "doge", "name": "Dogecoin", "symbol": "DOGE", "category": "crypto", "subcategory": "Meme/Community", "held": false, "score": 64, "readLabel": "Positive, thin evidence", "changePct": 11.62 },
+    { "assetId": "link", "name": "Chainlink", "symbol": "LINK", "category": "crypto", "subcategory": "Infrastructure", "held": false, "score": 61, "readLabel": "Mixed, thin evidence", "changePct": 1.10 },
+    { "assetId": "eth", "name": "Ethereum", "symbol": "ETH", "category": "crypto", "subcategory": "Layer 1", "held": true, "score": 57, "readLabel": "Mixed, fairly supported", "changePct": -0.85 },
+    { "assetId": "base", "name": "Base Ecosystem Index", "symbol": "BASE", "category": "crypto", "subcategory": "Layer 2", "held": false, "score": 53, "readLabel": "Neutral, thin evidence", "changePct": 0.42 },
+    { "assetId": "dai", "name": "Dai", "symbol": "DAI", "category": "crypto", "subcategory": "Stablecoin-adjacent", "held": false, "score": 50, "readLabel": "Neutral, thin evidence", "changePct": 0.0 },
+    { "assetId": "arb", "name": "Arbitrum", "symbol": "ARB", "category": "crypto", "subcategory": "Layer 2", "held": false, "score": 51, "readLabel": "Neutral, thin evidence", "changePct": 3.87 },
+    { "assetId": "pixelwardens", "name": "Pixel Wardens", "symbol": "PXLW", "category": "nft", "subcategory": "Gaming", "held": false, "score": 52, "readLabel": "Neutral, thin evidence", "changePct": -1.1 },
+    { "assetId": "sol", "name": "Solana", "symbol": "SOL", "category": "crypto", "subcategory": "Layer 1", "held": false, "score": 46, "readLabel": "Mixed, well corroborated", "changePct": 1.83 },
+    { "assetId": "uni", "name": "Uniswap", "symbol": "UNI", "category": "crypto", "subcategory": "DeFi", "held": false, "score": 41, "readLabel": "Negative, fairly supported", "changePct": -4.06 },
+    { "assetId": "boredapeyachtclub", "name": "Bored Ape Yacht Club", "symbol": "BAYC", "category": "nft", "subcategory": "Blue-chip", "held": true, "score": 31, "readLabel": "Negative, fairly supported", "changePct": -4.5 },
+    { "assetId": "astralcats", "name": "Astral Cats", "symbol": "ACAT", "category": "nft", "subcategory": "PFP/Community", "held": false, "score": 30, "readLabel": "Negative, thin evidence", "changePct": -6.7 }
+  ],
+  "whatWereReading": [
+    { "title": "Bitcoin ETF inflows accelerate as institutional demand strengthens", "score": 0.62, "source": "CryptoBrief", "age_hours": 4.2, "link": "#", "assetId": "btc" },
+    { "title": "NFT blue-chip floor prices soften as liquidity thins", "score": -0.58, "source": "Block Daily", "age_hours": 9.5, "link": "#", "assetId": "boredapeyachtclub" },
+    { "title": "Solana network activity cools after month-long meme-coin surge", "score": -0.31, "source": "MarketWatch", "age_hours": 11.0, "link": "#", "assetId": "sol" },
+    { "title": "Dogecoin rallies on renewed retail interest and exchange listings", "score": 0.71, "source": "CoinDesk", "age_hours": 15.4, "link": "#", "assetId": "doge" },
+    { "title": "Chainlink expands oracle coverage to three additional Layer 2 networks", "score": 0.48, "source": "Decrypt", "age_hours": 20.7, "link": "#", "assetId": "link" },
+    { "title": "Uniswap governance proposal to cut treasury spending faces pushback", "score": -0.44, "source": "The Block", "age_hours": 26.1, "link": "#", "assetId": "uni" }
+  ],
+  "assetDetail": {
+    "sol": {
+      "assetId": "sol", "symbol": "SOL", "name": "Solana", "category": "crypto", "subcategory": "Layer 1", "held": false,
+      "price": 178.92, "priceChangePct": 1.83,
+      "score": 46, "sentimentScore": -0.08, "label": "Mixed",
+      "confidencePct": 81, "confidenceLabel": "high",
+      "trend": "deteriorating",
+      "narrative": "Coverage has turned mixed-to-cautious — cooling network activity and reduced meme-coin speculation dominate the narrative, with the prediction model's forecast flattening alongside elevated short-term volatility.",
+      "distribution": { "positive": 34, "neutral": 29, "negative": 37 },
+      "articleCount": 41,
+      "drivingFactors": [
+        { "direction": "down", "title": "Solana network activity cools after month-long meme-coin surge", "description": "MarketWatch flagged this 11h ago." },
+        { "direction": "down", "title": "Daily active addresses drop 14% from August peak", "description": "CryptoSlate flagged this 18h ago." },
+        { "direction": "up", "title": "Developer tooling upgrade improves validator uptime", "description": "Decrypt flagged this 30h ago." }
+      ],
+      "headlines": [
+        { "title": "Solana network activity cools after month-long meme-coin surge", "score": -0.31, "source": "MarketWatch", "age_hours": 11.0, "link": "#" },
+        { "title": "Daily active addresses drop 14% from August peak", "score": -0.42, "source": "CryptoSlate", "age_hours": 18.0, "link": "#" },
+        { "title": "Developer tooling upgrade improves validator uptime", "score": 0.36, "source": "Decrypt", "age_hours": 30.0, "link": "#" }
+      ],
+      "sourceBreakdown": { "newsPct": 68, "marketPct": 32 },
+      "articlesBySource": { "CoinDesk": 8, "CryptoSlate": 11, "Decrypt": 6, "MarketWatch": 9, "The Block": 4, "CoinTelegraph": 3 },
+      "marketSignals": { "priceChange24h": 1.83, "volumeChange24h": -9.4, "isTrending": true, "btcDominance": 54.8 },
+      "lastUpdated": "2026-08-28T05:10:00Z"
+    },
+    "btc": {
+      "assetId": "btc", "symbol": "BTC", "name": "Bitcoin", "category": "crypto", "subcategory": "Layer 1", "held": true,
+      "price": 71450.30, "priceChangePct": 2.14,
+      "score": 65, "sentimentScore": 0.31, "label": "Positive",
+      "confidencePct": 87, "confidenceLabel": "high",
+      "trend": "stable",
+      "narrative": "Coverage is broadly constructive — accelerating ETF inflows and steady institutional accumulation dominate the narrative, with little contradicting commentary.",
+      "distribution": { "positive": 58, "neutral": 26, "negative": 16 },
+      "articleCount": 74,
+      "drivingFactors": [
+        { "direction": "up", "title": "Bitcoin ETF inflows accelerate as institutional demand strengthens", "description": "CryptoBrief flagged this 4h ago." },
+        { "direction": "up", "title": "Large asset managers increase BTC allocations ahead of rebalancing", "description": "CoinDesk flagged this 13h ago." },
+        { "direction": "down", "title": "Regulatory hearing on custody rules scheduled for next month", "description": "The Block flagged this 22h ago." }
+      ],
+      "headlines": [
+        { "title": "Bitcoin ETF inflows accelerate as institutional demand strengthens", "score": 0.62, "source": "CryptoBrief", "age_hours": 4.2, "link": "#" },
+        { "title": "Large asset managers increase BTC allocations ahead of rebalancing", "score": 0.55, "source": "CoinDesk", "age_hours": 13.0, "link": "#" },
+        { "title": "Regulatory hearing on custody rules scheduled for next month", "score": -0.22, "source": "The Block", "age_hours": 22.0, "link": "#" }
+      ],
+      "sourceBreakdown": { "newsPct": 61, "marketPct": 39 },
+      "articlesBySource": { "CoinDesk": 14, "CoinTelegraph": 12, "The Block": 9, "Decrypt": 11, "Bitcoin Magazine": 10, "CryptoSlate": 8, "NewsBTC": 6, "BeInCrypto": 4 },
+      "marketSignals": { "priceChange24h": 2.14, "volumeChange24h": 6.8, "isTrending": true, "btcDominance": 54.8 },
+      "lastUpdated": "2026-08-28T05:10:00Z"
+    },
+    "eth": {
+      "assetId": "eth", "symbol": "ETH", "name": "Ethereum", "category": "crypto", "subcategory": "Layer 1", "held": true,
+      "price": 3845.60, "priceChangePct": -0.85,
+      "score": 57, "sentimentScore": 0.14, "label": "Mixed",
+      "confidencePct": 74, "confidenceLabel": "medium",
+      "trend": "stable",
+      "narrative": "Coverage is modestly constructive — oracle-network expansion and stable staking demand are offset by a slight cooling in DeFi transaction volume.",
+      "distribution": { "positive": 44, "neutral": 33, "negative": 23 },
+      "articleCount": 52,
+      "drivingFactors": [
+        { "direction": "up", "title": "Layer 2 ecosystem TVL reaches new high on Ethereum settlement", "description": "CoinTelegraph flagged this 6h ago." },
+        { "direction": "down", "title": "DeFi transaction volume dips as traders rotate to Layer 2s", "description": "AMBCrypto flagged this 16h ago." }
+      ],
+      "headlines": [
+        { "title": "Layer 2 ecosystem TVL reaches new high on Ethereum settlement", "score": 0.41, "source": "CoinTelegraph", "age_hours": 6.0, "link": "#" },
+        { "title": "DeFi transaction volume dips as traders rotate to Layer 2s", "score": -0.18, "source": "AMBCrypto", "age_hours": 16.0, "link": "#" }
+      ],
+      "sourceBreakdown": { "newsPct": 55, "marketPct": 45 },
+      "articlesBySource": { "CoinTelegraph": 9, "CoinDesk": 8, "AMBCrypto": 6, "Decrypt": 10, "BeInCrypto": 7, "CryptoSlate": 5, "NewsBTC": 4, "Ethereum Foundation Blog": 3 },
+      "marketSignals": { "priceChange24h": -0.85, "volumeChange24h": 2.1, "isTrending": false, "btcDominance": 54.8 },
+      "lastUpdated": "2026-08-28T05:10:00Z"
+    },
+    "boredapeyachtclub": {
+      "assetId": "boredapeyachtclub", "symbol": "BAYC", "name": "Bored Ape Yacht Club", "category": "nft", "subcategory": "Blue-chip", "held": true,
+      "price": 54607.52, "priceChangePct": -4.5,
+      "score": 31, "sentimentScore": -0.376, "label": "Negative",
+      "confidencePct": 79, "confidenceLabel": "medium",
+      "trend": "falling",
+      "narrative": "Coverage has turned cautious — liquidity outflows and softening blue-chip demand dominate the narrative, with the risk section showing elevated holder concentration alongside the floor decline.",
+      "distribution": { "positive": 12, "neutral": 26, "negative": 62 },
+      "articleCount": 21,
+      "drivingFactors": [
+        { "direction": "down", "title": "NFT blue-chip floor prices soften as liquidity thins", "description": "Block Daily flagged this 9h ago." },
+        { "direction": "down", "title": "Weekly BAYC trading volume falls to three-month low", "description": "NFTNow flagged this 19h ago." }
+      ],
+      "headlines": [
+        { "title": "NFT blue-chip floor prices soften as liquidity thins", "score": -0.58, "source": "Block Daily", "age_hours": 9.5, "link": "#" },
+        { "title": "Weekly BAYC trading volume falls to three-month low", "score": -0.49, "source": "NFTNow", "age_hours": 19.0, "link": "#" }
+      ],
+      "sourceBreakdown": { "newsPct": 44, "marketPct": 56 },
+      "articlesBySource": { "NFTNow": 6, "Decrypt": 5, "CoinTelegraph": 4, "BeInCrypto": 3, "CryptoSlate": 3 },
+      "marketSignals": { "priceChange24h": -4.5, "volumeChange24h": -18.2, "isTrending": false, "btcDominance": null },
+      "lastUpdated": "2026-08-28T05:10:00Z"
+    }
+  }
+}

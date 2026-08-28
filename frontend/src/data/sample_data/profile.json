@@ -1,0 +1,20 @@
+{
+  "id": "usr_1001",
+  "name": "John Doe",
+  "email": "john.doe@altinvest.io",
+  "avatarInitials": "JD",
+  "avatarColor": "#5b6ef5",
+  "bio": "Long-term crypto holder exploring alternative assets beyond the usual price charts.",
+  "memberSince": "2026-05-18T10:30:00Z",
+  "riskProfile": "balanced",
+  "investmentGoal": "market_discovery",
+  "activitySummary": {
+    "holdingsCount": 3,
+    "watchlistsCount": 2,
+    "alertsCount": 5,
+    "portfolioValueUsd": 111059.00
+  },
+  "editableFields": ["name", "avatar", "bio"],
+  "riskProfileOptions": ["conservative", "balanced", "aggressive"],
+  "investmentGoalOptions": ["longterm", "trading", "research", "discovery", "portfolio"]
+}

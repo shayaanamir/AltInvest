@@ -1,0 +1,68 @@
+{
+  "summary": {
+    "totalBalance": 111059.00,
+    "totalBalanceChangePct": -1.83,
+    "totalBalancePositive": false,
+    "totalProfitLoss": 45076.00,
+    "totalProfitLossPct": 68.32,
+    "totalProfitLossPositive": true,
+    "diversificationScore": 58,
+    "diversificationLabel": "Fair",
+    "needsRebalancing": true,
+    "totalCostBasis": 65983.00
+  },
+  "performanceHistory": [
+    { "date": "2026-05-18", "value": 28400 },
+    { "date": "2026-06-01", "value": 41250 },
+    { "date": "2026-06-15", "value": 52800 },
+    { "date": "2026-07-01", "value": 63950 },
+    { "date": "2026-07-15", "value": 71200 },
+    { "date": "2026-08-01", "value": 79300 },
+    { "date": "2026-08-15", "value": 102980 },
+    { "date": "2026-08-22", "value": 111940 },
+    { "date": "2026-08-28", "value": 111059 }
+  ],
+  "allocation": [
+    { "label": "Crypto", "pct": 50.8, "valueUsd": 56451.00, "color": "#4b8dff" },
+    { "label": "NFTs", "pct": 49.2, "valueUsd": 54608.00, "color": "#00c9b0" },
+    { "label": "RWA", "pct": 0.0, "valueUsd": 0.00, "color": "#f5b731" },
+    { "label": "Commodities", "pct": 0.0, "valueUsd": 0.00, "color": "#00d48b" }
+  ],
+  "cryptoHoldings": [
+    {
+      "symbol": "BTC", "name": "Bitcoin",
+      "quantity": 0.4218, "avgBuyPrice": 52300.00,
+      "valueUsd": 30138.02, "costBasisUsd": 22060.07,
+      "change24hPct": 2.14, "aiAction": "Buy More",
+      "dateAdded": "2026-05-18T11:02:00Z"
+    },
+    {
+      "symbol": "ETH", "name": "Ethereum",
+      "quantity": 6.8420, "avgBuyPrice": 2890.00,
+      "valueUsd": 26313.30, "costBasisUsd": 19773.38,
+      "change24hPct": -0.85, "aiAction": "Hold",
+      "dateAdded": "2026-05-19T09:40:00Z"
+    }
+  ],
+  "nftHoldings": [
+    {
+      "collectionSlug": "boredapeyachtclub", "collectionName": "Bored Ape Yacht Club",
+      "tokenId": "4271",
+      "quantity": 1, "avgBuyPriceEth": 11.5, "avgBuyEthUsdRate": 2100.00,
+      "valueUsd": 54607.52, "costBasisUsd": 24150.00,
+      "change24hPct": -4.5, "aiAction": "Hold",
+      "dateAdded": "2026-06-02T14:15:00Z"
+    }
+  ],
+  "portfolioIntelligence": {
+    "aggregateRiskScore": 47.3,
+    "aggregateRiskBucket": "Medium-High",
+    "aggregateSentimentScore": -0.02,
+    "aggregateSentimentLabel": "Mixed",
+    "rebalancingSuggestions": [
+      "Your NFT exposure (49.2%) is nearly matching your crypto exposure — consider diversifying into 1-2 additional crypto assets to reduce concentration risk.",
+      "BAYC's sentiment has turned negative over the past week; monitor closely before adding further NFT exposure.",
+      "You hold zero exposure to tokenized real-world assets or commodities, which could improve diversification once available."
+    ]
+  }
+}
