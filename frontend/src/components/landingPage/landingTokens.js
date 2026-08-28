@@ -1,3 +1,5 @@
+import { useTheme } from "../../context/ThemeContext";
+
 // Landing page design tokens — dark-only, matches screenshots exactly
 export const L = {
   bg0:          "#08090f",
@@ -20,3 +22,35 @@ export const L = {
   teal:         "#00c9b0",
   font:         "'DM Sans', 'Segoe UI', sans-serif",
 };
+
+// Light-mode equivalent for the hero/nav only. Aligned to the sv2 light
+// palette (see styles/sentiment.css) so the very top of the page reads
+// as one continuous system with everything below it.
+export const LIGHT_L = {
+  bg0:          "#faf7f1",
+  bg1:          "#f7f3ea",
+  bg2:          "#ffffff",
+  bg3:          "#f7f3ea",
+  bg4:          "#f1ede3",
+  border:       "rgba(36,33,28,0.08)",
+  border2:      "rgba(36,33,28,0.14)",
+  ink:          "#24211c",
+  ink2:         "#6c6555",
+  ink3:         "#a49b87",
+  blue:         "#5b6ef5",
+  blueDim:      "#3b4bb8",
+  purple:       "#8b5cf6",
+  purpleLight:  "#6d28d9",
+  green:        "#2f8f5b",
+  red:          "#c0392b",
+  amber:        "#bf5d38",
+  teal:         "#2f8f8a",
+  font:         "'DM Sans', 'Segoe UI', sans-serif",
+};
+
+// Only the hero + nav use this — everything below them uses the .sv2
+// (--sv2-*) variables directly instead.
+export function useLandingTheme() {
+  const { isDark } = useTheme();
+  return isDark ? L : LIGHT_L;
+}

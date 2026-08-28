@@ -1,0 +1,128 @@
+/* Landing page v2 — everything below the hero pulls its color theme
+   from the shared --sv2-* variables (sentiment.css), so light and dark
+   mode both work with zero extra logic here. */
+
+.lp2-root {
+  background: var(--sv2-bg);
+  font-family: 'DM Sans', 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  transition: background 0.25s;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.lp2-section { padding: 100px 48px; }
+.lp2-section-inner { max-width: 1100px; margin: 0 auto; }
+
+.lp2-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--sv2-accent);
+  margin-bottom: 14px;
+}
+.lp2-heading {
+  font-size: clamp(30px, 3.5vw, 44px); font-weight: 800;
+  letter-spacing: -1px; line-height: 1.15;
+  color: var(--sv2-text); max-width: 640px; margin: 0 0 48px;
+}
+
+/* ---------- Platform surfaces (4-up) ---------- */
+.lp2-surfaces-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.lp2-surface-card {
+  background: var(--sv2-card); border: 1px solid var(--sv2-border);
+  border-radius: 16px; padding: 26px 24px;
+  transition: border-color 0.15s, background 0.25s;
+}
+.lp2-surface-card:hover { border-color: var(--sv2-border-strong); }
+.lp2-surface-icon { color: var(--sv2-accent); margin-bottom: 18px; }
+.lp2-surface-title { font-size: 16px; font-weight: 700; color: var(--sv2-text); margin-bottom: 10px; }
+.lp2-surface-desc { font-size: 13px; color: var(--sv2-text-soft); line-height: 1.65; margin: 0; }
+
+/* ---------- Analytics / score showcase ---------- */
+.lp2-analytics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+.lp2-body-text { font-size: 14px; color: var(--sv2-text-soft); line-height: 1.75; max-width: 460px; margin: 0 0 28px; }
+.lp2-bullet-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; max-width: 460px; }
+.lp2-bullet-list li { position: relative; padding-left: 20px; font-size: 13.5px; font-weight: 600; color: var(--sv2-text); }
+.lp2-bullet-list li::before {
+  content: ""; position: absolute; left: 0; top: 7px;
+  width: 7px; height: 7px; border-radius: 50%; background: var(--sv2-accent);
+}
+
+.lp2-score-card { background: var(--sv2-card); border: 1px solid var(--sv2-border); border-radius: 18px; padding: 28px; }
+.lp2-score-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--sv2-text-mute); margin-bottom: 20px;
+}
+.lp2-score-signal-row { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px; }
+.lp2-score-big { font-size: 52px; font-weight: 800; letter-spacing: -1px; color: var(--sv2-text); line-height: 1; }
+.lp2-signal-tag { display: block; font-size: 12px; font-weight: 800; letter-spacing: 0.03em; text-align: right; }
+.lp2-signal-tag.positive { color: var(--sv2-green); }
+.lp2-signal-tag.negative { color: var(--sv2-red); }
+.lp2-signal-tag.neutral { color: var(--sv2-accent); }
+.lp2-score-confidence { font-size: 12px; color: var(--sv2-text-mute); margin-top: 4px; text-align: right; }
+.lp2-metrics { display: flex; flex-direction: column; gap: 18px; }
+.lp2-metric-label-row { display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 600; color: var(--sv2-text-soft); margin-bottom: 8px; }
+.lp2-metric-label-row span:last-child { color: var(--sv2-text); font-weight: 800; }
+.lp2-metric-track { height: 6px; border-radius: 4px; background: var(--sv2-chip); overflow: hidden; }
+.lp2-metric-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+
+/* ---------- Capabilities grid (3x2) ---------- */
+.lp2-cap-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.lp2-cap-card { background: var(--sv2-card); border: 1px solid var(--sv2-border); border-radius: 16px; padding: 26px 24px; transition: border-color 0.15s; }
+.lp2-cap-card:hover { border-color: var(--sv2-border-strong); }
+.lp2-cap-icon-badge {
+  width: 44px; height: 44px; border-radius: 12px;
+  background: var(--sv2-accent-soft); color: var(--sv2-accent);
+  display: flex; align-items: center; justify-content: center; margin-bottom: 18px;
+}
+
+/* ---------- CTA ---------- */
+.lp2-cta-wrap { padding: 40px 48px 60px; }
+.lp2-cta-box { max-width: 900px; margin: 0 auto; background: var(--sv2-accent); border-radius: 24px; padding: 64px 40px; text-align: center; }
+.lp2-cta-title { color: #fff; font-size: clamp(26px, 3vw, 34px); font-weight: 800; letter-spacing: -0.5px; margin: 0 0 14px; }
+.lp2-cta-desc { color: rgba(255,255,255,0.85); font-size: 15px; line-height: 1.65; max-width: 520px; margin: 0 auto 28px; }
+.lp2-cta-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.lp2-cta-btn-primary {
+  background: #fff; color: var(--sv2-accent); border: none;
+  border-radius: 10px; padding: 12px 26px; font-weight: 700; font-size: 14px;
+  cursor: pointer; font-family: inherit;
+}
+.lp2-cta-btn-primary:hover { opacity: 0.92; }
+.lp2-cta-btn-outline {
+  background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.5);
+  border-radius: 10px; padding: 12px 26px; font-weight: 700; font-size: 14px;
+  cursor: pointer; font-family: inherit;
+}
+.lp2-cta-btn-outline:hover { background: rgba(255,255,255,0.1); }
+
+/* ---------- Footer ---------- */
+.lp2-footer {
+  border-top: 1px solid var(--sv2-border); padding: 28px 48px;
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+}
+.lp2-footer-left { display: flex; align-items: center; gap: 24px; }
+.lp2-footer-brand { display: flex; align-items: center; gap: 8px; }
+.lp2-footer-logo {
+  width: 26px; height: 26px; border-radius: 7px; background: var(--sv2-accent);
+  display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #fff;
+}
+.lp2-footer-name { font-size: 13.5px; font-weight: 700; color: var(--sv2-text); }
+.lp2-footer-copy { font-size: 11.5px; color: var(--sv2-text-mute); }
+.lp2-footer-links { display: flex; gap: 24px; }
+
+.lp2-footer-links a { font-size: 12.5px; color: var(--sv2-text-soft); text-decoration: none; transition: color 0.15s; }
+.lp2-footer-links a:hover { color: var(--sv2-text); }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1000px) {
+  .lp2-surfaces-grid { grid-template-columns: repeat(2, 1fr); }
+  .lp2-cap-grid { grid-template-columns: repeat(2, 1fr); }
+  .lp2-analytics-grid { grid-template-columns: 1fr; gap: 40px; }
+}
+@media (max-width: 600px) {
+  .lp2-section { padding: 64px 24px; }
+  .lp2-surfaces-grid, .lp2-cap-grid { grid-template-columns: 1fr; }
+  .lp2-cta-wrap { padding: 20px 20px 40px; }
+  .lp2-cta-box { padding: 44px 24px; }
+  .lp2-footer { padding: 24px; flex-direction: column; align-items: flex-start; gap: 20px; }
+  .lp2-footer-left { flex-direction: column; align-items: flex-start; gap: 8px; }
+}
