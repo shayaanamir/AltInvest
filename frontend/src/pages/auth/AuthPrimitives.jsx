@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { L } from "../../components/landingPage/landingTokens";
+import { useTheme } from "../../context/ThemeContext";
+import { useLandingTheme } from "../../components/landingPage/landingTokens";
 
 export function AuthInput({ label, type = "text", placeholder, value, onChange }) {
     const [focused, setFocused] = useState(false);
@@ -7,11 +8,14 @@ export function AuthInput({ label, type = "text", placeholder, value, onChange }
     const isPassword = type === "password";
     const currentType = isPassword ? (showPassword ? "text" : "password") : type;
 
+    const { isDark } = useTheme();
+    const T = useLandingTheme();
+
     return (
         <div style={{ marginBottom: 14 }}>
             <label style={{
                 display: "block", fontSize: 11.5, fontWeight: 500,
-                color: L.ink2, marginBottom: 6,
+                color: T.ink2, marginBottom: 6,
             }}>
                 {label}
             </label>
@@ -25,14 +29,14 @@ export function AuthInput({ label, type = "text", placeholder, value, onChange }
                     onBlur={() => setFocused(false)}
                     style={{
                         width: "100%", boxSizing: "border-box",
-                        background: "rgba(255,255,255,0.04)",
-                        border: `1px solid ${focused ? "rgba(91,110,245,0.5)" : "rgba(255,255,255,0.1)"}`,
+                        background: isDark ? "rgba(255,255,255,0.04)" : "rgba(36,33,28,0.03)",
+                        border: `1px solid ${focused ? "rgba(91,110,245,0.5)" : T.border2}`,
                         borderRadius: 8, padding: "11px 14px",
                         paddingLeft: 14,
                         paddingRight: isPassword ? 38 : 14,
-                        fontSize: 13.5, color: L.ink,
+                        fontSize: 13.5, color: T.ink,
                         outline: "none", fontFamily: "inherit",
-                        transition: "border-color 0.2s",
+                        transition: "border-color 0.2s, box-shadow 0.2s",
                         boxShadow: focused ? `0 0 0 3px rgba(91,110,245,0.12)` : "none",
                     }}
                 />
@@ -48,7 +52,7 @@ export function AuthInput({ label, type = "text", placeholder, value, onChange }
                             background: "none",
                             border: "none",
                             padding: 0,
-                            color: "rgba(255,255,255,0.4)",
+                            color: isDark ? "rgba(255,255,255,0.4)" : "rgba(36,33,28,0.4)",
                             cursor: "pointer",
                             display: "flex",
                             alignItems: "center",
@@ -75,13 +79,14 @@ export function AuthInput({ label, type = "text", placeholder, value, onChange }
 }
 
 export function AuthButton({ children, onClick, disabled = false, style: extra }) {
+    const T = useLandingTheme();
     return (
         <button
             onClick={disabled ? undefined : onClick}
             disabled={disabled}
             style={{
                 width: "100%", padding: "12px",
-                background: `linear-gradient(135deg, ${L.blue}, ${L.purple})`,
+                background: `linear-gradient(135deg, ${T.blue}, ${T.purple})`,
                 border: "none", borderRadius: 8,
                 fontSize: 14, fontWeight: 700, color: "#fff",
                 cursor: disabled ? "not-allowed" : "pointer",
@@ -102,6 +107,8 @@ export function AuthButton({ children, onClick, disabled = false, style: extra }
 
 export function OAuthButton({ icon, label, onClick, disabled = false, title }) {
     const [hov, setHov] = useState(false);
+    const { isDark } = useTheme();
+    const T = useLandingTheme();
     return (
         <button
             onClick={disabled ? undefined : onClick}
@@ -111,9 +118,11 @@ export function OAuthButton({ icon, label, onClick, disabled = false, title }) {
             onMouseLeave={() => setHov(false)}
             style={{
                 width: "100%", padding: "11px",
-                background: hov && !disabled ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.03)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                borderRadius: 8, fontSize: 13, fontWeight: 500, color: L.ink,
+                background: hov && !disabled 
+                    ? (isDark ? "rgba(255,255,255,0.06)" : "rgba(36,33,28,0.05)") 
+                    : (isDark ? "rgba(255,255,255,0.03)" : "rgba(36,33,28,0.02)"),
+                border: `1px solid ${T.border}`,
+                borderRadius: 8, fontSize: 13, fontWeight: 500, color: T.ink,
                 cursor: disabled ? "not-allowed" : "pointer",
                 opacity: disabled ? 0.5 : 1,
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
@@ -129,19 +138,19 @@ export function OAuthButton({ icon, label, onClick, disabled = false, title }) {
 }
 
 export function Divider({ label = "Or continue with" }) {
+    const T = useLandingTheme();
     return (
         <div style={{
             display: "flex", alignItems: "center", gap: 12,
             margin: "20px 0 16px",
         }}>
-            <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.08)" }} />
-            <span style={{ fontSize: 11.5, color: L.ink3, whiteSpace: "nowrap" }}>{label}</span>
-            <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.08)" }} />
+            <div style={{ flex: 1, height: 1, background: T.border }} />
+            <span style={{ fontSize: 11.5, color: T.ink3, whiteSpace: "nowrap" }}>{label}</span>
+            <div style={{ flex: 1, height: 1, background: T.border }} />
         </div>
     );
 }
 
-// Google "G" icon
 export function GoogleIcon() {
     return (
         <svg width="16" height="16" viewBox="0 0 18 18">
@@ -153,10 +162,10 @@ export function GoogleIcon() {
     );
 }
 
-// GitHub icon
 export function GitHubIcon() {
+    const T = useLandingTheme();
     return (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill={L.ink}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill={T.ink}>
             <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z" />
         </svg>
     );

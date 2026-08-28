@@ -3,6 +3,8 @@ import { motion } from "framer-motion";
 import AuthLayout from "./AuthLayout";
 import { AuthInput, AuthButton, OAuthButton, Divider, GoogleIcon } from "./AuthPrimitives";
 import { authApi } from "../../services/authApi";
+import { useTheme } from "../../context/ThemeContext";
+import { useLandingTheme } from "../../components/landingPage/landingTokens";
 
 export default function SignupPage({ onNavigate }) {
     const [name, setName] = useState("");
@@ -10,6 +12,9 @@ export default function SignupPage({ onNavigate }) {
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+
+    const { isDark } = useTheme();
+    const T = useLandingTheme();
 
     const handleContinue = async () => {
         setError(null);
@@ -37,17 +42,19 @@ export default function SignupPage({ onNavigate }) {
                 style={{
                     width: "100%", maxWidth: 420,
                     padding: "40px 32px",
-                    background: "rgba(255,255,255,0.022)",
-                    border: "1px solid rgba(255,255,255,0.065)",
+                    background: isDark ? "rgba(255,255,255,0.022)" : "rgba(36,33,28,0.015)",
+                    border: `1px solid ${T.border2}`,
                     borderRadius: 16,
-                    boxShadow: "0 24px 80px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)",
+                    boxShadow: isDark 
+                        ? "0 24px 80px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)"
+                        : "0 24px 80px rgba(36,33,28,0.05), inset 0 1px 0 rgba(255,255,255,0.8)",
                 }}
             >
                 {/* Header */}
                 <div style={{ marginBottom: 32 }}>
                     <h1 style={{
                         fontSize: 26, fontWeight: 700,
-                        color: "rgba(228,232,247,0.95)",
+                        color: T.ink,
                         letterSpacing: "-0.65px",
                         margin: "0 0 10px", lineHeight: 1.2,
                     }}>
@@ -55,7 +62,7 @@ export default function SignupPage({ onNavigate }) {
                     </h1>
                     <p style={{
                         fontSize: 13, lineHeight: 1.6,
-                        color: "rgba(255,255,255,0.32)",
+                        color: T.ink2,
                         margin: 0,
                     }}>
                         Start exploring alternative markets in minutes.
@@ -102,30 +109,30 @@ export default function SignupPage({ onNavigate }) {
 
                 <Divider label="or" />
 
-                <OAuthButton icon={<GoogleIcon />} label="Google" />
+                <OAuthButton icon={<GoogleIcon />} label="Google" disabled title="Google sign-in is coming soon" />
 
                 <p style={{
                     textAlign: "center", fontSize: 11,
-                    color: "rgba(255,255,255,0.18)",
+                    color: T.ink3,
                     marginTop: 14, marginBottom: 4, lineHeight: 1.6,
                 }}>
                     By signing up, you agree to our{" "}
                     <span
-                        style={{ color: "rgba(255,255,255,0.35)", cursor: "pointer", transition: "color 0.15s" }}
-                        onMouseEnter={e => e.currentTarget.style.color = "rgba(255,255,255,0.65)"}
-                        onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.35)"}
+                        style={{ color: T.ink2, cursor: "pointer", transition: "color 0.15s" }}
+                        onMouseEnter={e => e.currentTarget.style.color = T.ink}
+                        onMouseLeave={e => e.currentTarget.style.color = T.ink2}
                     >Terms</span>
                     {" & "}
                     <span
-                        style={{ color: "rgba(255,255,255,0.35)", cursor: "pointer", transition: "color 0.15s" }}
-                        onMouseEnter={e => e.currentTarget.style.color = "rgba(255,255,255,0.65)"}
-                        onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.35)"}
+                        style={{ color: T.ink2, cursor: "pointer", transition: "color 0.15s" }}
+                        onMouseEnter={e => e.currentTarget.style.color = T.ink}
+                        onMouseLeave={e => e.currentTarget.style.color = T.ink2}
                     >Privacy Policy</span>.
                 </p>
 
                 <p style={{
                     textAlign: "center", fontSize: 12,
-                    color: "rgba(255,255,255,0.22)",
+                    color: T.ink2,
                     marginTop: 12, marginBottom: 0,
                 }}>
                     Have an account?{" "}
@@ -134,12 +141,12 @@ export default function SignupPage({ onNavigate }) {
                         style={{
                             background: "none", border: "none", padding: 0,
                             fontSize: 12, fontWeight: 600,
-                            color: "rgba(140,158,255,0.75)",
+                            color: isDark ? "rgba(140,158,255,0.75)" : "rgba(91,110,245,0.85)",
                             cursor: "pointer", fontFamily: "inherit",
                             transition: "color 0.15s",
                         }}
-                        onMouseEnter={e => e.currentTarget.style.color = "rgba(180,195,255,0.95)"}
-                        onMouseLeave={e => e.currentTarget.style.color = "rgba(140,158,255,0.75)"}
+                        onMouseEnter={e => e.currentTarget.style.color = isDark ? "rgba(180,195,255,0.95)" : "rgba(91,110,245,1.0)"}
+                        onMouseLeave={e => e.currentTarget.style.color = isDark ? "rgba(140,158,255,0.75)" : "rgba(91,110,245,0.85)"}
                     >
                         Sign in →
                     </button>
