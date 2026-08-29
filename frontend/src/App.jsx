@@ -4,8 +4,8 @@ import { ThemeProvider } from "./context/ThemeContext";
 import "./styles/tokens.css";
 import Sidebar from "./components/layout/Sidebar";
 import Topbar from "./components/layout/Topbar";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { ROUTES, BARE_PAGES, getPath, getPageName } from "./routes";
-import { ensureDevSession } from "./hooks/useAuth";
 
 function ShellRoutes() {
   const location = useLocation();
@@ -18,18 +18,21 @@ function ShellRoutes() {
 
   const pageContent = (
     <Routes>
-      {ROUTES.map(({ key, path, element: Element }) => (
-        <Route
-          key={key}
-          path={path}
-          element={
-            key === "Landing" || key === "Login" || key === "Onboarding" ? <Element onNavigate={navigate} />
+      {ROUTES.map(({ key, path, element: Element, protected: isProtected }) => {
+        const inner =
+          key === "Landing" || key === "Login" || key === "Onboarding" ? <Element onNavigate={navigate} />
             : key === "Signup" ? <Element onNavigate={(p) => navigate(p === "Dashboard" ? "Onboarding" : p)} />
-            : key === "Asset Detail" ? <Element onNavigate={navigate} />
-            : <Element />
-          }
-        />
-      ))}
+              : key === "Asset Detail" ? <Element onNavigate={navigate} />
+                : <Element />;
+
+        return (
+          <Route
+            key={key}
+            path={path}
+            element={isProtected ? <ProtectedRoute>{inner}</ProtectedRoute> : inner}
+          />
+        );
+      })}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
@@ -48,16 +51,6 @@ function ShellRoutes() {
 }
 
 export default function App() {
-  // TEMPORARY — see hooks/useAuth.js. Ensures every user-scoped fetch has a
-  // valid JWT before the person clicks anything. Remove once a real login
-  // screen is the actual entry point into the app.
-  // useEffect(() => {
-  //   ensureDevSession().catch(() => {
-  //     // Swallow here — individual apiFetch calls will surface a clear error
-  //     // (401 → clearSession) if something's genuinely wrong with the seed.
-  //   });
-  // }, []);
-
   return (
     <ThemeProvider>
       <BrowserRouter>

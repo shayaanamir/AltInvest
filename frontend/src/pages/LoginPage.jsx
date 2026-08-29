@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import AuthLayout from "../components/auth/AuthLayout";
 import { AuthInput, AuthButton, OAuthButton, Divider, GoogleIcon, GitHubIcon } from "../components/auth/AuthPrimitives";
@@ -13,12 +14,16 @@ export default function LoginPage({ onNavigate }) {
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
+    const returnPath = searchParams.get("return");
 
     const T = useLandingTheme();
 
     useEffect(() => {
         if (isAuthenticated()) {
-            onNavigate && onNavigate("Dashboard");
+            if (returnPath) navigate(returnPath, { replace: true });
+            else onNavigate && onNavigate("Dashboard");
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -45,7 +50,8 @@ export default function LoginPage({ onNavigate }) {
         try {
             const response = await authApi.login(email.trim(), password);
             setSession({ token: response.token, user: response.user });
-            onNavigate && onNavigate("Dashboard");
+            if (returnPath) navigate(returnPath, { replace: true });
+            else onNavigate && onNavigate("Dashboard");
         } catch (err) {
             setError(err.message);
         } finally {
