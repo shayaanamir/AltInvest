@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
+import { useAsync } from "../../hooks/useAsync";
 import { sentimentApi, WATCHLIST } from "../../services/sentimentApi";
 import AssetDetailHeader from "./AssetDetailHeader";
 import AssetReadCard from "./AssetReadCard";
@@ -10,20 +11,13 @@ import WhatWeReadList from "./WhatWeReadList";
 import MarketContextPanel from "./MarketContextPanel";
 
 export default function AssetSentimentDetail({ assetId, colors, onBack, onSwitchAsset }) {
-  const [detail, setDetail] = useState(null);
-  const [switchable, setSwitchable] = useState([]);
+  const { data: detail, setData: setDetail } = useAsync(() => sentimentApi.getAssetDetail(assetId), [assetId]);
+  const { data: switchableRaw } = useAsync(() => sentimentApi.getSwitchableAssets(), []);
+  const switchable = switchableRaw || [];
   const [refreshing, setRefreshing] = useState(false);
   const [watching, setWatching] = useState(WATCHLIST.includes(assetId));
 
-  const load = useCallback(() => {
-    sentimentApi.getAssetDetail(assetId).then(setDetail).catch(console.error);
-  }, [assetId]);
-
-  useEffect(() => { load(); }, [load]);
   useEffect(() => { setWatching(WATCHLIST.includes(assetId)); }, [assetId]);
-  useEffect(() => {
-    sentimentApi.getSwitchableAssets().then(setSwitchable).catch(console.error);
-  }, []);
 
   const handleRefresh = async () => {
     setRefreshing(true);

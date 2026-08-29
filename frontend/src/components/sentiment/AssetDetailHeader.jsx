@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { relativeTime } from "../../services/sentimentApi";
-import { IconSearch, IconRefresh, IconStar, IconChevronDown } from "./icons";
+import { relativeTime } from "../../utils/dateTime";
+import { formatAssetPrice } from "../../utils/formatters";
+import { IconSearch, IconRefresh, IconStar, IconChevronDown } from "../icons";
 
 export default function AssetDetailHeader({ detail, switchable, onBack, onSwitchAsset, onRefresh, refreshing, watching, onToggleWatching }) {
   const [ago, setAgo] = useState(relativeTime(detail.lastUpdated));
@@ -42,7 +43,7 @@ export default function AssetDetailHeader({ detail, switchable, onBack, onSwitch
             <div className="sv2-tiny sv2-mute2">{detail.category === "nft" ? "NFT" : "Crypto"} · {detail.subcategory}</div>
           </div>
           <span className="sv2-asset-price" style={{ marginLeft: 12 }}>
-            ${detail.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+            {formatAssetPrice(detail.price)}
           </span>
           <span className={`sv2-small sv2-bold`} style={{ color: detail.priceChangePct >= 0 ? "var(--sv2-green)" : "var(--sv2-red)" }}>
             {detail.priceChangePct >= 0 ? "↗" : "↘"} {Math.abs(detail.priceChangePct).toFixed(2)}% price, 24h

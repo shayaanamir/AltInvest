@@ -1,12 +1,8 @@
-import { useState, useEffect } from "react";
+import { useAsync } from "../../hooks/useAsync";
 import { dashboardApi } from "../../services/dashboardApi";
 
 export default function GetStartedBanner() {
-  const [stats, setStats] = useState(null);
-
-  useEffect(() => {
-    dashboardApi.getMarketStats().then(setStats).catch(console.error);
-  }, []);
+  const { data: stats } = useAsync(() => dashboardApi.getMarketStats(), []);
 
   // Only shows once the person actually has zero tracked holdings.
   if (!stats || stats.holdingsCount > 0) return null;

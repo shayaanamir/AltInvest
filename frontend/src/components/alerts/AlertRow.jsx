@@ -1,6 +1,6 @@
-import { relativeTime } from "../../services/sentimentApi";
-import { IconTrash } from "../sentiment/icons";
-import { IconPlay, IconPause, IconPencil } from "./icons";
+import { relativeTime } from "../../utils/dateTime";
+import { IconTrash, IconPlay, IconPause, IconPencil } from "../icons";
+import ToggleSwitch from "../shared/ToggleSwitch";
 
 export default function AlertRow({ alert, onToggle, onEdit, onDelete }) {
   const isPaused = alert.status === "paused";
@@ -24,13 +24,11 @@ export default function AlertRow({ alert, onToggle, onEdit, onDelete }) {
         <button className="alr-icon-btn" title={isPaused ? "Paused" : "Running"} disabled>
           {isPaused ? <IconPause /> : <IconPlay />}
         </button>
-        <button
-          className={`alr-toggle ${!isPaused ? "on" : ""}`}
-          onClick={() => onToggle(alert.id)}
-          aria-label="Toggle alert"
-        >
-          <span className="alr-toggle-thumb" />
-        </button>
+        <ToggleSwitch
+          checked={!isPaused}
+          onChange={() => onToggle(alert.id)}
+          label="Toggle alert"
+        />
         <button className="alr-icon-btn" onClick={() => onEdit(alert.id)}>
           <IconPencil />
         </button>

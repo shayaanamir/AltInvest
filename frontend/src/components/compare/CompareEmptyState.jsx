@@ -1,4 +1,4 @@
-import { IconColumns, IconPlus } from "./icons";
+import { IconColumns, IconPlus } from "../icons";
 
 export default function CompareEmptyState({ onChooseAssets }) {
   return (

@@ -36,7 +36,6 @@ export default function AssetReadCard({ detail, colors }) {
               background: scoreColor,
             }}
           />
-          <div className="sv2-bipolar-center-line" />
         </div>
         <div className="sv2-bipolar-labels">
           <span>-1.0</span>

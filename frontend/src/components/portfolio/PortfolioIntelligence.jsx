@@ -1,12 +1,8 @@
-import { useState, useEffect } from "react";
+import { useAsync } from "../../hooks/useAsync";
 import { portfolioApi } from "../../services/portfolioApi";
 
 export default function PortfolioIntelligence() {
-  const [intel, setIntel] = useState(null);
-
-  useEffect(() => {
-    portfolioApi.getIntelligence().then(setIntel).catch(console.error);
-  }, []);
+  const { data: intel } = useAsync(() => portfolioApi.getIntelligence(), []);
 
   if (!intel) {
     return <div className="sv2-card sv2-card-pad sv2-muted sv2-small" style={{ marginTop: 10 }}>Loading…</div>;

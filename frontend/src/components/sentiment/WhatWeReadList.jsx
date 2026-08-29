@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { IconExternal, IconChevronDown } from "./icons";
+import { IconExternal, IconChevronDown } from "../icons";
 
 export default function WhatWeReadList({ detail, colors }) {
   const [showAll, setShowAll] = useState(false);

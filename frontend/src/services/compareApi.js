@@ -1,5 +1,6 @@
 import assetsData from "../data/sample_data/assets.json";
 import nftData from "../data/sample_data/nftCollections.json";
+import { getEvidencePhrase } from "../utils/scoring";
 
 const SIM_DELAY = 300;
 function delay(fn) {
@@ -79,14 +80,11 @@ export function sentimentReadLabel(score) {
   return "Strongly bearish";
 }
 
-export function evidenceLabel(confidenceLabel) {
-  if (confidenceLabel === "high") return "well corroborated";
-  if (confidenceLabel === "medium") return "moderately corroborated";
-  return "thin evidence";
-}
+export const evidenceLabel = getEvidencePhrase;
 
 export const compareApi = {
   getUniverse: async () => delay(() => buildUniverse()),
+  getAssetUniverse: async () => delay(() => buildUniverse()),
 
   getByIds: async (ids) =>
     delay(() => {

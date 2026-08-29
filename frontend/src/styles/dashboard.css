@@ -92,7 +92,7 @@
 @media (max-width: 640px) { .dv2-stats-grid { grid-template-columns: 1fr; } }
 
 /* Chart + insights row */
-.dv2-main-grid { display: grid; grid-template-columns: 1fr 360px; gap: 14px; margin-bottom: 26px; }
+.dv2-main-grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 16px; margin-bottom: 26px; }
 @media (max-width: 1100px) { .dv2-main-grid { grid-template-columns: 1fr; } }
 
 .dv2-perf-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }

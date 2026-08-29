@@ -1,14 +1,10 @@
-import { useState, useEffect } from "react";
+import { useAsync } from "../../hooks/useAsync";
 import { dashboardApi } from "../../services/dashboardApi";
 import { formatCurrencyCompact, formatCurrencyFull } from "../../utils/formatters";
 import MiniMoodGauge from "./MiniMoodGauge";
 
 export default function DashboardStatCards() {
-  const [stats, setStats] = useState(null);
-
-  useEffect(() => {
-    dashboardApi.getMarketStats().then(setStats).catch(console.error);
-  }, []);
+  const { data: stats } = useAsync(() => dashboardApi.getMarketStats(), []);
 
   if (!stats) {
     return (

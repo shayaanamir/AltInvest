@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { IconBell, IconStar, IconFolder } from "./icons";
+import { IconBell, IconStar, IconFolder } from "../icons";
 
 const LINKS = ["Open asset detail", "Compare with something else", "See your position", "Browse more like this"];
 

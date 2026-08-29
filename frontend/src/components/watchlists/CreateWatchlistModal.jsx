@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { formatAssetPrice } from "../../utils/formatters";
 
 export default function CreateWatchlistModal({ searchableItems, onCancel, onCreate }) {
   const [name, setName] = useState("");
@@ -69,7 +70,7 @@ export default function CreateWatchlistModal({ searchableItems, onCancel, onCrea
               <div>
                 <div className="wl-modal-item-name">{item.name}</div>
                 <div className="wl-modal-item-sub">
-                  ${item.price.toLocaleString(undefined, { maximumFractionDigits: 2 })} · {item.subcategory}
+                  {formatAssetPrice(item.price)} · {item.subcategory}
                 </div>
               </div>
             </div>

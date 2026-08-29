@@ -1,28 +1,26 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useAsync } from "../../hooks/useAsync";
 import { compareApi } from "../../services/compareApi";
 import { formatAssetPrice } from "../../utils/formatters";
-import { IconX, IconCheck, IconSearch } from "./icons";
+import AssetAvatar from "../shared/AssetAvatar";
+import { IconX, IconCheck, IconSearch } from "../icons";
 
-export default function CompareAssetModal({ initialSelected = [], onClose, onConfirm }) {
-  const [query, setQuery] = useState("");
-  const [universe, setUniverse] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState(initialSelected);
+export default function CompareAssetModal({ initialSelection, initialSelected, onConfirm, onClose }) {
+  const [selected, setSelected] = useState(() => initialSelection || initialSelected || []);
+  const [search, setSearch] = useState("");
+  const [tab, setTab] = useState("all");
 
-  useEffect(() => {
-    compareApi.getUniverse().then((u) => {
-      setUniverse(u);
-      setLoading(false);
-    });
-  }, []);
+  const { data: universeRaw, loading } = useAsync(() => compareApi.getAssetUniverse(), []);
+  const universe = universeRaw || [];
 
-  const filtered = query.trim()
-    ? universe.filter(
-        (a) =>
-          a.name.toLowerCase().includes(query.toLowerCase()) ||
-          a.symbol.toLowerCase().includes(query.toLowerCase())
-      )
-    : universe;
+  const filtered = universe.filter((a) => {
+    if (tab !== "all" && a.category !== tab) return false;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      return a.name.toLowerCase().includes(q) || a.symbol.toLowerCase().includes(q);
+    }
+    return true;
+  });
 
   const toggle = (id) => {
     setSelected((prev) => {
@@ -58,25 +56,32 @@ export default function CompareAssetModal({ initialSelected = [], onClose, onCon
                     <div className="cmp-slot-symbol">{a.symbol}</div>
                     <div className="cmp-slot-name">{a.name}</div>
                     <button className="cmp-slot-remove" onClick={() => toggle(a.id)}>
-                      × remove
+                      ×
                     </button>
                   </>
                 ) : (
-                  <span className="cmp-slot-placeholder">Slot {i + 1}</span>
+                  <span className="cmp-slot-empty">+ Slot {i + 1}</span>
                 )}
               </div>
             );
           })}
         </div>
 
-        <div className="cmp-search-box">
-          <IconSearch />
-          <input
-            type="text"
-            placeholder="Search assets and collections"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
+        <div className="cmp-search-row">
+          <div className="cmp-search-box">
+            <IconSearch />
+            <input
+              type="text"
+              placeholder="Search by name or symbol…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <div className="sv2-segmented">
+            <button className={tab === "all" ? "active" : ""} onClick={() => setTab("all")}>All</button>
+            <button className={tab === "crypto" ? "active" : ""} onClick={() => setTab("crypto")}>Crypto</button>
+            <button className={tab === "nft" ? "active" : ""} onClick={() => setTab("nft")}>NFTs</button>
+          </div>
         </div>
 
         <div className="cmp-asset-list">
@@ -93,9 +98,7 @@ export default function CompareAssetModal({ initialSelected = [], onClose, onCon
                   className={`cmp-asset-row ${isSelected ? "selected" : ""}`}
                   onClick={() => toggle(a.id)}
                 >
-                  <div className="cmp-avatar" style={{ background: a.avatarColor }}>
-                    {a.symbol.slice(0, 3)}
-                  </div>
+                  <AssetAvatar symbol={a.symbol} color={a.avatarColor} size={36} />
                   <div className="cmp-asset-row-text">
                     <div className="cmp-asset-row-name">{a.name}</div>
                     <div className="cmp-asset-row-sub">
@@ -122,7 +125,7 @@ export default function CompareAssetModal({ initialSelected = [], onClose, onCon
             disabled={selected.length < 2}
             onClick={() => onConfirm(selected)}
           >
-            {selected.length >= 2 ? `Compare ${selected.length}` : "Compare"}
+            Compare {selected.length}
           </button>
         </div>
       </div>

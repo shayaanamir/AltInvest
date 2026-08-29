@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { watchlistApi } from "../services/watchlistApi";
+import { IconTrash, IconPlus } from "../components/icons";
 import WatchlistSidebar from "../components/watchlists/WatchlistSidebar.jsx";
 import WatchlistRow from "../components/watchlists/WatchlistRow.jsx";
 import CreateWatchlistModal from "../components/watchlists/CreateWatchlistModal.jsx";
@@ -53,17 +54,18 @@ export default function WatchlistsPage() {
   };
 
   return (
-    <div className="wl-page">
-      <div className="wl-header">
-        <div>
-          <h1 className="wl-title">Watchlists</h1>
-          <p className="wl-sub">Track assets without owning them — promote to Portfolio when you commit.</p>
+    <div className="sv2">
+      <div className="sv2-page wl-page">
+        <div className="wl-header">
+          <div>
+            <h1 className="wl-title">Watchlists</h1>
+            <p className="wl-sub">Track assets without owning them — promote to Portfolio when you commit.</p>
+          </div>
+          <button className="wl-new-btn" onClick={() => setShowModal(true)}>
+            <IconPlus size={14} />
+            New watchlist
+          </button>
         </div>
-        <button className="wl-new-btn" onClick={() => setShowModal(true)}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M12 5v14M5 12h14" /></svg>
-          New watchlist
-        </button>
-      </div>
 
       {lists.length === 0 ? (
         <div className="wl-empty-lists">
@@ -87,11 +89,8 @@ export default function WatchlistsPage() {
                   </p>
                 </div>
                 <button className="wl-delete-btn" onClick={handleDeleteList}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" className="bi bi-trash" viewBox="0 0 16 16">
-                    <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
-                    <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
-                  </svg>
-                  Delete lists
+                  <IconTrash size={14} />
+                  Delete list
                 </button>
               </div>
 
@@ -123,5 +122,6 @@ export default function WatchlistsPage() {
         />
       )}
     </div>
+  </div>
   );
 }

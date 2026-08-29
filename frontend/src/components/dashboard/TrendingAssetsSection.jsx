@@ -1,28 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAsync } from "../../hooks/useAsync";
 import { dashboardApi } from "../../services/dashboardApi";
-import { useTheme } from "../../context/ThemeContext";
-import { sv2Colors } from "../../utils/sv2Colors";
 import { formatAssetPrice, formatPct } from "../../utils/formatters";
-import MiniChart from "../charts/MiniChart";
-import { IconStar } from "../sentiment/icons";
-
-function aaiTier(score) {
-  if (score >= 65) return "";
-  if (score >= 45) return "medium";
-  return "low";
-}
+import { getAaiTierClass } from "../../utils/scoring";
+import Sparkline from "../charts/Sparkline";
+import AssetAvatar from "../shared/AssetAvatar";
+import { IconStar } from "../icons";
 
 export default function TrendingAssetsSection() {
-  const [assets, setAssets] = useState(null);
+  const { data: assets } = useAsync(() => dashboardApi.getTrendingAssets(), []);
   const [favorites, setFavorites] = useState([]);
-  const { isDark } = useTheme();
-  const colors = isDark ? sv2Colors.dark : sv2Colors.light;
   const navigate = useNavigate();
-
-  useEffect(() => {
-    dashboardApi.getTrendingAssets().then(setAssets).catch(console.error);
-  }, []);
 
   const toggleFavorite = (symbol) =>
     setFavorites((f) => (f.includes(symbol) ? f.filter((x) => x !== symbol) : [...f, symbol]));
@@ -55,9 +44,7 @@ export default function TrendingAssetsSection() {
               >
                 <div className="dv2-asset-card-top">
                   <div className="dv2-asset-id">
-                    <div className="dv2-asset-avatar" style={{ background: a.logoColor || colors.accent }}>
-                      {a.symbol.slice(0, 3)}
-                    </div>
+                    <AssetAvatar symbol={a.symbol} color={a.logoColor} size={38} />
                     <div>
                       <div className="dv2-asset-name">{a.name}</div>
                       <div className="dv2-asset-sym">{a.symbol}</div>
@@ -82,11 +69,11 @@ export default function TrendingAssetsSection() {
                 </div>
 
                 <div className="dv2-asset-chart">
-                  <MiniChart color={positive ? colors.green : colors.red} data={a.sparkline} width={220} height={44} />
+                  <Sparkline color={positive ? "var(--sv2-green)" : "var(--sv2-red)"} data={a.sparkline} width={220} height={44} />
                 </div>
 
                 <div className="dv2-asset-badges">
-                  <span className={`dv2-badge dv2-badge-aai ${aaiTier(a.aai?.score)}`}>
+                  <span className={`dv2-badge dv2-badge-aai ${getAaiTierClass(a.aai?.score)}`}>
                     AAI {Math.round(a.aai?.score ?? 0)}
                   </span>
                   <span className="sv2-badge-pill">{a.aai?.signal}</span>

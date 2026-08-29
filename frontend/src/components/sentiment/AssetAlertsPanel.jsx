@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { IconTrash } from "./icons";
+import { IconTrash } from "../icons";
 
 const OPTIONS = [
   "When the score crosses 60",

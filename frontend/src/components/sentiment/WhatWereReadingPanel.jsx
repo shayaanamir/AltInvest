@@ -1,21 +1,14 @@
-import { useState, useEffect } from "react";
-import { sentimentApi, relativeTime, WATCHLIST } from "../../services/sentimentApi";
-import { IconExternal } from "./icons";
+import { useState } from "react";
+import { useAsync } from "../../hooks/useAsync";
+import { sentimentApi, WATCHLIST } from "../../services/sentimentApi";
+import { relativeTime } from "../../utils/dateTime";
+import { IconExternal } from "../icons";
 
 export default function WhatWereReadingPanel() {
-  const [items, setItems] = useState([]);
+  const { data: rawItems, loading } = useAsync(() => sentimentApi.getWhatWereReading("news"), []);
+  const items = rawItems || [];
   const [watchlistOnly, setWatchlistOnly] = useState(false);
   const [showAll, setShowAll] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setLoading(true);
-    setShowAll(false);
-    sentimentApi.getWhatWereReading("news").then((r) => {
-      setItems(r);
-      setLoading(false);
-    }).catch(console.error);
-  }, []);
 
   const filtered = watchlistOnly ? items.filter((i) => WATCHLIST.includes(i.assetId)) : items;
   const visible = showAll ? filtered : filtered.slice(0, 4);

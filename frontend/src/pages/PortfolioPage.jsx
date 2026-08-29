@@ -1,4 +1,3 @@
-import "../styles/sentiment.css";
 import "../styles/dashboard.css";
 import "../styles/portfolio.css";
 import PortfolioHeader from "../components/portfolio/PortfolioHeader";

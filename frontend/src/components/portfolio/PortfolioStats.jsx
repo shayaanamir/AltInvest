@@ -1,6 +1,4 @@
-import { useState, useEffect } from "react";
-import { useTheme } from "../../context/ThemeContext";
-import { sv2Colors } from "../../utils/sv2Colors";
+import { useAsync } from "../../hooks/useAsync";
 import { portfolioApi } from "../../services/portfolioApi";
 import { formatCurrencyFull, formatCurrencyWhole, formatPct } from "../../utils/formatters";
 
@@ -30,13 +28,7 @@ function DiversificationRing({ score, color, track }) {
 }
 
 export default function PortfolioStats() {
-  const { isDark } = useTheme();
-  const colors = isDark ? sv2Colors.dark : sv2Colors.light;
-  const [summary, setSummary] = useState(null);
-
-  useEffect(() => {
-    portfolioApi.getSummary().then(setSummary).catch(console.error);
-  }, []);
+  const { data: summary } = useAsync(() => portfolioApi.getSummary(), []);
 
   if (!summary) {
     return (
@@ -72,7 +64,7 @@ export default function PortfolioStats() {
 
       <div className="sv2-card dv2-stat-card pv2-diversification-card">
         <div className="pv2-ring-wrap">
-          <DiversificationRing score={summary.diversificationScore} color={colors.accent} track={colors.greyArc} />
+          <DiversificationRing score={summary.diversificationScore} color="var(--sv2-accent)" track="var(--sv2-grey-arc)" />
         </div>
         <div className="pv2-diversification-text">
           <div className="dv2-stat-label">Diversification</div>
