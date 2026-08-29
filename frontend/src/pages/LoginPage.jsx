@@ -114,13 +114,12 @@ export default function LoginPage({ onNavigate }) {
                     />
                     <button
                         type="button"
-                        title="Password reset isn't available yet"
-                        disabled
+                        onClick={() => onNavigate && onNavigate("ForgotPassword")}
                         style={{
                             position: "absolute", right: 0, top: 0,
                             background: "none", border: "none",
-                            fontSize: 11, color: T.ink3,
-                            cursor: "not-allowed", fontFamily: "inherit", padding: 0,
+                            fontSize: 11, color: "var(--sv2-accent)",
+                            cursor: "pointer", fontFamily: "inherit", padding: 0,
                         }}
                     >
                         Forgot?

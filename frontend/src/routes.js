@@ -7,18 +7,20 @@ import WatchlistsPage from "./pages/WatchlistsPage";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import ComparePage from "./pages/ComparePage";
 import AlertsPage from "./pages/AlertsPage";
 import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
 
-// Single source of truth for: <Routes>, sidebar nav, path<->page-name lookups.
-// icon field intentionally left as-is (icon set already consolidated).
 export const ROUTES = [
   { key: "Landing", path: "/", element: LandingPage, bare: true, inNav: false },
   { key: "Login", path: "/login", element: LoginPage, bare: true, inNav: false },
   { key: "Signup", path: "/signup", element: SignupPage, bare: true, inNav: false },
+  { key: "ForgotPassword", path: "/forgot-password", element: ForgotPasswordPage, bare: true, inNav: false },
+  { key: "ResetPassword", path: "/reset-password", element: ResetPasswordPage, bare: true, inNav: false },
   { key: "Onboarding", path: "/onboarding", element: OnboardingPage, bare: true, inNav: false, protected: true },
   { key: "Dashboard", path: "/dashboard", element: DashboardPage, inNav: true, icon: "Dashboard", protected: true },
   { key: "Discover", path: "/discover", element: DiscoverPage, inNav: true, icon: "Discover", protected: true },
@@ -44,8 +46,7 @@ export function getPageName(pathname) {
   if (pathname === "/") return "Landing";
   const match = [...ROUTES]
     .filter((r) => r.path !== "/")
-    .sort((a, b) => b.path.length - a.path.length) // longest-prefix match
+    .sort((a, b) => b.path.length - a.path.length)
     .find((r) => pathname.startsWith(r.path));
   return match?.key ?? "Dashboard";
 }
-
