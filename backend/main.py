@@ -3,7 +3,26 @@ import path_setup  # noqa: F401 — must be first, fixes sys.path before any loc
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from routes import assets, prediction, sentiment, risk, aai, health, auth
+from routes import (
+    health,
+    auth,
+    assets,
+    prediction,
+    sentiment,
+    risk,
+    aai,
+    dashboard,
+    portfolio,
+    watchlists,
+    alerts,
+    notifications,
+    nft,
+    discover,
+    compare,
+    search,
+    profile,
+    settings,
+)
 
 app = FastAPI(
     title="AAIP Backend",
@@ -26,6 +45,17 @@ app.include_router(prediction.router)
 app.include_router(sentiment.router)
 app.include_router(risk.router)
 app.include_router(aai.router)
+app.include_router(dashboard.router)
+app.include_router(portfolio.router)
+app.include_router(watchlists.router)
+app.include_router(alerts.router)
+app.include_router(notifications.router)
+app.include_router(nft.router)
+app.include_router(discover.router)
+app.include_router(compare.router)
+app.include_router(search.router)
+app.include_router(profile.router)
+app.include_router(settings.router)
 
 
 @app.get("/")
