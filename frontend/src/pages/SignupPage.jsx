@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import AuthLayout from "../components/auth/AuthLayout";
 import { AuthInput, AuthButton, OAuthButton, Divider, GoogleIcon } from "../components/auth/AuthPrimitives";
 import { authApi } from "../services/authApi";
 import { useLandingTheme } from "../components/landingPage/landingTokens";
-import { setSession } from "../hooks/useAuth";
+import { setSession, isAuthenticated } from "../hooks/useAuth";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function SignupPage({ onNavigate }) {
     const [name, setName] = useState("");
@@ -12,22 +14,54 @@ export default function SignupPage({ onNavigate }) {
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [fieldErrors, setFieldErrors] = useState({});
 
     const T = useLandingTheme();
 
+    useEffect(() => {
+        if (isAuthenticated()) {
+            onNavigate && onNavigate("Dashboard");
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const validate = () => {
+        const errors = {};
+        if (!name.trim()) errors.name = "Full name is required.";
+        if (!email.trim()) errors.email = "Email is required.";
+        else if (!EMAIL_RE.test(email.trim())) errors.email = "Enter a valid email address.";
+        if (!password) errors.password = "Password is required.";
+        else if (password.length < 8) errors.password = "Password must be at least 8 characters.";
+        return errors;
+    };
+
     const handleContinue = async () => {
         setError(null);
+        const errors = validate();
+        setFieldErrors(errors);
+        if (Object.keys(errors).length > 0) return;
+
         setLoading(true);
         try {
-            const response = await authApi.signup(name, email, password);
-            console.log("Signed up successfully:", response);
+            const response = await authApi.signup(name.trim(), email.trim(), password);
             setSession({ token: response.token, user: response.user });
             onNavigate && onNavigate("Dashboard");
         } catch (err) {
-            setError(err.message);
+            // Duplicate-account errors come through as a specific message
+            // from authApi (backend returns 409 -> "An account with this
+            // email already exists."); surface it on the email field.
+            if (/already exists/i.test(err.message)) {
+                setFieldErrors({ email: err.message });
+            } else {
+                setError(err.message);
+            }
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === "Enter") handleContinue();
     };
 
     return (
@@ -44,6 +78,7 @@ export default function SignupPage({ onNavigate }) {
                     borderRadius: 16,
                     boxShadow: "0 24px 80px color-mix(in srgb, var(--sv2-bg) 45%, transparent), inset 0 1px 0 color-mix(in srgb, var(--sv2-text) 6%, transparent)",
                 }}
+                onKeyDown={handleKeyDown}
             >
                 <div style={{ marginBottom: 32 }}>
                     <h1 style={{
@@ -63,27 +98,36 @@ export default function SignupPage({ onNavigate }) {
                     </p>
                 </div>
 
-                <AuthInput
-                    label="Full Name"
-                    type="text"
-                    placeholder="Enter Full Name"
-                    value={name}
-                    onChange={e => setName(e.target.value)}
-                />
-                <AuthInput
-                    label="Email"
-                    type="email"
-                    placeholder="name@company.com"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                />
-                <AuthInput
-                    label="Password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                />
+                <div>
+                    <AuthInput
+                        label="Full Name"
+                        type="text"
+                        placeholder="Enter Full Name"
+                        value={name}
+                        onChange={e => { setName(e.target.value); setFieldErrors(f => ({ ...f, name: undefined })); }}
+                    />
+                    {fieldErrors.name && <FieldError message={fieldErrors.name} />}
+                </div>
+                <div>
+                    <AuthInput
+                        label="Email"
+                        type="email"
+                        placeholder="name@company.com"
+                        value={email}
+                        onChange={e => { setEmail(e.target.value); setFieldErrors(f => ({ ...f, email: undefined })); }}
+                    />
+                    {fieldErrors.email && <FieldError message={fieldErrors.email} />}
+                </div>
+                <div>
+                    <AuthInput
+                        label="Password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={e => { setPassword(e.target.value); setFieldErrors(f => ({ ...f, password: undefined })); }}
+                    />
+                    {fieldErrors.password && <FieldError message={fieldErrors.password} />}
+                </div>
 
                 <div style={{ marginTop: 8 }}>
                     {error && (
@@ -146,5 +190,13 @@ export default function SignupPage({ onNavigate }) {
                 </p>
             </motion.div>
         </AuthLayout>
+    );
+}
+
+function FieldError({ message }) {
+    return (
+        <div style={{ color: "var(--sv2-red)", fontSize: 11, marginTop: -8, marginBottom: 10 }}>
+            {message}
+        </div>
     );
 }

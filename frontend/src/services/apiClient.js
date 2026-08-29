@@ -1,6 +1,7 @@
 // frontend/src/services/apiClient.js
 import { API_BASE_URL } from "../config";
 import { getToken, clearSession } from "../hooks/useAuth";
+import { emitSessionExpired } from "../hooks/sessionEvents";
 
 export async function apiFetch(path, options = {}) {
   const token = getToken();
@@ -14,7 +15,9 @@ export async function apiFetch(path, options = {}) {
   });
 
   if (res.status === 401) {
-    clearSession(); // token expired/invalid — force re-auth next load
+    const hadToken = !!token; // only a real "session expired" if they were logged in
+    clearSession();
+    if (hadToken) emitSessionExpired();
   }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
