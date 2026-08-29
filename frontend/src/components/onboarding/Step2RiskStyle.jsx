@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { L } from "../../components/landingPage/landingTokens";
+import { L } from "../landingPage/landingTokens";
 
 const PROFILES = [
     { label: "Conservative", val: 0, returns: "4–7%", vol: "Low", rec: "Capital preservation + stable yield" },

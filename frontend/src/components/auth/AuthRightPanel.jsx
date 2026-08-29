@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
-import { useLandingTheme, ACCENT_HEX } from "../../components/landingPage/landingTokens";
+import { useLandingTheme, ACCENT_HEX } from "../landingPage/landingTokens";
 
 function hexToRgba(hex, alpha) {
     const h = hex.replace("#", "");

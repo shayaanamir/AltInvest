@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { L } from "../../components/landingPage/landingTokens";
+import { L } from "../components/landingPage/landingTokens";
 
-import Step1Markets from "./Step1Markets";
-import Step2RiskStyle from "./Step2RiskStyle";
-import Step3Goals from "./Step3Goals";
-import Step4Assets from "./Step4Assets";
-import Step5Layout from "./Step5Layout";
+import Step1Markets from "../components/onboarding/Step1Markets";
+import Step2RiskStyle from "../components/onboarding/Step2RiskStyle";
+import Step3Goals from "../components/onboarding/Step3Goals";
+import Step4Assets from "../components/onboarding/Step4Assets";
+import Step5Layout from "../components/onboarding/Step5Layout";
 
 const TOTAL_STEPS = 5;
 

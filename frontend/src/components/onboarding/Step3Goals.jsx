@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { L } from "../../components/landingPage/landingTokens";
+import { L } from "../landingPage/landingTokens";
 
 const GOALS = [
     { key: "longterm", icon: "↗", title: "Long-term investing", desc: "Build wealth steadily over years" },

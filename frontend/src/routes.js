@@ -1,0 +1,51 @@
+import DashboardPage from "./pages/DashboardPage";
+import PortfolioPage from "./pages/PortfolioPage";
+import AssetDetailPage from "./pages/AssetDetailPage";
+import SentimentPage from "./pages/SentimentPage";
+import DiscoverPage from "./pages/DiscoverPage";
+import WatchlistsPage from "./pages/WatchlistsPage";
+import LandingPage from "./pages/LandingPage";
+import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
+import OnboardingPage from "./pages/OnboardingPage";
+import ComparePage from "./pages/ComparePage";
+import AlertsPage from "./pages/AlertsPage";
+import SettingsPage from "./pages/SettingsPage";
+import ProfilePage from "./pages/ProfilePage";
+
+// Single source of truth for: <Routes>, sidebar nav, path<->page-name lookups.
+// icon field intentionally left as-is (icon set already consolidated).
+export const ROUTES = [
+  { key: "Landing", path: "/", element: LandingPage, bare: true, inNav: false },
+  { key: "Login", path: "/login", element: LoginPage, bare: true, inNav: false },
+  { key: "Signup", path: "/signup", element: SignupPage, bare: true, inNav: false },
+  { key: "Onboarding", path: "/onboarding", element: OnboardingPage, bare: true, inNav: false },
+  { key: "Dashboard", path: "/dashboard", element: DashboardPage, inNav: true, icon: "Dashboard" },
+  { key: "Discover", path: "/discover", element: DiscoverPage, inNav: true, icon: "Discover" },
+  { key: "Sentiment", path: "/sentiment", element: SentimentPage, inNav: true, icon: "Sentiment" },
+  { key: "Compare", path: "/compare", element: ComparePage, inNav: true, icon: "Compare" },
+  { key: "Portfolio", path: "/portfolio", element: PortfolioPage, inNav: true, icon: "Portfolio" },
+  { key: "Watchlists", path: "/watchlists", element: WatchlistsPage, inNav: true, icon: "Watchlists" },
+  { key: "Alerts", path: "/alerts", element: AlertsPage, inNav: true, icon: "Alerts" },
+  { key: "Asset Detail", path: "/asset-detail", element: AssetDetailPage, inNav: false },
+  { key: "Settings", path: "/settings", element: SettingsPage, inNav: false, bottomNav: true, icon: "Settings" },
+  { key: "Profile", path: "/profile", element: ProfilePage, inNav: false },
+];
+
+export const NAV_ITEMS = ROUTES.filter((r) => r.inNav);
+export const BOTTOM_NAV = ROUTES.filter((r) => r.bottomNav);
+export const BARE_PAGES = ROUTES.filter((r) => r.bare).map((r) => r.key);
+
+export function getPath(pageKey) {
+  return ROUTES.find((r) => r.key === pageKey)?.path ?? "/";
+}
+
+export function getPageName(pathname) {
+  if (pathname === "/") return "Landing";
+  const match = [...ROUTES]
+    .filter((r) => r.path !== "/")
+    .sort((a, b) => b.path.length - a.path.length) // longest-prefix match
+    .find((r) => pathname.startsWith(r.path));
+  return match?.key ?? "Dashboard";
+}
+

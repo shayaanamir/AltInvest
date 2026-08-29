@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { L } from "../../components/landingPage/landingTokens";
-import { IconCheck2 } from "../../components/icons";
+import { L } from "../landingPage/landingTokens";
+import { IconCheck2 } from "../icons";
 
 const ALL_ASSETS = [
     { sym: "BTC", name: "Bitcoin", chg: "+2.4%", pos: true, aiPick: true, spark: "M0,12 C5,10 10,6 15,4 C20,2 25,8 30,6 C35,4 38,2 42,1" },

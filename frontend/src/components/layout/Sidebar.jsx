@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import { clearSession } from "../../hooks/useAuth";
-import { NAV_ITEMS, BOTTOM_NAV } from "../../data/constants";
+import { NAV_ITEMS, BOTTOM_NAV } from "../../routes";
 import {
   IconDashboard,
   IconCompass,
@@ -99,10 +99,10 @@ export default function Sidebar({ activePage, onNavigate }) {
         alignItems: collapsed ? "center" : "stretch"
       }}>
         {NAV_ITEMS.map((item) => {
-          const active = item.label === activePage;
+          const active = item.key === activePage;
           return (
             <div
-              key={item.label}
+              key={item.key}
               style={{
                 display: "flex", alignItems: "center", gap: 12,
                 padding: collapsed ? "10px" : "10px 16px",
@@ -118,11 +118,11 @@ export default function Sidebar({ activePage, onNavigate }) {
                 justifyContent: collapsed ? "center" : "flex-start",
                 transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)"
               }}
-              onClick={() => onNavigate && onNavigate(item.label)}
-              title={collapsed ? item.label : undefined}
+              onClick={() => onNavigate && onNavigate(item.key)}
+              title={collapsed ? item.key : undefined}
             >
-              <MenuIcon label={item.label} color={active ? "var(--sv2-accent, #bf5d38)" : "var(--sv2-text-soft, #6c6555)"} size={17} />
-              {!collapsed && <span>{item.label}</span>}
+              <MenuIcon label={item.key} color={active ? "var(--sv2-accent, #bf5d38)" : "var(--sv2-text-soft, #6c6555)"} size={17} />
+              {!collapsed && <span>{item.key}</span>}
             </div>
           );
         })}
@@ -158,10 +158,10 @@ export default function Sidebar({ activePage, onNavigate }) {
       }}>
         {/* Settings */}
         {BOTTOM_NAV.map((item) => {
-          const active = item.label === activePage;
+          const active = item.key === activePage;
           return (
             <div
-              key={item.label}
+              key={item.key}
               style={{
                 display: "flex", alignItems: "center", gap: 12,
                 padding: collapsed ? "10px" : "10px 16px",
@@ -177,11 +177,11 @@ export default function Sidebar({ activePage, onNavigate }) {
                 justifyContent: collapsed ? "center" : "flex-start",
                 transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)"
               }}
-              onClick={() => onNavigate && onNavigate(item.label)}
-              title={collapsed ? item.label : undefined}
+              onClick={() => onNavigate && onNavigate(item.key)}
+              title={collapsed ? item.key : undefined}
             >
-              <MenuIcon label={item.label} color={active ? "var(--sv2-accent, #bf5d38)" : "var(--sv2-text-soft, #6c6555)"} size={17} />
-              {!collapsed && <span>{item.label}</span>}
+              <MenuIcon label={item.key} color={active ? "var(--sv2-accent, #bf5d38)" : "var(--sv2-text-soft, #6c6555)"} size={17} />
+              {!collapsed && <span>{item.key}</span>}
             </div>
           );
         })}

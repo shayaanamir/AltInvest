@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLandingTheme } from "../../components/landingPage/landingTokens";
+import { useLandingTheme } from "../landingPage/landingTokens";
 
 export function AuthInput({ label, type = "text", placeholder, value, onChange }) {
     const [focused, setFocused] = useState(false);

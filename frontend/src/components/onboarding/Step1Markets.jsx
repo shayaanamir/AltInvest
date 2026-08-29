@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { L } from "../../components/landingPage/landingTokens";
-import { IconCheck2 } from "../../components/icons";
+import { L } from "../landingPage/landingTokens";
+import { IconCheck2 } from "../icons";
 
 const MARKETS = [
     {

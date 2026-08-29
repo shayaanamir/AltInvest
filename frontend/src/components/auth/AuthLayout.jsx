@@ -1,7 +1,7 @@
 import { useTheme } from "../../context/ThemeContext";
-import { useLandingTheme } from "../../components/landingPage/landingTokens";
+import { useLandingTheme } from "../landingPage/landingTokens";
 import AuthRightPanel from "./AuthRightPanel";
-import { IconThemeToggle } from "../../components/icons";
+import { IconThemeToggle } from "../icons";
 
 function AuthHeader({ onNavigate }) {
     const { isDark, toggle } = useTheme();
