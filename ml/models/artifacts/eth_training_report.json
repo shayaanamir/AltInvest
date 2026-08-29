@@ -1,6 +1,6 @@
 {
   "asset": "eth",
-  "trained_at": "2026-05-16T19:54:33Z",
+  "trained_at": "2026-08-28T18:11:02Z",
   "data": {
     "raw_rows": 17521,
     "feature_rows": 16801,
@@ -8,22 +8,19 @@
       "2024-01-31",
       "2025-12-31"
     ],
-    "duration_sec": 0.04
+    "duration_sec": 0.08
   },
-  "forecast": {
-    "asset": "eth",
-    "prediction_30d": 1385.18,
-    "lower_bound": 1215.2,
-    "upper_bound": 1539.75,
-    "confidence": 0.77,
-    "duration_sec": 0.36
+  "forecast": null,
+  "classify": null,
+  "direction": {
+    "asset": "ETH",
+    "prob_up_30d": 0.7669,
+    "prob_flat_30d": 0.0657,
+    "prob_down_30d": 0.1674,
+    "direction": "UP",
+    "thresh": 0.0956,
+    "duration_sec": 3.99
   },
-  "classify": {
-    "asset": "eth",
-    "risk_score": 21.8,
-    "cv_accuracy": 0.79,
-    "duration_sec": 5.08
-  },
-  "total_duration_sec": 5.5,
+  "total_duration_sec": 4.08,
   "status": "success"
 }

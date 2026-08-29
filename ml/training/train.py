@@ -9,7 +9,8 @@ Coordinates the full training pipeline for one asset in a single command:
     Step 2  FEATURES   Run feature engineering -> processed CSV
     Step 3  FORECAST   Fit Prophet forecaster  -> .pkl artifact + prediction
     Step 4  CLASSIFY   Fit RF risk classifier  -> .pkl artifact + risk score
-    Step 5  REPORT     Write JSON training report to ml/models/artifacts/
+    Step 5  DIRECTION  Fit direction classifier -> .pkl artifact + direction  [Phase 1]
+    Step 6  REPORT     Write JSON training report to ml/models/artifacts/
 
 Usage
 -----
@@ -17,12 +18,14 @@ Usage
     python training/train.py --asset eth
     python training/train.py --asset btc --skip-forecast   (classifier only)
     python training/train.py --asset btc --skip-classify   (forecaster only)
+    python training/train.py --asset btc --skip-direction  (skip direction clf)
     python training/train.py --asset btc --dry-run         (no saves)
 
 Output
 ------
     ml/models/artifacts/btc_prophet.pkl
     ml/models/artifacts/btc_rf_classifier.pkl
+    ml/models/artifacts/btc_direction_clf.pkl         [Phase 1]
     ml/models/artifacts/btc_training_report.json
 
 Training Report Schema
@@ -48,6 +51,15 @@ Training Report Schema
             "risk_score":     67.5,
             "cv_accuracy":    0.83,
             "duration_sec":   8.1
+        },
+        "direction": {
+            "asset":         "btc",
+            "prob_up_30d":   0.72,
+            "prob_flat_30d": 0.18,
+            "prob_down_30d": 0.10,
+            "direction":     "UP",
+            "thresh":        0.0984,
+            "duration_sec":  9.4
         },
         "total_duration_sec": 22.5,
         "status": "success"
@@ -76,8 +88,9 @@ from features.feature_engineering import (
     build_features,
     run_pipeline as fe_run_pipeline,
 )
-from models.forecaster  import ProphetForecaster
-from models.classifier  import RiskClassifier
+from models.forecaster           import ProphetForecaster
+from models.classifier           import RiskClassifier
+from models.direction_classifier import DirectionClassifier
 
 # ─── Logging ──────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -205,23 +218,61 @@ def step_classify(
     log.info("[%s] Classifier step done in %.1fs", asset.upper(), elapsed)
     return risk, classify_meta
 
+def step_direction(
+    asset_df:  pd.DataFrame,
+    asset:     str,
+    dry_run:   bool = False,
+) -> tuple[dict, dict]:
+    """
+    Step 5: Fit RandomForest direction classifier. [Phase 1]
+
+    Uses the per-asset P40 threshold from Phase 0 (computed from training data
+    only inside DirectionClassifier.fit() — not passed in as a parameter).
+
+    Returns
+    -------
+    (direction_dict, direction_meta)
+    """
+    _banner(5, "DIRECTION CLASSIFIER", asset)
+    t0 = time.perf_counter()
+
+    clf     = DirectionClassifier()
+    clf.fit(asset_df)
+    result  = clf.predict_latest(asset_df)
+
+    elapsed = time.perf_counter() - t0
+
+    if not dry_run:
+        clf.save()
+
+    direction_meta = {
+        **result,
+        "duration_sec": round(elapsed, 2),
+    }
+
+    _print_result("Direction", result)
+    log.info("[%s] Direction classifier step done in %.1fs", asset.upper(), elapsed)
+    return result, direction_meta
+
+
 
 def step_report(
-    asset:         str,
-    data_meta:     dict,
-    forecast_meta: Optional[dict],
-    classify_meta: Optional[dict],
-    total_elapsed: float,
-    dry_run:       bool = False,
+    asset:          str,
+    data_meta:      dict,
+    forecast_meta:  Optional[dict],
+    classify_meta:  Optional[dict],
+    direction_meta: Optional[dict],
+    total_elapsed:  float,
+    dry_run:        bool = False,
 ) -> dict:
     """
-    Step 4: Assemble and save the training report JSON.
+    Step 6: Assemble and save the training report JSON.
 
     Returns
     -------
     report dict
     """
-    _banner(4, "TRAINING REPORT", asset)
+    _banner(6, "TRAINING REPORT", asset)
 
     report = {
         "asset":      asset,
@@ -229,6 +280,7 @@ def step_report(
         "data":       data_meta,
         "forecast":   forecast_meta,
         "classify":   classify_meta,
+        "direction":  direction_meta,        # Phase 1 — None if --skip-direction
         "total_duration_sec": round(total_elapsed, 2),
         "status":     "success",
     }
@@ -247,20 +299,22 @@ def step_report(
 # ══════════════════════════════════════════════════════════════════════════════
 
 def run_training(
-    asset:          str,
-    skip_forecast:  bool = False,
-    skip_classify:  bool = False,
-    dry_run:        bool = False,
+    asset:           str,
+    skip_forecast:   bool = False,
+    skip_classify:   bool = False,
+    skip_direction:  bool = False,
+    dry_run:         bool = False,
 ) -> dict:
     """
     Full training pipeline for a single asset.
 
     Parameters
     ----------
-    asset          : "btc", "eth", or "sol"
-    skip_forecast  : skip Prophet step (useful when retraining classifier only)
-    skip_classify  : skip RF classifier step
-    dry_run        : run all steps but do not write any files
+    asset            : "btc", "eth", or "sol"
+    skip_forecast    : skip Prophet step
+    skip_classify    : skip RF risk classifier step
+    skip_direction   : skip Direction classifier step [Phase 1]
+    dry_run          : run all steps but do not write any files
 
     Returns
     -------
@@ -273,6 +327,7 @@ def run_training(
     report_data    = {}
     forecast_meta  = None
     classify_meta  = None
+    direction_meta = None
 
     try:
         # ── Step 1: Load + Feature Engineering ────────────────────────────
@@ -290,13 +345,20 @@ def run_training(
         else:
             log.info("[%s] Skipping classify step (--skip-classify)", asset.upper())
 
-        # ── Step 4: Training Report ────────────────────────────────────────
+        # ── Step 4: Direction Classifier [Phase 1] ─────────────────────────
+        if not skip_direction:
+            _, direction_meta = step_direction(asset_df, asset, dry_run=dry_run)
+        else:
+            log.info("[%s] Skipping direction step (--skip-direction)", asset.upper())
+
+        # ── Step 5: Training Report ────────────────────────────────────────
         total_elapsed = time.perf_counter() - pipeline_start
         report = step_report(
             asset=asset,
             data_meta=data_meta,
             forecast_meta=forecast_meta,
             classify_meta=classify_meta,
+            direction_meta=direction_meta,
             total_elapsed=total_elapsed,
             dry_run=dry_run,
         )
@@ -336,12 +398,17 @@ def _print_footer(report: dict, dry_run: bool) -> None:
     if report.get("forecast"):
         fc = report["forecast"]
         print(f"  Forecast  : ${fc['prediction_30d']:,.2f}"
-              f"  [{fc['lower_bound']:,.0f} – {fc['upper_bound']:,.0f}]"
+              f"  [{fc['lower_bound']:,.0f} - {fc['upper_bound']:,.0f}]"
               f"  conf={fc['confidence']}")
     if report.get("classify"):
         cl = report["classify"]
         print(f"  Risk      : score={cl['risk_score']}"
               f"  (cv_acc={cl.get('cv_accuracy', 'N/A')})")
+    if report.get("direction"):
+        dr = report["direction"]
+        print(f"  Direction : {dr['direction']}"
+              f"  (up={dr['prob_up_30d']:.2f}, flat={dr['prob_flat_30d']:.2f}, down={dr['prob_down_30d']:.2f})"
+              f"  thresh={dr['thresh']}")
     if not dry_run:
         print(f"  Artifacts : ml/models/artifacts/")
     print(sep)
@@ -390,6 +457,7 @@ def _parse_args() -> argparse.Namespace:
             "  python training/train.py --asset eth\n"
             "  python training/train.py --asset sol\n"
             "  python training/train.py --asset btc --skip-forecast\n"
+            "  python training/train.py --asset btc --skip-direction\n"
             "  python training/train.py --asset btc --dry-run\n"
         ),
     )
@@ -403,7 +471,11 @@ def _parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--skip-classify", action="store_true",
-        help="Skip RandomForest classifier step"
+        help="Skip RandomForest risk classifier step"
+    )
+    parser.add_argument(
+        "--skip-direction", action="store_true",
+        help="Skip Direction classifier step [Phase 1]"
     )
     parser.add_argument(
         "--dry-run", action="store_true",
@@ -418,5 +490,6 @@ if __name__ == "__main__":
         asset=args.asset,
         skip_forecast=args.skip_forecast,
         skip_classify=args.skip_classify,
+        skip_direction=args.skip_direction,
         dry_run=args.dry_run,
     )
