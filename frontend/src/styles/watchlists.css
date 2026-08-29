@@ -13,7 +13,7 @@
 .wl-side-count { background: var(--sv2-chip); color: var(--sv2-text-soft); font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px; }
 
 .wl-panel { background: var(--sv2-card); border: 1px solid var(--sv2-border); border-radius: 18px; overflow: hidden; }
-.wl-panel-head { display: flex; justify-content: space-between; align-items: flex-start; padding: 20px 22px; border-bottom: 1px solid var(--sv2-border); gap: 12px; }
+.wl-panel-head { display: flex; justify-content: space-between; align-items: center; padding: 20px 22px; border-bottom: 1px solid var(--sv2-border); gap: 12px; }
 .wl-panel-title { font-size: 18px; font-weight: 800; color: var(--sv2-text); margin: 0 0 4px; }
 .wl-panel-sub { font-size: 12px; color: var(--sv2-text-mute); margin: 0; }
 .wl-delete-btn { background: none; border: none; color: var(--sv2-text-soft); font-size: 12.5px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; }

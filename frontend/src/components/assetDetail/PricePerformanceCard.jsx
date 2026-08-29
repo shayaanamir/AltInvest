@@ -81,19 +81,50 @@ export default function PricePerformanceCard({ priceHistory, forecast, aaiPanel 
     }
 
     const yTicks = [0, 1, 2, 3].map((i) => minV + (vRange * i) / 3);
-    const xLabels = histPts.map((p) => {
+    const xLabels = histPts.map((p, i) => {
       const ago = daysApart(lastDate, p.date);
-      return { x: p.x, label: ago === 0 ? "Today" : `${ago}d` };
+      // When forecast is shown, label the last historical point as "Today" and omit "0d"
+      if (i === histPts.length - 1) return { x: p.x, label: "Today" };
+      return { x: p.x, label: `${ago}d` };
     });
-    const forecastLabels = forecastPts.map((p) => ({
-      x: p.x,
-      label: `+${daysApart(p.date, lastDate)}d`,
-    }));
+    const forecastLabels = forecastPts
+      .filter((p) => daysApart(p.date, lastDate) > 0)
+      .map((p) => ({
+        x: p.x,
+        label: `+${daysApart(p.date, lastDate)}d`,
+      }));
 
-    return { W, H, PAD_L, PAD_R, PAD_T, plotH, linePath, areaPath, forecastPath, last, yTicks, yFor, xLabels, forecastLabels };
+    return { W, H, PAD_L, PAD_R, PAD_T, plotH, linePath, areaPath, forecastPath, last, yTicks, yFor, xLabels, forecastLabels, histPts, forecastPts };
   }, [history, dims, showForecast, safeForecast]);
 
   const signal = aaiPanel ? deriveAaiSignal(aaiPanel.score) : null;
+  const [hoverPt, setHoverPt] = useState(null);
+
+  const handleMouseMove = (e) => {
+    if (!chart || !history?.length) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const scaleX = chart.W / rect.width;
+    const svgX = mouseX * scaleX;
+
+    const allPts = [
+      ...chart.histPts.map((pt, i) => ({ ...pt, price: history[i]?.price })),
+      ...(showForecast && chart.forecastPts
+        ? chart.forecastPts.map((pt, i) => ({ ...pt, price: safeForecast[i]?.price, isForecast: true }))
+        : []),
+    ];
+
+    let closest = null;
+    let minDiff = Infinity;
+    allPts.forEach((pt) => {
+      const diff = Math.abs(pt.x - svgX);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closest = pt;
+      }
+    });
+    setHoverPt(closest);
+  };
 
   return (
     <div className="sv2-card adt-chart-card">
@@ -118,47 +149,85 @@ export default function PricePerformanceCard({ priceHistory, forecast, aaiPanel 
         </div>
       </div>
 
-      <div className="adt-chart-body" ref={containerRef}>
+      <div
+        className="adt-chart-body"
+        ref={containerRef}
+        style={{ position: "relative", cursor: "crosshair" }}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => setHoverPt(null)}
+      >
         {!chart ? (
           <div className="adt-chart-empty">Not enough price data yet.</div>
         ) : (
-          <svg width="100%" height="100%" viewBox={`0 0 ${chart.W} ${chart.H}`} preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="adtPriceGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--sv2-accent)" stopOpacity="0.22" />
-                <stop offset="100%" stopColor="var(--sv2-accent)" stopOpacity="0" />
-              </linearGradient>
-            </defs>
+          <>
+            <svg width="100%" height="100%" viewBox={`0 0 ${chart.W} ${chart.H}`} style={{ overflow: "visible" }}>
+              <defs>
+                <linearGradient id="adtPriceGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--sv2-accent)" stopOpacity="0.22" />
+                  <stop offset="100%" stopColor="var(--sv2-accent)" stopOpacity="0" />
+                </linearGradient>
+              </defs>
 
-            {chart.yTicks.map((v, i) => {
-              const y = chart.yFor(v);
-              return (
-                <g key={i}>
-                  <line x1={chart.PAD_L} y1={y} x2={chart.W - chart.PAD_R} y2={y} stroke="var(--sv2-border)" strokeWidth="0.7" strokeDasharray="4,4" />
-                  <text x={chart.PAD_L - 10} y={y + 4} fontSize="10.5" fill="var(--sv2-text-mute)" textAnchor="end">{formatY(v)}</text>
+              {chart.yTicks.map((v, i) => {
+                const y = chart.yFor(v);
+                return (
+                  <g key={i}>
+                    <line x1={chart.PAD_L} y1={y} x2={chart.W - chart.PAD_R} y2={y} stroke="var(--sv2-border)" strokeWidth="0.7" strokeDasharray="4,4" />
+                    <text x={chart.PAD_L - 10} y={y + 4} fontSize="10.5" fill="var(--sv2-text-mute)" textAnchor="end">{formatY(v)}</text>
+                  </g>
+                );
+              })}
+
+              {chart.xLabels.map((l, i) => (
+                <text key={i} x={l.x} y={chart.H - 8} fontSize="10" fill="var(--sv2-text-mute)" textAnchor="middle">{l.label}</text>
+              ))}
+              {chart.forecastLabels.map((l, i) => (
+                <text key={`f${i}`} x={l.x} y={chart.H - 8} fontSize="10" fill="var(--sv2-text-mute)" textAnchor="middle">{l.label}</text>
+              ))}
+
+              <path d={chart.areaPath} fill="url(#adtPriceGrad)" />
+              <path d={chart.linePath} fill="none" stroke="var(--sv2-accent)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+
+              {showForecast && (
+                <>
+                  <line x1={chart.last.x} y1={chart.PAD_T} x2={chart.last.x} y2={chart.PAD_T + chart.plotH} stroke="var(--sv2-border-strong)" strokeWidth="1" strokeDasharray="3,3" />
+                  <path d={chart.forecastPath} fill="none" stroke="var(--sv2-accent)" strokeWidth="2" strokeDasharray="6,5" strokeLinecap="round" />
+                  <circle cx={chart.last.x} cy={chart.last.y} r="3.5" fill="var(--sv2-accent)" />
+                </>
+              )}
+
+              {hoverPt && (
+                <g>
+                  <line x1={hoverPt.x} y1={chart.PAD_T} x2={hoverPt.x} y2={chart.H - 24} stroke="var(--sv2-accent)" strokeWidth="1" strokeDasharray="3,3" opacity="0.75" />
+                  <circle cx={hoverPt.x} cy={hoverPt.y} r="7" fill="var(--sv2-accent)" opacity="0.25" />
+                  <circle cx={hoverPt.x} cy={hoverPt.y} r="4" fill="var(--sv2-accent)" stroke="#fff" strokeWidth="2" />
                 </g>
-              );
-            })}
+              )}
+            </svg>
 
-            {chart.xLabels.map((l, i) => (
-              <text key={i} x={l.x} y={chart.H - 8} fontSize="10" fill="var(--sv2-text-mute)" textAnchor="middle">{l.label}</text>
-            ))}
-            {chart.forecastLabels.map((l, i) => (
-              <text key={`f${i}`} x={l.x} y={chart.H - 8} fontSize="10" fill="var(--sv2-text-mute)" textAnchor="middle">{l.label}</text>
-            ))}
-
-            <path d={chart.areaPath} fill="url(#adtPriceGrad)" />
-            <path d={chart.linePath} fill="none" stroke="var(--sv2-accent)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-
-            {showForecast && (
-              <>
-                <line x1={chart.last.x} y1={chart.PAD_T} x2={chart.last.x} y2={chart.PAD_T + chart.plotH} stroke="var(--sv2-border-strong)" strokeWidth="1" strokeDasharray="3,3" />
-                <text x={chart.last.x} y={chart.PAD_T - 5} fontSize="9.5" fill="var(--sv2-text-mute)" textAnchor="middle">today</text>
-                <path d={chart.forecastPath} fill="none" stroke="var(--sv2-text-soft)" strokeWidth="2" strokeDasharray="6,5" strokeLinecap="round" />
-                <circle cx={chart.last.x} cy={chart.last.y} r="3.5" fill="var(--sv2-text-soft)" />
-              </>
+            {hoverPt && (
+              <div
+                style={{
+                  position: "absolute",
+                  left: Math.min(Math.max((hoverPt.x / chart.W) * containerRef.current.clientWidth - 55, 10), containerRef.current.clientWidth - 130),
+                  top: Math.max(10, (hoverPt.y / chart.H) * containerRef.current.clientHeight - 52),
+                  background: "var(--sv2-card)",
+                  border: "1px solid var(--sv2-border)",
+                  borderRadius: 8,
+                  padding: "5px 9px",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
+                  pointerEvents: "none",
+                  zIndex: 20,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <div style={{ fontSize: 10, color: hoverPt.isForecast ? "var(--sv2-accent)" : "var(--sv2-text-mute)", fontWeight: 600 }}>
+                  {hoverPt.date} {hoverPt.isForecast ? "· Model AI" : ""}
+                </div>
+                <div style={{ fontSize: 12.5, color: "var(--sv2-text)", fontWeight: 800 }}>{formatY(hoverPt.price)}</div>
+              </div>
             )}
-          </svg>
+          </>
         )}
       </div>
 

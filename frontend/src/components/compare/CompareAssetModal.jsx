@@ -5,8 +5,8 @@ import { formatAssetPrice } from "../../utils/formatters";
 import AssetAvatar from "../shared/AssetAvatar";
 import { IconX, IconCheck, IconSearch } from "../icons";
 
-export default function CompareAssetModal({ initialSelection = ["btc", "eth"], onConfirm, onClose }) {
-  const [selected, setSelected] = useState(initialSelection);
+export default function CompareAssetModal({ initialSelection, initialSelected, onConfirm, onClose }) {
+  const [selected, setSelected] = useState(() => initialSelection || initialSelected || []);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("all");
 
@@ -125,7 +125,7 @@ export default function CompareAssetModal({ initialSelection = ["btc", "eth"], o
             disabled={selected.length < 2}
             onClick={() => onConfirm(selected)}
           >
-            {selected.length >= 2 ? `Compare ${selected.length}` : "Compare"}
+            Compare {selected.length}
           </button>
         </div>
       </div>

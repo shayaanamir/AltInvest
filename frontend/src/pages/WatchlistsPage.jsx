@@ -54,18 +54,18 @@ export default function WatchlistsPage() {
   };
 
   return (
-    <div className="wl-page">
-      <div className="wl-header">
-        <div>
-          <h1 className="wl-title">Watchlists</h1>
-          <p className="wl-sub">Track assets without owning them — promote to Portfolio when you commit.</p>
+    <div className="sv2">
+      <div className="sv2-page wl-page">
+        <div className="wl-header">
+          <div>
+            <h1 className="wl-title">Watchlists</h1>
+            <p className="wl-sub">Track assets without owning them — promote to Portfolio when you commit.</p>
+          </div>
+          <button className="wl-new-btn" onClick={() => setShowModal(true)}>
+            <IconPlus size={14} />
+            New watchlist
+          </button>
         </div>
-        <button className="wl-new-btn" onClick={() => setShowModal(true)}>
-          <IconPlus size={14} />
-          New watchlist
-        </button>
-
-      </div>
 
       {lists.length === 0 ? (
         <div className="wl-empty-lists">
@@ -90,7 +90,7 @@ export default function WatchlistsPage() {
                 </div>
                 <button className="wl-delete-btn" onClick={handleDeleteList}>
                   <IconTrash size={14} />
-                  Delete lists
+                  Delete list
                 </button>
               </div>
 
@@ -122,5 +122,6 @@ export default function WatchlistsPage() {
         />
       )}
     </div>
+  </div>
   );
 }

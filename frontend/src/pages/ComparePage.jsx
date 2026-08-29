@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams, useLocation } from "react-router-dom";
 import "../styles/compare.css";
 import CompareEmptyState from "../components/compare/CompareEmptyState";
 import CompareAssetModal from "../components/compare/CompareAssetModal";
@@ -10,10 +11,27 @@ import { IconColumns } from "../components/icons";
 import { compareApi } from "../services/compareApi";
 
 export default function ComparePage() {
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedIds, setSelectedIds] = useState([]);
+  const [selectedIds, setSelectedIds] = useState(() => {
+    if (location.state?.ids) return location.state.ids;
+    const paramIds = searchParams.get("ids");
+    if (paramIds) return paramIds.split(",").filter(Boolean);
+    return [];
+  });
   const [assets, setAssets] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const stateIds = location.state?.ids;
+    const paramIds = searchParams.get("ids");
+    const targetIds = stateIds || (paramIds ? paramIds.split(",").filter(Boolean) : null);
+    if (targetIds && targetIds.length >= 2) {
+      setSelectedIds(targetIds);
+    }
+  }, [location.state, searchParams]);
 
   useEffect(() => {
     if (selectedIds.length === 0) {
@@ -79,6 +97,7 @@ export default function ComparePage() {
         {modalOpen && (
           <CompareAssetModal
             initialSelected={selectedIds}
+            initialSelection={selectedIds}
             onClose={() => setModalOpen(false)}
             onConfirm={handleConfirm}
           />

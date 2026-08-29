@@ -17,7 +17,7 @@ export default function Sparkline({ data, color = "var(--sv2-accent)", width = 1
   const gradId = `spark-${color.replace(/[^a-zA-Z0-9]/g, "")}`;
 
   return (
-    <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{ display: "block" }}>
+    <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} style={{ display: "block" }}>
       {showArea && (
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">

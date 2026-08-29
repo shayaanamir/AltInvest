@@ -27,7 +27,6 @@ export default function SentimentReadCard({ sentimentSnippet }) {
                 tone === "negative" ? "var(--sv2-red)" : "var(--sv2-text-mute)",
             }}
           />
-          <div className="sv2-bipolar-center-line" />
         </div>
       </div>
 

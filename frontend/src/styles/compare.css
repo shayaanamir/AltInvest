@@ -51,10 +51,10 @@
 }
 .cmp-modal {
   background: var(--sv2-card); border-radius: 20px; border: 1px solid var(--sv2-border);
-  width: 100%; max-width: 620px; max-height: 88vh; overflow-y: auto;
-  padding: 24px 26px; box-sizing: border-box;
+  width: 100%; max-width: 620px; max-height: 85vh; display: flex; flex-direction: column;
+  padding: 24px 26px; box-sizing: border-box; overflow: hidden;
 }
-.cmp-modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.cmp-modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-shrink: 0; }
 .cmp-modal-title { font-size: 17px; font-weight: 800; color: var(--sv2-text); }
 .cmp-icon-btn {
   background: none; border: none; color: var(--sv2-text-mute); cursor: pointer;
@@ -62,12 +62,12 @@
   font-size: 18px; line-height: 1;
 }
 .cmp-icon-btn:hover { color: var(--sv2-text); }
-.cmp-modal-desc { font-size: 12.5px; color: var(--sv2-text-soft); line-height: 1.6; margin: 0 0 18px; }
+.cmp-modal-desc { font-size: 12.5px; color: var(--sv2-text-soft); line-height: 1.6; margin: 0 0 16px; flex-shrink: 0; }
 
-.cmp-slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+.cmp-slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; flex-shrink: 0; }
 .cmp-slot {
   border: 1px dashed var(--sv2-border-strong); border-radius: 12px;
-  padding: 14px 10px; min-height: 78px;
+  padding: 12px 8px; min-height: 72px;
   display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
 }
 .cmp-slot.filled { border-style: solid; border-color: var(--sv2-accent); background: var(--sv2-accent-soft); }
@@ -82,8 +82,8 @@
 .cmp-search-box {
   display: flex; align-items: center; gap: 8px;
   background: var(--sv2-input); border: 1px solid var(--sv2-border-strong);
-  border-radius: 12px; padding: 11px 14px; margin-bottom: 6px;
-  color: var(--sv2-text-mute);
+  border-radius: 12px; padding: 10px 14px; margin-bottom: 6px;
+  color: var(--sv2-text-mute); flex-shrink: 0;
 }
 .cmp-search-box input {
   border: none; background: none; outline: none; flex: 1;
@@ -91,9 +91,9 @@
 }
 .cmp-search-box input::placeholder { color: var(--sv2-text-mute); }
 
-.cmp-asset-list { max-height: 260px; overflow-y: auto; margin: 8px 0 4px; }
+.cmp-asset-list { max-height: 180px; flex: 1; overflow-y: auto; margin: 8px 0 4px; }
 .cmp-asset-row {
-  display: flex; align-items: center; gap: 12px; padding: 11px 6px;
+  display: flex; align-items: center; gap: 12px; padding: 10px 6px;
   border-radius: 10px; cursor: pointer; border: 1px solid transparent;
 }
 .cmp-asset-row:hover { background: var(--sv2-card-alt); }
@@ -110,20 +110,24 @@
 
 .cmp-modal-footer {
   display: flex; align-items: center; justify-content: flex-end; gap: 16px;
-  border-top: 1px solid var(--sv2-border); padding-top: 16px; margin-top: 8px;
+  border-top: 1px solid var(--sv2-border); padding-top: 14px; margin-top: 8px; flex-shrink: 0;
 }
 .cmp-cancel-btn { background: none; border: none; color: var(--sv2-text-soft); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
 .cmp-confirm-btn {
   background: var(--sv2-accent); color: var(--sv2-accent-contrast); border: none;
   border-radius: 24px; padding: 10px 22px; font-size: 13px; font-weight: 700;
-  cursor: pointer; font-family: inherit;
+  cursor: pointer; font-family: inherit; transition: opacity 0.15s;
 }
 .cmp-confirm-btn:disabled { opacity: .45; cursor: not-allowed; }
 
 /* Results */
 .cmp-flex-col { display: flex; flex-direction: column; gap: 16px; }
-.cmp-asset-cards-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
-@media (max-width: 900px) { .cmp-asset-cards-grid { grid-template-columns: 1fr; } }
+.cmp-asset-cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 14px; }
+.cmp-asset-cards-grid[data-count="2"] { grid-template-columns: repeat(2, 1fr); }
+.cmp-asset-cards-grid[data-count="3"] { grid-template-columns: repeat(3, 1fr); }
+.cmp-asset-cards-grid[data-count="4"] { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 900px) { .cmp-asset-cards-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .cmp-asset-cards-grid { grid-template-columns: 1fr; } }
 
 .cmp-asset-card { padding: 20px 22px; }
 .cmp-asset-card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }

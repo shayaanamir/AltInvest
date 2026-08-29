@@ -104,8 +104,38 @@
   font: inherit; color: var(--sv2-text-soft);
 }
 .sv2-breadcrumb button:hover { color: var(--sv2-text); text-decoration: underline; }
-.sv2-h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; margin: 6px 0 4px; color: var(--sv2-text); }
-.sv2-lead { font-size: 13.5px; color: var(--sv2-text-soft); margin: 0; }
+
+/* Pixel-perfect standardized Page Header */
+.sv2-page-header, .dv2-hero, .disc-header, .wl-header, .alr-page-head, .cmp-page-head, .set-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.sv2-page-title, .sv2-h1, .dv2-hero-title, .disc-title, .wl-title {
+  font-size: 26px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.5px !important;
+  line-height: 1.2 !important;
+  color: var(--sv2-text) !important;
+  margin: 0 0 4px 0 !important;
+  padding: 0 !important;
+}
+.sv2-page-sub, .sv2-lead, .dv2-hero-sub, .disc-sub, .wl-sub {
+  font-size: 13.5px !important;
+  font-weight: 400 !important;
+  line-height: 1.45 !important;
+  color: var(--sv2-text-soft) !important;
+  margin: 0 !important;
+}
+.sv2-page-actions, .dv2-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
 
 /* ---------- cards ---------- */
 .sv2-card {

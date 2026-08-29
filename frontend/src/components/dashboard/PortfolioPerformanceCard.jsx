@@ -31,7 +31,7 @@ export default function PortfolioPerformanceCard() {
         </div>
       </div>
 
-      <div style={{ height: 260 }}>
+      <div style={{ height: 260, display: "flex", flexDirection: "column", justifyContent: "center" }}>
         {!hasHoldings ? (
           <div className="dv2-perf-empty" style={{ height: "100%" }}>
             <div className="dv2-perf-empty-icon" aria-hidden="true">
@@ -47,7 +47,7 @@ export default function PortfolioPerformanceCard() {
             Loading…
           </div>
         ) : (
-          <div ref={containerRef} style={{ width: "100%", height: "100%" }}>{chartContent}</div>
+          <div ref={containerRef} style={{ width: "100%", height: "100%", display: "flex", alignItems: "center" }}>{chartContent}</div>
         )}
       </div>
     </div>

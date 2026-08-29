@@ -39,14 +39,21 @@
   cursor: pointer;
 }
 .pv2-holdings-row:hover:not(.pv2-holdings-head) { background: var(--sv2-card-alt); border-radius: 10px; }
-.pv2-holdings-head {
-  font-size: 10.5px;
+.pv2-holdings-head, .pv2-holdings-header {
+  display: grid;
+  grid-template-columns: 2fr 0.8fr 1fr 1fr 0.9fr 1fr 100px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 4px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--sv2-text-mute);
   cursor: default;
   border-top: none;
+  border-bottom: 1px solid var(--sv2-border);
+  margin-bottom: 4px;
 }
 
 .pv2-asset-cell { display: flex; align-items: center; gap: 10px; min-width: 0; }

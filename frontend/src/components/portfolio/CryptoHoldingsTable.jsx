@@ -23,7 +23,7 @@ export default function CryptoHoldingsTable() {
       </div>
 
       <div className="pv2-holdings-table">
-        <div className="pv2-holdings-header">
+        <div className="pv2-holdings-row pv2-holdings-head">
           <span>Asset</span>
           <span>Quantity</span>
           <span>Value</span>

@@ -85,8 +85,25 @@
 .disc-empty p, .disc-comingsoon p { color: var(--sv2-text-soft); margin: 0; font-size: 13px; }
 
 .disc-compare-bar {
-  position: sticky; bottom: 16px; margin-top: 16px;
+  position: sticky; bottom: 20px; margin-top: 24px;
   background: var(--sv2-accent); color: var(--sv2-accent-contrast); border-radius: 14px;
-  padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--sv2-shadow);
+  padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); z-index: 100;
 }
-.disc-compare-bar button { background: var(--sv2-accent-contrast); color: var(--sv2-accent); border: none; border-radius: 9px; padding: 8px 16px; font-weight: 700; font-size: 12.5px; cursor: pointer; }
+.disc-compare-bar-info { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.disc-compare-bar-count { font-size: 14px; font-weight: 800; }
+.disc-compare-bar-sub { font-size: 12px; opacity: 0.85; }
+.disc-compare-bar-actions { display: flex; align-items: center; gap: 10px; }
+.disc-compare-clear-btn {
+  background: rgba(255, 255, 255, 0.2); color: #fff; border: none;
+  border-radius: 9px; padding: 8px 14px; font-weight: 700; font-size: 12.5px;
+  cursor: pointer; font-family: inherit; transition: background 0.15s;
+}
+.disc-compare-clear-btn:hover { background: rgba(255, 255, 255, 0.3); }
+.disc-compare-submit-btn {
+  background: #fff; color: var(--sv2-accent); border: none;
+  border-radius: 9px; padding: 8px 18px; font-weight: 800; font-size: 13px;
+  cursor: pointer; font-family: inherit; transition: opacity 0.15s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.disc-compare-submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { discoverApi, ALL_ITEMS } from "../services/discoverApi";
 import DiscoverFilters from "../components/discover/DiscoverFilters";
 import DiscoverAssetCard from "../components/discover/DiscoverAssetCard";
@@ -16,6 +17,7 @@ function defaultFilters(config) {
 }
 
 export default function DiscoverPage() {
+  const navigate = useNavigate();
   const [config, setConfig] = useState(null);
   const [category, setCategory] = useState("crypto");
   const [showFilters, setShowFilters] = useState(true);
@@ -54,24 +56,30 @@ export default function DiscoverPage() {
   const toggleCompare = (item) => {
     setCompareIds((prev) => {
       if (prev.includes(item.id)) return prev.filter((id) => id !== item.id);
-      if (prev.length >= 2) return [prev[1], item.id];
+      if (prev.length >= 4) return prev;
       return [...prev, item.id];
     });
+  };
+
+  const handleCompareNow = () => {
+    if (compareIds.length < 2) return;
+    navigate(`/compare?ids=${compareIds.join(",")}`, { state: { ids: compareIds } });
   };
 
   const activeTabConfig = config?.categoryTabs.find((t) => t.key === category);
 
   return (
-    <div className="disc-page">
-      <div className="disc-header">
-        <div>
-          <h1 className="disc-title">Discover</h1>
-          <p className="disc-sub">The full covered universe — filter it down to what's actually worth investigating.</p>
+    <div className="sv2">
+      <div className="sv2-page disc-page">
+        <div className="disc-header">
+          <div>
+            <h1 className="disc-title">Discover</h1>
+            <p className="disc-sub">The full covered universe — filter it down to what's actually worth investigating.</p>
+          </div>
+          <button className="disc-toggle-btn" onClick={() => setShowFilters((s) => !s)}>
+            {showFilters ? "Hide filters" : "Show filters"}
+          </button>
         </div>
-        <button className="disc-toggle-btn" onClick={() => setShowFilters((s) => !s)}>
-          {showFilters ? "Hide filters" : "Show filters"}
-        </button>
-      </div>
 
       {config && (
         <div className="disc-tabs">
@@ -130,15 +138,31 @@ export default function DiscoverPage() {
               </div>
             )}
 
-            {compareIds.length === 2 && (
+            {compareIds.length > 0 && (
               <div className="disc-compare-bar">
-                <span>Comparing 2 assets</span>
-                <button onClick={() => setCompareIds([])}>Clear</button>
+                <div className="disc-compare-bar-info">
+                  <span className="disc-compare-bar-count">{compareIds.length} asset{compareIds.length > 1 ? "s" : ""} selected</span>
+                  <span className="disc-compare-bar-sub">(Pick 2 to 4 assets to compare)</span>
+                </div>
+                <div className="disc-compare-bar-actions">
+                  <button type="button" className="disc-compare-clear-btn" onClick={() => setCompareIds([])}>
+                    Clear
+                  </button>
+                  <button
+                    type="button"
+                    className="disc-compare-submit-btn"
+                    disabled={compareIds.length < 2}
+                    onClick={handleCompareNow}
+                  >
+                    {compareIds.length >= 2 ? "Compare Now →" : `Select ${2 - compareIds.length} more`}
+                  </button>
+                </div>
               </div>
             )}
           </div>
         </div>
       )}
     </div>
+  </div>
   );
 }
