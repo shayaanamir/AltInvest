@@ -1,40 +1,17 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
+import { useAsync } from "../../hooks/useAsync";
+import { useElementSize } from "../../hooks/useElementSize";
 import { dashboardApi } from "../../services/dashboardApi";
 import { TIME_FILTERS } from "../../data/constants";
 import TimeSeriesAreaChart from "../charts/TimeSeriesAreaChart";
 
 export default function PortfolioPerformanceCard() {
   const [filter, setFilter] = useState("1M");
-  const [stats, setStats] = useState(null);
-  const [series, setSeries] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const containerRef = useRef(null);
-  const [dims, setDims] = useState({ W: 560, H: 220 });
+  const [containerRef, dims] = useElementSize({ W: 560, H: 220 });
 
-  useEffect(() => {
-    dashboardApi.getMarketStats().then(setStats).catch(console.error);
-  }, []);
-
-  useEffect(() => {
-    const ob = new ResizeObserver((entries) => {
-      if (entries[0]) {
-        setDims({
-          W: Math.max(120, entries[0].contentRect.width),
-          H: Math.max(120, entries[0].contentRect.height),
-        });
-      }
-    });
-    if (containerRef.current) ob.observe(containerRef.current);
-    return () => ob.disconnect();
-  }, []);
-
-  useEffect(() => {
-    setLoading(true);
-    dashboardApi.getPerformanceHistory(filter).then((s) => {
-      setSeries(s);
-      setLoading(false);
-    }).catch(console.error);
-  }, [filter]);
+  const { data: stats } = useAsync(() => dashboardApi.getMarketStats(), []);
+  const { data: rawSeries, loading } = useAsync(() => dashboardApi.getPerformanceHistory(filter), [filter]);
+  const series = rawSeries || [];
 
   const hasHoldings = stats && stats.holdingsCount > 0;
 

@@ -3,39 +3,45 @@ import { useAsync } from "../../hooks/useAsync";
 import { portfolioApi } from "../../services/portfolioApi";
 import { formatAssetPrice, formatPct } from "../../utils/formatters";
 import { getAaiTierColor } from "../../utils/scoring";
-import { IconBell, IconTrash, IconPencil } from "../icons";
+import AssetAvatar from "../shared/AssetAvatar";
+import { IconPlus, IconPencil, IconTrash, IconBell } from "../icons";
 
 export default function CryptoHoldingsTable() {
   const navigate = useNavigate();
   const { data: holdings } = useAsync(() => portfolioApi.getCryptoHoldings(), []);
 
   return (
-    <div className="sv2-card sv2-card-pad" style={{ marginTop: 10 }}>
-      <div className="sv2-card-title">Crypto holdings</div>
-      <div className="sv2-card-sub" style={{ marginBottom: 6 }}>Row click opens the full asset page</div>
-
-      {!holdings ? (
-        <div className="sv2-muted sv2-small" style={{ padding: "24px 0" }}>Loading…</div>
-      ) : (
+    <div className="sv2-card sv2-card-pad">
+      <div className="sv2-flex-between sv2-mb-16">
         <div>
-          <div className="pv2-holdings-row pv2-holdings-head">
-            <span>Asset</span>
-            <span>Balance</span>
-            <span>Value</span>
-            <span>24h</span>
-            <span>AAI</span>
-            <span>Suggested</span>
-            <span>Manage</span>
-          </div>
+          <h2 className="sv2-card-title">Holdings Breakdown</h2>
+          <div className="sv2-card-sub">Core portfolio assets with real-time AAI sentiment overlay</div>
+        </div>
+        <button className="sv2-btn-outline" style={{ flex: "none" }} type="button">
+          <IconPlus size={14} /> Add holding
+        </button>
+      </div>
 
-          {holdings.map((h) => {
+      <div className="pv2-holdings-table">
+        <div className="pv2-holdings-header">
+          <span>Asset</span>
+          <span>Quantity</span>
+          <span>Value</span>
+          <span>24h Change</span>
+          <span>AAI Read</span>
+          <span>AI Suggestion</span>
+          <span style={{ textAlign: "right" }}>Manage</span>
+        </div>
+
+        {!holdings ? (
+          <div className="sv2-muted sv2-small sv2-mt-12">Loading holdings…</div>
+        ) : (
+          holdings.map((h) => {
             const positive = h.change24hPct >= 0;
             return (
               <div key={h.symbol} className="pv2-holdings-row" onClick={() => navigate("/asset-detail")}>
                 <div className="pv2-asset-cell">
-                  <div className="pv2-avatar" style={{ background: h.logoColor }}>
-                    {h.symbol.slice(0, 3)}
-                  </div>
+                  <AssetAvatar symbol={h.symbol} color={h.logoColor} size={36} />
                   <div>
                     <div className="pv2-asset-name">{h.name}</div>
                     <div className="pv2-asset-symbol">{h.symbol}</div>
@@ -60,13 +66,12 @@ export default function CryptoHoldingsTable() {
                 <div className="pv2-manage-icons" onClick={(e) => e.stopPropagation()}>
                   <button type="button" title="Set alert"><IconBell size={14} /></button>
                   <button type="button" title="Edit"><IconPencil size={13} /></button>
-                  <button type="button" title="Remove"><IconTrash size={14} /></button>
                 </div>
               </div>
             );
-          })}
-        </div>
-      )}
+          })
+        )}
+      </div>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import watchlistsData from "../data/sample_data/watchlists.json";
-import { ALL_ITEMS } from "./discoverApi";
+import { ALL_ITEMS } from "./assetRepository";
 import { getAaiSignal } from "../utils/scoring";
 
 function findMatch(raw) {

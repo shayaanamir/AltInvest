@@ -5,66 +5,6 @@
    All colors come from --sv2-* tokens in tokens.css.
    ============================================================= */
 
-/* ---------- page shell ---------- */
-.sent-page {}
-
-/* ---------- hub header ---------- */
-.sent-hub-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 14px;
-  margin-bottom: 20px;
-}
-.sent-hub-title {
-  font-size: 30px;
-  font-weight: 800;
-  letter-spacing: -0.6px;
-  color: var(--sv2-text);
-  margin: 6px 0 6px;
-}
-.sent-hub-sub {
-  font-size: 13.5px;
-  color: var(--sv2-text-soft);
-  margin: 0;
-}
-.sent-hub-actions {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-/* ---------- detail header ---------- */
-.sent-detail-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-}
-.sent-detail-title {
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.4px;
-  color: var(--sv2-text);
-  margin: 0;
-}
-.sent-detail-sub {
-  font-size: 13px;
-  color: var(--sv2-text-soft);
-  margin: 3px 0 0;
-}
-
-/* ---------- refreshing indicator ---------- */
-.sent-refresh-spinner {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--sv2-text-mute);
-}
-
 /* ---------- news / headlines ---------- */
 .sv2-news-item { display: flex; gap: 10px; padding: 12px 2px; border-top: 1px solid var(--sv2-border); }
 .sv2-news-item:first-child { border-top: none; }

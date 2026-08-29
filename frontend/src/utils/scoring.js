@@ -11,9 +11,14 @@ const AAI_BANDS = [
   { min: -Infinity, label: "Strong Sell", tone: "negative" },
 ];
 
+export function bandByThreshold(value, bands, fallback = null) {
+  if (value == null) return fallback;
+  const match = bands.find((b) => value >= b.min);
+  return match ?? fallback;
+}
+
 export function getAaiSignal(score) {
-  if (score == null) return { label: "Hold", tone: "neutral" };
-  const band = AAI_BANDS.find((b) => score >= b.min);
+  const band = bandByThreshold(score, AAI_BANDS, { label: "Hold", tone: "neutral" });
   return { label: band.label, tone: band.tone };
 }
 

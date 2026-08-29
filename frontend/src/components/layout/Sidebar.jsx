@@ -15,33 +15,23 @@ import {
   IconCollapse,
 } from "../icons";
 
-function MenuIcon({ label, color = "currentColor", size = 16, style }) {
-  const iconProps = { size, style: { color, ...style } };
+const ICONS_MAP = {
+  Dashboard: IconDashboard,
+  Discover: IconCompass,
+  Sentiment: IconClock,
+  Compare: IconColumns,
+  Portfolio: IconPortfolio,
+  Watchlists: IconStar,
+  Alerts: IconBell,
+  Settings: IconSettings,
+  Logout: IconLogout,
+  Collapse: IconCollapse,
+};
 
-  switch (label) {
-    case "Dashboard":
-      return <IconDashboard {...iconProps} />;
-    case "Discover":
-      return <IconCompass {...iconProps} />;
-    case "Sentiment":
-      return <IconClock {...iconProps} />;
-    case "Compare":
-      return <IconColumns {...iconProps} />;
-    case "Portfolio":
-      return <IconPortfolio {...iconProps} />;
-    case "Watchlists":
-      return <IconStar {...iconProps} />;
-    case "Alerts":
-      return <IconBell {...iconProps} />;
-    case "Settings":
-      return <IconSettings {...iconProps} />;
-    case "Logout":
-      return <IconLogout {...iconProps} />;
-    case "Collapse":
-      return <IconCollapse {...iconProps} />;
-    default:
-      return null;
-  }
+function MenuIcon({ icon, label, color = "currentColor", size = 16, style }) {
+  const Comp = ICONS_MAP[icon] || ICONS_MAP[label];
+  if (!Comp) return null;
+  return <Comp size={size} style={{ color, ...style }} />;
 }
 
 
@@ -121,7 +111,7 @@ export default function Sidebar({ activePage, onNavigate }) {
               onClick={() => onNavigate && onNavigate(item.key)}
               title={collapsed ? item.key : undefined}
             >
-              <MenuIcon label={item.key} color={active ? "var(--sv2-accent, #bf5d38)" : "var(--sv2-text-soft, #6c6555)"} size={17} />
+              <MenuIcon icon={item.icon} label={item.key} color={active ? "var(--sv2-accent)" : "var(--sv2-text-soft)"} size={17} />
               {!collapsed && <span>{item.key}</span>}
             </div>
           );

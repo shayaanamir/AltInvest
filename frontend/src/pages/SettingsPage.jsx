@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/settingsProfile.css";
 import { clearSession } from "../hooks/useAuth";
+import { useAsync } from "../hooks/useAsync";
 import { settingsApi } from "../services/settingsApi";
 import SettingsSidebar from "../components/settings/SettingsSidebar";
 import PreferencesSection from "../components/settings/PreferencesSection";
@@ -24,15 +25,12 @@ const TABS = [
 export default function SettingsPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("preferences");
+  const { data: initialSettings, loading } = useAsync(() => settingsApi.getSettings(), []);
   const [settings, setSettings] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    settingsApi.getSettings().then((data) => {
-      setSettings(data);
-      setLoading(false);
-    }).catch(console.error);
-  }, []);
+    if (initialSettings) setSettings(initialSettings);
+  }, [initialSettings]);
 
   const updateSection = (section, patch) => {
     setSettings((prev) => ({ ...prev, [section]: { ...prev[section], ...patch } }));

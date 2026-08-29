@@ -1,4 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
+import { useAsync } from "../../hooks/useAsync";
+import { useElementSize } from "../../hooks/useElementSize";
 import { portfolioApi } from "../../services/portfolioApi";
 import TimeSeriesAreaChart from "../charts/TimeSeriesAreaChart";
 
@@ -6,31 +8,9 @@ const RANGES = ["1M", "3M", "1Y"];
 
 export default function PerformanceHistory() {
   const [range, setRange] = useState("3M");
-  const [series, setSeries] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const containerRef = useRef(null);
-  const [dims, setDims] = useState({ W: 560, H: 220 });
-
-  useEffect(() => {
-    const ob = new ResizeObserver((entries) => {
-      if (entries[0]) {
-        setDims({
-          W: Math.max(120, entries[0].contentRect.width),
-          H: Math.max(120, entries[0].contentRect.height),
-        });
-      }
-    });
-    if (containerRef.current) ob.observe(containerRef.current);
-    return () => ob.disconnect();
-  }, []);
-
-  useEffect(() => {
-    setLoading(true);
-    portfolioApi.getPerformanceHistory(range).then((s) => {
-      setSeries(s);
-      setLoading(false);
-    }).catch(console.error);
-  }, [range]);
+  const [containerRef, dims] = useElementSize({ W: 560, H: 220 });
+  const { data: rawSeries, loading } = useAsync(() => portfolioApi.getPerformanceHistory(range), [range]);
+  const series = rawSeries || [];
 
   const { W, H } = dims;
 

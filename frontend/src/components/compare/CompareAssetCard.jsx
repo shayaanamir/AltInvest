@@ -1,4 +1,5 @@
 import { formatAssetPrice, formatPct } from "../../utils/formatters";
+import AssetAvatar from "../shared/AssetAvatar";
 
 export default function CompareAssetCard({ asset, onRemove }) {
   const positive = asset.change24h >= 0;
@@ -7,9 +8,7 @@ export default function CompareAssetCard({ asset, onRemove }) {
     <div className="cmp-card cmp-asset-card">
       <div className="cmp-asset-card-top">
         <div className="cmp-asset-card-id">
-          <div className="cmp-avatar" style={{ background: asset.avatarColor }}>
-            {asset.symbol.slice(0, 3)}
-          </div>
+          <AssetAvatar symbol={asset.symbol} color={asset.avatarColor} size={36} />
           <div>
             <div className="cmp-asset-card-name">{asset.name}</div>
             <div className="cmp-asset-card-sub">{asset.subtitle}</div>

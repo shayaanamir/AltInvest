@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAsync } from "../../hooks/useAsync";
 import { sentimentApi } from "../../services/sentimentApi";
+import { buildSeriesPaths } from "../charts/TimeSeriesAreaChart";
 
 const RANGES = [
   { key: "24h", label: "24h" },
@@ -17,16 +18,10 @@ export default function AssetOverTimeChart({ assetId, trend, colors }) {
   const series = rawSeries || [];
 
   const W = 420, H = 150;
-  let linePath = "", areaPath = "";
   const color = trend === "deteriorating" ? colors.red : colors.green;
-
-  if (series.length >= 2) {
-    const values = series.map((s) => s.value);
-    const min = Math.min(...values) - 3, max = Math.max(...values) + 3, range2 = Math.max(1, max - min);
-    const pts = series.map((s, i) => ({ x: (i / (series.length - 1)) * W, y: H - 14 - ((s.value - min) / range2) * (H - 26) }));
-    linePath = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
-    areaPath = `${linePath} L ${pts[pts.length - 1].x.toFixed(1)} ${H} L ${pts[0].x.toFixed(1)} ${H} Z`;
-  }
+  const paths = buildSeriesPaths(series, W, H, { padTop: 12, padBottom: 14 });
+  const linePath = paths?.linePath || "";
+  const areaPath = paths?.areaPath || "";
 
   return (
     <div className="sv2-card sv2-card-pad-sm">

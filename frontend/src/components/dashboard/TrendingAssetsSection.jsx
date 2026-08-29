@@ -5,6 +5,7 @@ import { dashboardApi } from "../../services/dashboardApi";
 import { formatAssetPrice, formatPct } from "../../utils/formatters";
 import { getAaiTierClass } from "../../utils/scoring";
 import Sparkline from "../charts/Sparkline";
+import AssetAvatar from "../shared/AssetAvatar";
 import { IconStar } from "../icons";
 
 export default function TrendingAssetsSection() {
@@ -43,9 +44,7 @@ export default function TrendingAssetsSection() {
               >
                 <div className="dv2-asset-card-top">
                   <div className="dv2-asset-id">
-                    <div className="dv2-asset-avatar" style={{ background: a.logoColor || "var(--sv2-accent)" }}>
-                      {a.symbol.slice(0, 3)}
-                    </div>
+                    <AssetAvatar symbol={a.symbol} color={a.logoColor} size={38} />
                     <div>
                       <div className="dv2-asset-name">{a.name}</div>
                       <div className="dv2-asset-sym">{a.symbol}</div>

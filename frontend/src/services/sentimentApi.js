@@ -1,5 +1,6 @@
 import { asset_sentiment, newsArticles } from "../data/sample_data";
 import { USE_MOCK, API_BASE_URL } from "../config";
+import { confidenceLabelFromValue, getEvidencePhrase as evidencePhrase, bandByThreshold } from "../utils/scoring";
 
 /* ============================================================
    Static metadata the sentiment engine doesn't return yet
@@ -128,27 +129,19 @@ function moodLabel(score, kind) {
   return "Neutral";
 }
 
-function confidenceLabelFromValue(v) {
-  if (v >= 0.7) return "high";
-  if (v >= 0.4) return "medium";
-  return "low";
-}
+const QUALITATIVE_BANDS = [
+  { min: 70, label: "Strongly Positive" },
+  { min: 58, label: "Positive" },
+  { min: 45, label: "Mixed" },
+  { min: 35, label: "Neutral" },
+  { min: -Infinity, label: "Negative" },
+];
 
 export function qualitativeLabel(score) {
-  if (score == null) return null;
-  if (score >= 70) return "Strongly Positive";
-  if (score >= 58) return "Positive";
-  if (score >= 45) return "Mixed";
-  if (score >= 35) return "Neutral";
-  return "Negative";
+  return bandByThreshold(score, QUALITATIVE_BANDS, null)?.label ?? null;
 }
 
-export function evidencePhrase(confidenceLabel) {
-  if (confidenceLabel === "high") return "well corroborated";
-  if (confidenceLabel === "medium") return "fairly supported";
-  return "thin evidence";
-}
-
+export { confidenceLabelFromValue, evidencePhrase };
 export { relativeTime } from "../utils/dateTime";
 
 /* ---------------- public API ---------------- */

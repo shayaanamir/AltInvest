@@ -1,5 +1,5 @@
 import AssetAvatar from "../shared/AssetAvatar";
-import { IconBell, IconTrash } from "../icons";
+import { IconBell, IconTrash, IconCheck } from "../icons";
 import { getAaiTierColor } from "../../utils/scoring";
 import { formatAssetPrice } from "../../utils/formatters";
 
@@ -39,7 +39,7 @@ export default function WatchlistRow({ item, onAddToPortfolio, onRemove }) {
 
       <div className="wl-actions">
         <button className="wl-add-btn" onClick={() => onAddToPortfolio(item)}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 6L9 17l-5-5" /></svg>
+          <IconCheck size={13} />
           Add to portfolio
         </button>
         <button className="wl-icon-btn" title="Set alert">

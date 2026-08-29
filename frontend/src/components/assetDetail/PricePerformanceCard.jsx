@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
+import { useElementSize } from "../../hooks/useElementSize";
 import { deriveAaiSignal } from "../../services/assetDetailApi";
 
 const FILTERS = ["1D", "1W", "1M", "3M", "1Y"];
@@ -24,17 +25,7 @@ function formatY(v) {
 export default function PricePerformanceCard({ priceHistory, forecast, aaiPanel }) {
   const [mode, setMode] = useState("Price");
   const [filter, setFilter] = useState("1M");
-  const containerRef = useRef(null);
-  const [dims, setDims] = useState({ W: 900, H: 320 });
-
-  useEffect(() => {
-    const ob = new ResizeObserver((entries) => {
-      const box = entries[0]?.contentRect;
-      if (box) setDims({ W: Math.max(240, box.width), H: Math.max(220, box.height) });
-    });
-    if (containerRef.current) ob.observe(containerRef.current);
-    return () => ob.disconnect();
-  }, []);
+  const [containerRef, dims] = useElementSize({ W: 900, H: 320 });
 
   const history = useMemo(() => sliceForFilter(priceHistory, filter), [priceHistory, filter]);
   const safeForecast = forecast || [];

@@ -1,8 +1,26 @@
-// frontend/src/components/charts/TimeSeriesAreaChart.jsx
-// Replaces the hand-derived path math duplicated in:
-// PortfolioPerformanceCard.jsx, PerformanceHistory.jsx, AssetOverTimeChart.jsx,
-// and (for the non-forecast case) PricePerformanceCard.jsx.
-import { useMemo } from "react";
+export function buildSeriesPaths(data, width, height, { padLeft = 0, padRight = 0, padTop = 0, padBottom = 0 } = {}) {
+  if (!data || data.length < 2) return null;
+  const vals = data.map((d) => (typeof d === "number" ? d : d.value));
+  const minV = Math.min(...vals) * 0.98;
+  const maxV = Math.max(...vals) * 1.02;
+  const range = Math.max(1, maxV - minV);
+
+  const plotW = width - padLeft - padRight;
+  const plotH = height - padTop - padBottom;
+
+  const pts = data.map((d, i) => {
+    const v = typeof d === "number" ? d : d.value;
+    return {
+      x: padLeft + (i / (data.length - 1)) * plotW,
+      y: height - padBottom - ((v - minV) / range) * plotH,
+    };
+  });
+  const last = pts[pts.length - 1];
+  const linePath = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
+  const areaPath = `${linePath} L ${last.x.toFixed(1)} ${height - padBottom} L ${pts[0].x.toFixed(1)} ${height - padBottom} Z`;
+
+  return { pts, last, linePath, areaPath, minV, maxV, range };
+}
 
 export default function TimeSeriesAreaChart({
   data,                 // [{ date, value }]
@@ -19,25 +37,13 @@ export default function TimeSeriesAreaChart({
   gradientId = "tsa-grad",
 }) {
   const chart = useMemo(() => {
-    if (!data || data.length < 2) return null;
-    const vals = data.map((d) => d.value);
-    const minV = Math.min(...vals) * 0.98;
-    const maxV = Math.max(...vals) * 1.02;
-    const range = Math.max(1, maxV - minV);
+    const res = buildSeriesPaths(data, width, height, { padLeft, padRight, padTop, padBottom });
+    if (!res) return null;
 
-    const toPoint = (v, i) => ({
-      x: padLeft + (i / (data.length - 1)) * (width - padLeft - padRight),
-      y: height - padBottom - ((v - minV) / range) * (height - padTop - padBottom),
-    });
-    const pts = data.map((d, i) => toPoint(d.value, i));
-    const last = pts[pts.length - 1];
-    const linePath = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
-    const areaPath = `${linePath} L ${last.x.toFixed(1)} ${height - padBottom} L ${pts[0].x.toFixed(1)} ${height - padBottom} Z`;
-
-    const yTicks = [0, 1, 2, 3].map((i) => minV + (range * i) / 3);
+    const yTicks = [0, 1, 2, 3].map((i) => res.minV + (res.range * i) / 3);
     const xIdxs = [0, Math.floor((data.length - 1) / 2), data.length - 1];
 
-    return { pts, last, linePath, areaPath, yTicks, xIdxs };
+    return { ...res, yTicks, xIdxs };
   }, [data, width, height, padLeft, padRight, padTop, padBottom]);
 
   if (!chart) {
