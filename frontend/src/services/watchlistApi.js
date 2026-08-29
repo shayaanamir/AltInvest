@@ -1,3 +1,5 @@
+import { USE_MOCK } from "../config";
+import { apiFetch } from "./apiClient";
 import watchlistsData from "../data/sample_data/watchlists.json";
 import { ALL_ITEMS } from "./assetRepository";
 import { getAaiSignal } from "../utils/scoring";
@@ -7,14 +9,10 @@ function findMatch(raw) {
   return ALL_ITEMS.find((a) => a.type === "nft" && a.id === raw.slug);
 }
 
-// watchlists.json doesn't carry a "signal" field for its items, so when a
-// live match isn't available we derive one using getAaiSignal from scoring utils.
 function deriveSignal(score) {
   if (score == null) return null;
   const label = getAaiSignal(score).label.toUpperCase();
-  return label.includes("SELL") ? "SELL"
-    : label.includes("BUY") ? "BUY"
-    : "HOLD";
+  return label.includes("SELL") ? "SELL" : label.includes("BUY") ? "BUY" : "HOLD";
 }
 
 function enrichRawItem(raw) {
@@ -53,19 +51,89 @@ function rawFromDiscoverItem(discoverItem) {
       };
 }
 
+// ── real-data mapping ────────────────────────────────────────────────────
+
+function mapBackendItem(item) {
+  const isNft = item.type === "nft";
+  return {
+    id: item.symbol_or_slug,
+    type: item.type,
+    symbol: item.name && isNft ? undefined : item.symbol_or_slug, // enriched name below covers display
+    name: item.name || item.symbol_or_slug,
+    subcategory: isNft ? "NFT" : "Crypto",
+    color: "var(--sv2-accent)",
+    price: item.price,
+    changePct: item.change_24h ?? 0,
+    aaiScore: item.aai_score,
+    signal: deriveSignal(item.aai_score),
+  };
+}
+
+function mapBackendList(w) {
+  return {
+    id: w.id,
+    name: w.name,
+    createdAt: w.created_at,
+    items: (w.items || []).map(mapBackendItem),
+  };
+}
+
 export const watchlistApi = {
   getEmptyState: () => watchlistsData.emptyState,
 
-  getInitialLists: () =>
-    watchlistsData.lists.map((l) => ({
-      id: l.id,
-      name: l.name,
-      createdAt: l.createdAt,
-      items: l.items.map(enrichRawItem),
-    })),
+  getInitialLists: () => {
+    if (USE_MOCK) {
+      return watchlistsData.lists.map((l) => ({
+        id: l.id,
+        name: l.name,
+        createdAt: l.createdAt,
+        items: l.items.map(enrichRawItem),
+      }));
+    }
+    // Sync wrapper kept for call-site compatibility (WatchlistsPage seeds
+    // initial state with this) — actual fetch happens via getInitialListsAsync.
+    return [];
+  },
 
-  // Powers the "Starter assets" search in the create-watchlist modal.
+  getInitialListsAsync: async () => {
+    if (USE_MOCK) {
+      return watchlistsData.lists.map((l) => ({
+        id: l.id,
+        name: l.name,
+        createdAt: l.createdAt,
+        items: l.items.map(enrichRawItem),
+      }));
+    }
+    const lists = await apiFetch("/watchlists");
+    return lists.map(mapBackendList);
+  },
+
   getSearchableItems: () => ALL_ITEMS,
 
   buildListItemFromDiscoverItem: (discoverItem) => enrichRawItem(rawFromDiscoverItem(discoverItem)),
+
+  // ── mutations ──────────────────────────────────────────────────────────
+
+  createList: async (name) => {
+    if (USE_MOCK) return { id: `wl_${Date.now()}` };
+    return apiFetch("/watchlists", { method: "POST", body: JSON.stringify({ name }) });
+  },
+
+  deleteList: async (watchlistId) => {
+    if (USE_MOCK) return null;
+    return apiFetch(`/watchlists/${watchlistId}`, { method: "DELETE" });
+  },
+
+  addItem: async (watchlistId, type, symbolOrSlug) => {
+    if (USE_MOCK) return { status: "added" };
+    return apiFetch(`/watchlists/${watchlistId}/items`, {
+      method: "POST",
+      body: JSON.stringify({ type, symbol_or_slug: symbolOrSlug }),
+    });
+  },
+
+  removeItem: async (watchlistId, symbolOrSlug) => {
+    if (USE_MOCK) return null;
+    return apiFetch(`/watchlists/${watchlistId}/items/${symbolOrSlug}`, { method: "DELETE" });
+  },
 };

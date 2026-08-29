@@ -4,6 +4,7 @@ import "../styles/settingsProfile.css";
 import { clearSession } from "../hooks/useAuth";
 import { useAsync } from "../hooks/useAsync";
 import { settingsApi } from "../services/settingsApi";
+import { USE_MOCK } from "../config";
 import SettingsSidebar from "../components/settings/SettingsSidebar";
 import PreferencesSection from "../components/settings/PreferencesSection";
 import AppearanceSection from "../components/settings/AppearanceSection";
@@ -22,6 +23,15 @@ const TABS = [
   { key: "data", label: "Data & account", icon: "db" },
 ];
 
+// Maps sidebar tab keys ("connected") to settingsApi section keys ("connectedAccounts")
+const TAB_TO_SECTION = {
+  preferences: "preferences",
+  appearance: "appearance",
+  notifications: "notifications",
+  security: "security",
+  connected: "connectedAccounts",
+};
+
 export default function SettingsPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("preferences");
@@ -32,8 +42,15 @@ export default function SettingsPage() {
     if (initialSettings) setSettings(initialSettings);
   }, [initialSettings]);
 
-  const updateSection = (section, patch) => {
-    setSettings((prev) => ({ ...prev, [section]: { ...prev[section], ...patch } }));
+  const updateSection = (sectionKey, patch) => {
+    // Optimistic local update first
+    setSettings((prev) => ({ ...prev, [sectionKey]: { ...prev[sectionKey], ...patch } }));
+
+    if (USE_MOCK) return;
+
+    settingsApi.updateSection(sectionKey, patch).catch((e) => {
+      console.error(`Failed to save ${sectionKey} settings:`, e);
+    });
   };
 
   const handleLogout = () => {

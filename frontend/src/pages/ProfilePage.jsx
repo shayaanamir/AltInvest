@@ -9,11 +9,23 @@ import InvestmentProfileCard from "../components/profile/InvestmentProfileCard";
 export default function ProfilePage() {
   const { data: profile, setData: setProfile } = useAsync(() => profileApi.getProfile(), []);
   const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const applyChange = (patch) => setProfile((p) => ({ ...p, ...patch }));
 
-  const handleSave = () => {
-    profileApi.updateProfile(profile).then(() => setEditing(false));
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const saved = await profileApi.updateProfile(profile);
+      // Merge rather than fully replace — the backend response may omit
+      // fields (like marketsFollowed) the mock still carries.
+      setProfile((p) => ({ ...p, ...saved }));
+      setEditing(false);
+    } catch (e) {
+      console.error("Failed to save profile:", e);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -26,8 +38,8 @@ export default function ProfilePage() {
           </div>
           {editing ? (
             <div style={{ display: "flex", gap: 8 }}>
-              <button className="sv2-btn-outline" style={{ width: "auto" }} onClick={() => setEditing(false)}>Cancel</button>
-              <button className="set-btn-accent" onClick={handleSave}>Save</button>
+              <button className="sv2-btn-outline" style={{ width: "auto" }} onClick={() => setEditing(false)} disabled={saving}>Cancel</button>
+              <button className="set-btn-accent" onClick={handleSave} disabled={saving}>{saving ? "Saving…" : "Save"}</button>
             </div>
           ) : (
             <button className="set-btn-accent" onClick={() => setEditing(true)}>✎ Edit profile</button>

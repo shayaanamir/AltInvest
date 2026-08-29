@@ -8,7 +8,32 @@ import { IconPlus, IconPencil, IconTrash, IconBell } from "../icons";
 
 export default function CryptoHoldingsTable() {
   const navigate = useNavigate();
-  const { data: holdings } = useAsync(() => portfolioApi.getCryptoHoldings(), []);
+  const { data: holdings, refetch } = useAsync(() => portfolioApi.getCryptoHoldings(), []);
+
+  // Minimal wiring until a proper "Add holding" modal exists — prompts for
+  // the three required fields and posts to POST /portfolio/holdings.
+  const handleAddHolding = async () => {
+    const symbol = window.prompt("Asset symbol (e.g. BTC):");
+    if (!symbol) return;
+    const quantity = parseFloat(window.prompt("Quantity:"));
+    if (!quantity || Number.isNaN(quantity)) return;
+    const avgBuyPrice = parseFloat(window.prompt("Average buy price (USD):"));
+    if (!avgBuyPrice || Number.isNaN(avgBuyPrice)) return;
+
+    try {
+      await portfolioApi.addHolding({
+        asset_type: "crypto",
+        symbol: symbol.toUpperCase(),
+        quantity,
+        avg_buy_price_usd: avgBuyPrice,
+        cost_basis_usd: quantity * avgBuyPrice,
+      });
+      refetch();
+    } catch (e) {
+      console.error("Failed to add holding:", e);
+      window.alert(e.message || "Failed to add holding");
+    }
+  };
 
   return (
     <div className="sv2-card sv2-card-pad">
@@ -17,7 +42,7 @@ export default function CryptoHoldingsTable() {
           <h2 className="sv2-card-title">Holdings Breakdown</h2>
           <div className="sv2-card-sub">Core portfolio assets with real-time AAI sentiment overlay</div>
         </div>
-        <button className="sv2-btn-outline" style={{ flex: "none" }} type="button">
+        <button className="sv2-btn-outline" style={{ flex: "none" }} type="button" onClick={handleAddHolding}>
           <IconPlus size={14} /> Add holding
         </button>
       </div>
@@ -35,6 +60,8 @@ export default function CryptoHoldingsTable() {
 
         {!holdings ? (
           <div className="sv2-muted sv2-small sv2-mt-12">Loading holdings…</div>
+        ) : holdings.length === 0 ? (
+          <div className="sv2-muted sv2-small sv2-mt-12">No holdings yet — add your first one above.</div>
         ) : (
           holdings.map((h) => {
             const positive = h.change24hPct >= 0;
@@ -57,8 +84,7 @@ export default function CryptoHoldingsTable() {
 
                 <span className="pv2-aai-pill">
                   <span className="pv2-aai-dot" style={{ background: getAaiTierColor(h.aaiScore) }} />
-
-                  AAI {h.aaiScore}
+                  {h.aaiScore != null ? `AAI ${h.aaiScore}` : "AAI —"}
                 </span>
 
                 <span className="pv2-suggested-btn">{h.aiAction}</span>
@@ -66,6 +92,18 @@ export default function CryptoHoldingsTable() {
                 <div className="pv2-manage-icons" onClick={(e) => e.stopPropagation()}>
                   <button type="button" title="Set alert"><IconBell size={14} /></button>
                   <button type="button" title="Edit"><IconPencil size={13} /></button>
+                  <button
+                    type="button"
+                    title="Remove"
+                    onClick={async () => {
+                      if (!h.id) return;
+                      if (!window.confirm(`Remove ${h.symbol} from your portfolio?`)) return;
+                      await portfolioApi.removeHolding(h.id);
+                      refetch();
+                    }}
+                  >
+                    <IconTrash size={13} />
+                  </button>
                 </div>
               </div>
             );

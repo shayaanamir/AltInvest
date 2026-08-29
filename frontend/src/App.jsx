@@ -1,9 +1,11 @@
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { ThemeProvider } from "./context/ThemeContext";
 import "./styles/tokens.css";
 import Sidebar from "./components/layout/Sidebar";
 import Topbar from "./components/layout/Topbar";
 import { ROUTES, BARE_PAGES, getPath, getPageName } from "./routes";
+import { ensureDevSession } from "./hooks/useAuth";
 
 function ShellRoutes() {
   const location = useLocation();
@@ -46,6 +48,16 @@ function ShellRoutes() {
 }
 
 export default function App() {
+  // TEMPORARY — see hooks/useAuth.js. Ensures every user-scoped fetch has a
+  // valid JWT before the person clicks anything. Remove once a real login
+  // screen is the actual entry point into the app.
+  // useEffect(() => {
+  //   ensureDevSession().catch(() => {
+  //     // Swallow here — individual apiFetch calls will surface a clear error
+  //     // (401 → clearSession) if something's genuinely wrong with the seed.
+  //   });
+  // }, []);
+
   return (
     <ThemeProvider>
       <BrowserRouter>

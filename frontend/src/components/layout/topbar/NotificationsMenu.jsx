@@ -10,13 +10,30 @@ const RECENT_LIMIT = 5;
 export default function NotificationsMenu() {
   const { isOpen, toggle, close, ref } = useDisclosure();
   const navigate = useNavigate();
-  const { data } = useAsync(() => topbarApi.getNotifications(), []);
+  const { data, setData } = useAsync(() => topbarApi.getNotifications(), []);
 
   const items = (data?.items || []).slice(0, RECENT_LIMIT);
   const unreadCount = data?.unreadCount ?? 0;
 
-  const handleSelect = (notification) => {
+  const handleSelect = async (notification) => {
     close();
+
+    if (!notification.read) {
+      // Optimistic mark-as-read
+      setData((prev) => {
+        if (!prev) return prev;
+        const nextItems = prev.items.map((n) =>
+          n.id === notification.id ? { ...n, read: true } : n
+        );
+        return { items: nextItems, unreadCount: Math.max(0, prev.unreadCount - 1) };
+      });
+      try {
+        await topbarApi.markNotificationRead(notification.id);
+      } catch (e) {
+        console.error("Failed to mark notification read:", e);
+      }
+    }
+
     const deepLink = notification.deepLink;
     if (!deepLink) return;
 

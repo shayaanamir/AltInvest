@@ -2,23 +2,48 @@ import { useState } from "react";
 import "../styles/alerts.css";
 import { useAsync } from "../hooks/useAsync";
 import { alertsApi } from "../services/alertsApi";
+import { USE_MOCK } from "../config";
 import AlertSection from "../components/alerts/AlertSection";
 import AlertRow from "../components/alerts/AlertRow";
 import HowAlertsWorkCard from "../components/alerts/HowAlertsWorkCard";
 import { IconPlus } from "../components/icons";
 
 export default function AlertsPage() {
-  const { data: rawAlerts, loading, setData: setAlerts } = useAsync(() => alertsApi.getAlerts(), []);
+  const { data: rawAlerts, loading, setData: setAlerts, refetch } = useAsync(() => alertsApi.getAlerts(), []);
   const alerts = rawAlerts || [];
 
-  const toggle = (id) => {
-    setAlerts((prev) =>
-      prev.map((a) =>
-        a.id === id ? { ...a, status: a.status === "paused" ? "active" : "paused" } : a
-      )
-    );
+  const toggle = async (id) => {
+    const current = alerts.find((a) => a.id === id);
+    if (!current) return;
+    const nextStatus = current.status === "paused" ? "active" : "paused";
+
+    // Optimistic update
+    setAlerts((prev) => prev.map((a) => (a.id === id ? { ...a, status: nextStatus } : a)));
+
+    if (!USE_MOCK) {
+      try {
+        await alertsApi.toggleAlert(id, nextStatus);
+      } catch (e) {
+        console.error("Failed to toggle alert, reverting:", e);
+        refetch();
+      }
+    }
   };
-  const remove = (id) => setAlerts((prev) => prev.filter((a) => a.id !== id));
+
+  const remove = async (id) => {
+    // Optimistic update
+    setAlerts((prev) => prev.filter((a) => a.id !== id));
+
+    if (!USE_MOCK) {
+      try {
+        await alertsApi.deleteAlert(id);
+      } catch (e) {
+        console.error("Failed to delete alert, reverting:", e);
+        refetch();
+      }
+    }
+  };
+
   const edit = () => {};
 
   const active = alerts.filter((a) => a.status === "active");
