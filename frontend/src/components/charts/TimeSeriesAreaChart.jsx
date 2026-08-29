@@ -1,3 +1,5 @@
+import { useMemo } from "react";
+
 export function buildSeriesPaths(data, width, height, { padLeft = 0, padRight = 0, padTop = 0, padBottom = 0 } = {}) {
   if (!data || data.length < 2) return null;
   const vals = data.map((d) => (typeof d === "number" ? d : d.value));

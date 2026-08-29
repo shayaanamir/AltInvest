@@ -84,6 +84,7 @@ export const evidenceLabel = getEvidencePhrase;
 
 export const compareApi = {
   getUniverse: async () => delay(() => buildUniverse()),
+  getAssetUniverse: async () => delay(() => buildUniverse()),
 
   getByIds: async (ids) =>
     delay(() => {

@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useAsync } from "../../hooks/useAsync";
 import { sentimentApi } from "../../services/sentimentApi";
 
 const SCOPES = [

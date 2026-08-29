@@ -31,14 +31,14 @@ export const NFT_ITEMS = nftData.collections.map((c) => ({
   color: c.bannerColor,
   price: c.floorUsd,
   changePct: c.change24h,
-  aaiScore: c.aai.score,
-  signal: c.aai.signal,
-  sentimentScore: c.sentiment.score,
-  volatility: c.risk.illiquidityRiskScore,
-  marketCap: c.marketCapUsd,
+  aaiScore: c.aai?.score,
+  signal: c.aai?.signal,
+  sentimentScore: c.sentiment?.score,
+  volatility: c.liquidity?.illiquidityRiskScore ?? c.risk?.illiquidityRiskScore ?? c.risk?.volatilityIndex ?? 50,
+  marketCap: c.marketCapUsd ?? (c.floorUsd && c.supply ? c.floorUsd * c.supply : 0),
   held: c.held,
   watching: c.watching,
-  sparkline: (nftDetailData[c.slug]?.floorHistory || []).map((p) => p.floorUsd),
+  sparkline: (nftDetailData[c.slug]?.floorHistory || []).map((p) => p.floorEth ?? p.floorUsd ?? p.price ?? 0),
 }));
 
 export const ALL_ITEMS = [...CRYPTO_ITEMS, ...NFT_ITEMS];
