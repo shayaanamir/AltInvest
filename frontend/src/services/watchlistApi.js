@@ -1,5 +1,6 @@
 import watchlistsData from "../data/sample_data/watchlists.json";
 import { ALL_ITEMS } from "./discoverApi";
+import { getAaiSignal } from "../utils/scoring";
 
 function findMatch(raw) {
   if (raw.type === "crypto") return ALL_ITEMS.find((a) => a.type === "crypto" && a.symbol === raw.symbol);
@@ -7,13 +8,13 @@ function findMatch(raw) {
 }
 
 // watchlists.json doesn't carry a "signal" field for its items, so when a
-// live match isn't available we derive one from the same score bands used
-// elsewhere in the app (AssetIntelligence.jsx, sentimentApi.js).
+// live match isn't available we derive one using getAaiSignal from scoring utils.
 function deriveSignal(score) {
   if (score == null) return null;
-  if (score >= 65) return "BUY";
-  if (score >= 45) return "HOLD";
-  return "SELL";
+  const label = getAaiSignal(score).label.toUpperCase();
+  return label.includes("SELL") ? "SELL"
+    : label.includes("BUY") ? "BUY"
+    : "HOLD";
 }
 
 function enrichRawItem(raw) {

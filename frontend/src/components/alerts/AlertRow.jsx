@@ -1,4 +1,4 @@
-import { relativeTime } from "../../services/sentimentApi";
+import { relativeTime } from "../../utils/dateTime";
 import { IconTrash, IconPlay, IconPause, IconPencil } from "../icons";
 
 export default function AlertRow({ alert, onToggle, onEdit, onDelete }) {

@@ -1,31 +1,10 @@
 import assetsData from "../../data/sample_data/assets.json";
-
-function deriveSignal(score) {
-  if (score >= 75) return { label: "Strong Buy", tone: "positive" };
-  if (score >= 55) return { label: "Buy", tone: "positive" };
-  if (score >= 45) return { label: "Hold", tone: "neutral" };
-  if (score >= 25) return { label: "Sell", tone: "negative" };
-  return { label: "Strong Sell", tone: "negative" };
-}
-
-// Same low/medium/high banding used on the asset detail Risk Overview
-// card (RiskAnalytics.jsx) — low is good, high is bad, unless the
-// metric itself is "higher = better" (liquidity), in which case invert it.
-function riskTone(value, higherIsBetter = false) {
-  if (higherIsBetter) {
-    if (value >= 80) return "low";
-    if (value >= 40) return "medium";
-    return "high";
-  }
-  if (value >= 60) return "high";
-  if (value >= 30) return "medium";
-  return "low";
-}
+import { getAaiSignal, getRiskTone } from "../../utils/scoring";
 
 const TONE_VAR = {
-  low: "var(--sv2-green)",
-  medium: "var(--sv2-accent)",
-  high: "var(--sv2-red)",
+  positive: "var(--sv2-green)",
+  neutral: "var(--sv2-accent)",
+  negative: "var(--sv2-red)",
 };
 
 const BULLETS = [
@@ -37,13 +16,13 @@ const BULLETS = [
 
 export default function ScoreShowcase() {
   const asset = assetsData.assets[0]; // Bitcoin
-  const { label, tone } = deriveSignal(asset.aai.score);
+  const { label, tone } = getAaiSignal(asset.aai.score);
 
   const metrics = [
-    { label: "Volatility Index", value: asset.risk.volatilityIndex, tone: riskTone(asset.risk.volatilityIndex) },
-    { label: "Liquidity Score", value: asset.risk.liquidityScore, tone: riskTone(asset.risk.liquidityScore, true) },
-    { label: "Regulatory Risk", value: asset.risk.regulatoryRisk, tone: riskTone(asset.risk.regulatoryRisk) },
-    { label: "Market Risk", value: asset.risk.marketRisk, tone: riskTone(asset.risk.marketRisk) },
+    { label: "Volatility Index", value: asset.risk.volatilityIndex, tone: getRiskTone(asset.risk.volatilityIndex) },
+    { label: "Liquidity Score", value: asset.risk.liquidityScore, tone: getRiskTone(asset.risk.liquidityScore, { higherIsBetter: true }) },
+    { label: "Regulatory Risk", value: asset.risk.regulatoryRisk, tone: getRiskTone(asset.risk.regulatoryRisk) },
+    { label: "Market Risk", value: asset.risk.marketRisk, tone: getRiskTone(asset.risk.marketRisk) },
   ];
 
   return (

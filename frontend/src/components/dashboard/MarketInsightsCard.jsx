@@ -1,14 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { dashboardApi } from "../../services/dashboardApi";
-
-function timeAgo(dateString) {
-  const diffMin = Math.max(0, Math.floor((Date.now() - new Date(dateString).getTime()) / 60000));
-  if (diffMin < 60) return `${diffMin}m ago`;
-  const hours = Math.floor(diffMin / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-}
+import { timeAgo } from "../../utils/dateTime";
 
 export default function MarketInsightsCard() {
   const [insights, setInsights] = useState(null);

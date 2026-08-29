@@ -149,16 +149,7 @@ export function evidencePhrase(confidenceLabel) {
   return "thin evidence";
 }
 
-export function relativeTime(iso) {
-  if (!iso) return "just now";
-  const diffSec = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
-  if (diffSec < 60) return `${diffSec}s ago`;
-  const diffMin = Math.floor(diffSec / 60);
-  if (diffMin < 60) return `${diffMin}m ago`;
-  const diffHr = Math.floor(diffMin / 60);
-  if (diffHr < 24) return `${diffHr}h ago`;
-  return `${Math.floor(diffHr / 24)}d ago`;
-}
+export { relativeTime } from "../utils/dateTime";
 
 /* ---------------- public API ---------------- */
 

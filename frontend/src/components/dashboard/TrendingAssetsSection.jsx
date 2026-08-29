@@ -2,14 +2,9 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { dashboardApi } from "../../services/dashboardApi";
 import { formatAssetPrice, formatPct } from "../../utils/formatters";
-import MiniChart from "../charts/MiniChart";
+import { getAaiTierClass } from "../../utils/scoring";
+import Sparkline from "../charts/Sparkline";
 import { IconStar } from "../icons";
-
-function aaiTier(score) {
-  if (score >= 65) return "";
-  if (score >= 45) return "medium";
-  return "low";
-}
 
 export default function TrendingAssetsSection() {
   const [assets, setAssets] = useState(null);
@@ -78,11 +73,11 @@ export default function TrendingAssetsSection() {
                 </div>
 
                 <div className="dv2-asset-chart">
-                  <MiniChart color={positive ? "var(--sv2-green)" : "var(--sv2-red)"} data={a.sparkline} width={220} height={44} />
+                  <Sparkline color={positive ? "var(--sv2-green)" : "var(--sv2-red)"} data={a.sparkline} width={220} height={44} />
                 </div>
 
                 <div className="dv2-asset-badges">
-                  <span className={`dv2-badge dv2-badge-aai ${aaiTier(a.aai?.score)}`}>
+                  <span className={`dv2-badge dv2-badge-aai ${getAaiTierClass(a.aai?.score)}`}>
                     AAI {Math.round(a.aai?.score ?? 0)}
                   </span>
                   <span className="sv2-badge-pill">{a.aai?.signal}</span>

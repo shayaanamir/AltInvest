@@ -2,13 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { portfolioApi } from "../../services/portfolioApi";
 import { formatAssetPrice, formatPct } from "../../utils/formatters";
+import { getAaiTierColor } from "../../utils/scoring";
 import { IconBell, IconTrash, IconPencil } from "../icons";
-
-function aaiColor(score) {
-  if (score >= 70) return "var(--sv2-green)";
-  if (score >= 45) return "var(--sv2-accent)";
-  return "var(--sv2-red)";
-}
 
 export default function CryptoHoldingsTable() {
   const navigate = useNavigate();
@@ -60,7 +55,7 @@ export default function CryptoHoldingsTable() {
                 </span>
 
                 <span className="pv2-aai-pill">
-                  <span className="pv2-aai-dot" style={{ background: aaiColor(h.aaiScore) }} />
+                  <span className="pv2-aai-dot" style={{ background: getAaiTierColor(h.aaiScore) }} />
 
                   AAI {h.aaiScore}
                 </span>

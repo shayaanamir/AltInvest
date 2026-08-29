@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { sentimentApi, WATCHLIST } from "../../services/sentimentApi";
+import { getAaiTierColor } from "../../utils/scoring";
 import { IconStar, IconArrowUpRight, IconArrowDownRight, IconArrowRight, IconListView, IconGrid2 } from "../icons";
 
 const CATEGORY_TABS = [
@@ -11,11 +12,8 @@ const CATEGORY_TABS = [
 
 const SUBCATEGORIES = ["All", "Layer 1", "Layer 2", "DeFi", "Infrastructure", "Stablecoin-adjacent", "Meme/Community"];
 
-function barColor(score, colors) {
-  if (score == null) return colors.border;
-  if (score >= 58) return colors.green;
-  if (score >= 45) return colors.accent;
-  return colors.red;
+function barColor(score) {
+  return score == null ? "var(--sv2-border)" : getAaiTierColor(score);
 }
 
 export default function AssetSentimentList({ colors, onSelectAsset }) {

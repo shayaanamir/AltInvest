@@ -2,12 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { dashboardApi } from "../../services/dashboardApi";
 import { formatPct } from "../../utils/formatters";
-
-function aaiTier(score) {
-  if (score >= 65) return "";
-  if (score >= 45) return "medium";
-  return "low";
-}
+import { getAaiTierClass } from "../../utils/scoring";
 
 export default function TrendingCollectionsSection() {
   const [collections, setCollections] = useState(null);
@@ -52,7 +47,7 @@ export default function TrendingCollectionsSection() {
                 <div className="dv2-collection-body">
                   <div className="dv2-collection-top">
                     <span className="dv2-collection-name">{c.name}</span>
-                    <span className={`dv2-badge dv2-badge-aai ${aaiTier(c.aai?.score)}`}>
+                    <span className={`dv2-badge dv2-badge-aai ${getAaiTierClass(c.aai?.score)}`}>
                       AAI {Math.round(c.aai?.score ?? 0)}
                     </span>
                   </div>

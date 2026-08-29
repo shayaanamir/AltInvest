@@ -15,27 +15,11 @@ function findAssetMeta(symbol) {
   return assetsData.assets.find((a) => a.symbol === symbol) || null;
 }
 
-// Same score bands used elsewhere in the app (see landingPage/ScoreShowcase.jsx)
-export function deriveAaiSignal(score) {
-  if (score == null) return { label: "Hold", tone: "neutral" };
-  if (score >= 75) return { label: "Strong Buy", tone: "positive" };
-  if (score >= 55) return { label: "Buy", tone: "positive" };
-  if (score >= 45) return { label: "Hold", tone: "neutral" };
-  if (score >= 25) return { label: "Sell", tone: "negative" };
-  return { label: "Strong Sell", tone: "negative" };
-}
+import { getAaiSignal, getRiskTone, getEvidencePhrase } from "../utils/scoring";
 
-export function confidenceLabel(pct) {
-  if (pct >= 70) return "well corroborated";
-  if (pct >= 40) return "fairly supported";
-  return "thin evidence";
-}
-
-export function riskLevelTone(level) {
-  if (level === "low" || level === "excellent" || level === "good") return "positive";
-  if (level === "high") return "negative";
-  return "neutral"; // medium, fair
-}
+export const deriveAaiSignal = getAaiSignal;
+export const confidenceLabel = getEvidencePhrase;
+export const riskLevelTone = getRiskTone;
 
 export const assetDetailApi = {
   getAssetDetail: (symbol = "BTC") =>

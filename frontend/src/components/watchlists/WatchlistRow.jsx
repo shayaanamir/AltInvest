@@ -1,15 +1,10 @@
 import AssetAvatar from "../shared/AssetAvatar";
 import { IconBell, IconTrash } from "../icons";
+import { getAaiTierColor } from "../../utils/scoring";
+import { formatAssetPrice } from "../../utils/formatters";
 
 const SIGNAL_CLASS = { BUY: "signal-buy", HOLD: "signal-hold", SELL: "signal-sell" };
 const SIGNAL_LABEL = { BUY: "Buy", HOLD: "Hold", SELL: "Sell" };
-
-function aaiDotColor(score) {
-  if (score == null) return "var(--sv2-text-mute)";
-  if (score >= 65) return "var(--sv2-green)";
-  if (score >= 45) return "var(--sv2-accent)";
-  return "var(--sv2-red)";
-}
 
 export default function WatchlistRow({ item, onAddToPortfolio, onRemove }) {
   const positive = (item.changePct ?? 0) >= 0;
@@ -25,9 +20,7 @@ export default function WatchlistRow({ item, onAddToPortfolio, onRemove }) {
       </div>
 
       <div className="wl-price">
-        {item.price != null
-          ? `$${item.price.toLocaleString(undefined, { maximumFractionDigits: item.price < 10 ? 4 : 2 })}`
-          : "—"}
+        {item.price != null ? formatAssetPrice(item.price) : "—"}
       </div>
 
       <span className={`wl-change ${positive ? "positive" : "negative"}`}>
@@ -37,7 +30,7 @@ export default function WatchlistRow({ item, onAddToPortfolio, onRemove }) {
       <div className="wl-badges">
         {item.aaiScore != null && (
           <span className="wl-badge aai">
-            <span className="wl-badge-dot" style={{ background: aaiDotColor(item.aaiScore) }} />
+            <span className="wl-badge-dot" style={{ background: getAaiTierColor(item.aaiScore) }} />
             AAI {item.aaiScore}
           </span>
         )}

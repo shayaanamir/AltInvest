@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import AssetAvatar from "../shared/AssetAvatar";
-import MiniChart from "../charts/MiniChart";
+import Sparkline from "../charts/Sparkline";
 import { formatAssetPrice, formatPct } from "../../utils/formatters";
 import { IconStar } from "../icons";
 
@@ -31,7 +31,7 @@ export default function SimilarAssetCard({ asset }) {
 
       {asset.sparkline?.length > 1 && (
         <div className="adt-similar-chart">
-          <MiniChart color={positive ? "var(--sv2-green)" : "var(--sv2-red)"} data={asset.sparkline} width={260} height={44} />
+          <Sparkline color={positive ? "var(--sv2-green)" : "var(--sv2-red)"} data={asset.sparkline} width={260} height={44} />
         </div>
       )}
 
