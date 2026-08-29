@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/settingsProfile.css";
+import { clearSession } from "../hooks/useAuth";
 import { settingsApi } from "../services/settingsApi";
 import SettingsSidebar from "../components/settings/SettingsSidebar";
 import PreferencesSection from "../components/settings/PreferencesSection";
@@ -38,8 +39,7 @@ export default function SettingsPage() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("altinvest_token");
-    localStorage.removeItem("altinvest_user");
+    clearSession();
     navigate("/");
   };
 

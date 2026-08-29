@@ -1,13 +1,10 @@
-import { useState, useEffect } from "react";
+import { useAsync } from "../../hooks/useAsync";
 import { sentimentApi } from "../../services/sentimentApi";
 import { IconArrowUpRight, IconArrowDownRight } from "../icons";
 
 export default function ThemesPanel() {
-  const [themes, setThemes] = useState([]);
-
-  useEffect(() => {
-    sentimentApi.getThemes().then(setThemes).catch(console.error);
-  }, []);
+  const { data } = useAsync(() => sentimentApi.getThemes(), []);
+  const themes = data || [];
 
   return (
     <div className="sv2-card sv2-card-pad-sm">

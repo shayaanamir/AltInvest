@@ -4,6 +4,7 @@ import AuthLayout from "./AuthLayout";
 import { AuthInput, AuthButton, OAuthButton, Divider, GoogleIcon } from "./AuthPrimitives";
 import { authApi } from "../../services/authApi";
 import { useLandingTheme } from "../../components/landingPage/landingTokens";
+import { setSession } from "../../hooks/useAuth";
 
 export default function SignupPage({ onNavigate }) {
     const [name, setName] = useState("");
@@ -20,9 +21,7 @@ export default function SignupPage({ onNavigate }) {
         try {
             const response = await authApi.signup(name, email, password);
             console.log("Signed up successfully:", response);
-            if (response.token) {
-                localStorage.setItem("altinvest_token", response.token);
-            }
+            setSession({ token: response.token, user: response.user });
             onNavigate && onNavigate("Dashboard");
         } catch (err) {
             setError(err.message);

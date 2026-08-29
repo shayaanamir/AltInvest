@@ -1,12 +1,9 @@
-import { useState, useEffect } from "react";
+import { useAsync } from "../../hooks/useAsync";
 import { dashboardApi } from "../../services/dashboardApi";
 
 export default function DashboardHeroHeader() {
-  const [userName, setUserName] = useState(null);
-
-  useEffect(() => {
-    dashboardApi.getCurrentUser().then((u) => setUserName(u.name)).catch(console.error);
-  }, []);
+  const { data: user } = useAsync(() => dashboardApi.getCurrentUser(), []);
+  const userName = user?.name ?? null;
 
   return (
     <div className="dv2-hero">

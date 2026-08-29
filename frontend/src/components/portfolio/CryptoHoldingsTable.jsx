@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAsync } from "../../hooks/useAsync";
 import { portfolioApi } from "../../services/portfolioApi";
 import { formatAssetPrice, formatPct } from "../../utils/formatters";
 import { getAaiTierColor } from "../../utils/scoring";
@@ -7,12 +7,7 @@ import { IconBell, IconTrash, IconPencil } from "../icons";
 
 export default function CryptoHoldingsTable() {
   const navigate = useNavigate();
-  const [holdings, setHoldings] = useState(null);
-
-
-  useEffect(() => {
-    portfolioApi.getCryptoHoldings().then(setHoldings).catch(console.error);
-  }, []);
+  const { data: holdings } = useAsync(() => portfolioApi.getCryptoHoldings(), []);
 
   return (
     <div className="sv2-card sv2-card-pad" style={{ marginTop: 10 }}>

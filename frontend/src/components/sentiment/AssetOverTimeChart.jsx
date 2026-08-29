@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useAsync } from "../../hooks/useAsync";
 import { sentimentApi } from "../../services/sentimentApi";
 
 const RANGES = [
@@ -12,16 +13,8 @@ const TREND_TEXT = { improving: "Warming up", deteriorating: "Cooling down", sta
 
 export default function AssetOverTimeChart({ assetId, trend, colors }) {
   const [range, setRange] = useState(30);
-  const [series, setSeries] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setLoading(true);
-    sentimentApi.getAssetOverTime(assetId, range).then((s) => {
-      setSeries(s);
-      setLoading(false);
-    }).catch(console.error);
-  }, [assetId, range]);
+  const { data: rawSeries, loading } = useAsync(() => sentimentApi.getAssetOverTime(assetId, range), [assetId, range]);
+  const series = rawSeries || [];
 
   const W = 420, H = 150;
   let linePath = "", areaPath = "";

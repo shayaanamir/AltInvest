@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useAsync } from "../../hooks/useAsync";
 import { portfolioApi } from "../../services/portfolioApi";
 import { formatCurrencyFull, formatCurrencyWhole, formatPct } from "../../utils/formatters";
 
@@ -28,11 +28,7 @@ function DiversificationRing({ score, color, track }) {
 }
 
 export default function PortfolioStats() {
-  const [summary, setSummary] = useState(null);
-
-  useEffect(() => {
-    portfolioApi.getSummary().then(setSummary).catch(console.error);
-  }, []);
+  const { data: summary } = useAsync(() => portfolioApi.getSummary(), []);
 
   if (!summary) {
     return (

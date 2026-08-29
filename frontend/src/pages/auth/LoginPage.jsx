@@ -4,6 +4,7 @@ import AuthLayout from "./AuthLayout";
 import { AuthInput, AuthButton, OAuthButton, Divider, GoogleIcon, GitHubIcon } from "./AuthPrimitives";
 import { authApi } from "../../services/authApi";
 import { useLandingTheme } from "../../components/landingPage/landingTokens";
+import { setSession, isAuthenticated } from "../../hooks/useAuth";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -16,8 +17,7 @@ export default function LoginPage({ onNavigate }) {
     const T = useLandingTheme();
 
     useEffect(() => {
-        const existingToken = localStorage.getItem("altinvest_token");
-        if (existingToken) {
+        if (isAuthenticated()) {
             onNavigate && onNavigate("Dashboard");
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -44,12 +44,7 @@ export default function LoginPage({ onNavigate }) {
         setLoading(true);
         try {
             const response = await authApi.login(email.trim(), password);
-            if (response.token) {
-                localStorage.setItem("altinvest_token", response.token);
-            }
-            if (response.user) {
-                localStorage.setItem("altinvest_user", JSON.stringify(response.user));
-            }
+            setSession({ token: response.token, user: response.user });
             onNavigate && onNavigate("Dashboard");
         } catch (err) {
             setError(err.message);

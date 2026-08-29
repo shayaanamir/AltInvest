@@ -34,16 +34,7 @@ function buildPath(values, W, H, min, max) {
 export default function MoodTrendChart({ colors }) {
   const [scope, setScope] = useState("crypto");
   const [days, setDays] = useState(30);
-  const [series, setSeries] = useState(null);   // single-scope: array; "both": { crypto, nft, realEstate }
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setLoading(true);
-    sentimentApi.getMoodTrend(scope, days).then((s) => {
-      setSeries(s);
-      setLoading(false);
-    }).catch(console.error);
-  }, [scope, days]);
+  const { data: series, loading } = useAsync(() => sentimentApi.getMoodTrend(scope, days), [scope, days]);
 
   const W = 900, H = 190;
   const isMulti = scope === "both";

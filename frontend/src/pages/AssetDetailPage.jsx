@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import "../styles/assetDetail.css";
+import { useAsync } from "../hooks/useAsync";
 import { assetDetailApi } from "../services/assetDetailApi";
 import AssetHeaderCard from "../components/assetDetail/AssetHeaderCard";
 import PricePerformanceCard from "../components/assetDetail/PricePerformanceCard";
@@ -16,16 +16,7 @@ export default function AssetDetailPage({ onNavigate }) {
   const navigate = useNavigate();
   const symbol = searchParams.get("symbol") || "BTC";
 
-  const [detail, setDetail] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setLoading(true);
-    assetDetailApi.getAssetDetail(symbol).then((d) => {
-      setDetail(d);
-      setLoading(false);
-    }).catch(console.error);
-  }, [symbol]);
+  const { data: detail, loading } = useAsync(() => assetDetailApi.getAssetDetail(symbol), [symbol]);
 
   const handleBack = () => {
     if (onNavigate) onNavigate("Dashboard");

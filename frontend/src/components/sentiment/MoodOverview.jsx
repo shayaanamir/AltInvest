@@ -1,13 +1,9 @@
-import { useState, useEffect } from "react";
+import { useAsync } from "../../hooks/useAsync";
 import { sentimentApi } from "../../services/sentimentApi";
 import MoodGaugeCard from "./MoodGaugeCard";
 
 export default function MoodOverview({ colors }) {
-  const [data, setData] = useState(null);
-
-  useEffect(() => {
-    sentimentApi.getMoodOverview().then(setData).catch(console.error);
-  }, []);
+  const { data } = useAsync(() => sentimentApi.getMoodOverview(), []);
 
   if (!data) {
     return (

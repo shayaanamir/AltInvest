@@ -1,15 +1,11 @@
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAsync } from "../../hooks/useAsync";
 import { dashboardApi } from "../../services/dashboardApi";
 import { timeAgo } from "../../utils/dateTime";
 
 export default function MarketInsightsCard() {
-  const [insights, setInsights] = useState(null);
+  const { data: insights } = useAsync(() => dashboardApi.getMarketInsights(), []);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    dashboardApi.getMarketInsights().then(setInsights).catch(console.error);
-  }, []);
 
   return (
     <div className="sv2-card sv2-card-pad" style={{ display: "flex", flexDirection: "column" }}>

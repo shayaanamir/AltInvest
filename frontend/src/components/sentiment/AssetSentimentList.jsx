@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
+import { useAsync } from "../../hooks/useAsync";
 import { sentimentApi, WATCHLIST } from "../../services/sentimentApi";
 import { getAaiTierColor } from "../../utils/scoring";
 import { IconStar, IconArrowUpRight, IconArrowDownRight, IconArrowRight, IconListView, IconGrid2 } from "../icons";
@@ -21,19 +22,11 @@ export default function AssetSentimentList({ colors, onSelectAsset }) {
   const [watchlistOnly, setWatchlistOnly] = useState(false);
   const [view, setView] = useState("list"); // "list" | "grid"
   const [favorites, setFavorites] = useState([]);
-  const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   // "all" (Everything) fetches the combined feed; "tokenized" is disabled/unreachable
   const apiScope = tab === "all" ? "all" : tab === "tokenized" ? "crypto" : tab;
-
-  useEffect(() => {
-    setLoading(true);
-    sentimentApi.getAssetList(apiScope).then((r) => {
-      setRows(r);
-      setLoading(false);
-    }).catch(console.error);
-  }, [apiScope]);
+  const { data: rawRows, loading } = useAsync(() => sentimentApi.getAssetList(apiScope), [apiScope]);
+  const rows = rawRows || [];
 
   const filtered = useMemo(() => {
     let r = rows;

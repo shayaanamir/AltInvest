@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useAsync } from "../../hooks/useAsync";
 import { portfolioApi } from "../../services/portfolioApi";
 
 const CATEGORY_COLOR_VAR = {
@@ -40,11 +40,7 @@ function DonutChart({ data, track }) {
 }
 
 export default function AssetAllocation() {
-  const [allocation, setAllocation] = useState(null);
-
-  useEffect(() => {
-    portfolioApi.getAllocation().then(setAllocation).catch(console.error);
-  }, []);
+  const { data: allocation } = useAsync(() => portfolioApi.getAllocation(), []);
 
   return (
     <div className="sv2-card sv2-card-pad">

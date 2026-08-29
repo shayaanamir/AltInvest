@@ -1,17 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import "../styles/settingsProfile.css";
+import { useAsync } from "../hooks/useAsync";
 import { profileApi } from "../services/profileApi";
 import ProfileHeaderCard from "../components/profile/ProfileHeaderCard";
 import ActivityCard from "../components/profile/ActivityCard";
 import InvestmentProfileCard from "../components/profile/InvestmentProfileCard";
 
 export default function ProfilePage() {
-  const [profile, setProfile] = useState(null);
+  const { data: profile, setData: setProfile } = useAsync(() => profileApi.getProfile(), []);
   const [editing, setEditing] = useState(false);
-
-  useEffect(() => {
-    profileApi.getProfile().then(setProfile).catch(console.error);
-  }, []);
 
   const applyChange = (patch) => setProfile((p) => ({ ...p, ...patch }));
 

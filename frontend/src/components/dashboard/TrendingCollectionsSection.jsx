@@ -1,16 +1,12 @@
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAsync } from "../../hooks/useAsync";
 import { dashboardApi } from "../../services/dashboardApi";
 import { formatPct } from "../../utils/formatters";
 import { getAaiTierClass } from "../../utils/scoring";
 
 export default function TrendingCollectionsSection() {
-  const [collections, setCollections] = useState(null);
+  const { data: collections } = useAsync(() => dashboardApi.getTrendingCollections(), []);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    dashboardApi.getTrendingCollections().then(setCollections).catch(console.error);
-  }, []);
 
   return (
     <section style={{ marginTop: 30 }}>

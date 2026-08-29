@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import "../styles/alerts.css";
+import { useAsync } from "../hooks/useAsync";
 import { alertsApi } from "../services/alertsApi";
 import AlertSection from "../components/alerts/AlertSection";
 import AlertRow from "../components/alerts/AlertRow";
@@ -7,15 +8,8 @@ import HowAlertsWorkCard from "../components/alerts/HowAlertsWorkCard";
 import { IconPlus } from "../components/icons";
 
 export default function AlertsPage() {
-  const [alerts, setAlerts] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    alertsApi.getAlerts().then((a) => {
-      setAlerts(a);
-      setLoading(false);
-    });
-  }, []);
+  const { data: rawAlerts, loading, setData: setAlerts } = useAsync(() => alertsApi.getAlerts(), []);
+  const alerts = rawAlerts || [];
 
   const toggle = (id) => {
     setAlerts((prev) =>

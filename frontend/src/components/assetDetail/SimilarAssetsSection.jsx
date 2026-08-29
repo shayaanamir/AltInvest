@@ -1,16 +1,11 @@
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAsync } from "../../hooks/useAsync";
 import { assetDetailApi } from "../../services/assetDetailApi";
 import SimilarAssetCard from "./SimilarAssetCard";
 
 export default function SimilarAssetsSection({ symbol, relatedAssets }) {
   const navigate = useNavigate();
-  const [assets, setAssets] = useState(null);
-
-  useEffect(() => {
-    setAssets(null);
-    assetDetailApi.getSimilarAssets(symbol, relatedAssets).then(setAssets).catch(console.error);
-  }, [symbol, relatedAssets]);
+  const { data: assets } = useAsync(() => assetDetailApi.getSimilarAssets(symbol, relatedAssets), [symbol, relatedAssets]);
 
   return (
     <div className="adt-similar-section">

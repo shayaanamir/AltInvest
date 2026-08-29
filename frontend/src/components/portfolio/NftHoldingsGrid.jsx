@@ -1,16 +1,12 @@
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAsync } from "../../hooks/useAsync";
 import { portfolioApi } from "../../services/portfolioApi";
 import { formatPct } from "../../utils/formatters";
 import NftArtPlaceholder from "./NftArtPlaceholder";
 
 export default function NftHoldingsGrid() {
   const navigate = useNavigate();
-  const [holdings, setHoldings] = useState(null);
-
-  useEffect(() => {
-    portfolioApi.getNftHoldings().then(setHoldings).catch(console.error);
-  }, []);
+  const { data: holdings } = useAsync(() => portfolioApi.getNftHoldings(), []);
 
   return (
     <div className="sv2-card sv2-card-pad" style={{ marginTop: 10 }}>

@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAsync } from "../../hooks/useAsync";
 import { dashboardApi } from "../../services/dashboardApi";
 import { formatAssetPrice, formatPct } from "../../utils/formatters";
 import { getAaiTierClass } from "../../utils/scoring";
@@ -7,13 +8,9 @@ import Sparkline from "../charts/Sparkline";
 import { IconStar } from "../icons";
 
 export default function TrendingAssetsSection() {
-  const [assets, setAssets] = useState(null);
+  const { data: assets } = useAsync(() => dashboardApi.getTrendingAssets(), []);
   const [favorites, setFavorites] = useState([]);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    dashboardApi.getTrendingAssets().then(setAssets).catch(console.error);
-  }, []);
 
   const toggleFavorite = (symbol) =>
     setFavorites((f) => (f.includes(symbol) ? f.filter((x) => x !== symbol) : [...f, symbol]));
