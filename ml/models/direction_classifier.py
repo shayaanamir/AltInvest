@@ -54,7 +54,10 @@ Identical discipline to classifier.py's RiskClassifier:
 Architecture
 ------------
     DirectionClassifier
-        .fit(df)             — label + train RandomForest
+        .fit(df)             — label + train RandomForest  (BTC/ETH/SOL path)
+        .fit_presplit(       — WBTC path: accepts pre-split, pre-labeled DFs
+            train_df,          reads target_return_30d directly, skips
+            val_df)            internal auto-split/embargo logic entirely
         .predict(df)         — classify latest market state
         .predict_latest(df)  — shortcut: predict on most recent row
         .save(path)          — persist to disk
@@ -72,6 +75,17 @@ Usage
     result = clf.predict_latest(df)
     # -> {"asset": "BTC", "prob_up_30d": 0.72, "prob_flat_30d": 0.18,
     #     "prob_down_30d": 0.10, "direction": "UP", "thresh": 0.0984}
+
+WBTC (pre-split) usage
+----------------------
+    train_df = pd.read_csv("ml/data/wbtc_train_model.csv")
+    val_df   = pd.read_csv("ml/data/wbtc_validation_model.csv")
+    clf = DirectionClassifier()
+    clf.fit_presplit(train_df, val_df)
+    # IMPORTANT: the WBTC price column is StandardScaled (can be negative), so
+    # _compute_forward_return() is NEVER called on WBTC data.
+    # target_return_30d from the CSV is the SOLE label source.
+    # Do NOT pass WBTC DataFrames to the regular .fit() path.
 
 CLI:
     python -m models.direction_classifier --asset btc
@@ -390,6 +404,228 @@ class DirectionClassifier:
         log.info("[%s] Fit complete.", asset.upper())
         return self
 
+    def fit_presplit(
+        self,
+        train_df: pd.DataFrame,
+        val_df:   pd.DataFrame,
+        asset:    str = "wbtc",
+    ) -> "DirectionClassifier":
+        """
+        WBTC-specific fit path for pre-split, pre-labeled DataFrames.
+
+        This method bypasses the internal 80/20 chronological auto-split and
+        the 720-hour embargo logic in .fit(), which are incompatible with
+        pre-assembled CSV splits.  It reads ``target_return_30d`` directly
+        from each DataFrame as the label source.
+
+        *** IMPORTANT ***
+        The WBTC ``price`` column is StandardScaled and can be negative.
+        ``_compute_forward_return()`` (which calls log(price_fwd / price))
+        is NEVER called here.  Doing so would produce NaN or garbage output.
+        The ``target_return_30d`` column is the sole ground truth.
+
+        Parameters
+        ----------
+        train_df : pd.DataFrame
+            WBTC training split CSV loaded as-is.
+            Must contain DIRECTION_FEATURES and ``target_return_30d``.
+        val_df : pd.DataFrame
+            WBTC validation split CSV loaded as-is.
+            Used only for evaluation — NOT for any threshold decisions.
+        asset : str
+            Asset name tag, default ``"wbtc"``.
+
+        Returns
+        -------
+        self
+        """
+        _validate_presplit_input(train_df, "train_df")
+        _validate_presplit_input(val_df,   "val_df")
+
+        self._asset = asset.lower()
+        log.info("[%s] Starting DirectionClassifier.fit_presplit() ...", self._asset.upper())
+        log.info("[%s] Train rows: %d | Val rows: %d",
+                 self._asset.upper(), len(train_df), len(val_df))
+
+        train_df = train_df.copy()
+        val_df   = val_df.copy()
+
+        # ── 1. Compute THRESH from TRAINING data only (P40 of |target_return_30d|)
+        #    This mirrors the Phase 0 Option-A decision rule used in .fit().
+        #    THRESH is derived strictly from train_df; val_df is never touched here.
+        thresh = float(np.abs(train_df["target_return_30d"]).quantile(0.40))
+        self._thresh = thresh
+        log.info("[%s] THRESH (P40 of |target_return_30d|, training only): %.4f",
+                 self._asset.upper(), thresh)
+
+        # ── 2. Label both splits using the fixed training THRESH
+        train_df["_direction"] = train_df["target_return_30d"].apply(
+            lambda r: _return_to_label(r, thresh)
+        )
+        val_df["_direction"] = val_df["target_return_30d"].apply(
+            lambda r: _return_to_label(r, thresh)
+        )
+
+        train_dist = train_df["_direction"].value_counts().to_dict()
+        val_dist   = val_df["_direction"].value_counts().to_dict()
+        log.info("[%s] Training label distribution: %s", self._asset.upper(), train_dist)
+        log.info("[%s] Val label distribution:     %s",  self._asset.upper(), val_dist)
+
+        # Warn if val split lacks any class — this is a regime/data limitation,
+        # not a code bug.  It means the evaluation is restricted to present classes.
+        missing_in_val = set(DIRECTION_LABELS) - set(val_dist.keys())
+        if missing_in_val:
+            log.warning(
+                "[%s] Val split is missing classes: %s  "
+                "(target_return_30d range in val: [%.4f, %.4f]).  "
+                "This is a regime shift in the data, not a code error.  "
+                "Metrics on val will only cover present classes.",
+                self._asset.upper(), missing_in_val,
+                val_df["target_return_30d"].min(),
+                val_df["target_return_30d"].max(),
+            )
+
+        # ── 3. Build X, y
+        X_train = train_df[DIRECTION_FEATURES].values
+        X_val   = val_df[DIRECTION_FEATURES].values
+
+        # LabelEncoder must be fitted on ALL possible labels so class order is
+        # stable even if a class is absent from one split.
+        self._encoder = LabelEncoder()
+        self._encoder.fit(DIRECTION_LABELS)   # fixed order: DOWN, FLAT, UP
+
+        y_train = self._encoder.transform(train_df["_direction"].values)
+        y_val   = self._encoder.transform(val_df["_direction"].values)
+
+        # ── 4. Fit RandomForest on training data only
+        self._model = RandomForestClassifier(**self._rf_params)
+        self._model.fit(X_train, y_train)
+        log.info("[%s] RandomForest fitted on %d training samples.",
+                 self._asset.upper(), len(X_train))
+
+        # ── 5a. Train accuracy
+        y_train_pred = self._model.predict(X_train)
+        train_acc    = accuracy_score(y_train, y_train_pred)
+        log.info("[%s] Train accuracy: %.3f", self._asset.upper(), train_acc)
+
+        # ── 5b. Val accuracy + classification report
+        y_val_pred = self._model.predict(X_val)
+        val_acc    = accuracy_score(y_val, y_val_pred)
+
+        # classes_ contains only labels present in y_train; use inverse_transform
+        # for the report so it matches the actual label names from the encoder.
+        present_labels = sorted(set(y_val.tolist()) | set(y_val_pred.tolist()))
+        present_names  = self._encoder.inverse_transform(present_labels)
+
+        self._eval_report = classification_report(
+            y_val, y_val_pred,
+            labels=present_labels,
+            target_names=present_names,
+            zero_division=0,
+        )
+        log.info("[%s] Val accuracy:   %.3f", self._asset.upper(), val_acc)
+
+        # ── 5c. Majority-class baseline on val
+        majority_class_encoded = int(
+            pd.Series(y_train).value_counts().idxmax()
+        )
+        baseline_pred = np.full_like(y_val, majority_class_encoded)
+        baseline_acc  = accuracy_score(y_val, baseline_pred)
+        majority_name = self._encoder.inverse_transform([majority_class_encoded])[0]
+        log.info(
+            "[%s] Majority-class baseline (always predict '%s'): val_acc=%.3f",
+            self._asset.upper(), majority_name, baseline_acc,
+        )
+        if val_acc > baseline_acc:
+            log.info(
+                "[%s] Model BEATS majority-class baseline by %.3f",
+                self._asset.upper(), val_acc - baseline_acc,
+            )
+        else:
+            log.warning(
+                "[%s] Model does NOT beat majority-class baseline "
+                "(model=%.3f, baseline=%.3f). "
+                "Consider whether the model provides useful information.",
+                self._asset.upper(), val_acc, baseline_acc,
+            )
+
+        # ── 5d. TimeSeriesSplit CV on training data only
+        #    For the WBTC pre-split path the training set is small relative to
+        #    the EMBARGO_HOURS gap.  Compute the minimum samples needed:
+        #      min_samples = n_splits * (test_size + gap)
+        #    where test_size ~ n_train / (n_splits + 1).
+        #    We try n_splits=3 first; if infeasible, skip CV with a clear message.
+        n_splits = 3
+        min_test = len(X_train) // (n_splits + 1)
+        min_needed = n_splits * (min_test + EMBARGO_HOURS)
+        if len(X_train) >= min_needed and min_test > 0:
+            tscv = TimeSeriesSplit(n_splits=n_splits, gap=EMBARGO_HOURS)
+            cv_scores = cross_val_score(
+                self._model, X_train, y_train,
+                cv=tscv, scoring="accuracy", n_jobs=-1,
+            )
+            log.info(
+                "[%s] TimeSeriesSplit CV Accuracy (n=%d): %.3f (+/- %.3f)",
+                self._asset.upper(), n_splits, cv_scores.mean(), cv_scores.std(),
+            )
+        else:
+            log.warning(
+                "[%s] CV skipped: dataset too small for TimeSeriesSplit(n=%d, gap=%d) "
+                "(need >= %d rows, have %d). "
+                "The val split serves as held-out evaluation instead.",
+                self._asset.upper(), n_splits, EMBARGO_HOURS, min_needed, len(X_train),
+            )
+
+
+        # ── 5e. Sanity check: mean actual fwd return by predicted class on val
+        sanity_df = pd.DataFrame({
+            "predicted_label":  self._encoder.inverse_transform(y_val_pred),
+            "actual_fwd_return": val_df["target_return_30d"].values,
+        })
+        group_means = sanity_df.groupby("predicted_label")["actual_fwd_return"].mean()
+        log.info(
+            "[%s] Mean actual 30d return by predicted class (val):\n%s",
+            self._asset.upper(),
+            group_means.reindex(["UP", "FLAT", "DOWN"]).dropna().to_string(),
+        )
+        mean_up   = group_means.get("UP",   float("nan"))
+        mean_down = group_means.get("DOWN", float("nan"))
+        if pd.notna(mean_up) and pd.notna(mean_down):
+            if mean_up > mean_down:
+                log.info(
+                    "[%s] SANITY CHECK PASSED: mean(UP)=%.4f > mean(DOWN)=%.4f",
+                    self._asset.upper(), mean_up, mean_down,
+                )
+            else:
+                log.warning(
+                    "[%s] SANITY CHECK FAILED: mean(UP)=%.4f <= mean(DOWN)=%.4f",
+                    self._asset.upper(), mean_up, mean_down,
+                )
+        else:
+            log.warning(
+                "[%s] Sanity check inconclusive: UP or DOWN absent from val predictions.",
+                self._asset.upper(),
+            )
+
+        # ── 6. Summary
+        log.info(
+            "[%s] -- FIT_PRESPLIT SUMMARY --\n"
+            "  THRESH (P40 of |target_return_30d|, train only) : %.4f\n"
+            "  Training label distribution                      : %s\n"
+            "  Val label distribution                           : %s\n"
+            "  Train accuracy                                   : %.3f\n"
+            "  Val accuracy                                     : %.3f\n"
+            "  Majority-class baseline (val)                    : %.3f  [predict='%s']",
+            self._asset.upper(),
+            thresh,
+            train_dist, val_dist,
+            train_acc, val_acc,
+            baseline_acc, majority_name,
+        )
+
+        log.info("[%s] fit_presplit() complete.", self._asset.upper())
+        return self
+
     def predict(self, df: pd.DataFrame) -> dict:
         """
         Classify direction for the LATEST row in df.
@@ -598,6 +834,30 @@ def _validate_input(df: pd.DataFrame) -> None:
             f"DirectionClassifier expects a single-asset DataFrame. "
             f"Got: {assets}\n"
             "  -> Filter first: df[df['asset'] == 'btc']"
+        )
+
+
+# Columns required by fit_presplit() — no 'asset' since WBTC CSVs don't carry it.
+_PRESPLIT_REQUIRED_COLS = set(DIRECTION_FEATURES) | {"timestamp", "target_return_30d"}
+
+
+def _validate_presplit_input(df: pd.DataFrame, name: str) -> None:
+    """Validate a pre-split WBTC DataFrame for use with fit_presplit()."""
+    if df is None or df.empty:
+        raise ValueError(f"`{name}` is None or empty.")
+
+    missing = _PRESPLIT_REQUIRED_COLS - set(df.columns)
+    if missing:
+        raise ValueError(
+            f"`{name}` is missing required columns: {missing}\n"
+            "  -> Ensure the WBTC CSV is loaded as-is from ml/data/wbtc_*_model.csv"
+        )
+
+    if df["target_return_30d"].isna().any():
+        n_null = df["target_return_30d"].isna().sum()
+        raise ValueError(
+            f"`{name}` has {n_null} NaN values in `target_return_30d`. "
+            "Resolve nulls before calling fit_presplit()."
         )
 
 
