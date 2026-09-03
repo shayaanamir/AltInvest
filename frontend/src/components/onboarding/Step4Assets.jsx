@@ -4,17 +4,31 @@ import { L } from "../landingPage/landingTokens";
 import { IconCheck2 } from "../icons";
 
 const ALL_ASSETS = [
-    { sym: "BTC", name: "Bitcoin", chg: "+2.4%", pos: true, aiPick: true, spark: "M0,12 C5,10 10,6 15,4 C20,2 25,8 30,6 C35,4 38,2 42,1" },
-    { sym: "ETH", name: "Ethereum", chg: "+1.8%", pos: true, aiPick: true, spark: "M0,10 C5,8 10,5 15,5 C20,5 25,9 30,7 C35,5 38,4 42,2" },
-    { sym: "SOL", name: "Solana", chg: "-0.5%", pos: false, aiPick: false, spark: "M0,4 C5,6 10,8 15,10 C20,12 25,10 30,12 C35,13 38,13 42,14" },
-    { sym: "GOLD", name: "Gold", chg: "+0.2%", pos: true, aiPick: false, spark: "M0,10 C5,9 10,8 15,8 C20,8 25,7 30,7 C35,6 38,6 42,5" },
-    { sym: "SILVER", name: "Silver", chg: "-1.1%", pos: false, aiPick: false, spark: "M0,6 C5,8 10,10 15,11 C20,12 25,10 30,12 C35,13 38,13 42,14" },
-    { sym: "ETH-NFT", name: "NFT Index", chg: "+5.4%", pos: true, aiPick: true, spark: "M0,14 C5,12 10,9 15,7 C20,5 25,4 30,3 C35,2 38,1 42,0" },
-    { sym: "RWA-TKN", name: "Real World Assets", chg: "+0.9%", pos: true, aiPick: true, spark: "M0,10 C5,9 10,7 15,7 C20,7 25,6 30,5 C35,4 38,4 42,3" },
-    { sym: "COPPER", name: "Copper", chg: "+1.2%", pos: true, aiPick: false, spark: "M0,12 C5,10 10,8 15,7 C20,6 25,5 30,5 C35,4 38,3 42,3" },
-    { sym: "OIL", name: "Crude Oil", chg: "-2.3%", pos: false, aiPick: false, spark: "M0,4 C5,6 10,9 15,11 C20,13 25,12 30,13 C35,14 38,14 42,15" },
-    { sym: "PLAT", name: "Platinum", chg: "+0.4%", pos: true, aiPick: false, spark: "M0,10 C5,9 10,8 15,8 C20,7 25,7 30,6 C35,6 38,5 42,5" },
+    // ── Crypto: Layer 1 ────────────────────────────────────────
+    { sym: "BTC",   name: "Bitcoin",       chg: "+2.14%",  pos: true,  aiPick: true,  cat: "Layer 1",        spark: "M0,12 C5,10 10,6 15,4 C20,2 25,8 30,6 C35,4 38,2 42,1" },
+    { sym: "ETH",   name: "Ethereum",      chg: "-0.85%",  pos: false, aiPick: true,  cat: "Layer 1",        spark: "M0,10 C5,8 10,5 15,5 C20,5 25,9 30,7 C35,5 38,4 42,2" },
+    { sym: "SOL",   name: "Solana",        chg: "+1.83%",  pos: true,  aiPick: false, cat: "Layer 1",        spark: "M0,4 C5,6 10,8 15,10 C20,12 25,10 30,12 C35,13 38,13 42,14" },
+    { sym: "ADA",   name: "Cardano",       chg: "+0.88%",  pos: true,  aiPick: false, cat: "Layer 1",        spark: "M0,10 C5,9 10,9 15,10 C20,10 25,9 30,9 C35,8 38,8 42,9" },
+    { sym: "AVAX",  name: "Avalanche",     chg: "+2.70%",  pos: true,  aiPick: false, cat: "Layer 1",        spark: "M0,10 C5,8 10,7 15,6 C20,5 25,6 30,5 C35,4 38,3 42,3" },
+    { sym: "NEAR",  name: "NEAR Protocol", chg: "+3.20%",  pos: true,  aiPick: false, cat: "Layer 1",        spark: "M0,12 C5,10 10,8 15,7 C20,6 25,5 30,4 C35,3 38,3 42,2" },
+    // ── Crypto: Layer 2 / Infrastructure ──────────────────────────────
+    { sym: "MATIC", name: "Polygon",       chg: "+1.40%",  pos: true,  aiPick: false, cat: "Layer 2",        spark: "M0,10 C5,9 10,9 15,9 C20,8 25,8 30,7 C35,7 38,7 42,7" },
+    { sym: "ARB",   name: "Arbitrum",      chg: "+3.87%",  pos: true,  aiPick: false, cat: "Layer 2",        spark: "M0,10 C5,8 10,7 15,7 C20,6 25,6 30,5 C35,5 38,4 42,4" },
+    { sym: "DOT",   name: "Polkadot",      chg: "-2.10%",  pos: false, aiPick: false, cat: "Layer 0",        spark: "M0,4 C5,6 10,8 15,10 C20,11 25,12 30,13 C35,13 38,14 42,14" },
+    { sym: "LINK",  name: "Chainlink",     chg: "+1.10%",  pos: true,  aiPick: true,  cat: "Infrastructure", spark: "M0,8 C5,7 10,6 15,6 C20,5 25,6 30,5 C35,5 38,4 42,4" },
+    { sym: "ATOM",  name: "Cosmos",        chg: "-1.80%",  pos: false, aiPick: false, cat: "Infrastructure", spark: "M0,5 C5,7 10,9 15,10 C20,11 25,10 30,11 C35,12 38,12 42,13" },
+    // ── Crypto: Exchange / Payments ─────────────────────────────────────
+    { sym: "BNB",   name: "BNB",           chg: "+1.55%",  pos: true,  aiPick: false, cat: "Exchange Token", spark: "M0,9 C5,8 10,7 15,7 C20,6 25,7 30,6 C35,6 38,5 42,5" },
+    { sym: "XRP",   name: "XRP",           chg: "-1.20%",  pos: false, aiPick: false, cat: "Payments",       spark: "M0,6 C5,7 10,9 15,10 C20,10 25,11 30,10 C35,11 38,11 42,12" },
+    { sym: "LTC",   name: "Litecoin",      chg: "+0.60%",  pos: true,  aiPick: false, cat: "Payments",       spark: "M0,10 C5,9 10,9 15,9 C20,8 25,8 30,8 C35,7 38,7 42,7" },
+    // ── Crypto: DeFi / Community ───────────────────────────────────────────
+    { sym: "UNI",   name: "Uniswap",       chg: "-4.06%",  pos: false, aiPick: false, cat: "DeFi",           spark: "M0,3 C5,5 10,7 15,9 C20,11 25,12 30,13 C35,14 38,14 42,15" },
+    { sym: "DOGE",  name: "Dogecoin",      chg: "+11.62%", pos: true,  aiPick: true,  cat: "Meme/Community", spark: "M0,14 C5,12 10,9 15,7 C20,5 25,4 30,3 C35,2 38,1 42,0" },
+    // ── Commodities ────────────────────────────────────────────────────────
+    { sym: "GOLD",   name: "Gold",         chg: "+0.2%",   pos: true,  aiPick: false, cat: "Commodity",      spark: "M0,10 C5,9 10,8 15,8 C20,8 25,7 30,7 C35,6 38,6 42,5" },
+    { sym: "SILVER", name: "Silver",       chg: "-1.1%",   pos: false, aiPick: false, cat: "Commodity",      spark: "M0,6 C5,8 10,10 15,11 C20,12 25,10 30,12 C35,13 38,13 42,14" },
 ];
+
 
 function Spark({ path, pos }) {
     return (

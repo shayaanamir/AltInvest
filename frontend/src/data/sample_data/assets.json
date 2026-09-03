@@ -278,6 +278,285 @@
       },
       "held": false,
       "watching": false
+    },
+    {
+      "symbol": "BNB",
+      "name": "BNB",
+      "category": "crypto",
+      "subcategory": "Exchange Token",
+      "logoColor": "#f3ba2f",
+      "price": 608.40,
+      "change1h": 0.12,
+      "change24h": 1.55,
+      "change7d": 3.80,
+      "marketCap": 88600000000,
+      "volume24h": 1820000000,
+      "circulatingSupply": 145500000,
+      "ath": 793.35,
+      "athDate": "2024-06-06",
+      "marketRank": 4,
+      "aai": { "score": 64.8, "signal": "HOLD", "confidence": 0.66, "regime": "STABLE" },
+      "risk": {
+        "score": 60.1, "bucket": "Medium", "volatilityIndex": 48, "volatility": 0.22,
+        "volatilityForecast7d": 0.036, "sharpeRatio": 1.05, "liquidityScore": 88,
+        "regulatoryRisk": 55, "marketRisk": 44
+      },
+      "sentiment": { "score": 0.18, "confidence": 0.62, "confidenceLabel": "medium", "trend": "stable" },
+      "prediction": {
+        "probUp30d": 0.60, "probDown30d": 0.40,
+        "currentPrice": 608.40, "prophetPrice30d": 642.00, "lowerBound": 610.00, "upperBound": 675.00,
+        "prediction30dPct": 5.5
+      },
+      "held": false,
+      "watching": false
+    },
+    {
+      "symbol": "XRP",
+      "name": "XRP",
+      "category": "crypto",
+      "subcategory": "Payments",
+      "logoColor": "#00aae4",
+      "price": 2.14,
+      "change1h": -0.08,
+      "change24h": -1.20,
+      "change7d": 2.40,
+      "marketCap": 122400000000,
+      "volume24h": 4300000000,
+      "circulatingSupply": 57200000000,
+      "ath": 3.84,
+      "athDate": "2025-01-16",
+      "marketRank": 3,
+      "aai": { "score": 55.6, "signal": "HOLD", "confidence": 0.57, "regime": "CHOPPY" },
+      "risk": {
+        "score": 51.4, "bucket": "Medium", "volatilityIndex": 57, "volatility": 0.30,
+        "volatilityForecast7d": 0.050, "sharpeRatio": 0.72, "liquidityScore": 91,
+        "regulatoryRisk": 68, "marketRisk": 52
+      },
+      "sentiment": { "score": 0.05, "confidence": 0.53, "confidenceLabel": "medium", "trend": "stable" },
+      "prediction": {
+        "probUp30d": 0.54, "probDown30d": 0.46,
+        "currentPrice": 2.14, "prophetPrice30d": 2.28, "lowerBound": 2.05, "upperBound": 2.52,
+        "prediction30dPct": 6.5
+      },
+      "held": false,
+      "watching": false
+    },
+    {
+      "symbol": "ADA",
+      "name": "Cardano",
+      "category": "crypto",
+      "subcategory": "Layer 1",
+      "logoColor": "#0033ad",
+      "price": 0.692,
+      "change1h": 0.05,
+      "change24h": 0.88,
+      "change7d": -1.60,
+      "marketCap": 24800000000,
+      "volume24h": 620000000,
+      "circulatingSupply": 35800000000,
+      "ath": 3.10,
+      "athDate": "2021-09-02",
+      "marketRank": 10,
+      "aai": { "score": 44.2, "signal": "HOLD", "confidence": 0.49, "regime": "CHOPPY" },
+      "risk": {
+        "score": 45.6, "bucket": "Medium", "volatilityIndex": 61, "volatility": 0.32,
+        "volatilityForecast7d": 0.055, "sharpeRatio": 0.42, "liquidityScore": 75,
+        "regulatoryRisk": 32, "marketRisk": 57
+      },
+      "sentiment": { "score": -0.04, "confidence": 0.47, "confidenceLabel": "low", "trend": "stable" },
+      "prediction": {
+        "probUp30d": 0.48, "probDown30d": 0.52,
+        "currentPrice": 0.692, "prophetPrice30d": 0.671, "lowerBound": 0.635, "upperBound": 0.720,
+        "prediction30dPct": -3.0
+      },
+      "held": false,
+      "watching": false
+    },
+    {
+      "symbol": "AVAX",
+      "name": "Avalanche",
+      "category": "crypto",
+      "subcategory": "Layer 1",
+      "logoColor": "#e84142",
+      "price": 28.60,
+      "change1h": 0.20,
+      "change24h": 2.70,
+      "change7d": 4.10,
+      "marketCap": 11800000000,
+      "volume24h": 380000000,
+      "circulatingSupply": 412000000,
+      "ath": 144.96,
+      "athDate": "2021-11-21",
+      "marketRank": 12,
+      "aai": { "score": 59.1, "signal": "HOLD", "confidence": 0.61, "regime": "STABLE" },
+      "risk": {
+        "score": 52.3, "bucket": "Medium", "volatilityIndex": 54, "volatility": 0.29,
+        "volatilityForecast7d": 0.048, "sharpeRatio": 0.85, "liquidityScore": 79,
+        "regulatoryRisk": 30, "marketRisk": 50
+      },
+      "sentiment": { "score": 0.12, "confidence": 0.54, "confidenceLabel": "medium", "trend": "improving" },
+      "prediction": {
+        "probUp30d": 0.57, "probDown30d": 0.43,
+        "currentPrice": 28.60, "prophetPrice30d": 30.40, "lowerBound": 27.20, "upperBound": 33.10,
+        "prediction30dPct": 6.3
+      },
+      "held": false,
+      "watching": false
+    },
+    {
+      "symbol": "DOT",
+      "name": "Polkadot",
+      "category": "crypto",
+      "subcategory": "Layer 0",
+      "logoColor": "#e6007a",
+      "price": 5.82,
+      "change1h": -0.14,
+      "change24h": -2.10,
+      "change7d": -5.30,
+      "marketCap": 8960000000,
+      "volume24h": 225000000,
+      "circulatingSupply": 1540000000,
+      "ath": 55.00,
+      "athDate": "2021-11-04",
+      "marketRank": 18,
+      "aai": { "score": 38.4, "signal": "SELL", "confidence": 0.61, "regime": "VOLATILE" },
+      "risk": {
+        "score": 42.0, "bucket": "High", "volatilityIndex": 67, "volatility": 0.37,
+        "volatilityForecast7d": 0.062, "sharpeRatio": 0.25, "liquidityScore": 72,
+        "regulatoryRisk": 31, "marketRisk": 62
+      },
+      "sentiment": { "score": -0.13, "confidence": 0.50, "confidenceLabel": "medium", "trend": "deteriorating" },
+      "prediction": {
+        "probUp30d": 0.40, "probDown30d": 0.60,
+        "currentPrice": 5.82, "prophetPrice30d": 5.42, "lowerBound": 5.00, "upperBound": 5.90,
+        "prediction30dPct": -6.9
+      },
+      "held": false,
+      "watching": false
+    },
+    {
+      "symbol": "MATIC",
+      "name": "Polygon",
+      "category": "crypto",
+      "subcategory": "Layer 2",
+      "logoColor": "#8247e5",
+      "price": 0.378,
+      "change1h": 0.09,
+      "change24h": 1.40,
+      "change7d": 0.90,
+      "marketCap": 3730000000,
+      "volume24h": 195000000,
+      "circulatingSupply": 9870000000,
+      "ath": 2.92,
+      "athDate": "2021-12-27",
+      "marketRank": 30,
+      "aai": { "score": 47.5, "signal": "HOLD", "confidence": 0.50, "regime": "CHOPPY" },
+      "risk": {
+        "score": 44.8, "bucket": "Medium", "volatilityIndex": 63, "volatility": 0.34,
+        "volatilityForecast7d": 0.057, "sharpeRatio": 0.38, "liquidityScore": 68,
+        "regulatoryRisk": 38, "marketRisk": 58
+      },
+      "sentiment": { "score": 0.03, "confidence": 0.42, "confidenceLabel": "low", "trend": "stable" },
+      "prediction": {
+        "probUp30d": 0.50, "probDown30d": 0.50,
+        "currentPrice": 0.378, "prophetPrice30d": 0.381, "lowerBound": 0.348, "upperBound": 0.412,
+        "prediction30dPct": 0.8
+      },
+      "held": false,
+      "watching": false
+    },
+    {
+      "symbol": "LTC",
+      "name": "Litecoin",
+      "category": "crypto",
+      "subcategory": "Payments",
+      "logoColor": "#bfbbbb",
+      "price": 78.20,
+      "change1h": 0.07,
+      "change24h": 0.60,
+      "change7d": 1.20,
+      "marketCap": 5890000000,
+      "volume24h": 520000000,
+      "circulatingSupply": 75300000,
+      "ath": 412.96,
+      "athDate": "2021-05-10",
+      "marketRank": 24,
+      "aai": { "score": 51.0, "signal": "HOLD", "confidence": 0.53, "regime": "STABLE" },
+      "risk": {
+        "score": 56.2, "bucket": "Medium", "volatilityIndex": 46, "volatility": 0.23,
+        "volatilityForecast7d": 0.038, "sharpeRatio": 0.61, "liquidityScore": 80,
+        "regulatoryRisk": 25, "marketRisk": 43
+      },
+      "sentiment": { "score": 0.07, "confidence": 0.45, "confidenceLabel": "low", "trend": "stable" },
+      "prediction": {
+        "probUp30d": 0.52, "probDown30d": 0.48,
+        "currentPrice": 78.20, "prophetPrice30d": 79.80, "lowerBound": 74.40, "upperBound": 85.20,
+        "prediction30dPct": 2.0
+      },
+      "held": false,
+      "watching": false
+    },
+    {
+      "symbol": "ATOM",
+      "name": "Cosmos",
+      "category": "crypto",
+      "subcategory": "Infrastructure",
+      "logoColor": "#6f7390",
+      "price": 6.44,
+      "change1h": -0.11,
+      "change24h": -1.80,
+      "change7d": -3.50,
+      "marketCap": 2490000000,
+      "volume24h": 88000000,
+      "circulatingSupply": 387000000,
+      "ath": 44.70,
+      "athDate": "2022-01-17",
+      "marketRank": 35,
+      "aai": { "score": 40.8, "signal": "HOLD", "confidence": 0.48, "regime": "CHOPPY" },
+      "risk": {
+        "score": 43.5, "bucket": "Medium", "volatilityIndex": 65, "volatility": 0.35,
+        "volatilityForecast7d": 0.058, "sharpeRatio": 0.28, "liquidityScore": 65,
+        "regulatoryRisk": 28, "marketRisk": 60
+      },
+      "sentiment": { "score": -0.07, "confidence": 0.43, "confidenceLabel": "low", "trend": "stable" },
+      "prediction": {
+        "probUp30d": 0.44, "probDown30d": 0.56,
+        "currentPrice": 6.44, "prophetPrice30d": 6.14, "lowerBound": 5.78, "upperBound": 6.60,
+        "prediction30dPct": -4.7
+      },
+      "held": false,
+      "watching": false
+    },
+    {
+      "symbol": "NEAR",
+      "name": "NEAR Protocol",
+      "category": "crypto",
+      "subcategory": "Layer 1",
+      "logoColor": "#00c08b",
+      "price": 3.92,
+      "change1h": 0.18,
+      "change24h": 3.20,
+      "change7d": 6.80,
+      "marketCap": 4710000000,
+      "volume24h": 165000000,
+      "circulatingSupply": 1200000000,
+      "ath": 20.44,
+      "athDate": "2022-01-16",
+      "marketRank": 29,
+      "aai": { "score": 62.4, "signal": "HOLD", "confidence": 0.63, "regime": "STABLE" },
+      "risk": {
+        "score": 53.8, "bucket": "Medium", "volatilityIndex": 53, "volatility": 0.28,
+        "volatilityForecast7d": 0.046, "sharpeRatio": 0.90, "liquidityScore": 70,
+        "regulatoryRisk": 26, "marketRisk": 48
+      },
+      "sentiment": { "score": 0.16, "confidence": 0.56, "confidenceLabel": "medium", "trend": "improving" },
+      "prediction": {
+        "probUp30d": 0.58, "probDown30d": 0.42,
+        "currentPrice": 3.92, "prophetPrice30d": 4.21, "lowerBound": 3.74, "upperBound": 4.55,
+        "prediction30dPct": 7.4
+      },
+      "held": false,
+      "watching": false
     }
   ]
 }

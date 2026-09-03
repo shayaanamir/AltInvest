@@ -25,7 +25,7 @@ from models.schemas import SentimentResponse
 
 router = APIRouter(tags=["Sentiment"])
 
-_CACHE_TTL_MINUTES = 60
+_CACHE_TTL_MINUTES = 15
 
 # ── Scope limiter ─────────────────────────────────────────────────────────────
 # Only these asset IDs are processed by the sentiment engine for now.
@@ -145,40 +145,46 @@ def _map_sentiment(result: dict) -> dict:
 def get_all_sentiment():
     """
     Returns latest sentiment for every configured asset.
-    On cold start (empty MongoDB), runs the pipeline for each active asset
-    concurrently rather than sequentially — each pipeline run is dominated
-    by I/O (RSS/CMC) and inference, so running them in parallel threads
-    brings total cold-start time down toward the slowest single asset
-    instead of the sum of all of them.
+    Serves cached results from MongoDB where available; runs the pipeline
+    only for assets that are missing from the cache (not already covered).
+    This means adding new assets to _ACTIVE_ASSETS never requires a full
+    cache flush — only the new ones are run on the next request.
     """
     run_pipeline, get_latest_sentiment, get_sentiment_history, get_all_latest, save_sentiment, ASSETS = _engine()
 
-    # Fetch cached results — only for the active assets
+    # Build a map of asset_id -> cached result for active assets only
     all_cached = get_all_latest()
-    results = [r for r in all_cached if r.get("asset_id") in _ACTIVE_ASSETS]
+    cached_map: dict[str, dict] = {
+        r.get("asset_id"): r
+        for r in all_cached
+        if r.get("asset_id") in _ACTIVE_ASSETS
+    }
 
-    if not results:
-        def _run_one(asset_id: str) -> dict:
+    # Which active assets have no cached entry yet?
+    missing = [a for a in _ACTIVE_ASSETS if a not in cached_map]
+
+    if missing:
+        def _run_one(asset_id: str) -> tuple[str, dict]:
             try:
                 history = get_sentiment_history(asset_id, days=1)
-                result = run_pipeline(asset_id, history=history)
+                raw = run_pipeline(asset_id, history=history)
+                result: dict = raw[0] if isinstance(raw, tuple) else raw
                 save_sentiment(result)
-                return result
+                return asset_id, result
             except Exception as exc:
-                return _neutral(asset_id, str(exc))
+                return asset_id, _neutral(asset_id, str(exc))
 
-        ordered: dict[str, dict] = {}
-        with ThreadPoolExecutor(max_workers=len(_ACTIVE_ASSETS)) as executor:
+        with ThreadPoolExecutor(max_workers=len(missing)) as executor:
             future_to_asset = {
-                executor.submit(_run_one, asset_id): asset_id for asset_id in _ACTIVE_ASSETS
+                executor.submit(_run_one, asset_id): asset_id
+                for asset_id in missing
             }
             for future in as_completed(future_to_asset):
-                asset_id = future_to_asset[future]
-                ordered[asset_id] = future.result()
+                aid, result = future.result()
+                cached_map[aid] = result
 
-        # Preserve _ACTIVE_ASSETS order for a stable response shape
-        results = [ordered[a] for a in _ACTIVE_ASSETS]
-
+    # Return in _ACTIVE_ASSETS order for a stable response shape
+    results = [cached_map[a] for a in _ACTIVE_ASSETS if a in cached_map]
     return [_map_sentiment(r) for r in results]
 
 
@@ -253,3 +259,65 @@ def refresh_sentiment(asset: str):
     result  = run_pipeline(asset_id, history=history)
     save_sentiment(result)
     return JSONResponse(content={"status": "refreshed", "result": _map_sentiment(result)})
+
+
+# ── Background scheduled refresh ───────────────────────────────────────────────
+
+# Pipeline refresh interval — every 15 minutes matches the cache TTL so a
+# user hitting /sentiment always gets data that is less than 15 min stale.
+_REFRESH_INTERVAL_SECONDS = 15 * 60
+
+
+def _refresh_all_assets() -> None:
+    """
+    Runs the full sentiment pipeline for every active asset and saves results
+    to MongoDB.  Intended to be called from the background scheduler thread.
+    """
+    import logging
+    log = logging.getLogger("sentiment_scheduler")
+    log.info("[scheduler] Starting scheduled pipeline refresh for all assets")
+
+    try:
+        run_pipeline, _, get_sentiment_history, _, save_sentiment, _ = _engine()
+    except RuntimeError as exc:
+        log.error(f"[scheduler] Engine unavailable, skipping refresh: {exc}")
+        return
+
+    def _run_one(asset_id: str) -> None:
+        try:
+            history = get_sentiment_history(asset_id, days=1)
+            raw = run_pipeline(asset_id, history=history)
+            # run_pipeline returns dict | tuple — extract the dict
+            result: dict = raw[0] if isinstance(raw, tuple) else raw
+            save_sentiment(result)
+            log.info(f"[scheduler] Refreshed {asset_id.upper()} successfully")
+        except Exception as exc:
+            log.error(f"[scheduler] Failed to refresh {asset_id}: {exc}")
+
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    with ThreadPoolExecutor(max_workers=len(_ACTIVE_ASSETS)) as executor:
+        futures = {executor.submit(_run_one, a): a for a in _ACTIVE_ASSETS}
+        for f in as_completed(futures):
+            pass  # errors already logged inside _run_one
+
+    log.info("[scheduler] Scheduled refresh complete for all assets")
+
+
+def _run_scheduler() -> None:
+    """
+    Infinite loop that calls _refresh_all_assets() every
+    _REFRESH_INTERVAL_SECONDS.  Designed to run in a daemon thread so it
+    stops cleanly when the process exits.
+    """
+    import time
+    import logging
+    log = logging.getLogger("sentiment_scheduler")
+
+    # Initial delay: let the FinBERT warmup finish first before the first run
+    log.info(f"[scheduler] First pipeline run in 90 seconds, then every "
+             f"{_REFRESH_INTERVAL_SECONDS // 60} minutes")
+    time.sleep(90)
+
+    while True:
+        _refresh_all_assets()
+        time.sleep(_REFRESH_INTERVAL_SECONDS)

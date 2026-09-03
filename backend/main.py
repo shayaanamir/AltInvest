@@ -78,9 +78,14 @@ def _warmup_sentiment_engine() -> None:
 
 @app.on_event("startup")
 def on_startup():
-    # Backgrounded so app startup (and other routes) aren't blocked while
-    # the model loads/downloads.
+    # 1. Warm up FinBERT so the first /sentiment request bears no model-load cost.
     threading.Thread(target=_warmup_sentiment_engine, daemon=True).start()
+
+    # 2. Background scheduler: re-runs the full sentiment pipeline for all 15
+    #    active assets every 15 minutes, keeping MongoDB cache always fresh.
+    #    Starts 90 s after launch (after FinBERT has loaded) then loops forever.
+    from routes.sentiment import _run_scheduler
+    threading.Thread(target=_run_scheduler, daemon=True, name="sentiment-scheduler").start()
 
 
 @app.get("/")

@@ -8,26 +8,44 @@ import { confidenceLabelFromValue, getEvidencePhrase as evidencePhrase, bandByTh
    only where the backend has no equivalent field.
    ============================================================ */
 const ASSET_META = {
-  btc:  { symbol: "BTC",  name: "Bitcoin",            category: "crypto", subcategory: "Layer 1",             held: false },
-  eth:  { symbol: "ETH",  name: "Ethereum",           category: "crypto", subcategory: "Layer 1",             held: true  },
-  sol:  { symbol: "SOL",  name: "Solana",             category: "crypto", subcategory: "Layer 1",             held: true  },
-  bayc: { symbol: "BAYC", name: "Bored Ape YC",       category: "nft",    subcategory: "Blue-chip",           held: false },
-  link: { symbol: "LINK", name: "Chainlink",          category: "crypto", subcategory: "Infrastructure",      held: false },
-  doge: { symbol: "DOGE", name: "Dogecoin",           category: "crypto", subcategory: "Meme/Community",      held: false },
-  arb:  { symbol: "ARB",  name: "Arbitrum",           category: "crypto", subcategory: "Layer 2",             held: false },
-  dai:  { symbol: "DAI",  name: "Dai",                category: "crypto", subcategory: "Stablecoin-adjacent", held: true  },
-  uni:  { symbol: "UNI",  name: "Uniswap",            category: "crypto", subcategory: "DeFi",                held: false },
-  base: { symbol: "BASE", name: "Base Ecosystem Index", category: "crypto", subcategory: "Layer 2",           held: false },
+  btc:  { symbol: "BTC",  name: "Bitcoin",              category: "crypto", subcategory: "Layer 1",             held: false },
+  eth:  { symbol: "ETH",  name: "Ethereum",             category: "crypto", subcategory: "Layer 1",             held: true  },
+  sol:  { symbol: "SOL",  name: "Solana",               category: "crypto", subcategory: "Layer 1",             held: true  },
+  bayc: { symbol: "BAYC", name: "Bored Ape YC",         category: "nft",    subcategory: "Blue-chip",           held: false },
+  link: { symbol: "LINK", name: "Chainlink",            category: "crypto", subcategory: "Infrastructure",      held: false },
+  doge: { symbol: "DOGE", name: "Dogecoin",             category: "crypto", subcategory: "Meme/Community",      held: false },
+  arb:  { symbol: "ARB",  name: "Arbitrum",             category: "crypto", subcategory: "Layer 2",             held: false },
+  dai:  { symbol: "DAI",  name: "Dai",                  category: "crypto", subcategory: "Stablecoin-adjacent", held: true  },
+  uni:  { symbol: "UNI",  name: "Uniswap",              category: "crypto", subcategory: "DeFi",                held: false },
+  base: { symbol: "BASE", name: "Base Ecosystem Index", category: "crypto", subcategory: "Layer 2",             held: false },
+  bnb:  { symbol: "BNB",  name: "BNB",                  category: "crypto", subcategory: "Exchange Token",      held: false },
+  xrp:  { symbol: "XRP",  name: "XRP",                  category: "crypto", subcategory: "Payments",            held: false },
+  ada:  { symbol: "ADA",  name: "Cardano",              category: "crypto", subcategory: "Layer 1",             held: false },
+  avax: { symbol: "AVAX", name: "Avalanche",            category: "crypto", subcategory: "Layer 1",             held: false },
+  dot:  { symbol: "DOT",  name: "Polkadot",             category: "crypto", subcategory: "Layer 0",             held: false },
+  matic:{ symbol: "MATIC",name: "Polygon",              category: "crypto", subcategory: "Layer 2",             held: false },
+  ltc:  { symbol: "LTC",  name: "Litecoin",             category: "crypto", subcategory: "Payments",            held: false },
+  atom: { symbol: "ATOM", name: "Cosmos",               category: "crypto", subcategory: "Infrastructure",      held: false },
+  near: { symbol: "NEAR", name: "NEAR Protocol",        category: "crypto", subcategory: "Layer 1",             held: false },
 };
 
 // Filler rows for assets the sentiment engine doesn't cover in this phase.
 const FILLER_ROWS = [
-  { assetId: "link", changePct: 1.10 },
-  { assetId: "doge", changePct: 11.62 },
-  { assetId: "arb",  changePct: 3.87 },
-  { assetId: "dai",  changePct: 0.0 },
-  { assetId: "uni",  changePct: -4.06 },
-  { assetId: "base", changePct: 0.42 },
+  { assetId: "link",  changePct: 1.10  },
+  { assetId: "doge",  changePct: 11.62 },
+  { assetId: "arb",   changePct: 3.87  },
+  { assetId: "dai",   changePct: 0.0   },
+  { assetId: "uni",   changePct: -4.06 },
+  { assetId: "base",  changePct: 0.42  },
+  { assetId: "bnb",   changePct: 1.55  },
+  { assetId: "xrp",   changePct: -1.20 },
+  { assetId: "ada",   changePct: 0.88  },
+  { assetId: "avax",  changePct: 2.70  },
+  { assetId: "dot",   changePct: -2.10 },
+  { assetId: "matic", changePct: 1.40  },
+  { assetId: "ltc",   changePct: 0.60  },
+  { assetId: "atom",  changePct: -1.80 },
+  { assetId: "near",  changePct: 3.20  },
 ];
 
 const THEMES = [
@@ -48,7 +66,11 @@ export const WATCHLIST = ["btc", "eth", "sol"];
 
 // Mirrors backend/routes/sentiment.py::_ACTIVE_ASSETS — keep these two in
 // sync whenever backend coverage changes.
-export const ACTIVE_ASSETS = ["btc", "eth", "sol"];
+export const ACTIVE_ASSETS = [
+  "btc", "eth", "sol", "bnb", "xrp",
+  "ada", "avax", "doge", "dot", "link",
+  "matic", "uni", "ltc", "atom", "near",
+];
 
 /* ---------------- helpers ---------------- */
 
