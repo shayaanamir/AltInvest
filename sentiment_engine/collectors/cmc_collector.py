@@ -18,8 +18,12 @@ from typing import Optional
 
 import requests
 
-from utils.config import CMC_API_KEY, CMC_BASE_URL, CMC_TIMEOUT, ASSETS
-from utils.logger import get_logger
+try:
+    from sentiment_engine.utils.config import CMC_API_KEY, CMC_BASE_URL, CMC_TIMEOUT, ASSETS
+    from sentiment_engine.utils.logger import get_logger
+except ImportError:
+    from utils.config import CMC_API_KEY, CMC_BASE_URL, CMC_TIMEOUT, ASSETS
+    from utils.logger import get_logger
 
 logger = get_logger("cmc_collector")
 

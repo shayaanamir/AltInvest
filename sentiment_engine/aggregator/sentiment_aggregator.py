@@ -20,17 +20,30 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Optional
 
-from collectors.rss_collector  import fetch_articles_for_asset
-from collectors.cmc_collector  import fetch_all_signals
-from nlp.ensemble_scorer       import score_articles as ensemble_score
-from aggregator.recency_weighter import apply_recency_weights
-from aggregator.volume_weighter  import compute_volume_metrics
-from utils.config import (
-    NEWS_NLP_WEIGHT,
-    MARKET_SIGNAL_WEIGHT,
-    TREND_DELTA_THRESHOLD,
-)
-from utils.logger import get_logger
+try:
+    from sentiment_engine.collectors.rss_collector import fetch_articles_for_asset
+    from sentiment_engine.collectors.cmc_collector import fetch_all_signals
+    from sentiment_engine.nlp.ensemble_scorer import score_articles as ensemble_score
+    from sentiment_engine.aggregator.recency_weighter import apply_recency_weights
+    from sentiment_engine.aggregator.volume_weighter import compute_volume_metrics
+    from sentiment_engine.utils.config import (
+        NEWS_NLP_WEIGHT,
+        MARKET_SIGNAL_WEIGHT,
+        TREND_DELTA_THRESHOLD,
+    )
+    from sentiment_engine.utils.logger import get_logger
+except ImportError:
+    from collectors.rss_collector import fetch_articles_for_asset
+    from collectors.cmc_collector import fetch_all_signals
+    from nlp.ensemble_scorer import score_articles as ensemble_score
+    from aggregator.recency_weighter import apply_recency_weights
+    from aggregator.volume_weighter import compute_volume_metrics
+    from utils.config import (
+        NEWS_NLP_WEIGHT,
+        MARKET_SIGNAL_WEIGHT,
+        TREND_DELTA_THRESHOLD,
+    )
+    from utils.logger import get_logger
 
 logger = get_logger("sentiment_aggregator")
 

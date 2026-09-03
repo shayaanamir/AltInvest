@@ -22,12 +22,12 @@ const ASSET_META = {
 
 // Filler rows for assets the sentiment engine doesn't cover in this phase.
 const FILLER_ROWS = [
-  { assetId: "link", score: 71, evidence: "well corroborated",  tone: "Positive",  changePct: 0.44 },
-  { assetId: "doge", score: 69, evidence: "thin evidence",      tone: "Positive",  changePct: 11.62 },
-  { assetId: "arb",  score: 52, evidence: "thin evidence",      tone: "Mixed",     changePct: 3.87 },
-  { assetId: "dai",  score: 50, evidence: "fairly supported",   tone: "Neutral",   changePct: 0.01 },
-  { assetId: "uni",  score: 34, evidence: "fairly supported",   tone: "Negative",  changePct: -4.06 },
-  { assetId: "base", score: null, evidence: null, tone: null,   changePct: 0.0 },
+  { assetId: "link", changePct: 1.10 },
+  { assetId: "doge", changePct: 11.62 },
+  { assetId: "arb",  changePct: 3.87 },
+  { assetId: "dai",  changePct: 0.0 },
+  { assetId: "uni",  changePct: -4.06 },
+  { assetId: "base", changePct: 0.42 },
 ];
 
 const THEMES = [
@@ -46,7 +46,28 @@ const NFT_CHATTER_FILLER = [
 
 export const WATCHLIST = ["btc", "eth", "sol"];
 
+// Mirrors backend/routes/sentiment.py::_ACTIVE_ASSETS — keep these two in
+// sync whenever backend coverage changes.
+export const ACTIVE_ASSETS = ["btc", "eth", "sol"];
+
 /* ---------------- helpers ---------------- */
+
+const FETCH_TIMEOUT_MS = 18000;         // GET requests (list/history)
+const REFRESH_TIMEOUT_MS = 30000;       // POST /refresh — triggers a full pipeline run
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = FETCH_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+function describeFetchError(e) {
+  return e.name === "AbortError" ? "request timed out" : e.message;
+}
 
 function normaliseRecord(raw) {
   return {
@@ -69,7 +90,7 @@ function normaliseRecord(raw) {
 async function fetchAllSentimentRaw() {
   if (USE_MOCK) return asset_sentiment;
   try {
-    const res = await fetch(`${API_BASE_URL}/sentiment`);
+    const res = await fetchWithTimeout(`${API_BASE_URL}/sentiment`);
     if (!res.ok) throw new Error(`status ${res.status}`);
     const data = await res.json();
     if (Array.isArray(data) && data.length) {
@@ -86,7 +107,7 @@ async function fetchAllSentimentRaw() {
     }
     return asset_sentiment;
   } catch (e) {
-    console.warn(`sentimentApi: backend unavailable, using sample data (${e.message})`);
+    console.warn(`sentimentApi: backend unavailable, using sample data (${describeFetchError(e)})`);
     return asset_sentiment;
   }
 }
@@ -94,13 +115,13 @@ async function fetchAllSentimentRaw() {
 async function fetchHistoryRaw(assetId, days) {
   if (!USE_MOCK) {
     try {
-      const res = await fetch(`${API_BASE_URL}/sentiment/${assetId}/history?days=${days}`);
+      const res = await fetchWithTimeout(`${API_BASE_URL}/sentiment/${assetId}/history?days=${days}`);
       if (res.ok) {
         const json = await res.json();
         if (json.history?.length >= 2) return json.history;
       }
     } catch (e) {
-      console.warn(`sentimentApi: history fetch failed, using synthetic series (${e.message})`);
+      console.warn(`sentimentApi: history fetch failed, using synthetic series (${describeFetchError(e)})`);
     }
   }
   return null;
@@ -272,6 +293,8 @@ export const sentimentApi = {
       })
       .filter(Boolean);
 
+    // Consistently unscored — no fake numbers, matching how BASE already
+    // rendered before this fix.
     const fillerRows = FILLER_ROWS.map((f) => {
       const meta = ASSET_META[f.assetId];
       return {
@@ -281,8 +304,8 @@ export const sentimentApi = {
         category: meta.category,
         subcategory: meta.subcategory,
         held: meta.held,
-        score: f.score,
-        readLabel: f.score == null ? "Not covered yet" : `${f.tone}, ${f.evidence}`,
+        score: null,
+        readLabel: "Not covered yet",
         changePct: f.changePct,
       };
     });
@@ -404,11 +427,23 @@ export const sentimentApi = {
   refreshAsset: async (assetId) => {
     if (USE_MOCK) return sentimentApi.getAssetDetail(assetId);
     try {
-      await fetch(`${API_BASE_URL}/sentiment/${assetId}/refresh`, { method: "POST" });
+      await fetchWithTimeout(`${API_BASE_URL}/sentiment/${assetId}/refresh`, { method: "POST" }, REFRESH_TIMEOUT_MS);
     } catch (e) {
-      console.warn("sentimentApi: refresh failed", e);
+      console.warn(`sentimentApi: refresh failed for ${assetId} (${describeFetchError(e)})`);
     }
     return sentimentApi.getAssetDetail(assetId);
+  },
+
+  /** Refreshes every actively-covered asset — used by the Hub's "Refresh Pipeline" button. */
+  refreshAllActive: async () => {
+    if (USE_MOCK) return;
+    await Promise.all(
+      ACTIVE_ASSETS.map((assetId) =>
+        fetchWithTimeout(`${API_BASE_URL}/sentiment/${assetId}/refresh`, { method: "POST" }, REFRESH_TIMEOUT_MS).catch(
+          (e) => console.warn(`sentimentApi: refresh failed for ${assetId} (${describeFetchError(e)})`)
+        )
+      )
+    );
   },
 
   getSwitchableAssets: async () => {

@@ -16,6 +16,7 @@ import path_setup  # noqa: F401  -- must be first
 
 from datetime import datetime, timezone, timedelta
 from typing import List
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse
@@ -29,7 +30,11 @@ _CACHE_TTL_MINUTES = 60
 # ── Scope limiter ─────────────────────────────────────────────────────────────
 # Only these asset IDs are processed by the sentiment engine for now.
 # Expand this list when you're ready to add more assets.
-_ACTIVE_ASSETS = ["btc"]
+_ACTIVE_ASSETS = [
+    "btc", "eth", "sol", "bnb", "xrp",
+    "ada", "avax", "doge", "dot", "link",
+    "matic", "uni", "ltc", "atom", "near",
+]
 
 
 def _engine():
@@ -40,14 +45,24 @@ def _engine():
     Raises ImportError with a clear message if deps are missing.
     """
     try:
-        from aggregator.sentiment_aggregator import run_pipeline
-        from storage.mongo_handler import (
-            get_latest_sentiment,
-            get_sentiment_history,
-            get_all_latest,
-            save_sentiment,
-        )
-        from utils.config import ASSETS
+        try:
+            from sentiment_engine.aggregator.sentiment_aggregator import run_pipeline
+            from sentiment_engine.storage.mongo_handler import (
+                get_latest_sentiment,
+                get_sentiment_history,
+                get_all_latest,
+                save_sentiment,
+            )
+            from sentiment_engine.utils.config import ASSETS
+        except ImportError:
+            from aggregator.sentiment_aggregator import run_pipeline
+            from storage.mongo_handler import (
+                get_latest_sentiment,
+                get_sentiment_history,
+                get_all_latest,
+                save_sentiment,
+            )
+            from utils.config import ASSETS
         return run_pipeline, get_latest_sentiment, get_sentiment_history, get_all_latest, save_sentiment, ASSETS
     except ImportError as exc:
         raise RuntimeError(
@@ -130,7 +145,11 @@ def _map_sentiment(result: dict) -> dict:
 def get_all_sentiment():
     """
     Returns latest sentiment for every configured asset.
-    On cold start (empty MongoDB), runs the pipeline for each asset.
+    On cold start (empty MongoDB), runs the pipeline for each active asset
+    concurrently rather than sequentially — each pipeline run is dominated
+    by I/O (RSS/CMC) and inference, so running them in parallel threads
+    brings total cold-start time down toward the slowest single asset
+    instead of the sum of all of them.
     """
     run_pipeline, get_latest_sentiment, get_sentiment_history, get_all_latest, save_sentiment, ASSETS = _engine()
 
@@ -139,16 +158,26 @@ def get_all_sentiment():
     results = [r for r in all_cached if r.get("asset_id") in _ACTIVE_ASSETS]
 
     if not results:
-        # Cold start: run the pipeline only for active assets
-        results = []
-        for asset_id in _ACTIVE_ASSETS:
+        def _run_one(asset_id: str) -> dict:
             try:
                 history = get_sentiment_history(asset_id, days=1)
-                result  = run_pipeline(asset_id, history=history)
+                result = run_pipeline(asset_id, history=history)
                 save_sentiment(result)
-                results.append(result)
+                return result
             except Exception as exc:
-                results.append(_neutral(asset_id, str(exc)))
+                return _neutral(asset_id, str(exc))
+
+        ordered: dict[str, dict] = {}
+        with ThreadPoolExecutor(max_workers=len(_ACTIVE_ASSETS)) as executor:
+            future_to_asset = {
+                executor.submit(_run_one, asset_id): asset_id for asset_id in _ACTIVE_ASSETS
+            }
+            for future in as_completed(future_to_asset):
+                asset_id = future_to_asset[future]
+                ordered[asset_id] = future.result()
+
+        # Preserve _ACTIVE_ASSETS order for a stable response shape
+        results = [ordered[a] for a in _ACTIVE_ASSETS]
 
     return [_map_sentiment(r) for r in results]
 

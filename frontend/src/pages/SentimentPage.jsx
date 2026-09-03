@@ -18,7 +18,9 @@ export default function SentimentPage() {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      await sentimentApi.refreshAsset("btc");
+      // Refreshes every actively-covered asset (btc/eth/sol), not just BTC —
+      // keeps the button's behavior matching what the Hub actually displays.
+      await sentimentApi.refreshAllActive();
       setRefreshKey((prev) => prev + 1);
     } catch (e) {
       console.error("Pipeline refresh failed:", e);

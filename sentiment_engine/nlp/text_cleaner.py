@@ -11,8 +11,12 @@ from __future__ import annotations
 import re
 import unicodedata
 
-from utils.config import FINBERT_MAX_TOKENS
-from utils.logger import get_logger
+try:
+    from sentiment_engine.utils.config import FINBERT_MAX_TOKENS
+    from sentiment_engine.utils.logger import get_logger
+except ImportError:
+    from utils.config import FINBERT_MAX_TOKENS
+    from utils.logger import get_logger
 
 logger = get_logger("text_cleaner")
 

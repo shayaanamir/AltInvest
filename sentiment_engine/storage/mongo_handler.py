@@ -23,14 +23,24 @@ from pymongo import MongoClient, DESCENDING
 # pyrefly: ignore [missing-import]
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 
-from utils.config import (
-    MONGO_URI,
-    MONGO_DB,
-    COLLECTION_SENTIMENT,
-    COLLECTION_SENTIMENT_HISTORY,
-    COLLECTION_RAW_ARTICLES,
-)
-from utils.logger import get_logger
+try:
+    from sentiment_engine.utils.config import (
+        MONGO_URI,
+        MONGO_DB,
+        COLLECTION_SENTIMENT,
+        COLLECTION_SENTIMENT_HISTORY,
+        COLLECTION_RAW_ARTICLES,
+    )
+    from sentiment_engine.utils.logger import get_logger
+except ImportError:
+    from utils.config import (
+        MONGO_URI,
+        MONGO_DB,
+        COLLECTION_SENTIMENT,
+        COLLECTION_SENTIMENT_HISTORY,
+        COLLECTION_RAW_ARTICLES,
+    )
+    from utils.logger import get_logger
 
 logger = get_logger("mongo_handler")
 

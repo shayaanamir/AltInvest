@@ -20,8 +20,12 @@ from typing import Optional
 import feedparser
 import requests
 
-from utils.config import RSS_FEEDS, ASSETS, MAX_ARTICLE_AGE_HOURS
-from utils.logger import get_logger
+try:
+    from sentiment_engine.utils.config import RSS_FEEDS, ASSETS, MAX_ARTICLE_AGE_HOURS
+    from sentiment_engine.utils.logger import get_logger
+except ImportError:
+    from utils.config import RSS_FEEDS, ASSETS, MAX_ARTICLE_AGE_HOURS
+    from utils.logger import get_logger
 
 logger = get_logger("rss_collector")
 

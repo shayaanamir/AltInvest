@@ -15,8 +15,12 @@ from __future__ import annotations
 
 from typing import Optional
 
-from utils.config import FINBERT_MODEL
-from utils.logger import get_logger
+try:
+    from sentiment_engine.utils.config import FINBERT_MODEL
+    from sentiment_engine.utils.logger import get_logger
+except ImportError:
+    from utils.config import FINBERT_MODEL
+    from utils.logger import get_logger
 
 logger = get_logger("finbert_scorer")
 

@@ -42,7 +42,10 @@ def get_dashboard_stats(user_id: ObjectId = Depends(get_current_user_id)):
 
     sentiment_scores = []
     try:
-        from storage.mongo_handler import get_all_latest
+        try:
+            from sentiment_engine.storage.mongo_handler import get_all_latest
+        except ImportError:
+            from storage.mongo_handler import get_all_latest
         for doc in get_all_latest():
             score = doc.get("sentiment_score")
             if score is not None:

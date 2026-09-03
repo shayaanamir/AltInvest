@@ -13,11 +13,18 @@ Final ensemble score across all articles is a trust-weighted average.
 
 from __future__ import annotations
 
-from utils.config import VADER_WEIGHT, FINBERT_WEIGHT
-from utils.logger import get_logger
-from nlp.vader_scorer   import score_articles as vader_score_articles
-from nlp.finbert_scorer import score_articles as finbert_score_articles
-from nlp.text_cleaner   import prepare_articles
+try:
+    from sentiment_engine.utils.config import VADER_WEIGHT, FINBERT_WEIGHT
+    from sentiment_engine.utils.logger import get_logger
+    from sentiment_engine.nlp.vader_scorer import score_articles as vader_score_articles
+    from sentiment_engine.nlp.finbert_scorer import score_articles as finbert_score_articles
+    from sentiment_engine.nlp.text_cleaner import prepare_articles
+except ImportError:
+    from utils.config import VADER_WEIGHT, FINBERT_WEIGHT
+    from utils.logger import get_logger
+    from nlp.vader_scorer import score_articles as vader_score_articles
+    from nlp.finbert_scorer import score_articles as finbert_score_articles
+    from nlp.text_cleaner import prepare_articles
 
 logger = get_logger("ensemble_scorer")
 

@@ -22,16 +22,28 @@ import os
 # Make sure imports resolve from project root
 sys.path.insert(0, os.path.dirname(__file__))
 
-from aggregator.sentiment_aggregator import run_pipeline
-from storage.mongo_handler import (
-    get_sentiment_history,
-    save_sentiment,
-    save_raw_articles,
-)
-from collectors.rss_collector import fetch_articles_for_asset
-from nlp.finbert_scorer import warmup_pipeline
-from utils.config import ASSETS
-from utils.logger import get_logger
+try:
+    from sentiment_engine.aggregator.sentiment_aggregator import run_pipeline
+    from sentiment_engine.storage.mongo_handler import (
+        get_sentiment_history,
+        save_sentiment,
+        save_raw_articles,
+    )
+    from sentiment_engine.collectors.rss_collector import fetch_articles_for_asset
+    from sentiment_engine.nlp.finbert_scorer import warmup_pipeline
+    from sentiment_engine.utils.config import ASSETS
+    from sentiment_engine.utils.logger import get_logger
+except ImportError:
+    from aggregator.sentiment_aggregator import run_pipeline
+    from storage.mongo_handler import (
+        get_sentiment_history,
+        save_sentiment,
+        save_raw_articles,
+    )
+    from collectors.rss_collector import fetch_articles_for_asset
+    from nlp.finbert_scorer import warmup_pipeline
+    from utils.config import ASSETS
+    from utils.logger import get_logger
 
 logger = get_logger("main")
 

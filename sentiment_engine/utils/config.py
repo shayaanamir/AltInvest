@@ -49,6 +49,56 @@ ASSETS = {
         "cmc_id": 52,
         "keywords": ["ripple", "xrp"],
     },
+    "ada": {
+        "cmc_symbol": "ADA",
+        "cmc_id": 2010,
+        "keywords": ["cardano", "ada"],
+    },
+    "avax": {
+        "cmc_symbol": "AVAX",
+        "cmc_id": 5805,
+        "keywords": ["avalanche", "avax"],
+    },
+    "doge": {
+        "cmc_symbol": "DOGE",
+        "cmc_id": 74,
+        "keywords": ["dogecoin", "doge", "shiba"],
+    },
+    "dot": {
+        "cmc_symbol": "DOT",
+        "cmc_id": 6636,
+        "keywords": ["polkadot", "dot", "parachain"],
+    },
+    "link": {
+        "cmc_symbol": "LINK",
+        "cmc_id": 1975,
+        "keywords": ["chainlink", "link", "oracle"],
+    },
+    "matic": {
+        "cmc_symbol": "POL",
+        "cmc_id": 3890,
+        "keywords": ["polygon", "matic", "pol"],
+    },
+    "uni": {
+        "cmc_symbol": "UNI",
+        "cmc_id": 7083,
+        "keywords": ["uniswap", "uni", "defi"],
+    },
+    "ltc": {
+        "cmc_symbol": "LTC",
+        "cmc_id": 2,
+        "keywords": ["litecoin", "ltc"],
+    },
+    "atom": {
+        "cmc_symbol": "ATOM",
+        "cmc_id": 3794,
+        "keywords": ["cosmos", "atom", "ibc"],
+    },
+    "near": {
+        "cmc_symbol": "NEAR",
+        "cmc_id": 6535,
+        "keywords": ["near protocol", "near"],
+    },
 }
 
 # ── RSS Feed Sources ───────────────────────────────────────────────────────────

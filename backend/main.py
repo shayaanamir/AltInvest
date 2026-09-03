@@ -1,5 +1,7 @@
 import path_setup  # noqa: F401 — must be first, fixes sys.path before any local imports
 
+import threading
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -56,6 +58,29 @@ app.include_router(compare.router)
 app.include_router(search.router)
 app.include_router(profile.router)
 app.include_router(settings.router)
+
+
+def _warmup_sentiment_engine() -> None:
+    """
+    Loads FinBERT/PyTorch into memory once, in a background thread, so the
+    first real /sentiment request doesn't pay the ~10s-2min model-load cost.
+    Mirrors sentiment_engine/main.py's warmup_pipeline() call for the CLI.
+    Failures are swallowed here — routes/sentiment.py's own lazy-import
+    guards still handle a missing/broken engine at request time.
+    """
+    try:
+        from sentiment_engine.nlp.finbert_scorer import warmup_pipeline
+        warmup_pipeline()
+        print("[startup] Sentiment engine (FinBERT) warmed up successfully.")
+    except Exception as exc:
+        print(f"[startup] Sentiment engine warmup skipped/failed: {exc}")
+
+
+@app.on_event("startup")
+def on_startup():
+    # Backgrounded so app startup (and other routes) aren't blocked while
+    # the model loads/downloads.
+    threading.Thread(target=_warmup_sentiment_engine, daemon=True).start()
 
 
 @app.get("/")

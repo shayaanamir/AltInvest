@@ -43,8 +43,8 @@ def _get_real_sentiment(asset: str) -> dict:
     Falls back to mock data if the engine is unavailable.
     """
     try:
-        from storage.mongo_handler import get_latest_sentiment, get_sentiment_history, save_sentiment
-        from aggregator.sentiment_aggregator import run_pipeline
+        from sentiment_engine.storage.mongo_handler import get_latest_sentiment, get_sentiment_history, save_sentiment
+        from sentiment_engine.aggregator.sentiment_aggregator import run_pipeline
 
         asset_id = asset.lower()
         cached = get_latest_sentiment(asset_id)
@@ -55,7 +55,10 @@ def _get_real_sentiment(asset: str) -> dict:
             }
 
         history = get_sentiment_history(asset_id, days=1)
-        result = run_pipeline(asset_id, history=history)
+        raw = run_pipeline(asset_id, history=history)
+        # run_pipeline returns dict | tuple[dict, list[dict]] depending on
+        # return_raw_articles. Since we don't set that flag, raw is always a dict.
+        result: dict = raw[0] if isinstance(raw, tuple) else raw
         save_sentiment(result)
         return {
             "sentiment_score": result.get("sentiment_score", 0.0),
