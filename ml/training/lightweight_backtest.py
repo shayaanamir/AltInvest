@@ -22,6 +22,7 @@
 #   python training/lightweight_backtest.py --up-thresh 0.55 --down-thresh 0.55
 
 import sys
+import json
 import argparse
 import logging
 from pathlib import Path
@@ -76,6 +77,7 @@ def run_backtest(up_threshold=0.50, down_threshold=0.50, risk_threshold=70.0):
 
     # 3. Approximate risk_score from volatility_14d (percentile rank 0-100)
     risk_proxy = (test_df["volatility_14d"].rank(pct=True) * 100).values
+    test_df["risk_score"] = risk_proxy          # persist as a real column
 
     # 4. Generate signals
     X_test      = test_df[DIRECTION_FEATURES].values
@@ -84,18 +86,38 @@ def run_backtest(up_threshold=0.50, down_threshold=0.50, risk_threshold=70.0):
     up_idx      = class_names.index("UP")
     down_idx    = class_names.index("DOWN")
 
-    signals = []
+    signals      = []
+    per_row_results = []
+    MODEL_VERSION = "wbtc-direction-v1"
+
     for i in range(len(test_df)):
+        p_up   = float(proba[i, up_idx])
+        p_down = float(proba[i, down_idx])
+        t_ret  = float(test_df["return_30d"].iloc[i])
+        r_sc   = float(risk_proxy[i])
+
         sig = generate_signal(
-            prob_up=float(proba[i, up_idx]),
-            prob_down=float(proba[i, down_idx]),
-            trend_return=float(test_df["return_30d"].iloc[i]),
-            risk_score=float(risk_proxy[i]),
+            prob_up=p_up,
+            prob_down=p_down,
+            trend_return=t_ret,
+            risk_score=r_sc,
             up_threshold=up_threshold,
             down_threshold=down_threshold,
             risk_threshold=risk_threshold,
         )
         signals.append(sig)
+
+        trend = "Bullish" if t_ret > 0 else ("Bearish" if t_ret < 0 else "Neutral")
+
+        per_row_results.append({
+            "asset":         "WBTC",
+            "timestamp":     test_df["timestamp"].iloc[i].isoformat(),
+            "trend":         trend,
+            "confidence":    round(max(p_up, p_down), 4),
+            "risk_score":    round(r_sc, 2),
+            "signal":        sig,
+            "model_version": MODEL_VERSION,
+        })
 
     test_df["signal"]    = signals
     test_df["prob_up"]   = proba[:, up_idx]
@@ -171,6 +193,12 @@ def run_backtest(up_threshold=0.50, down_threshold=0.50, risk_threshold=70.0):
     print()
     print(sep)
 
+    # Structured per-row output -- first 5 rows
+    print()
+    print("  [Structured Output -- first 5 rows]")
+    print(json.dumps(per_row_results[:5], indent=2))
+    print()
+
     return {
         "test_rows":        len(test_df),
         "signal_counts":    sig_counts,
@@ -179,6 +207,7 @@ def run_backtest(up_threshold=0.50, down_threshold=0.50, risk_threshold=70.0):
         "cum_bnh_pct":      round(cum_bnh * 100, 2),
         "sharpe":           round(sharpe, 3) if not np.isnan(sharpe) else None,
         "max_drawdown_pct": round(max_dd * 100, 2),
+        "per_row_results":  per_row_results,       # full list of structured dicts
     }
 
 

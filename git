@@ -1,0 +1,6 @@
+      PID    PPID    PGID     WINPID   TTY         UID    STIME COMMAND
+     1042       1    1042      20276  ?         197609 12:41:24 /usr/bin/bash
+     1044    1042    1042      22128  ?         197609 12:41:24 /usr/bin/find
+     1218       1    1218      20792  cons0     197609 14:20:53 /usr/bin/bash
+     1045    1042    1042      32880  ?         197609 12:41:24 /usr/bin/head
+     1306    1218    1306       5984  cons0     197609 14:21:06 /usr/bin/PS
