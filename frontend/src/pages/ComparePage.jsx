@@ -23,6 +23,7 @@ export default function ComparePage() {
   });
   const [assets, setAssets] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const stateIds = location.state?.ids;
@@ -38,11 +39,14 @@ export default function ComparePage() {
       setAssets([]);
       return;
     }
+    let cancelled = false;
     setLoading(true);
-    compareApi.getByIds(selectedIds).then((a) => {
-      setAssets(a);
-      setLoading(false);
-    });
+    setError(null);
+    compareApi.getByIds(selectedIds)
+      .then((a) => { if (!cancelled) setAssets(a); })
+      .catch((e) => { if (!cancelled) { console.error(e); setAssets([]); setError(e); } })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [selectedIds]);
 
   const handleConfirm = (ids) => {
@@ -77,8 +81,14 @@ export default function ComparePage() {
 
         {!hasSelection ? (
           <CompareEmptyState onChooseAssets={() => setModalOpen(true)} />
-        ) : loading || assets.length === 0 ? (
+        ) : loading ? (
           <div className="sv2-muted sv2-small">Loading comparison…</div>
+        ) : error ? (
+          <div className="sv2-muted sv2-small">Couldn't load the comparison: {error.message}</div>
+        ) : assets.length < 2 ? (
+          <div className="sv2-muted sv2-small">
+            Fewer than two of the selected items exist in the database. Edit the selection to pick covered assets.
+          </div>
         ) : (
           <div className="cmp-flex-col">
             <div className="cmp-asset-cards-grid" data-count={assets.length}>
@@ -96,7 +106,6 @@ export default function ComparePage() {
 
         {modalOpen && (
           <CompareAssetModal
-            initialSelected={selectedIds}
             initialSelection={selectedIds}
             onClose={() => setModalOpen(false)}
             onConfirm={handleConfirm}

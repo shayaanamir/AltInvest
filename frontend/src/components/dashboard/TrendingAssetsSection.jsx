@@ -9,7 +9,7 @@ import AssetAvatar from "../shared/AssetAvatar";
 import { IconStar } from "../icons";
 
 export default function TrendingAssetsSection() {
-  const { data: assets } = useAsync(() => dashboardApi.getTrendingAssets(), []);
+  const { data: assets, error } = useAsync(() => dashboardApi.getTrendingAssets(), []);
   const [favorites, setFavorites] = useState([]);
   const navigate = useNavigate();
 
@@ -23,14 +23,18 @@ export default function TrendingAssetsSection() {
           <h2 className="dv2-section-title">Trending assets</h2>
           <p className="dv2-section-sub">Weighted toward the markets you chose and what you already follow</p>
         </div>
-        <a href="#" className="dv2-section-link" onClick={(e) => { e.preventDefault(); navigate("/asset-detail"); }}>
+        <a href="#" className="dv2-section-link" onClick={(e) => { e.preventDefault(); navigate("/discover"); }}>
           See all →
         </a>
       </div>
 
       <div className="dv2-asset-grid">
-        {!assets ? (
+        {error ? (
+          <div className="sv2-muted sv2-small">Couldn't load trending assets: {error.message}</div>
+        ) : !assets ? (
           <div className="sv2-muted sv2-small">Loading trending assets…</div>
+        ) : assets.length === 0 ? (
+          <div className="sv2-muted sv2-small">No market data available yet.</div>
         ) : (
           assets.map((a) => {
             const positive = a.change24h >= 0;
@@ -40,7 +44,7 @@ export default function TrendingAssetsSection() {
                 key={a.symbol}
                 className="sv2-card dv2-asset-card"
                 style={{ cursor: "pointer" }}
-                onClick={() => navigate("/asset-detail")}
+                onClick={() => navigate(`/asset-detail?symbol=${a.symbol}`)}
               >
                 <div className="dv2-asset-card-top">
                   <div className="dv2-asset-id">
@@ -74,9 +78,9 @@ export default function TrendingAssetsSection() {
 
                 <div className="dv2-asset-badges">
                   <span className={`dv2-badge dv2-badge-aai ${getAaiTierClass(a.aai?.score)}`}>
-                    AAI {Math.round(a.aai?.score ?? 0)}
+                    AAI {a.aai?.score != null ? Math.round(a.aai.score) : "—"}
                   </span>
-                  <span className="sv2-badge-pill">{a.aai?.signal}</span>
+                  {a.aai?.signal && <span className="sv2-badge-pill">{a.aai.signal}</span>}
                   {watching && (
                     <span className="sv2-badge-pill dv2-badge-watching" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                       <IconStar size={11} filled={true} /> Watching

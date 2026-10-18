@@ -2,81 +2,26 @@
 routes/discover.py
 
 Unified browse endpoint across crypto assets and NFT collections. Supports
-category filtering, a few sort keys, and basic range filters on price/AAI.
+category filtering, sorting and range filters. Public, but when a valid
+Bearer token is sent the `held` / `watching` flags reflect that user.
 """
 import path_setup  # noqa: F401
 
-import json
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from bson import ObjectId
+from fastapi import APIRouter, Depends, HTTPException, Query
 
+from auth.dependencies import get_optional_user_id
+from controllers.market_controller import build_crypto_items, build_nft_items
 from models.schemas import DiscoverItem
-from db.queries import (
-    get_asset_market_data_all_latest,
-    get_nft_market_data_all_latest,
-    get_all_latest_aai_scores,
-    get_supported_assets,
-    get_nft_collections,
-)
 
 router = APIRouter(tags=["Discover"])
 
-_SORT_KEYS = {"price", "change_24h", "change_7d", "market_cap", "volume_24h", "aai_score"}
-
-
-def _build_crypto_items() -> list[dict]:
-    assets = {a["asset_id"]: a for a in get_supported_assets()}
-    market = get_asset_market_data_all_latest()
-    aai_scores = get_all_latest_aai_scores("crypto")
-
-    items = []
-    for m in market:
-        asset_id = m["asset_id"]
-        meta = assets.get(asset_id, {})
-        aai = aai_scores.get(asset_id)
-        items.append({
-            "category": "crypto",
-            "id": asset_id,
-            "symbol": meta.get("symbol", asset_id),
-            "name": meta.get("name", asset_id),
-            "logo_color": meta.get("logo_color"),
-            "price": m.get("price"),
-            "change_24h": m.get("change_24h"),
-            "change_7d": m.get("change_7d"),
-            "market_cap": m.get("market_cap"),
-            "volume_24h": m.get("volume_24h"),
-            "aai_score": aai.get("aai_score") if aai else None,
-            "verified": None,
-        })
-    return items
-
-
-def _build_nft_items() -> list[dict]:
-    collections = {c["slug"]: c for c in get_nft_collections()}
-    market = get_nft_market_data_all_latest()
-    aai_scores = get_all_latest_aai_scores("nft")
-
-    items = []
-    for m in market:
-        slug = m["slug"]
-        meta = collections.get(slug, {})
-        aai = aai_scores.get(slug)
-        items.append({
-            "category": "nft",
-            "id": slug,
-            "symbol": meta.get("symbol"),
-            "name": meta.get("name", slug),
-            "logo_color": meta.get("banner_color"),
-            "price": m.get("floor_usd"),
-            "change_24h": m.get("change_24h"),
-            "change_7d": m.get("change_7d"),
-            "market_cap": None,
-            "volume_24h": m.get("volume_24h_eth"),
-            "aai_score": aai.get("aai_score") if aai else None,
-            "verified": meta.get("verified"),
-        })
-    return items
+_SORT_KEYS = {
+    "price", "change_24h", "change_7d", "market_cap", "volume_24h",
+    "aai_score", "volatility", "name",
+}
 
 
 # ── GET /discover ────────────────────────────────────────────────────────────
@@ -86,10 +31,16 @@ def discover(
     category: str = Query("all", pattern="^(all|crypto|nft)$"),
     sort: str = Query("market_cap"),
     order: str = Query("desc", pattern="^(asc|desc)$"),
+    q: Optional[str] = Query(None, description="Name / symbol substring"),
+    subcategory: Optional[str] = Query(None),
     min_price: Optional[float] = Query(None),
     max_price: Optional[float] = Query(None),
     min_aai: Optional[float] = Query(None),
+    min_sentiment: Optional[float] = Query(None, description="-1..1"),
+    max_volatility: Optional[float] = Query(None),
+    min_market_cap: Optional[float] = Query(None),
     verified_only: bool = Query(False),
+    user_id: Optional[ObjectId] = Depends(get_optional_user_id),
 ):
     if sort not in _SORT_KEYS:
         raise HTTPException(status_code=422, detail=f"sort must be one of {sorted(_SORT_KEYS)}.")
@@ -97,22 +48,43 @@ def discover(
     try:
         items: list[dict] = []
         if category in ("all", "crypto"):
-            items += _build_crypto_items()
+            items += build_crypto_items(user_id, with_sparklines=True)
         if category in ("all", "nft"):
-            items += _build_nft_items()
+            items += build_nft_items(user_id)
     except Exception as exc:
         raise HTTPException(status_code=503, detail=f"Unable to reach the database: {exc}")
 
+    if q:
+        needle = q.strip().lower()
+        items = [i for i in items
+                 if needle in (i.get("name") or "").lower() or needle in (i.get("symbol") or "").lower()]
+    if subcategory:
+        items = [i for i in items if i.get("subcategory") == subcategory]
     if min_price is not None:
         items = [i for i in items if (i.get("price") or 0) >= min_price]
     if max_price is not None:
         items = [i for i in items if (i.get("price") or 0) <= max_price]
+    # The client only sends a range filter once it differs from its default, so an
+    # active filter means "must have a value inside the range".
     if min_aai is not None:
-        items = [i for i in items if (i.get("aai_score") or 0) >= min_aai]
+        items = [i for i in items if i.get("aai_score") is not None and i["aai_score"] >= min_aai]
+    if min_sentiment is not None:
+        items = [i for i in items if i.get("sentiment_score") is not None and i["sentiment_score"] >= min_sentiment]
+    if max_volatility is not None:
+        items = [i for i in items if i.get("volatility") is not None and i["volatility"] <= max_volatility]
+    if min_market_cap is not None:
+        items = [i for i in items if i.get("market_cap") is not None and i["market_cap"] >= min_market_cap]
     if verified_only:
         items = [i for i in items if i.get("verified") is True]
 
     reverse = order == "desc"
-    items.sort(key=lambda i: (i.get(sort) if i.get(sort) is not None else -1), reverse=reverse)
+    if sort == "name":
+        items.sort(key=lambda i: (i.get("name") or "").lower(), reverse=reverse)
+    else:
+        # Missing values always sort last, whichever direction was asked for.
+        present = [i for i in items if i.get(sort) is not None]
+        missing = [i for i in items if i.get(sort) is None]
+        present.sort(key=lambda i: i[sort], reverse=reverse)
+        items = present + missing
 
     return items

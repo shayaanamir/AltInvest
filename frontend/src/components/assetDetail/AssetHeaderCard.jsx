@@ -5,10 +5,10 @@ import { IconArrowLeft, IconStar, IconClock, IconPlus, IconColumns, IconBell } f
 
 export default function AssetHeaderCard({ header, onBack }) {
   const navigate = useNavigate();
-  const [watching, setWatching] = useState(false);
+  const [watching, setWatching] = useState(!!header?.watching);
 
   if (!header) return null;
-  const positive = header.change24h >= 0;
+  const positive = (header.change24h ?? 0) >= 0;
 
   return (
     <>

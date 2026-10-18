@@ -5,7 +5,7 @@ import { formatPct } from "../../utils/formatters";
 import { getAaiTierClass } from "../../utils/scoring";
 
 export default function TrendingCollectionsSection() {
-  const { data: collections } = useAsync(() => dashboardApi.getTrendingCollections(), []);
+  const { data: collections, error } = useAsync(() => dashboardApi.getTrendingCollections(), []);
   const navigate = useNavigate();
 
   return (
@@ -15,14 +15,18 @@ export default function TrendingCollectionsSection() {
           <h2 className="dv2-section-title">Trending collections</h2>
           <p className="dv2-section-sub">Floor price and AAI across covered NFT collections</p>
         </div>
-        <a href="#" className="dv2-section-link" onClick={(e) => { e.preventDefault(); navigate("/asset-detail"); }}>
+        <a href="#" className="dv2-section-link" onClick={(e) => { e.preventDefault(); navigate("/discover"); }}>
           See all →
         </a>
       </div>
 
       <div className="dv2-collection-grid">
-        {!collections ? (
+        {error ? (
+          <div className="sv2-muted sv2-small">Couldn't load trending collections: {error.message}</div>
+        ) : !collections ? (
           <div className="sv2-muted sv2-small">Loading trending collections…</div>
+        ) : collections.length === 0 ? (
+          <div className="sv2-muted sv2-small">No NFT market data available yet.</div>
         ) : (
           collections.map((c) => {
             const positive = c.change24h >= 0;
@@ -31,7 +35,7 @@ export default function TrendingCollectionsSection() {
                 key={c.slug}
                 className="sv2-card dv2-collection-card"
                 style={{ cursor: "pointer" }}
-                onClick={() => navigate("/asset-detail")}
+                onClick={() => navigate("/discover")}
               >
                 {/* No image field in nftCollections.json — a tinted gradient
                     derived from each collection's own bannerColor stands in
@@ -44,12 +48,12 @@ export default function TrendingCollectionsSection() {
                   <div className="dv2-collection-top">
                     <span className="dv2-collection-name">{c.name}</span>
                     <span className={`dv2-badge dv2-badge-aai ${getAaiTierClass(c.aai?.score)}`}>
-                      AAI {Math.round(c.aai?.score ?? 0)}
+                      AAI {c.aai?.score != null ? Math.round(c.aai.score) : "—"}
                     </span>
                   </div>
                   <div className="dv2-collection-price-row">
                     <div>
-                      <div className="dv2-collection-price">{c.floorEth.toFixed(2)} ETH</div>
+                      <div className="dv2-collection-price">{c.floorEth != null ? `${c.floorEth.toFixed(2)} ETH` : "—"}</div>
                       <div className="dv2-collection-price-label">floor price</div>
                     </div>
                     <span className={`dv2-asset-change ${positive ? "positive" : "negative"}`}>

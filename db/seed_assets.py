@@ -81,6 +81,43 @@ MARKET_DATA = [
 ]
 
 
+# ── Remaining covered assets, built from the same sample JSON ───────────────
+# The sample catalogue has 18 assets; the hand-written rows above cover 9.
+# Fields the sample data doesn't have (description, website, related_assets)
+# are left empty rather than invented.
+
+def _add_remaining_from_sample():
+    import json
+    path = os.path.join(os.path.dirname(__file__), "..", "frontend", "src", "data",
+                        "sample_data", "assets.json")
+    with open(path, encoding="utf-8") as f:
+        sample = json.load(f)["assets"]
+
+    have = {a["asset_id"] for a in ASSETS}
+    for s in sample:
+        if s["symbol"] in have:
+            continue
+        ASSETS.append({
+            "asset_id": s["symbol"], "symbol": s["symbol"], "name": s["name"],
+            "category": s["category"], "subcategory": s.get("subcategory"),
+            "logo_color": s.get("logoColor"), "logo_url": None,
+            "description": None, "website": None,
+            "all_time_high": s.get("ath"), "ath_date": s.get("athDate"),
+            "related_assets": [],
+        })
+        MARKET_DATA.append({
+            "asset_id": s["symbol"], "price": s["price"],
+            "change_1h": s.get("change1h"), "change_24h": s.get("change24h"),
+            "change_7d": s.get("change7d"), "market_cap": s.get("marketCap"),
+            "volume_24h": s.get("volume24h"),
+            "circulating_supply": s.get("circulatingSupply"),
+            "market_rank": s.get("marketRank"),
+        })
+
+
+_add_remaining_from_sample()
+
+
 def seed():
     db = get_db()
 
@@ -93,8 +130,13 @@ def seed():
         print(f"[assets] upserted {a['asset_id']}")
 
     for m in MARKET_DATA:
-        doc = {**m, "timestamp": NOW}
-        db.asset_market_data.insert_one(doc)
+        # One snapshot per asset per day, so re-running the seed doesn't stack duplicates.
+        day = NOW.strftime("%Y-%m-%dT00:00:00Z")
+        db.asset_market_data.update_one(
+            {"asset_id": m["asset_id"], "date": day},
+            {"$set": {**m, "date": day, "timestamp": NOW}},
+            upsert=True,
+        )
         print(f"[asset_market_data] inserted snapshot for {m['asset_id']}")
 
     db.assets.create_index("asset_id", unique=True)

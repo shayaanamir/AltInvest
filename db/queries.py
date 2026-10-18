@@ -57,6 +57,90 @@ def upsert_aai_score(asset: str, payload: dict) -> None:
         upsert=True
     )
 
+def _latest_per_key(collection: str, key: str) -> dict:
+    """{key_value: latest_doc} for collections keyed by a field + timestamp."""
+    db = get_db()
+    pipeline = [
+        {"$sort": {"timestamp": -1}},
+        {"$group": {"_id": f"${key}", "doc": {"$first": "$$ROOT"}}},
+        {"$replaceRoot": {"newRoot": "$doc"}},
+        {"$project": {"_id": 0}},
+    ]
+    return {d[key]: d for d in db[collection].aggregate(pipeline, allowDiskUse=True)}
+
+
+def get_all_latest_predictions() -> dict:
+    return _latest_per_key("predictions", "asset")
+
+
+def get_all_latest_risk_scores() -> dict:
+    return _latest_per_key("risk_scores", "asset")
+
+
+def get_all_latest_risk_breakdowns() -> dict:
+    return _latest_per_key("risk_breakdown", "asset")
+
+
+def get_all_latest_nft_liquidity() -> dict:
+    return _latest_per_key("nft_liquidity", "slug")
+
+
+def get_daily_price_series(asset: str, days: int) -> list:
+    """
+    Oldest-first [{date: 'YYYY-MM-DD', price}] — last hourly price of each UTC day
+    over the last `days` days. `prices` is hourly, so this caps the scan.
+    """
+    db = get_db()
+    rows = db.prices.find(
+        {"asset": asset.upper()},
+        sort=[("timestamp", -1)],
+        limit=(days + 1) * 24,
+        projection={"_id": 0, "timestamp": 1, "price": 1},
+    )
+    by_day: dict[str, float] = {}
+    for r in rows:  # newest first, so the first hit per day is that day's close
+        ts = r["timestamp"]
+        day = ts.strftime("%Y-%m-%d") if hasattr(ts, "strftime") else str(ts)[:10]
+        by_day.setdefault(day, r["price"])
+    return [{"date": d, "price": by_day[d]} for d in sorted(by_day)][-(days + 1):]
+
+
+def get_price_sparklines(assets: list[str], hours: int = 168, points: int = 28) -> dict:
+    """{ASSET: [price, ...]} — the last `hours` of hourly prices, thinned to ~`points`."""
+    db = get_db()
+    out = {}
+    step = max(1, hours // points)
+    for a in assets:
+        rows = list(db.prices.find(
+            {"asset": a.upper()}, sort=[("timestamp", -1)], limit=hours,
+            projection={"_id": 0, "price": 1},
+        ))
+        series = [r["price"] for r in reversed(rows)]
+        out[a.upper()] = series[::step] if len(series) > points else series
+    return out
+
+
+def get_user_flags(user_id) -> dict:
+    """
+    {"held": {...}, "watching": {...}} keyed by crypto symbol / nft slug, from
+    the user's portfolio_holdings and watchlists. Empty sets for anonymous callers.
+    """
+    held: set[str] = set()
+    watching: set[str] = set()
+    if user_id is None:
+        return {"held": held, "watching": watching}
+    db = get_db()
+    for h in db.portfolio_holdings.find({"user_id": user_id}, projection={"symbol": 1, "nft_collection_slug": 1}):
+        key = h.get("symbol") or h.get("nft_collection_slug")
+        if key:
+            held.add(key)
+    for w in db.watchlists.find({"user_id": user_id}, projection={"items": 1}):
+        for it in w.get("items", []):
+            if it.get("symbol_or_slug"):
+                watching.add(it["symbol_or_slug"])
+    return {"held": held, "watching": watching}
+
+
 def get_user_by_email(email: str) -> dict | None:
     db = get_db()
     return db.users.find_one({"email": email.lower().strip()})

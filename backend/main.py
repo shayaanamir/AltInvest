@@ -87,6 +87,10 @@ def on_startup():
     from routes.sentiment import _run_scheduler
     threading.Thread(target=_run_scheduler, daemon=True, name="sentiment-scheduler").start()
 
+    # 3. Daily portfolio snapshots (Dashboard 1W/1M/3M/1Y performance chart).
+    from controllers.snapshot_controller import run_snapshot_scheduler
+    threading.Thread(target=run_snapshot_scheduler, daemon=True, name="portfolio-snapshots").start()
+
 
 @app.get("/")
 def root():

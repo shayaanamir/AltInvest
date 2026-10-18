@@ -263,9 +263,9 @@ def refresh_sentiment(asset: str):
 
 # ── Background scheduled refresh ───────────────────────────────────────────────
 
-# Pipeline refresh interval — every 15 minutes matches the cache TTL so a
-# user hitting /sentiment always gets data that is less than 15 min stale.
-_REFRESH_INTERVAL_SECONDS = 15 * 60
+# Pipeline refresh interval — every 2 minutes, well inside the 15 min cache
+# TTL, so a user hitting /sentiment always gets data that is fresh.
+_REFRESH_INTERVAL_SECONDS = 2 * 60
 
 
 def _refresh_all_assets() -> None:

@@ -14,8 +14,11 @@ export default function CompareRiskReturnChart({ assets }) {
   const chartW = W - padLeft - padRight;
   const chartH = H - padTop - padBottom;
 
-  const xs = assets.map((a) => a.volatility ?? 0);
-  const ys = assets.map((a) => a.expectedReturn ?? 0);
+  // An asset is only plotted when the database has both a volatility and a model return for it.
+  const plottable = (a) => a.volatility != null && a.expectedReturn != null;
+  const missing = assets.filter((a) => !plottable(a));
+  const xs = assets.filter(plottable).map((a) => a.volatility);
+  const ys = assets.filter(plottable).map((a) => a.expectedReturn);
   const xMin = 0;
   const xMax = Math.max(100, ...xs);
   const yMin = Math.min(0, ...ys) - 5;
@@ -36,8 +39,9 @@ export default function CompareRiskReturnChart({ assets }) {
     let closest = 0;
     let minDist = Infinity;
     assets.forEach((a, i) => {
-      const px = toX(a.volatility ?? 0);
-      const py = toY(a.expectedReturn ?? 0);
+      if (!plottable(a)) return;
+      const px = toX(a.volatility);
+      const py = toY(a.expectedReturn);
       const dist = Math.hypot(px - mouseX, py - mouseY);
       if (dist < minDist) {
         minDist = dist;
@@ -47,9 +51,9 @@ export default function CompareRiskReturnChart({ assets }) {
     setHoveredIdx(closest);
   };
 
-  const activeAsset = hoveredIdx != null ? assets[hoveredIdx] : null;
-  const activeX = activeAsset ? toX(activeAsset.volatility ?? 0) : 0;
-  const activeY = activeAsset ? toY(activeAsset.expectedReturn ?? 0) : 0;
+  const activeAsset = hoveredIdx != null && plottable(assets[hoveredIdx]) ? assets[hoveredIdx] : null;
+  const activeX = activeAsset ? toX(activeAsset.volatility) : 0;
+  const activeY = activeAsset ? toY(activeAsset.expectedReturn) : 0;
 
   return (
     <div className="cmp-card cmp-chart-card" style={{ position: "relative" }}>
@@ -83,15 +87,16 @@ export default function CompareRiskReturnChart({ assets }) {
           )}
 
           {assets.map((a, i) => {
-            const x = toX(a.volatility ?? 0);
-            const y = toY(a.expectedReturn ?? 0);
+            if (!plottable(a)) return null;
+            const x = toX(a.volatility);
+            const y = toY(a.expectedReturn);
             const isHovered = hoveredIdx === i;
             return (
               <g key={a.id}>
                 {isHovered && <circle cx={x} cy={y} r="11" fill={CMP_PALETTE[i % CMP_PALETTE.length]} opacity="0.3" />}
                 <circle cx={x} cy={y} r={isHovered ? 8 : 6.5} fill={CMP_PALETTE[i % CMP_PALETTE.length]} stroke="#fff" strokeWidth="1.5" />
                 <text x={x} y={H - 8} fontSize="10" fontWeight={isHovered ? "700" : "400"} textAnchor="middle" fill="var(--sv2-text-mute)">
-                  {Math.round(a.volatility ?? 0)}%
+                  {Math.round(a.volatility)}%
                 </text>
               </g>
             );
@@ -118,7 +123,7 @@ export default function CompareRiskReturnChart({ assets }) {
               {activeAsset.name} ({activeAsset.symbol})
             </div>
             <div style={{ fontSize: 12, color: CMP_PALETTE[hoveredIdx % CMP_PALETTE.length], fontWeight: 800 }}>
-              Volatility (X): {Math.round(activeAsset.volatility ?? 0)}% · Return (Y): {activeAsset.expectedReturn > 0 ? "+" : ""}{activeAsset.expectedReturn}%
+              Volatility (X): {Math.round(activeAsset.volatility)}% · Return (Y): {activeAsset.expectedReturn > 0 ? "+" : ""}{activeAsset.expectedReturn}%
             </div>
           </div>
         )}
@@ -132,6 +137,11 @@ export default function CompareRiskReturnChart({ assets }) {
           </span>
         ))}
       </div>
+      {missing.length > 0 && (
+        <div className="cmp-chart-sub" style={{ marginTop: 8 }}>
+          Not plotted (no volatility or model return stored): {missing.map((a) => a.symbol || a.name).join(", ")}
+        </div>
+      )}
     </div>
   );
 }

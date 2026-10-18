@@ -30,9 +30,11 @@ export default function SentimentReadCard({ sentimentSnippet }) {
         </div>
       </div>
 
-      <div className="adt-panel-sub adt-mt-10">
-        {confidence}% confidence · {confidenceLabel(confidence)}
-      </div>
+      {confidence != null && (
+        <div className="adt-panel-sub adt-mt-10">
+          {confidence}% confidence · {confidenceLabel(confidence)}
+        </div>
+      )}
 
       <button className="adt-see-sentiment-link" onClick={() => navigate("/sentiment")}>
         See full sentiment →

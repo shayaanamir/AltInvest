@@ -10,7 +10,7 @@ export default function PortfolioPerformanceCard() {
   const [containerRef, dims] = useElementSize({ W: 560, H: 220 });
 
   const { data: stats } = useAsync(() => dashboardApi.getMarketStats(), []);
-  const { data: rawSeries, loading } = useAsync(() => dashboardApi.getPerformanceHistory(filter), [filter]);
+  const { data: rawSeries, loading, error } = useAsync(() => dashboardApi.getPerformanceHistory(filter), [filter]);
   const series = rawSeries || [];
 
   const hasHoldings = stats && stats.holdingsCount > 0;
@@ -18,6 +18,12 @@ export default function PortfolioPerformanceCard() {
   let chartContent = null;
   if (hasHoldings && series.length >= 2) {
     chartContent = <TimeSeriesAreaChart data={series} width={dims.W} height={dims.H} color="var(--sv2-accent)" gradientId="dv2PerfGrad" />;
+  } else if (hasHoldings) {
+    chartContent = (
+      <div className="sv2-muted sv2-small" style={{ width: "100%", textAlign: "center" }}>
+        No portfolio history has been recorded for this range yet.
+      </div>
+    );
   }
 
   return (
@@ -45,6 +51,10 @@ export default function PortfolioPerformanceCard() {
         ) : loading ? (
           <div className="sv2-muted sv2-small" style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
             Loading…
+          </div>
+        ) : error ? (
+          <div className="sv2-muted sv2-small" style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            Couldn't load performance: {error.message}
           </div>
         ) : (
           <div ref={containerRef} style={{ width: "100%", height: "100%", display: "flex", alignItems: "center" }}>{chartContent}</div>

@@ -13,7 +13,7 @@ export default function AaiScoreCard({ aaiPanel }) {
         <span className="adt-aai-score">{Math.round(score)}</span>
         <div>
           <div className={`adt-aai-signal ${signal.tone}`}>{signal.label.toUpperCase()}</div>
-          <div className="adt-panel-sub">{Math.round(confidence * 100)}% confidence</div>
+          {confidence != null && <div className="adt-panel-sub">{Math.round(confidence * 100)}% confidence</div>}
         </div>
       </div>
       <div className="adt-progress-track">

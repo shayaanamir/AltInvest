@@ -4,7 +4,17 @@ import { formatCurrencyCompact, formatCurrencyFull } from "../../utils/formatter
 import MiniMoodGauge from "./MiniMoodGauge";
 
 export default function DashboardStatCards() {
-  const { data: stats } = useAsync(() => dashboardApi.getMarketStats(), []);
+  const { data: stats, error } = useAsync(() => dashboardApi.getMarketStats(), []);
+
+  if (error) {
+    return (
+      <div className="dv2-stats-grid">
+        <div className="sv2-card dv2-stat-card sv2-muted sv2-small" style={{ gridColumn: "1 / -1" }}>
+          Couldn't load market stats: {error.message}
+        </div>
+      </div>
+    );
+  }
 
   if (!stats) {
     return (
@@ -62,7 +72,9 @@ export default function DashboardStatCards() {
           </div>
           <MiniMoodGauge score={stats.globalSentiment} />
         </div>
-        <div className="dv2-stat-sub">{stats.marketMoodConfidence}% AI confidence</div>
+        <div className="dv2-stat-sub">
+          {stats.marketMoodConfidence != null ? `${stats.marketMoodConfidence}% AI confidence` : "No sentiment readings yet"}
+        </div>
       </div>
     </div>
   );

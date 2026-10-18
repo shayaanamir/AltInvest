@@ -1,45 +1,50 @@
-import assetsData from "../data/sample_data/assets.json";
-import nftData from "../data/sample_data/nftCollections.json";
-import assetDetailData from "../data/sample_data/assetDetail.json";
-import nftDetailData from "../data/sample_data/nftDetail.json";
+import { apiFetch } from "./apiClient";
 
-export const CRYPTO_ITEMS = assetsData.assets.map((a) => ({
-  id: a.symbol,
-  type: "crypto",
-  symbol: a.symbol,
-  name: a.name,
-  subcategory: a.subcategory,
-  color: a.logoColor,
-  price: a.price,
-  changePct: a.change24h,
-  aaiScore: a.aai.score,
-  signal: a.aai.signal,
-  sentimentScore: a.sentiment.score,
-  volatility: a.risk.volatilityIndex,
-  marketCap: a.marketCap,
-  held: a.held,
-  watching: a.watching,
-  sparkline: (assetDetailData[a.symbol]?.priceHistory || []).map((p) => p.price),
-}));
+// Maps one row of the backend's unified universe (GET /discover) to the shape
+// the Discover and Compare UI reads. Fields the database has no value for
+// stay null — nothing is filled in here.
+export function mapUniverseItem(r) {
+  const nft = r.category === "nft";
+  return {
+    id: r.id,
+    type: r.category,
+    category: r.category,
+    symbol: r.symbol,
+    name: r.name,
+    subcategory: r.subcategory,
+    subtitle: r.subcategory,
+    color: r.logo_color,
+    avatarColor: r.logo_color,
+    price: r.price,
+    priceLabel: nft && r.floor_eth != null ? `${r.floor_eth.toFixed(2)} ETH` : null,
+    changePct: r.change_24h,
+    change24h: r.change_24h,
+    change7d: r.change_7d,
+    marketCap: r.market_cap,
+    volume24h: r.volume_24h,
+    aaiScore: r.aai_score,
+    signal: r.signal,
+    aaiSignal: r.signal,
+    riskScore: r.risk_score,
+    volatility: r.volatility,
+    expectedReturn: r.expected_return,
+    sentimentScore: r.sentiment_score,
+    sentimentConfidence: r.sentiment_confidence,
+    sentimentConfidenceLabel: r.sentiment_confidence_label,
+    sentimentTrend: r.sentiment_trend,
+    verified: r.verified,
+    held: !!r.held,
+    watching: !!r.watching,
+    sparkline: r.sparkline || [],
+  };
+}
 
-export const NFT_ITEMS = nftData.collections.map((c) => ({
-  id: c.slug,
-  type: "nft",
-  symbol: c.symbol,
-  name: c.name,
-  subcategory: c.subcategory,
-  color: c.bannerColor,
-  price: c.floorUsd,
-  changePct: c.change24h,
-  aaiScore: c.aai?.score,
-  signal: c.aai?.signal,
-  sentimentScore: c.sentiment?.score,
-  volatility: c.liquidity?.illiquidityRiskScore ?? c.risk?.illiquidityRiskScore ?? c.risk?.volatilityIndex ?? 50,
-  marketCap: c.marketCapUsd ?? (c.floorUsd && c.supply ? c.floorUsd * c.supply : 0),
-  held: c.held,
-  watching: c.watching,
-  sparkline: (nftDetailData[c.slug]?.floorHistory || []).map((p) => p.floorEth ?? p.floorUsd ?? p.price ?? 0),
-}));
-
-export const ALL_ITEMS = [...CRYPTO_ITEMS, ...NFT_ITEMS];
-
+/** GET /discover — `params` are the backend's query params (undefined values are dropped). */
+export async function fetchUniverse(params = {}) {
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== "") qs.set(k, String(v));
+  });
+  const rows = await apiFetch(`/discover${qs.toString() ? `?${qs}` : ""}`);
+  return rows.map(mapUniverseItem);
+}

@@ -13,9 +13,11 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 import math
 import random
+import zlib
 from datetime import datetime, timedelta, timezone
 
 from db.mongo_connection import get_db
+from db import seed_assets   # module-level lists only; importing it touches no database
 
 # ── Config ──────────────────────────────────────────────────────────────────
 
@@ -35,6 +37,31 @@ ASSET_PARAMS = {
     "UNI":  {"start_price": 6.80,     "annual_vol": 0.75, "annual_drift": -0.10, "base_volume": 150_000_000},
     "BASE": {"start_price": 17.50,    "annual_vol": 0.70, "annual_drift": 0.20, "base_volume": 30_000_000},
 }
+
+# The other nine covered assets (see seed_assets.py). Volume level comes from their
+# asset_market_data row; start price only sets the shape — every series is rescaled
+# below so it ends exactly at the asset's current price.
+_EXTRA_SHAPE = {
+    "BNB":   (420.0, 0.55, 0.30),
+    "XRP":   (0.55,  0.80, 0.50),
+    "ADA":   (0.45,  0.80, 0.20),
+    "AVAX":  (35.0,  0.85, -0.10),
+    "DOT":   (7.5,   0.75, -0.15),
+    "MATIC": (0.90,  0.80, -0.30),
+    "LTC":   (85.0,  0.60, 0.00),
+    "ATOM":  (9.0,   0.75, -0.10),
+    "NEAR":  (2.4,   0.90, 0.25),
+}
+_VOLUME_24H = {m["asset_id"]: m.get("volume_24h") for m in seed_assets.MARKET_DATA}
+for _sym, (_start, _vol, _drift) in _EXTRA_SHAPE.items():
+    ASSET_PARAMS[_sym] = {
+        "start_price": _start, "annual_vol": _vol, "annual_drift": _drift,
+        "base_volume": _VOLUME_24H.get(_sym) or 100_000_000,
+    }
+
+# Current price per asset: every series is rescaled to end here, so the history
+# lines up with the price shown elsewhere in the app.
+TARGET_PRICE = {m["asset_id"]: m["price"] for m in seed_assets.MARKET_DATA}
 
 HOURS_PER_YEAR = 365 * HOURS_PER_DAY
 
@@ -87,10 +114,14 @@ def generate_volume_series(base_volume: float, n_hours: int, seed: int,
 
 
 def build_asset_docs(asset: str, params: dict, n_hours: int, end_time: datetime) -> list[dict]:
-    seed = abs(hash(asset)) % (2 ** 31)
+    seed = zlib.crc32(asset.encode())   # stable across runs (hash() is salted per process)
     prices = generate_gbm_series(
         params["start_price"], params["annual_vol"], params["annual_drift"], n_hours, seed
     )
+    target = TARGET_PRICE.get(asset)
+    if target and prices[-1]:
+        scale = target / prices[-1]
+        prices = [p * scale for p in prices]
     returns = [
         (prices[i] - prices[i - 1]) / prices[i - 1] if i > 0 else 0.0
         for i in range(n_hours)

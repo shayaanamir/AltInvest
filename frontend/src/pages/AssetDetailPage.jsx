@@ -16,7 +16,7 @@ export default function AssetDetailPage({ onNavigate }) {
   const navigate = useNavigate();
   const symbol = searchParams.get("symbol") || "BTC";
 
-  const { data: detail, loading } = useAsync(() => assetDetailApi.getAssetDetail(symbol), [symbol]);
+  const { data: detail, loading, error } = useAsync(() => assetDetailApi.getAssetDetail(symbol), [symbol]);
 
   const handleBack = () => {
     if (onNavigate) onNavigate("Dashboard");
@@ -26,8 +26,20 @@ export default function AssetDetailPage({ onNavigate }) {
   return (
     <div className="sv2">
       <div className="sv2-page adt-page">
-        {loading || !detail ? (
+        {loading ? (
           <div className="sv2-muted sv2-small">Loading asset…</div>
+        ) : error ? (
+          <>
+            <button className="adt-back-btn" onClick={handleBack}>Back</button>
+            <div className="sv2-muted sv2-small">Couldn't load {symbol}: {error.message}</div>
+          </>
+        ) : !detail ? (
+          <>
+            <button className="adt-back-btn" onClick={handleBack}>Back</button>
+            <div className="sv2-muted sv2-small">
+              No asset "{symbol}" in the database. Crypto assets only for now — NFT collections don't have a detail page yet.
+            </div>
+          </>
         ) : (
           <>
             <AssetHeaderCard header={detail.header} onBack={handleBack} />
@@ -49,7 +61,7 @@ export default function AssetDetailPage({ onNavigate }) {
 
             <AboutAssetCard name={detail.header.name} about={detail.about} aaiScore={detail.aaiPanel?.score} />
 
-            <SimilarAssetsSection symbol={detail.symbol} relatedAssets={detail.relatedAssets} />
+            <SimilarAssetsSection assets={detail.similarAssets} />
           </>
         )}
       </div>

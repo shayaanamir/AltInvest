@@ -1,8 +1,54 @@
 import { USE_MOCK } from "../config";
 import { apiFetch } from "./apiClient";
 import watchlistsData from "../data/sample_data/watchlists.json";
-import { ALL_ITEMS } from "./assetRepository";
+import assetsData from "../data/sample_data/assets.json";
+import nftData from "../data/sample_data/nftCollections.json";
+import assetDetailData from "../data/sample_data/assetDetail.json";
+import nftDetailData from "../data/sample_data/nftDetail.json";
 import { getAaiSignal } from "../utils/scoring";
+
+// Watchlists still enrich their rows from the bundled sample catalogue (out of scope for the
+// backend-only Dashboard/Discover/Compare/Asset Detail change). Moved here from assetRepository.js
+// unchanged so the Watchlists page behaves exactly as before.
+const CRYPTO_ITEMS = assetsData.assets.map((a) => ({
+  id: a.symbol,
+  type: "crypto",
+  symbol: a.symbol,
+  name: a.name,
+  subcategory: a.subcategory,
+  color: a.logoColor,
+  price: a.price,
+  changePct: a.change24h,
+  aaiScore: a.aai.score,
+  signal: a.aai.signal,
+  sentimentScore: a.sentiment.score,
+  volatility: a.risk.volatilityIndex,
+  marketCap: a.marketCap,
+  held: a.held,
+  watching: a.watching,
+  sparkline: (assetDetailData[a.symbol]?.priceHistory || []).map((p) => p.price),
+}));
+
+const NFT_ITEMS = nftData.collections.map((c) => ({
+  id: c.slug,
+  type: "nft",
+  symbol: c.symbol,
+  name: c.name,
+  subcategory: c.subcategory,
+  color: c.bannerColor,
+  price: c.floorUsd,
+  changePct: c.change24h,
+  aaiScore: c.aai?.score,
+  signal: c.aai?.signal,
+  sentimentScore: c.sentiment?.score,
+  volatility: c.liquidity?.illiquidityRiskScore ?? c.risk?.illiquidityRiskScore ?? c.risk?.volatilityIndex ?? 50,
+  marketCap: c.marketCapUsd ?? (c.floorUsd && c.supply ? c.floorUsd * c.supply : 0),
+  held: c.held,
+  watching: c.watching,
+  sparkline: (nftDetailData[c.slug]?.floorHistory || []).map((p) => p.floorEth ?? p.floorUsd ?? p.price ?? 0),
+}));
+
+const ALL_ITEMS = [...CRYPTO_ITEMS, ...NFT_ITEMS];
 
 function findMatch(raw) {
   if (raw.type === "crypto") return ALL_ITEMS.find((a) => a.type === "crypto" && a.symbol === raw.symbol);

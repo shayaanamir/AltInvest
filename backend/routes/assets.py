@@ -2,9 +2,11 @@
 import path_setup  # noqa
 from datetime import datetime, timezone, timedelta
 
-from fastapi import APIRouter, HTTPException, Query
+from bson import ObjectId
+from fastapi import APIRouter, Depends, HTTPException, Query
+from auth.dependencies import get_optional_user_id
 from models.schemas import AssetItem, AssetHeader, AAIResponse
-from typing import List
+from typing import List, Optional
 
 router = APIRouter(tags=["Assets"])
 
@@ -23,6 +25,166 @@ def get_assets():
     # Fallback if MongoDB isn't up yet
     print("MongoDB not available, returning mock assets")
     return [{"asset": "BTC", "name": "Bitcoin"}, {"asset": "ETH", "name": "Ethereum"}]
+
+
+# ── GET /assets/{symbol}/detail ─────────────────────────────────────────────
+
+def _risk_level(value: float, higher_is_better: bool = False) -> str:
+    """Level words understood by the frontend's riskLevelTone()."""
+    if higher_is_better:  # liquidity
+        return "excellent" if value >= 80 else "good" if value >= 60 else "fair" if value >= 40 else "high"
+    return "low" if value < 35 else "medium" if value < 65 else "high"
+
+
+@router.get("/assets/{symbol}/detail")
+def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_optional_user_id)):
+    """
+    Everything the Asset Detail page renders, in one call. Every value comes
+    from the database; a section with no backing row is null (or empty) rather
+    than estimated:
+      forecast        -> null when `predictions` has no row for the asset
+      aai_panel       -> null when `aai_scores` has no row
+      risk_overview   -> [] when `risk_breakdown` has no row
+    """
+    from datetime import date
+    from controllers.market_controller import (
+        aai_signal, build_crypto_items, live_sentiment_by_symbol, sentiment_confidence_label,
+    )
+    from db.queries import (
+        get_asset, get_asset_market_data_latest, get_daily_price_series,
+        get_latest_aai_score, get_latest_prediction, get_latest_risk_breakdown,
+        get_price_sparklines, get_user_flags,
+    )
+    from db.mongo_connection import get_db
+
+    symbol = symbol.upper()
+    try:
+        asset = get_asset(symbol)
+        if not asset:
+            raise HTTPException(status_code=404, detail=f"Asset '{symbol}' not found.")
+
+        market = get_asset_market_data_latest(symbol) or {}
+        history = get_daily_price_series(symbol, 365)
+        prediction = get_latest_prediction(symbol)
+        aai = get_latest_aai_score("crypto", symbol)
+        breakdown = get_latest_risk_breakdown(symbol)
+        flags = get_user_flags(user_id)
+
+        quantity_held = None
+        if user_id is not None and symbol in flags["held"]:
+            rows = get_db().portfolio_holdings.find(
+                {"user_id": user_id, "symbol": symbol}, projection={"quantity": 1}
+            )
+            quantity_held = sum(r.get("quantity") or 0 for r in rows)
+
+        universe = build_crypto_items(user_id)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"Unable to reach the database: {exc}")
+
+    # Forecast: the single latest model run, drawn from the last known price to
+    # its 30-day target. `predictions` holds one target per run, not a curve.
+    forecast = None
+    if prediction and prediction.get("predicted_price") is not None and history:
+        from datetime import datetime, timedelta
+        last = history[-1]
+        target_day = (datetime.strptime(last["date"], "%Y-%m-%d") + timedelta(days=30)).strftime("%Y-%m-%d")
+        forecast = {
+            "points": [
+                {"date": last["date"], "price": last["price"]},
+                {"date": target_day, "price": prediction["predicted_price"]},
+            ],
+            "lower_bound": prediction.get("lower_bound"),
+            "upper_bound": prediction.get("upper_bound"),
+            "change_30d_pct": prediction.get("prediction_30d"),
+            "model_version": prediction.get("model_version"),
+        }
+
+    aai_panel = None
+    sentiment = None
+    if aai:
+        score = aai.get("aai_score")
+        aai_panel = {
+            "score": score,
+            "signal": aai_signal(score),
+            "confidence": aai.get("confidence"),
+            "pred_score": aai.get("pred_score"),
+            "sentiment_score": aai.get("sentiment_score"),
+            "risk_score": aai.get("risk_score"),
+            "model_version": aai.get("model_version"),
+        }
+
+    # Sentiment: the engine's live reading when it has one, else what aai_scores stored.
+    live = live_sentiment_by_symbol().get(symbol)
+    if live:
+        sentiment = {
+            "score": live["score"], "confidence": live["confidence"],
+            "confidence_label": sentiment_confidence_label(live["confidence"]),
+            "trend": live["trend"],
+        }
+    elif aai and aai.get("sentiment_score") is not None:
+        conf = aai.get("sentiment_confidence")
+        sentiment = {
+            "score": aai["sentiment_score"],
+            "confidence": conf,
+            "confidence_label": sentiment_confidence_label(conf),
+            "trend": aai.get("sentiment_trend"),
+        }
+
+    risk_overview = []
+    if breakdown:
+        for label, key, better in [
+            ("Volatility Index", "volatility_index", False),
+            ("Liquidity Score", "liquidity_score", True),
+            ("Regulatory Risk", "regulatory_risk", False),
+            ("Market Risk", "market_risk", False),
+        ]:
+            if breakdown.get(key) is not None:
+                risk_overview.append({
+                    "label": label, "value": breakdown[key],
+                    "level": _risk_level(breakdown[key], better),
+                })
+
+    # Similar assets: the asset's own related_assets first, topped up by market cap.
+    by_id = {i["id"]: i for i in universe}
+    related_ids = [r for r in (asset.get("related_assets") or []) if r in by_id and r != symbol]
+    rest = sorted((i for i in universe if i["id"] != symbol and i["id"] not in related_ids),
+                  key=lambda i: i.get("market_cap") or 0, reverse=True)
+    similar = [by_id[r] for r in related_ids] + rest
+    similar = similar[:4]
+    try:
+        sparks = get_price_sparklines([s["id"] for s in similar])
+        for s in similar:
+            s["sparkline"] = sparks.get(s["id"], [])
+    except Exception:
+        pass
+
+    return {
+        "symbol": symbol,
+        "header": {
+            "symbol": asset["symbol"], "name": asset["name"],
+            "category": asset.get("category"), "subcategory": asset.get("subcategory"),
+            "logo_color": asset.get("logo_color"),
+            "price": market.get("price"), "change_24h": market.get("change_24h"),
+            "held": symbol in flags["held"], "quantity_held": quantity_held,
+            "watching": symbol in flags["watching"],
+        },
+        "price_history": history,
+        "forecast": forecast,
+        "aai_panel": aai_panel,
+        "risk_overview": risk_overview,
+        "market_stats": {
+            "market_rank": market.get("market_rank"),
+            "market_cap": market.get("market_cap"),
+            "volume_24h": market.get("volume_24h"),
+            "circulating_supply": market.get("circulating_supply"),
+            "all_time_high": asset.get("all_time_high"),
+        },
+        "sentiment": sentiment,
+        "about": asset.get("description"),
+        "similar": similar,
+    }
 
 
 # ── GET /assets/{symbol}/header ─────────────────────────────────────────────

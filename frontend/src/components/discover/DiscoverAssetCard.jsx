@@ -53,7 +53,7 @@ export default function DiscoverAssetCard({ item, isWatching, onToggleWatch, isC
       <div className="disc-price-row">
         <span className="disc-price">{formatAssetPrice(item.price)}</span>
         <span className={`disc-change ${positive ? "positive" : "negative"}`}>
-          {positive ? "↗" : "↘"} {Math.abs(item.changePct).toFixed(2)}%
+          {positive ? "↗" : "↘"} {item.changePct != null ? `${Math.abs(item.changePct).toFixed(2)}%` : "—"}
         </span>
       </div>
       <div className="disc-price-label">{item.type === "nft" ? "floor price" : "last price"}</div>
@@ -63,7 +63,7 @@ export default function DiscoverAssetCard({ item, isWatching, onToggleWatch, isC
       <div className="disc-card-bottom">
         <span className="disc-badge aai">
           <span className="disc-badge-dot" style={{ background: getAaiTierColor(item.aaiScore) }} />
-          AAI {item.aaiScore}
+          AAI {item.aaiScore != null ? Math.round(item.aaiScore) : "—"}
         </span>
         {item.signal && (
           <span className={`disc-badge ${SIGNAL_CLASS[item.signal] || ""}`}>

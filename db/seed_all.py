@@ -13,8 +13,10 @@ from db import (
     seed_nft,
     seed_insights,
     seed_predictions_risk,
+    seed_aai_scores,
     seed_users,                     # existing db/seed_users.py (demo user login credentials)
     seed_user_data,
+    seed_portfolio_snapshots,
 )
 
 STEPS = [
@@ -23,8 +25,10 @@ STEPS = [
     ("nft_*", seed_nft.seed),
     ("market_insights + sentiment_themes", seed_insights.seed),
     ("predictions + risk_scores + risk_breakdown", seed_predictions_risk.seed),
+    ("aai_scores (crypto + nft)", seed_aai_scores.seed),
     ("users (demo login)", seed_users.seed),
     ("user_settings + portfolio_holdings + watchlists + alerts + notifications", seed_user_data.seed),
+    ("portfolio_snapshots (history backfill)", seed_portfolio_snapshots.seed),
 ]
 
 

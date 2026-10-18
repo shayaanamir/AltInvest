@@ -9,11 +9,12 @@ function daysApart(a, b) {
   return Math.round((new Date(a).getTime() - new Date(b).getTime()) / DAY_MS);
 }
 
+// priceHistory is one point per day, oldest first.
+const FILTER_DAYS = { "1D": 1, "1W": 7, "1M": 30, "3M": 90, "1Y": 365 };
+
 function sliceForFilter(arr, filter) {
   if (!arr) return arr;
-  if (filter === "1D") return arr.slice(-2);
-  if (filter === "1W") return arr.slice(-4);
-  return arr; // 1M / 3M / 1Y — sample data only has one history window
+  return arr.slice(-(FILTER_DAYS[filter] + 1));
 }
 
 function formatY(v) {
@@ -81,12 +82,16 @@ export default function PricePerformanceCard({ priceHistory, forecast, aaiPanel 
     }
 
     const yTicks = [0, 1, 2, 3].map((i) => minV + (vRange * i) / 3);
-    const xLabels = histPts.map((p, i) => {
-      const ago = daysApart(lastDate, p.date);
-      // When forecast is shown, label the last historical point as "Today" and omit "0d"
-      if (i === histPts.length - 1) return { x: p.x, label: "Today" };
-      return { x: p.x, label: `${ago}d` };
-    });
+    // At most ~6 axis labels however many daily points the range holds.
+    const labelEvery = Math.max(1, Math.ceil(histPts.length / 6));
+    const xLabels = histPts
+      .map((p, i) => {
+        const ago = daysApart(lastDate, p.date);
+        // The last historical point is labelled "Today".
+        if (i === histPts.length - 1) return { x: p.x, label: "Today", i };
+        return { x: p.x, label: `${ago}d`, i };
+      })
+      .filter((l) => l.i === histPts.length - 1 || ((histPts.length - 1 - l.i) % labelEvery === 0 && histPts.length - 1 - l.i >= labelEvery));
     const forecastLabels = forecastPts
       .filter((p) => daysApart(p.date, lastDate) > 0)
       .map((p) => ({
@@ -133,6 +138,9 @@ export default function PricePerformanceCard({ priceHistory, forecast, aaiPanel 
           <div className="sv2-card-title">Price performance</div>
           {showForecast && (
             <div className="adt-chart-sub">Dashed line is the model's forward path, branching from today</div>
+          )}
+          {mode === "AI Prediction" && safeForecast.length === 0 && (
+            <div className="adt-chart-sub">No model forecast is stored for this asset yet.</div>
           )}
         </div>
         <div className="adt-chart-controls">

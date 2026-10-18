@@ -134,6 +134,12 @@ class DashboardStats(BaseModel):
     volume_24h_usd: float
     global_sentiment: float
     global_sentiment_label: str
+    holdings_count: int = 0
+    assets_count: int = 0
+    collections_count: int = 0
+    crypto_score_count: int = 0
+    nft_score_count: int = 0
+    market_mood_confidence: Optional[float] = None   # avg sentiment confidence, 0-100
 
 
 class PortfolioHoldingIn(BaseModel):
@@ -326,26 +332,31 @@ class DiscoverItem(BaseModel):
     id: str                         # asset_id or slug
     symbol: Optional[str] = None
     name: str
+    subcategory: Optional[str] = None
     logo_color: Optional[str] = None
     price: Optional[float] = None   # crypto price or nft floor_usd
+    floor_eth: Optional[float] = None        # nft only
     change_24h: Optional[float] = None
     change_7d: Optional[float] = None
-    market_cap: Optional[float] = None       # crypto only
+    market_cap: Optional[float] = None
     volume_24h: Optional[float] = None
     aai_score: Optional[float] = None
-    verified: Optional[bool] = None          # nft only
-
-
-class CompareItem(BaseModel):
-    category: str
-    id: str
-    name: str
-    price: Optional[float] = None
-    change_24h: Optional[float] = None
-    change_7d: Optional[float] = None
-    aai_score: Optional[float] = None
+    signal: Optional[str] = None             # BUY | HOLD | SELL, derived from aai_score
     risk_score: Optional[float] = None
+    volatility: Optional[float] = None       # crypto: volatility_index, nft: illiquidity risk
+    expected_return: Optional[float] = None  # predicted 30d %, crypto only
     sentiment_score: Optional[float] = None
+    sentiment_confidence: Optional[float] = None
+    sentiment_confidence_label: Optional[str] = None
+    sentiment_trend: Optional[str] = None
+    verified: Optional[bool] = None          # nft only
+    held: bool = False
+    watching: bool = False
+    sparkline: List[float] = []
+
+
+class CompareItem(DiscoverItem):
+    pass
 
 
 class CompareResponse(BaseModel):

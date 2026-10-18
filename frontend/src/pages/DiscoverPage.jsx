@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { discoverApi, ALL_ITEMS } from "../services/discoverApi";
+import { discoverApi } from "../services/discoverApi";
 import DiscoverFilters from "../components/discover/DiscoverFilters";
 import DiscoverAssetCard from "../components/discover/DiscoverAssetCard";
 import "../styles/discover.css";
@@ -24,25 +24,32 @@ export default function DiscoverPage() {
   const [filters, setFilters] = useState(null);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [watchingIds, setWatchingIds] = useState(
-    () => new Set(ALL_ITEMS.filter((i) => i.watching).map((i) => i.id))
-  );
+  const [error, setError] = useState(null);
+  const [watchingIds, setWatchingIds] = useState(() => new Set());
   const [compareIds, setCompareIds] = useState([]);
 
   useEffect(() => {
     discoverApi.getConfig().then((cfg) => {
       setConfig(cfg);
       setFilters(defaultFilters(cfg));
-    });
+    }).catch((e) => { console.error(e); setError(e); setLoading(false); });
   }, []);
 
   useEffect(() => {
     if (!filters) return;
+    let cancelled = false;
     setLoading(true);
-    discoverApi.getItems(category, filters).then((res) => {
-      setItems(res);
-      setLoading(false);
-    });
+    setError(null);
+    discoverApi.getItems(category, filters)
+      .then((res) => {
+        if (cancelled) return;
+        setItems(res);
+        // The stars start from what the backend says the user already watches.
+        setWatchingIds((prev) => new Set([...prev, ...res.filter((i) => i.watching).map((i) => i.id)]));
+      })
+      .catch((e) => { if (!cancelled) { console.error(e); setItems([]); setError(e); } })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [category, filters]);
 
   const toggleWatch = (item) => {
@@ -118,7 +125,12 @@ export default function DiscoverPage() {
               {loading ? "Loading…" : `${items.length} asset${items.length === 1 ? "" : "s"} match your filters`}
             </div>
 
-            {!loading && items.length === 0 ? (
+            {error ? (
+              <div className="disc-empty">
+                <h3>Couldn't load the market universe</h3>
+                <p>{error.message}</p>
+              </div>
+            ) : !loading && items.length === 0 ? (
               <div className="disc-empty">
                 <h3>{config?.emptyState?.title}</h3>
                 <p>{config?.emptyState?.subtitle}</p>
