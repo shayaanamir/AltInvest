@@ -52,6 +52,12 @@ Blocked: nothing.
   - AGENTS rule 15 added.
   - PLAN.md has a "How to verify" column.
 
+## Documentation task (2026-10-18, docs only; no code, data or tests changed)
+- AGENTS rule 16 and a Docs list added.
+- Created docs/GLOSSARY.md, docs/phases/TEMPLATE.md, PHASE_0_scaffold.md, PHASE_1_btc_data.md.
+- Open "UNCLEAR: ask the author" items are in section 7 of the Phase 0 and Phase 1 files.
+- Phase 1b must also ship docs/phases/PHASE_1b_<name>.md before it counts as done.
+
 ## How to verify Phase 0 yourself (PowerShell, from the repo root)
 ```powershell
 Set-Location C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest
