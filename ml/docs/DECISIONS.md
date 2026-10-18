@@ -18,3 +18,4 @@
 | D14 | Python 3.10-3.12 supported; dev machine runs 3.12.10 | scikit-learn/FastAPI fine on 3.12; TensorFlow/Prophet optional, only if they beat baselines |
 | D15 | Validation reports tracked at ml/reports/data/{asset}_validation.json; data/raw/ stays ignored | Small files, and they are the evidence the data is real |
 | D16 | Split boundaries from 70/15/15 of the full series (n rows): b1=floor(0.70n), b2=floor(0.85n). train=[0, b1-30), validation=[b1, b2-30), test=[b2, n). The last 30 rows of the series have no forward label and are excluded from labelled data | Embargo cut from the end of the earlier split, so test ends at the latest data |
+| D17 | Embargo rule as recorded in D16 is accepted: validation and labelled test each have about 0.15n-30 rows; only the test date range is exact | User confirmation of D16 (2026-10-18) |

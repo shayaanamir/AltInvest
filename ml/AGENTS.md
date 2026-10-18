@@ -26,3 +26,4 @@ AAI score is the backend's job. Do not build it.
 12. Never put a price in a field named as a percentage.
 13. Update docs/STATUS.md at the end of every task.
 14. API responses must validate against docs/CONTRACT.md (additionalProperties: false).
+15. Every phase ends with a 'How to verify yourself' block in docs/STATUS.md: copy-paste PowerShell commands, plus the expected output or value ranges, that the user can run without the agent. A phase is not done until this block exists.
