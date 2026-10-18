@@ -1,0 +1,33 @@
+{
+  "asset": "eth",
+  "symbol": "ETHUSDT",
+  "source": "https://api.binance.com/api/v3/klines",
+  "fetched_at": "2026-10-18T16:21:36Z",
+  "validated_at": "2026-10-18T16:21:43Z",
+  "raw_file": "ml/data/raw/eth_1d.csv",
+  "rows": 3349,
+  "first_timestamp": "2017-08-17T00:00:00Z",
+  "last_timestamp": "2026-10-17T00:00:00Z",
+  "expected_days": 3349,
+  "missing_days_count": 0,
+  "missing_days": [],
+  "duplicate_count": 0,
+  "duplicates": [],
+  "close_min": 83.76,
+  "close_min_timestamp": "2018-12-15T00:00:00Z",
+  "close_max": 4832.07,
+  "close_max_timestamp": "2025-08-22T00:00:00Z",
+  "non_positive_price_rows": 0,
+  "ohlc_inconsistent_rows": 0,
+  "n_returns": 3348,
+  "excess_kurtosis": 12.1349,
+  "abs_return_lag1_autocorr": 0.1689,
+  "checks": {
+    "excess_kurtosis_gt_1": true,
+    "abs_return_lag1_autocorr_gt_0": true,
+    "no_non_positive_prices": true,
+    "no_duplicates": true,
+    "ohlc_consistent": true
+  },
+  "passed": true
+}

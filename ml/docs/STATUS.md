@@ -1,8 +1,53 @@
 # STATUS
-Current phase: 1 DONE for BTC (2026-10-18).
-Next: Phase 1b (ETH, SOL). Not started; waiting on the user's go-ahead.
-Done: branch ml-v2, v1 archived at tag archive/ml-v1, docs, Phase 0 scaffold, Phase 1 (BTC).
+Current phase: 1b DONE for ETH and SOL (2026-10-18).
+Next: Phase 2 (features, labels, splits). Not started; waiting on the user's go-ahead.
+Done: branch ml-v2, v1 archived at tag archive/ml-v1, docs, Phase 0 scaffold, Phase 1 (BTC), Phase 1b (ETH, SOL).
 Blocked: nothing.
+
+## Phase 1b (ETH, SOL): what ran (from repo root, 2026-10-18)
+- No code changed: fetch.py, loader.py and validate.py already take `--asset`.
+- `python -m ml.data.fetch --asset eth`: 4 pages, 3350 bars received, 3349 written, 1 unclosed dropped.
+- `python -m ml.data.fetch --asset sol`: 3 pages, 2260 bars received, 2259 written, 1 unclosed dropped.
+- No HTTP 403/451 and no retries. Both `validate` runs exited 0 with `passed: true`.
+- `python -m pytest ml` -> `10 passed` (no new tests).
+- Reports: `ml/reports/data/eth_validation.json`, `sol_validation.json` (tracked, D15).
+
+| Field | BTC | ETH | SOL |
+|---|---|---|---|
+| rows | 3349 | 3349 | 2259 |
+| first bar | 2017-08-17 | 2017-08-17 | 2020-08-11 |
+| last bar | 2026-10-17 | 2026-10-17 | 2026-10-17 |
+| missing days | 0 | 0 | 0 |
+| excess kurtosis (> 1) | 16.0117 | 12.1349 | 8.4565 |
+| lag-1 autocorr of \|r\| (> 0) | 0.1769 | 0.1689 | 0.2698 |
+
+- Done-when met: pytest passes; both reports have kurtosis > 1 and autocorr > 0; missing days listed (none).
+- BTC files untouched. Phase 1b explanation: docs/phases/PHASE_1b_eth_sol_data.md.
+
+## How to verify Phase 1b yourself (PowerShell, from the repo root)
+```powershell
+Set-Location C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest
+
+# 1. Unit tests (offline)
+python -m pytest ml -q
+
+# 2. The tracked evidence reports
+Get-Content ml\reports\data\eth_validation.json
+Get-Content ml\reports\data\sol_validation.json
+
+# 3. The raw files
+python -c "import pandas as pd; [print(a, len(d:=pd.read_csv(f'ml/data/raw/{a}_1d.csv')), d.timestamp.iloc[0], d.timestamp.iloc[-1]) for a in ('eth','sol')]"
+
+# 4. Re-validate the same files: same numbers expected (this rewrites the report's validated_at only)
+python -m ml.data.validate --asset eth | Select-String '"rows"|"excess_kurtosis"|"abs_return_lag1_autocorr"|"passed"'
+python -m ml.data.validate --asset sol | Select-String '"rows"|"excess_kurtosis"|"abs_return_lag1_autocorr"|"passed"'
+```
+Expected (observed 2026-10-18):
+1. `10 passed`.
+2. ETH: `"rows": 3349`, `"missing_days": []`, `"excess_kurtosis": 12.1349`, `"abs_return_lag1_autocorr": 0.1689`, `"passed": true`. SOL: `"rows": 2259`, `"missing_days": []`, `"excess_kurtosis": 8.4565`, `"abs_return_lag1_autocorr": 0.2698`, `"passed": true`.
+3. `eth 3349 2017-08-17T00:00:00Z 2026-10-17T00:00:00Z` and `sol 2259 2020-08-11T00:00:00Z 2026-10-17T00:00:00Z`.
+4. The same rows, kurtosis, autocorr and `passed` values as in 2.
+- If you re-fetch later, rows grow by one per day and kurtosis/autocorr move slightly (still > 1 and > 0).
 
 ## Phase 1 (BTC): what ran (from repo root)
 - `python -m pytest ml` -> `10 passed`.
