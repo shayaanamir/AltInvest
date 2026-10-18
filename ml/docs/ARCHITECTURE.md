@@ -4,10 +4,11 @@
 ```
 ml/
   AGENTS.md
-  config.py                # assets, horizon, split dates, thresholds: the ONLY place for constants
-  data/                    # git-ignored. fetch script is tracked, data is not
+  config.py                # assets, horizon, split fractions, thresholds: the ONLY place for constants
+                           # (actual split dates are derived from data and written to metadata.json)
+  data/                    # scripts tracked; only data/raw/ is git-ignored (D13)
     fetch.py               # Binance public klines -> data/raw/{asset}_1d.csv
-    validate.py            # writes data/raw/{asset}_validation.json
+    validate.py            # writes reports/data/{asset}_validation.json (tracked, D15)
     raw/
   features/features.py     # backward-looking features only
   labels/labels.py         # forward-looking targets (training/eval only)
@@ -17,6 +18,7 @@ ml/
   api/service.py           # FastAPI :8001, validates against CONTRACT.md
   artifacts/{asset}/       # model files + metadata.json (git-ignored files, metadata tracked)
   reports/{asset}/         # baselines.json, models.json, backtest.json (tracked)
+  reports/data/            # {asset}_validation.json: evidence the data is real (tracked)
   tests/
 ```
 

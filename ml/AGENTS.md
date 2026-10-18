@@ -6,6 +6,11 @@ AAI score is the backend's job. Do not build it.
 ## Read order (do not read the whole repo)
 1. This file  2. docs/STATUS.md  3. Only the docs/files the current task names.
 
+## Commands (run from the repo root, never from inside ml/)
+- Tests: `python -m pytest ml`  (plain `pytest` at the root also collects other teams' tests)
+- Import check: `python -c "import ml.config"`
+- Modules: `python -m ml.<package>.<module>`
+
 ## Rules
 1. One phase at a time. Next phase starts only when the current phase's "done when" (docs/PLAN.md) passes.
 2. Every task needs a testable "done when". If it can't be tested, ask me to define it.

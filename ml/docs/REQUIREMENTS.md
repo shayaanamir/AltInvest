@@ -26,5 +26,5 @@ If a model does not beat the naive baselines (docs/EVALUATION.md) on held-out da
 signal = UNCERTAIN or HOLD, low confidence, and a `note`. Expected accuracy is modest (papers: ~52% direction).
 
 ## Constraints
-- Python 3.10/3.11, FastAPI, scikit-learn. Heavy libs (TensorFlow, Prophet) only if they earn their place vs baselines.
+- Python 3.10-3.12 (D14), FastAPI, scikit-learn. Heavy libs (TensorFlow, Prophet) only if they earn their place vs baselines.
 - Retraining must be reproducible from the fetch script + config.

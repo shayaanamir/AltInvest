@@ -1,0 +1,10 @@
+# ML v2 dependencies. Pinned to the versions on the dev machine (Python 3.12.10).
+# Heavy libs (TensorFlow, Prophet) are added only if they beat baselines (docs/REQUIREMENTS.md).
+numpy==2.2.6
+pandas==2.3.3
+scikit-learn==1.7.2
+requests==2.33.1
+fastapi==0.115.0
+uvicorn==0.30.6
+jsonschema==4.26.0
+pytest==9.1.1
