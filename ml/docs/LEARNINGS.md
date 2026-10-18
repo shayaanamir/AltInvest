@@ -1,0 +1,18 @@
+# LEARNINGS from v1 (as rules)
+- Synthetic data makes every metric meaningless. Validate real data (heavy tails, clustering) first.
+- Build evaluation + baselines BEFORE models.
+- Labels look forward, features backward. Embargo = horizon.
+- Never use the test set for early stopping, thresholds, or selection.
+- Daily steps against a 30-day horizon overlap 29/30. Use non-overlapping windows.
+- Crypto annualisation: sqrt(365), not sqrt(252).
+- Prophet fit on full history leaks the future inside a backtest.
+- Confidence must be measured, not hard-coded (0.95, 0.85, boosted 0.60).
+- A label that is a function of the input features gives circular "79% accuracy".
+- Hand-typed /metrics numbers appeared in no artifact. Metrics come from reports only.
+- `python models/x.py` pickles as `__main__.X` and breaks uvicorn loading. Use `python -m`.
+- 30 steps on hourly data is 30 hours, not 30 days. Match horizon to frequency.
+- A price stored in a "prediction_30d" percent field silently corrupted agreement/signal.
+- Triplicated signal logic drifts. One function, imported everywhere.
+- Gitignored artifacts with no metadata made provenance untraceable. Track metadata.json.
+- Don't retrain only some assets after a code change; stale models served alongside new ones.
+- A model that doesn't beat the baseline ships as UNCERTAIN. That is a valid result.
