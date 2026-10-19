@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { ErrorState } from "../../errors";
 import { useAsync } from "../../hooks/useAsync";
-import { sentimentApi } from "../../services/sentimentApi";
+import { sentimentApi, onSentimentUpdated } from "../../services/sentimentApi";
 
 const SCOPES = [
   { key: "crypto", label: "Crypto" },
@@ -67,7 +67,7 @@ export default function MoodTrendChart({ colors }) {
   const [hover, setHover] = useState(null); // timestamp (ms) of the point being inspected
   const containerRef = useRef(null);
 
-  const { data: series, loading, error, refetch } = useAsync(() => sentimentApi.getMoodTrend(scope, days), [scope, days]);
+  const { data: series, loading, error, refetch } = useAsync(() => sentimentApi.getMoodTrend(scope, days), [scope, days], { subscribe: onSentimentUpdated });
 
   const geo = { W: 900, H: 220, PAD_L: 40, PAD_R: 16, PAD_T: 16, PAD_B: 28 };
   const { W, H, PAD_L, PAD_R, PAD_T, PAD_B } = geo;

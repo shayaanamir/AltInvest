@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { ErrorState } from "../../errors";
 import { useAsync } from "../../hooks/useAsync";
-import { sentimentApi } from "../../services/sentimentApi";
+import { sentimentApi, onSentimentUpdated } from "../../services/sentimentApi";
 
 const RANGES = [
   { key: "24h", label: "24h" },
@@ -25,7 +25,7 @@ export default function AssetOverTimeChart({ assetId, trend, colors }) {
   const [hoverIdx, setHoverIdx] = useState(null);
   const containerRef = useRef(null);
 
-  const { data: rawSeries, loading, error, refetch } = useAsync(() => sentimentApi.getAssetOverTime(assetId, range), [assetId, range]);
+  const { data: rawSeries, loading, error, refetch } = useAsync(() => sentimentApi.getAssetOverTime(assetId, range), [assetId, range], { subscribe: onSentimentUpdated });
   const series = rawSeries || [];
 
   const W = 420, H = 170;

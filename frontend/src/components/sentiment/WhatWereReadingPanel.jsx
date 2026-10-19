@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { ErrorState } from "../../errors";
 import { useAsync } from "../../hooks/useAsync";
-import { sentimentApi } from "../../services/sentimentApi";
+import { sentimentApi, onSentimentUpdated } from "../../services/sentimentApi";
 import { onWatchlistsChanged } from "../../services/holdingsEvents";
 import { relativeTime } from "../../utils/dateTime";
 import { IconExternal } from "../icons";
 
 export default function WhatWereReadingPanel() {
-  const { data: rawItems, loading, error, refetch } = useAsync(() => sentimentApi.getWhatWereReading("news"), []);
+  const { data: rawItems, loading, error, refetch } = useAsync(() => sentimentApi.getWhatWereReading("news"), [], { subscribe: onSentimentUpdated });
   const items = rawItems || [];
   const { data: watched } = useAsync(() => sentimentApi.getWatchedAssetIds(), [], { subscribe: onWatchlistsChanged });
   const [watchlistOnly, setWatchlistOnly] = useState(false);

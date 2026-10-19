@@ -19,7 +19,9 @@ import { watchlistApi } from "./watchlistApi";
 /* ---------------- transport ---------------- */
 
 const FETCH_TIMEOUT_MS = 18000;         // GET requests
-const REFRESH_TIMEOUT_MS = 30000;       // POST /refresh — triggers a full pipeline run
+const REFRESH_TIMEOUT_MS = 30000;       // POST /{asset}/refresh — runs one asset's pipeline
+const REFRESH_ALL_POLL_MS = 2000;       // how often to ask whether the background refresh-all has finished
+const REFRESH_ALL_MAX_WAIT_MS = 3 * 60 * 1000;
 
 async function fetchWithTimeout(url, options = {}, timeoutMs = FETCH_TIMEOUT_MS) {
   const controller = new AbortController();
@@ -71,6 +73,17 @@ async function postRefresh(assetId) {
   if (!res.ok) throw await failFrom(res, `Refresh for ${assetId}`);
 }
 
+async function postJson(path, what) {
+  let res;
+  try {
+    res = await fetchWithTimeout(`${API_BASE_URL}${path}`, { method: "POST" });
+  } catch (e) {
+    throw new ApiError(describeFetchError(e), { kind: e.name === "AbortError" ? "timeout" : "network" });
+  }
+  if (!res.ok) throw await failFrom(res, what);
+  return res.json();
+}
+
 // The hub mounts several widgets that all need the same two lists; share one request for a few seconds.
 const SHARE_MS = 5000;
 function shared(fn) {
@@ -114,6 +127,21 @@ const resetCaches = () => {
   fetchAllSentimentRaw.reset();
   loadMeta.reset();
 };
+
+// New sentiment data has arrived (the poller saw it, or a refresh finished). Mounted widgets
+// subscribe, via useAsync's { subscribe }, and re-fetch in place — so nothing has to be
+// remounted, and the user's scope, range, tab and filters stay as they were.
+const updates = new EventTarget();
+
+export function onSentimentUpdated(handler) {
+  updates.addEventListener("update", handler);
+  return () => updates.removeEventListener("update", handler);
+}
+
+export function notifySentimentUpdated() {
+  resetCaches(); // drop the shared lists so the re-fetches below see the new data
+  updates.dispatchEvent(new Event("update"));
+}
 
 /* ---------------- shaping ---------------- */
 
@@ -375,17 +403,42 @@ export const sentimentApi = {
     return sentimentApi.getAssetDetail(assetId);
   },
 
-  /** Refreshes every covered asset — used by the Hub's "Refresh Pipeline" button. */
+  /**
+   * Refreshes every covered asset — used by the Hub's "Refresh Pipeline" button. The server runs
+   * the pipelines in the background (one request starts it, not one per asset); this waits for
+   * it to finish, then reports any assets that failed. Throws if it didn't fully succeed.
+   */
   refreshAllActive: async () => {
-    const ids = (await fetchAllSentimentRaw()).map((r) => (r.asset_id || r.asset || "").toLowerCase()).filter(Boolean);
-    const results = await Promise.allSettled(ids.map((id) => postRefresh(id)));
-    resetCaches();
-    const failed = results.filter((r) => r.status === "rejected");
-    if (failed.length === ids.length && ids.length > 0) throw failed[0].reason; // everything failed: surface the real cause
-    if (failed.length > 0) {
-      throw new ApiError(`${failed.length} of ${ids.length} assets could not be refreshed.`, {
+    await postJson("/sentiment/refresh", "Starting the refresh");
+
+    const deadline = Date.now() + REFRESH_ALL_MAX_WAIT_MS;
+    let status;
+    do {
+      await new Promise((resolve) => setTimeout(resolve, REFRESH_ALL_POLL_MS));
+      status = await getJson("/sentiment/refresh/status", "Refresh status");
+    } while (status.running && Date.now() < deadline);
+
+    notifySentimentUpdated(); // whatever was refreshed, even partly, is new data to show
+
+    if (status.running) {
+      throw new ApiError("The refresh is taking longer than expected.", {
+        kind: "timeout",
+        detail: "It is still running on the server. The page will update when it finishes.",
+      });
+    }
+
+    const outcomes = Object.values(status.results || {});
+    const failed = outcomes.filter((o) => o === "failed").length;
+    if (outcomes.length > 0 && failed === outcomes.length) {
+      throw new ApiError("Couldn't refresh any asset.", {
+        kind: "server",
+        detail: "The pipeline failed for every asset. Check the server logs.",
+      });
+    }
+    if (failed > 0) {
+      throw new ApiError(`${failed} of ${outcomes.length} assets could not be refreshed.`, {
         kind: "partial",
-        detail: `${failed.length} of ${ids.length} assets could not be refreshed. The rest were updated.`,
+        detail: `${failed} of ${outcomes.length} assets could not be refreshed. The rest were updated.`,
       });
     }
   },

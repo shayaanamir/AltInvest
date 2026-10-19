@@ -10,6 +10,8 @@ Endpoints:
     GET  /sentiment/{asset}          -> single asset (cached or fresh)
     GET  /sentiment/{asset}/history  -> historical scores for charting
     POST /sentiment/{asset}/refresh  -> force re-run, bypass cache
+    POST /sentiment/refresh          -> start refreshing every asset in the background (202)
+    GET  /sentiment/refresh/status   -> progress / outcome of that background refresh
 """
 
 import path_setup  # noqa: F401  -- must be first
@@ -514,6 +516,56 @@ def refresh_sentiment(asset: str):
     return JSONResponse(content={"status": outcome, "result": _map_sentiment(record)})
 
 
+# ── POST /sentiment/refresh  +  GET /sentiment/refresh/status ──────────────────
+# Refreshing every asset runs a pipeline per asset, which takes far longer than a request
+# should be held open. The POST starts the work in a background thread and returns at once;
+# the client polls the status endpoint until it is no longer running and reads each
+# asset's outcome from it. Only one such refresh runs at a time per process.
+
+_refresh_job = {"running": False, "started_at": None, "finished_at": None, "results": {}}
+_refresh_job_lock = threading.Lock()
+
+
+def _refresh_job_snapshot() -> dict:
+    with _refresh_job_lock:
+        return {**_refresh_job, "results": dict(_refresh_job["results"]), "assets": len(_ACTIVE_ASSETS)}
+
+
+def _run_refresh_job() -> None:
+    try:
+        results = _refresh_all_assets()
+    except Exception:
+        logging.getLogger("sentiment_api").exception("refresh-all job crashed")
+        results = {a: "failed" for a in _ACTIVE_ASSETS}
+    with _refresh_job_lock:
+        _refresh_job.update(running=False, finished_at=datetime.now(tz=timezone.utc).isoformat(), results=results)
+
+
+@router.post("/sentiment/refresh", status_code=202)
+def start_refresh_all():
+    """Starts a forced refresh of every covered asset in the background and returns immediately."""
+    _engine()  # fail early with a clear error if the engine isn't installed
+
+    with _refresh_job_lock:
+        if _refresh_job["running"]:
+            already = True
+        else:
+            already = False
+            _refresh_job.update(
+                running=True, started_at=datetime.now(tz=timezone.utc).isoformat(), finished_at=None, results={}
+            )
+    if not already:
+        threading.Thread(target=_run_refresh_job, daemon=True, name="sentiment-refresh-all").start()
+
+    return {"status": "already_running" if already else "started", **_refresh_job_snapshot()}
+
+
+@router.get("/sentiment/refresh/status")
+def refresh_all_status():
+    """Progress of the background refresh: running, timestamps and each asset's outcome so far."""
+    return _refresh_job_snapshot()
+
+
 # ── Background scheduled refresh ───────────────────────────────────────────────
 
 # Pipeline refresh interval — every 15 minutes, well inside the 20 min cache
@@ -521,27 +573,32 @@ def refresh_sentiment(asset: str):
 _REFRESH_INTERVAL_SECONDS = 15 * 60
 
 
-def _refresh_all_assets() -> None:
+def _refresh_all_assets() -> dict:
     """
-    Runs the full sentiment pipeline for every active asset and saves results
-    to MongoDB.  Intended to be called from the background scheduler thread.
+    Runs the full sentiment pipeline for every active asset and saves results to MongoDB.
+    Used by the background scheduler thread and by POST /sentiment/refresh.
+
+    Returns {asset_id: outcome}, where outcome is _refresh_asset's outcome or "failed".
     """
     log = logging.getLogger("sentiment_scheduler")
-    log.info("[scheduler] Starting scheduled pipeline refresh for all assets")
+    log.info("[scheduler] Starting pipeline refresh for all assets")
+    results: dict = {}
 
     try:
         _engine()
     except RuntimeError as exc:
         log.error(f"[scheduler] Engine unavailable, skipping refresh: {exc}")
-        return
+        return {a: "failed" for a in _ACTIVE_ASSETS}
 
     def _run_one(asset_id: str) -> None:
         try:
             # force: refresh regardless of freshness, but still serialised per asset with
             # any request that is refreshing the same asset right now.
             _, outcome = _refresh_asset(asset_id, force=True)
+            results[asset_id] = outcome
             log.info(f"[scheduler] {asset_id.upper()}: {outcome}")
         except Exception as exc:
+            results[asset_id] = "failed"
             log.error(f"[scheduler] Failed to refresh {asset_id}: {exc}")
 
     with ThreadPoolExecutor(max_workers=max(1, len(_ACTIVE_ASSETS))) as executor:
@@ -549,7 +606,8 @@ def _refresh_all_assets() -> None:
         for f in as_completed(futures):
             pass  # errors already logged inside _run_one
 
-    log.info("[scheduler] Scheduled refresh complete for all assets")
+    log.info("[scheduler] Refresh complete for all assets")
+    return results
 
 
 def _run_scheduler() -> None:
