@@ -1,8 +1,31 @@
 # STATUS
-Current phase: 4.0 (walk-forward harness) DONE for BTC, ETH, SOL (2026-10-19). No trained models.
-Next: Phase 4a (risk model). STOPPED after pre-flight review; waiting on the user (see below).
+Current phase: 4a (risk model) DONE for BTC, ETH, SOL (2026-10-19). Verdict: NOT APPROVED for all three (D25).
+Next: Phase 4b (price model, D26). Not started; waiting on the user's go-ahead.
 
-## Phase 4a (risk model): stopped at pre-flight (2026-10-19)
+## Phase 4a (risk model): what ran (from repo root, 2026-10-19)
+- Started from a clean tree: HEAD aeddd75, `git_dirty` False. Step 0 and Step 1 were not redone.
+- Approved plan changes applied:
+  - The blocking test was replaced by tests (i) and (ii).
+  - PLAN.md table renamed (4a risk, 4b price, 4c direction), plus D26.
+  - Class metrics use exp(prediction) with each fold's thresholds; Spearman uses the raw predicted log-vol.
+- New modules:
+  - `ml/models/risk.py`: the 4 declared configs; features standardised on train-fold mean/std; target log(fwd_vol_30d).
+  - `ml/evaluation/run_walkforward_risk.py`: writes `ml/reports/{asset}/walkforward_risk.json`.
+- Reuse change: `run_walkforward.py` gained `run_metadata()`, pulled out of `run()`. In-memory output is unchanged vs the committed reports (generated_at and git fields excluded) for all three assets.
+- `ml/tests/test_risk_model.py`: 16 tests (config count, scaling on train only, (i), (ii), never an index >= b2, 60/40 split, fold-threshold classes). `python -m pytest ml` -> `85 passed`.
+- `python -m ml.evaluation.run_walkforward_risk --asset btc|eth|sol` -> exit 0. `git_dirty: true` with a stderr warning (Phase 4a code not yet committed; not re-run, as instructed).
+- Test rows untouched: `rows_built` [0, b2) and `max_label_row_reached` b2-1, the same as Phase 4.0.
+
+| walkforward_risk.json | BTC | ETH | SOL |
+|---|---|---|---|
+| top config (first 60%) | ridge_all_a10 | hgb_d3 | ridge_all_a10 |
+| last-40% n_pooled / n_effective | 831 / 27.7 | 831 / 27.7 | 444 / 14.8 |
+| paired Spearman diff vs persistence [95% CI] | 0.0562 [-0.1805, 0.2482] | -0.1376 [-0.24, 0.0652] | -0.221 [-0.4605, 0.0145] |
+| verdict | not approved | not approved | not approved |
+
+- The confirmation sets are small (n_effective 27.7, 27.7, 14.8), so "not approved" reflects limited statistical power as well as possible lack of skill.
+
+## Phase 4a (risk model): stopped at pre-flight (2026-10-19, resolved the same day)
 - Done before the stop:
   - Step 0a: re-ran run_baselines and run_walkforward once each from clean HEAD 8763086. All 6 reports changed only in generated_at, git_commit and git_dirty (true -> false); `git_dirty` False.
   - Step 0b: D23, D24, D25 added to DECISIONS.md.
@@ -77,6 +100,36 @@ Blocked: nothing.
 - HYPOTHESIS: the near-zero/negative validation and test values reflect a regime effect (calmer, narrower-range volatility since 2024), plus small samples (n_effective 10-16). Not proven.
 - Reproducibility fix: `ml/gitinfo.py` now holds the git metadata for every report writer. `git_dirty` ignores ml/reports/ and git-ignored files, and warns on stderr when true. `ml/tests/test_gitinfo.py` adds 6 tests on a temporary fixture repo. `python -m pytest ml` -> `59 passed`.
 - Follow-up: added `fwd_vol_30d_spread` and `vol_30d_spread` (n, min, p5-p95, max, std, IQR per split, labelled rows) to baselines.json. VERIFIED: test std and IQR of fwd_vol_30d are 36-56% of train for all three assets (numbers in the verify block, step 6). The explanation stays a HYPOTHESIS.
+
+## How to verify Phase 4a yourself (PowerShell, from the repo root)
+```powershell
+Set-Location C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest
+
+# 1. All tests, then only the risk model tests (hand-made fixtures, offline)
+python -m pytest ml -q
+python -m pytest ml/tests/test_risk_model.py -q
+
+# 2. Re-run (needs ml/data/raw/*.csv; takes under a minute per asset). WARNING appears only if code is uncommitted.
+foreach ($a in 'btc','eth','sol') { python -m ml.evaluation.run_walkforward_risk --asset $a; "$a exit: $LASTEXITCODE" }
+
+# 3. Config count, top config, confirmation size, paired difference and verdict
+python -c "import json; [print(a, (d:=json.load(open(f'ml/reports/{a}/walkforward_risk.json')))['configs_declared']['count'], (c:=d['confirmation_last_40pct'])['top_config'], c['n_effective'], c['paired_diff_spearman_top_minus_persistence']['estimate'], round(c['paired_diff_spearman_top_minus_persistence']['low'],4), round(c['paired_diff_spearman_top_minus_persistence']['high'],4), d['verdict']['approved'], d['metadata']['max_label_row_reached']) for a in ('btc','eth','sol')]"
+
+# 4. Pooled Spearman of every predictor on all folds
+python -c "import json; [print(a, {k: v['spearman'] for k, v in json.load(open(f'ml/reports/{a}/walkforward_risk.json'))['all_folds'].items()}) for a in ('btc','eth','sol')]"
+```
+Expected (observed 2026-10-19):
+1. `85 passed`; the risk model file shows `16 passed`.
+2. `wrote ...walkforward_risk.json` and `exit: 0` for each asset.
+3. Output:
+   - `btc 4 ridge_all_a10 27.7 0.056201 -0.1805 0.2482 False 2820`
+   - `eth 4 hgb_d3 27.7 -0.137621 -0.24 0.0652 False 2820`
+   - `sol 4 ridge_all_a10 14.8 -0.221018 -0.4605 0.0145 False 1893`
+4. Output:
+   - `btc {'har_ridge_a1': 0.407905, 'ridge_all_a1': 0.457404, 'ridge_all_a10': 0.46241, 'hgb_d3': 0.383628, 'persistence': 0.347215}`
+   - `eth {'har_ridge_a1': 0.522056, 'ridge_all_a1': 0.515135, 'ridge_all_a10': 0.517704, 'hgb_d3': 0.542037, 'persistence': 0.515039}`
+   - `sol {'har_ridge_a1': 0.168541, 'ridge_all_a1': 0.211465, 'ridge_all_a10': 0.211227, 'hgb_d3': 0.082843, 'persistence': 0.210949}`
+- HGB and Ridge are deterministic (random_state=0), so a re-run on the same data reproduces these values exactly.
 
 ## How to verify Phase 4.0 yourself (PowerShell, from the repo root)
 ```powershell

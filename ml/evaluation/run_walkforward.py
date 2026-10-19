@@ -97,8 +97,17 @@ def run(asset: str) -> dict:
     report["strategy"] = {"pooled": strat}
     report["folds"] = fold_table
 
+    report["metadata"] = run_metadata(asset, data, b2, n, pooled)
+    report["metadata"]["note"] = ("Expanding-window walk-forward over rows [0, b2-30) (D21). Thresholds and "
+                                  "baseline parameters refit per fold on that fold's train rows. Test rows [b2, n) "
+                                  "were never built or read.")
+    return _clean(report)
+
+
+def run_metadata(asset: str, data: pd.DataFrame, b2: int, n: int, pooled: pd.DataFrame) -> dict:
+    """Git state, data range and the evidence that the test split stayed sealed. Shared by walk-forward runners."""
     max_row = int(pooled["row"].max())
-    report["metadata"] = {
+    return {
         "asset": asset,
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         **git_metadata(),
@@ -114,10 +123,7 @@ def run(asset: str) -> dict:
         "step_rows": config.WALKFORWARD_STEP,
         "horizon_days": H,
         "embargo_days": config.EMBARGO_DAYS,
-        "note": ("Expanding-window walk-forward over rows [0, b2-30) (D21). Thresholds and baseline parameters "
-                 "refit per fold on that fold's train rows. Test rows [b2, n) were never built or read."),
     }
-    return _clean(report)
 
 
 def main() -> None:

@@ -75,7 +75,16 @@ Terms marked *(not used yet)* appear in the plan docs but no code uses them so f
 - **Origin**: the first row a fold predicts. The fold trains only on rows more than 30 before it.
 - **Pooled**: predictions from all folds put together and scored as one set.
 - **Sealed test split**: the last 15% of rows, which no code reads until the single final evaluation (D21).
-- **Paired bootstrap**: a bootstrap that resamples the same rows for two predictors at once, to get a CI for the difference between them (D22). *(not used yet)*
+- **Paired bootstrap**: a bootstrap that resamples the same rows for two predictors at once, to get a CI for the difference between them (D22, D25). Used in Phase 4a.
+- **Regression**: predicting a number (here log volatility) rather than a class.
+- **Ridge regression**: a straight-line model with a penalty that keeps coefficients small; alpha sets how strong the penalty is.
+- **Regularisation**: deliberately limiting how closely a model can fit training data, so it generalises better.
+- **HAR model**: "heterogeneous autoregressive": predicts future volatility from recent volatility measured over several window lengths (here 7 and 30 days).
+- **Gradient-boosted trees (HistGradientBoosting)**: many small decision trees added one after another, each fixing the previous ones' errors.
+- **Standardisation**: shifting and scaling each feature to mean 0 and std 1, using the training fold's statistics only.
+- **Config**: one fixed model setup (model type, features, settings). D25 allows at most 4 per model type, declared before any run.
+- **Ranking set / confirmation set**: the first 60% of folds, used to pick the best config, and the last 40%, used once to check it (D25).
+- **Statistical power**: the chance a test detects a real effect. Small samples have low power, so "not approved" may mean "not proven" rather than "no skill".
 - **Non-overlapping windows**: evaluating 30-day periods that do not share days, because daily steps with a 30-day horizon overlap 29/30 (docs/LEARNINGS.md). Used by the Phase 3 strategy baselines.
 - **Backtest**: replaying a strategy on past data to see how it would have done. *(not used yet)*
 

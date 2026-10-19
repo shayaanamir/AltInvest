@@ -1,0 +1,1178 @@
+{
+  "configs_declared": {
+    "count": 4,
+    "configs": {
+      "har_ridge_a1": {
+        "features": "har",
+        "model": "Ridge()"
+      },
+      "ridge_all_a1": {
+        "features": "all",
+        "model": "Ridge()"
+      },
+      "ridge_all_a10": {
+        "features": "all",
+        "model": "Ridge(alpha=10.0)"
+      },
+      "hgb_d3": {
+        "features": "all",
+        "model": "HistGradientBoostingRegressor(learning_rate=0.05, max_depth=3, random_state=0)"
+      }
+    },
+    "target": "log(fwd_vol_30d)",
+    "scaling": "standardised with train-fold mean/std"
+  },
+  "all_folds": {
+    "har_ridge_a1": {
+      "n_folds": 37,
+      "n_pooled": 1104,
+      "n_effective": 36.8,
+      "target": "fwd_vol_30d",
+      "spearman": 0.168541,
+      "spearman_ci95": {
+        "low": -0.056421,
+        "high": 0.382777,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "accuracy": 0.381341,
+      "balanced_accuracy": 0.344729,
+      "macro_f1": 0.272457,
+      "mcc": 0.04793,
+      "per_class": {
+        "low": {
+          "precision": 0.682594,
+          "recall": 0.282486,
+          "support": 708,
+          "predicted": 293
+        },
+        "medium": {
+          "precision": 0.289267,
+          "recall": 0.751701,
+          "support": 294,
+          "predicted": 764
+        },
+        "high": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 102,
+          "predicted": 47
+        }
+      },
+      "confusion_matrix": {
+        "labels": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "rows_actual_cols_predicted": [
+          [
+            200,
+            478,
+            30
+          ],
+          [
+            56,
+            221,
+            17
+          ],
+          [
+            37,
+            65,
+            0
+          ]
+        ]
+      },
+      "accuracy_ci95": {
+        "low": 0.288043,
+        "high": 0.486504,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "class_note": "roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities"
+    },
+    "ridge_all_a1": {
+      "n_folds": 37,
+      "n_pooled": 1104,
+      "n_effective": 36.8,
+      "target": "fwd_vol_30d",
+      "spearman": 0.211465,
+      "spearman_ci95": {
+        "low": -0.031009,
+        "high": 0.410499,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "accuracy": 0.354167,
+      "balanced_accuracy": 0.325301,
+      "macro_f1": 0.248805,
+      "mcc": -0.003697,
+      "per_class": {
+        "low": {
+          "precision": 0.659259,
+          "recall": 0.251412,
+          "support": 708,
+          "predicted": 270
+        },
+        "medium": {
+          "precision": 0.259756,
+          "recall": 0.72449,
+          "support": 294,
+          "predicted": 820
+        },
+        "high": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 102,
+          "predicted": 14
+        }
+      },
+      "confusion_matrix": {
+        "labels": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "rows_actual_cols_predicted": [
+          [
+            178,
+            521,
+            9
+          ],
+          [
+            76,
+            213,
+            5
+          ],
+          [
+            16,
+            86,
+            0
+          ]
+        ]
+      },
+      "accuracy_ci95": {
+        "low": 0.276223,
+        "high": 0.45111,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "class_note": "roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities"
+    },
+    "ridge_all_a10": {
+      "n_folds": 37,
+      "n_pooled": 1104,
+      "n_effective": 36.8,
+      "target": "fwd_vol_30d",
+      "spearman": 0.211227,
+      "spearman_ci95": {
+        "low": -0.032054,
+        "high": 0.410893,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "accuracy": 0.352355,
+      "balanced_accuracy": 0.325685,
+      "macro_f1": 0.247213,
+      "mcc": -0.002807,
+      "per_class": {
+        "low": {
+          "precision": 0.661597,
+          "recall": 0.245763,
+          "support": 708,
+          "predicted": 263
+        },
+        "medium": {
+          "precision": 0.259662,
+          "recall": 0.731293,
+          "support": 294,
+          "predicted": 828
+        },
+        "high": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 102,
+          "predicted": 13
+        }
+      },
+      "confusion_matrix": {
+        "labels": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "rows_actual_cols_predicted": [
+          [
+            174,
+            526,
+            8
+          ],
+          [
+            74,
+            215,
+            5
+          ],
+          [
+            15,
+            87,
+            0
+          ]
+        ]
+      },
+      "accuracy_ci95": {
+        "low": 0.274434,
+        "high": 0.450204,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "class_note": "roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities"
+    },
+    "hgb_d3": {
+      "n_folds": 37,
+      "n_pooled": 1104,
+      "n_effective": 36.8,
+      "target": "fwd_vol_30d",
+      "spearman": 0.082843,
+      "spearman_ci95": {
+        "low": -0.149539,
+        "high": 0.322789,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "accuracy": 0.412138,
+      "balanced_accuracy": 0.318432,
+      "macro_f1": 0.312823,
+      "mcc": -0.008927,
+      "per_class": {
+        "low": {
+          "precision": 0.625,
+          "recall": 0.466102,
+          "support": 708,
+          "predicted": 528
+        },
+        "medium": {
+          "precision": 0.291139,
+          "recall": 0.391156,
+          "support": 294,
+          "predicted": 395
+        },
+        "high": {
+          "precision": 0.055249,
+          "recall": 0.098039,
+          "support": 102,
+          "predicted": 181
+        }
+      },
+      "confusion_matrix": {
+        "labels": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "rows_actual_cols_predicted": [
+          [
+            330,
+            240,
+            138
+          ],
+          [
+            146,
+            115,
+            33
+          ],
+          [
+            52,
+            40,
+            10
+          ]
+        ]
+      },
+      "accuracy_ci95": {
+        "low": 0.329665,
+        "high": 0.516372,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "class_note": "roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities"
+    },
+    "persistence": {
+      "n_folds": 37,
+      "n_pooled": 1104,
+      "n_effective": 36.8,
+      "target": "fwd_vol_30d",
+      "spearman": 0.210949,
+      "spearman_ci95": {
+        "low": 0.020382,
+        "high": 0.442397,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "accuracy": 0.527174,
+      "balanced_accuracy": 0.329038,
+      "macro_f1": 0.329945,
+      "mcc": 0.060547,
+      "per_class": {
+        "low": {
+          "precision": 0.68544,
+          "recall": 0.704802,
+          "support": 708,
+          "predicted": 728
+        },
+        "medium": {
+          "precision": 0.30855,
+          "recall": 0.282313,
+          "support": 294,
+          "predicted": 269
+        },
+        "high": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 102,
+          "predicted": 107
+        }
+      },
+      "confusion_matrix": {
+        "labels": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "rows_actual_cols_predicted": [
+          [
+            499,
+            156,
+            53
+          ],
+          [
+            157,
+            83,
+            54
+          ],
+          [
+            72,
+            30,
+            0
+          ]
+        ]
+      },
+      "accuracy_ci95": {
+        "low": 0.405797,
+        "high": 0.663111,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "class_note": "roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities"
+    }
+  },
+  "ranking_first_60pct": {
+    "n_folds": 22,
+    "date_range": [
+      "2022-10-10",
+      "2024-07-30"
+    ],
+    "metric": "pooled Spearman(predicted log-vol, fwd_vol_30d)",
+    "order": [
+      "ridge_all_a10",
+      "ridge_all_a1",
+      "har_ridge_a1",
+      "hgb_d3"
+    ],
+    "results": {
+      "har_ridge_a1": {
+        "n_folds": 22,
+        "n_pooled": 660,
+        "n_effective": 22.0,
+        "target": "fwd_vol_30d",
+        "spearman": 0.021313,
+        "spearman_ci95": {
+          "low": -0.226339,
+          "high": 0.327241,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "accuracy": 0.307576,
+        "balanced_accuracy": 0.311005,
+        "macro_f1": 0.215581,
+        "mcc": -0.05405,
+        "per_class": {
+          "low": {
+            "precision": 0.496124,
+            "recall": 0.156479,
+            "support": 409,
+            "predicted": 129
+          },
+          "medium": {
+            "precision": 0.277445,
+            "recall": 0.776536,
+            "support": 179,
+            "predicted": 501
+          },
+          "high": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 72,
+            "predicted": 30
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              64,
+              319,
+              26
+            ],
+            [
+              36,
+              139,
+              4
+            ],
+            [
+              29,
+              43,
+              0
+            ]
+          ]
+        },
+        "accuracy_ci95": {
+          "low": 0.174205,
+          "high": 0.442462,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "class_note": "roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities"
+      },
+      "ridge_all_a1": {
+        "n_folds": 22,
+        "n_pooled": 660,
+        "n_effective": 22.0,
+        "target": "fwd_vol_30d",
+        "spearman": 0.141727,
+        "spearman_ci95": {
+          "low": -0.09691,
+          "high": 0.362016,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "accuracy": 0.309091,
+        "balanced_accuracy": 0.322292,
+        "macro_f1": 0.208481,
+        "mcc": -0.018402,
+        "per_class": {
+          "low": {
+            "precision": 0.604396,
+            "recall": 0.134474,
+            "support": 409,
+            "predicted": 91
+          },
+          "medium": {
+            "precision": 0.267986,
+            "recall": 0.832402,
+            "support": 179,
+            "predicted": 556
+          },
+          "high": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 72,
+            "predicted": 13
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              55,
+              346,
+              8
+            ],
+            [
+              25,
+              149,
+              5
+            ],
+            [
+              11,
+              61,
+              0
+            ]
+          ]
+        },
+        "accuracy_ci95": {
+          "low": 0.189356,
+          "high": 0.433371,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "class_note": "roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities"
+      },
+      "ridge_all_a10": {
+        "n_folds": 22,
+        "n_pooled": 660,
+        "n_effective": 22.0,
+        "target": "fwd_vol_30d",
+        "spearman": 0.14315,
+        "spearman_ci95": {
+          "low": -0.096667,
+          "high": 0.365397,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "accuracy": 0.304545,
+        "balanced_accuracy": 0.319847,
+        "macro_f1": 0.204127,
+        "mcc": -0.026009,
+        "per_class": {
+          "low": {
+            "precision": 0.597701,
+            "recall": 0.127139,
+            "support": 409,
+            "predicted": 87
+          },
+          "medium": {
+            "precision": 0.265597,
+            "recall": 0.832402,
+            "support": 179,
+            "predicted": 561
+          },
+          "high": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 72,
+            "predicted": 12
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              52,
+              350,
+              7
+            ],
+            [
+              25,
+              149,
+              5
+            ],
+            [
+              10,
+              62,
+              0
+            ]
+          ]
+        },
+        "accuracy_ci95": {
+          "low": 0.184811,
+          "high": 0.428826,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "class_note": "roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities"
+      },
+      "hgb_d3": {
+        "n_folds": 22,
+        "n_pooled": 660,
+        "n_effective": 22.0,
+        "target": "fwd_vol_30d",
+        "spearman": -0.14915,
+        "spearman_ci95": {
+          "low": -0.39474,
+          "high": 0.147905,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "accuracy": 0.342424,
+        "balanced_accuracy": 0.295416,
+        "macro_f1": 0.285346,
+        "mcc": -0.043576,
+        "per_class": {
+          "low": {
+            "precision": 0.519531,
+            "recall": 0.325183,
+            "support": 409,
+            "predicted": 256
+          },
+          "medium": {
+            "precision": 0.354839,
+            "recall": 0.49162,
+            "support": 179,
+            "predicted": 248
+          },
+          "high": {
+            "precision": 0.032051,
+            "recall": 0.069444,
+            "support": 72,
+            "predicted": 156
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              133,
+              145,
+              131
+            ],
+            [
+              71,
+              88,
+              20
+            ],
+            [
+              52,
+              15,
+              5
+            ]
+          ]
+        },
+        "accuracy_ci95": {
+          "low": 0.245417,
+          "high": 0.463636,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "class_note": "roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities"
+      },
+      "persistence": {
+        "n_folds": 22,
+        "n_pooled": 660,
+        "n_effective": 22.0,
+        "target": "fwd_vol_30d",
+        "spearman": 0.139615,
+        "spearman_ci95": {
+          "low": -0.115936,
+          "high": 0.436327,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "accuracy": 0.545455,
+        "balanced_accuracy": 0.370891,
+        "macro_f1": 0.375007,
+        "mcc": 0.131609,
+        "per_class": {
+          "low": {
+            "precision": 0.672941,
+            "recall": 0.699267,
+            "support": 409,
+            "predicted": 425
+          },
+          "medium": {
+            "precision": 0.468354,
+            "recall": 0.413408,
+            "support": 179,
+            "predicted": 158
+          },
+          "high": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 72,
+            "predicted": 77
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              286,
+              74,
+              49
+            ],
+            [
+              77,
+              74,
+              28
+            ],
+            [
+              62,
+              10,
+              0
+            ]
+          ]
+        },
+        "accuracy_ci95": {
+          "low": 0.402992,
+          "high": 0.712121,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "class_note": "roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities"
+      }
+    }
+  },
+  "confirmation_last_40pct": {
+    "n_folds": 15,
+    "n_pooled": 444,
+    "n_effective": 14.8,
+    "first_origin_row": 1420,
+    "date_range": [
+      "2024-07-31",
+      "2025-10-17"
+    ],
+    "top_config": "ridge_all_a10",
+    "spearman_top": 0.035832,
+    "spearman_persistence": 0.25685,
+    "paired_diff_spearman_top_minus_persistence": {
+      "estimate": -0.221018,
+      "low": -0.460536,
+      "high": 0.014495,
+      "level": 0.95,
+      "block_size": 30,
+      "n_boot": 1000,
+      "seed": 0
+    },
+    "results": {
+      "har_ridge_a1": {
+        "n_folds": 15,
+        "n_pooled": 444,
+        "n_effective": 14.8,
+        "target": "fwd_vol_30d",
+        "spearman": 0.142034,
+        "spearman_ci95": {
+          "low": -0.189694,
+          "high": 0.413451,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "accuracy": 0.490991,
+        "balanced_accuracy": 0.389298,
+        "macro_f1": 0.340445,
+        "mcc": 0.175034,
+        "per_class": {
+          "low": {
+            "precision": 0.829268,
+            "recall": 0.454849,
+            "support": 299,
+            "predicted": 164
+          },
+          "medium": {
+            "precision": 0.311787,
+            "recall": 0.713043,
+            "support": 115,
+            "predicted": 263
+          },
+          "high": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 30,
+            "predicted": 17
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              136,
+              159,
+              4
+            ],
+            [
+              20,
+              82,
+              13
+            ],
+            [
+              8,
+              22,
+              0
+            ]
+          ]
+        },
+        "accuracy_ci95": {
+          "low": 0.340034,
+          "high": 0.653153,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "class_note": "roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities"
+      },
+      "ridge_all_a1": {
+        "n_folds": 15,
+        "n_pooled": 444,
+        "n_effective": 14.8,
+        "target": "fwd_vol_30d",
+        "spearman": 0.0397,
+        "spearman_ci95": {
+          "low": -0.264276,
+          "high": 0.311454,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "accuracy": 0.421171,
+        "balanced_accuracy": 0.322631,
+        "macro_f1": 0.284125,
+        "mcc": -0.009344,
+        "per_class": {
+          "low": {
+            "precision": 0.687151,
+            "recall": 0.411371,
+            "support": 299,
+            "predicted": 179
+          },
+          "medium": {
+            "precision": 0.242424,
+            "recall": 0.556522,
+            "support": 115,
+            "predicted": 264
+          },
+          "high": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 30,
+            "predicted": 1
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              123,
+              175,
+              1
+            ],
+            [
+              51,
+              64,
+              0
+            ],
+            [
+              5,
+              25,
+              0
+            ]
+          ]
+        },
+        "accuracy_ci95": {
+          "low": 0.32652,
+          "high": 0.547354,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "class_note": "roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities"
+      },
+      "ridge_all_a10": {
+        "n_folds": 15,
+        "n_pooled": 444,
+        "n_effective": 14.8,
+        "target": "fwd_vol_30d",
+        "spearman": 0.035832,
+        "spearman_ci95": {
+          "low": -0.265079,
+          "high": 0.310677,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "accuracy": 0.423423,
+        "balanced_accuracy": 0.327313,
+        "macro_f1": 0.286411,
+        "mcc": 0.001199,
+        "per_class": {
+          "low": {
+            "precision": 0.693182,
+            "recall": 0.408027,
+            "support": 299,
+            "predicted": 176
+          },
+          "medium": {
+            "precision": 0.247191,
+            "recall": 0.573913,
+            "support": 115,
+            "predicted": 267
+          },
+          "high": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 30,
+            "predicted": 1
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              122,
+              176,
+              1
+            ],
+            [
+              49,
+              66,
+              0
+            ],
+            [
+              5,
+              25,
+              0
+            ]
+          ]
+        },
+        "accuracy_ci95": {
+          "low": 0.331081,
+          "high": 0.547297,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "class_note": "roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities"
+      },
+      "hgb_d3": {
+        "n_folds": 15,
+        "n_pooled": 444,
+        "n_effective": 14.8,
+        "target": "fwd_vol_30d",
+        "spearman": 0.117434,
+        "spearman_ci95": {
+          "low": -0.250683,
+          "high": 0.470416,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "accuracy": 0.515766,
+        "balanced_accuracy": 0.353437,
+        "macro_f1": 0.359314,
+        "mcc": 0.027707,
+        "per_class": {
+          "low": {
+            "precision": 0.724265,
+            "recall": 0.658863,
+            "support": 299,
+            "predicted": 272
+          },
+          "medium": {
+            "precision": 0.183673,
+            "recall": 0.234783,
+            "support": 115,
+            "predicted": 147
+          },
+          "high": {
+            "precision": 0.2,
+            "recall": 0.166667,
+            "support": 30,
+            "predicted": 25
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              197,
+              95,
+              7
+            ],
+            [
+              75,
+              27,
+              13
+            ],
+            [
+              0,
+              25,
+              5
+            ]
+          ]
+        },
+        "accuracy_ci95": {
+          "low": 0.38964,
+          "high": 0.675732,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "class_note": "roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities"
+      },
+      "persistence": {
+        "n_folds": 15,
+        "n_pooled": 444,
+        "n_effective": 14.8,
+        "target": "fwd_vol_30d",
+        "spearman": 0.25685,
+        "spearman_ci95": {
+          "low": -0.081946,
+          "high": 0.525628,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "accuracy": 0.5,
+        "balanced_accuracy": 0.263545,
+        "macro_f1": 0.262429,
+        "mcc": -0.061321,
+        "per_class": {
+          "low": {
+            "precision": 0.70297,
+            "recall": 0.712375,
+            "support": 299,
+            "predicted": 303
+          },
+          "medium": {
+            "precision": 0.081081,
+            "recall": 0.078261,
+            "support": 115,
+            "predicted": 111
+          },
+          "high": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 30,
+            "predicted": 30
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              213,
+              82,
+              4
+            ],
+            [
+              80,
+              9,
+              26
+            ],
+            [
+              10,
+              20,
+              0
+            ]
+          ]
+        },
+        "accuracy_ci95": {
+          "low": 0.310811,
+          "high": 0.718468,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "class_note": "roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities"
+      }
+    }
+  },
+  "verdict": {
+    "top_config": "ridge_all_a10",
+    "approved": false,
+    "rule": "D25: paired 95% CI of the Spearman difference vs persistence on the last 40% excludes 0 and the estimate is positive",
+    "note": "The confirmation set is small (n_effective 14.8), so 'not approved' reflects limited statistical power as well as possible lack of skill."
+  },
+  "metadata": {
+    "asset": "sol",
+    "generated_at": "2026-10-19T11:49:30Z",
+    "git_commit": "aeddd75931a508b366370d61f4dbc823c141b5ab",
+    "git_dirty": true,
+    "n_feature_rows": 2229,
+    "b2_test_start_row": 1894,
+    "rows_built": [
+      0,
+      1894
+    ],
+    "data_first_date": "2020-09-10",
+    "last_date_built": "2025-11-16",
+    "sealed_test_first_date": "2025-11-17",
+    "pooled_rows": [
+      760,
+      1864
+    ],
+    "max_label_row_reached": 1893,
+    "min_train_rows": 730,
+    "step_rows": 30,
+    "horizon_days": 30,
+    "embargo_days": 30,
+    "note": "Risk model walk-forward (D21, D24, D25). All configs and fold thresholds fit on each fold's train rows only. Test rows [b2, n) were never built or read."
+  }
+}
