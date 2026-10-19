@@ -16,17 +16,19 @@ const KINDS = [
  * Assets come from the covered universe (GET /discover), so only assets the platform scores can be picked.
  * Closes itself and calls onAdded() on success; failures stay in the dialog as a toast so nothing typed is lost.
  *
+ * Pass initialKind + initialAssetId to open with an asset already chosen (e.g. from a watchlist).
+ *
  * Edit mode: pass `holding` = { id, kind, assetId, symbol, name, quantity, price, tokenId } (price is the
  * average buy price: USD for crypto, ETH for an NFT). The asset itself can't be changed, only the numbers.
  */
-export default function AddHoldingModal({ onClose, onAdded, initialKind = "crypto", holding = null }) {
+export default function AddHoldingModal({ onClose, onAdded, initialKind = "crypto", initialAssetId = null, holding = null }) {
   const editing = !!holding;
   const toast = useToast();
   const { data: universe, loading, error, refetch } = useAsync(() => fetchUniverse({ category: "all", sort: "name", order: "asc" }), []);
 
   const [kind, setKind] = useState(holding?.kind ?? initialKind);
   const [query, setQuery] = useState("");
-  const [selectedId, setSelectedId] = useState(holding?.assetId ?? null);
+  const [selectedId, setSelectedId] = useState(holding?.assetId ?? initialAssetId);
   const [quantity, setQuantity] = useState(holding?.quantity != null ? String(holding.quantity) : "");
   const [price, setPrice] = useState(holding?.price != null ? String(holding.price) : "");
   const [tokenId, setTokenId] = useState(holding?.tokenId ?? "");
@@ -107,6 +109,7 @@ export default function AddHoldingModal({ onClose, onAdded, initialKind = "crypt
         setSubmitting(false);
         return;
       }
+      toast.success(`${holding.name} was updated.`, { title: "Holding saved" });
       onAdded?.();
       onClose();
       return;
@@ -137,6 +140,7 @@ export default function AddHoldingModal({ onClose, onAdded, initialKind = "crypt
       setSubmitting(false);
       return;
     }
+    toast.success(`${selected.name} was added to your portfolio.`, { title: "Holding added" });
     onAdded?.();
     onClose();
   };

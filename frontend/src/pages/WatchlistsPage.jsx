@@ -5,7 +5,10 @@ import WatchlistSidebar from "../components/watchlists/WatchlistSidebar.jsx";
 import WatchlistRow from "../components/watchlists/WatchlistRow.jsx";
 import CreateWatchlistModal from "../components/watchlists/CreateWatchlistModal.jsx";
 import "../styles/watchlists.css";
+import { formatAssetPrice } from "../utils/formatters";
 import { ErrorState, useToast } from "../errors";
+import AddHoldingModal from "../components/portfolio/AddHoldingModal";
+import CreateAlertModal from "../components/alerts/CreateAlertModal";
 
 function formatDate(iso) {
   if (!iso) return "";
@@ -17,6 +20,8 @@ export default function WatchlistsPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [searchableItems, setSearchableItems] = useState([]);
+  const [addToPortfolio, setAddToPortfolio] = useState(null); // watchlist item being promoted to a holding
+  const [alertFor, setAlertFor] = useState(null); // watchlist item an alert is being set on
   const toast = useToast();
   const [activeId, setActiveId] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -102,12 +107,9 @@ export default function WatchlistsPage() {
     );
   };
 
-  const handleAddToPortfolio = (item) => {
-    // Portfolio holdings creation lives in portfolioApi.addHolding — wire
-    // this to a real "add holding" modal when one exists. For now this is
-    // the integration point.
-    console.log("Add to portfolio requested:", item);
-  };
+  // Promote a watched asset to a holding: opens the add-holding dialog with it already chosen.
+  const handleAddToPortfolio = (item) => setAddToPortfolio(item);
+  const handleSetAlert = (item) => setAlertFor(item);
 
   return (
     <div className="sv2">
@@ -167,6 +169,7 @@ export default function WatchlistsPage() {
                       key={item.id}
                       item={item}
                       onAddToPortfolio={handleAddToPortfolio}
+                      onSetAlert={handleSetAlert}
                       onRemove={handleRemoveItem}
                     />
                   ))
@@ -174,6 +177,25 @@ export default function WatchlistsPage() {
               </div>
             )}
           </div>
+        )}
+
+        {addToPortfolio && (
+          <AddHoldingModal
+            initialKind={addToPortfolio.type === "nft" ? "nft" : "crypto"}
+            initialAssetId={addToPortfolio.id}
+            onClose={() => setAddToPortfolio(null)}
+          />
+        )}
+        {alertFor && (
+          <CreateAlertModal
+            target={
+              alertFor.type === "nft"
+                ? { type: "nft", slug: alertFor.id, name: alertFor.name }
+                : { type: "crypto", symbol: alertFor.symbol, name: alertFor.name }
+            }
+            hint={alertFor.price != null ? `Currently ${formatAssetPrice(alertFor.price)}` : undefined}
+            onClose={() => setAlertFor(null)}
+          />
         )}
 
         {showModal && (
