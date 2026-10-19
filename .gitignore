@@ -22,3 +22,4 @@ node_modules/
 *.keras
 ml/artifacts/*/*
 !ml/artifacts/*/metadata.json
+PLANNER.md
