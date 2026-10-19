@@ -1,11 +1,12 @@
 import { useAsync } from "../../hooks/useAsync";
+import { onHoldingsChanged } from "../../services/holdingsEvents";
 import { portfolioApi } from "../../services/portfolioApi";
 import { ErrorState } from "../../errors";
 import { formatPct } from "../../utils/formatters";
 import NftArtPlaceholder from "./NftArtPlaceholder";
 
 export default function NftHoldingsGrid() {
-  const { data: holdings, error, refetch } = useAsync(() => portfolioApi.getNftHoldings(), []);
+  const { data: holdings, error, refetch } = useAsync(() => portfolioApi.getNftHoldings(), [], { subscribe: onHoldingsChanged });
 
   return (
     <div className="sv2-card sv2-card-pad" style={{ marginTop: 10 }}>

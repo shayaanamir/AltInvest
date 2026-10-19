@@ -1,4 +1,5 @@
 import { useAsync } from "../../hooks/useAsync";
+import { onHoldingsChanged } from "../../services/holdingsEvents";
 import { portfolioApi } from "../../services/portfolioApi";
 import { ErrorState } from "../../errors";
 import { formatCurrencyFull, formatCurrencyWhole, formatPct } from "../../utils/formatters";
@@ -30,7 +31,7 @@ function DiversificationRing({ score, color, track }) {
 }
 
 export default function PortfolioStats() {
-  const { data: summary, error, refetch } = useAsync(() => portfolioApi.getSummary(), []);
+  const { data: summary, error, refetch } = useAsync(() => portfolioApi.getSummary(), [], { subscribe: onHoldingsChanged });
 
   if (error) {
     return (

@@ -1,5 +1,6 @@
 import { apiFetch } from "./apiClient";
 import { fetchUniverse } from "./assetRepository";
+import { notifyHoldingsChanged } from "./holdingsEvents";
 
 function round2(n) {
   return Math.round(n * 100) / 100;
@@ -58,8 +59,10 @@ async function fetchAllHoldings() {
   _cachedHoldings = await apiFetch("/portfolio/holdings");
   return _cachedHoldings;
 }
+// Called after every successful add / edit / remove: drops the cache and tells open screens to reload.
 export function invalidateHoldingsCache() {
   _cachedHoldings = null;
+  notifyHoldingsChanged();
 }
 
 async function fetchUniverseById() {

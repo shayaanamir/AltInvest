@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { onHoldingsChanged } from "../../services/holdingsEvents";
 import { useAsync } from "../../hooks/useAsync";
 import { useElementSize } from "../../hooks/useElementSize";
 import { dashboardApi } from "../../services/dashboardApi";
@@ -10,8 +11,8 @@ export default function PortfolioPerformanceCard() {
   const [filter, setFilter] = useState("1M");
   const [containerRef, dims] = useElementSize({ W: 560, H: 220 });
 
-  const { data: stats, error: statsError, refetch: refetchStats } = useAsync(() => dashboardApi.getMarketStats(), []);
-  const { data: rawSeries, loading, error, refetch } = useAsync(() => dashboardApi.getPerformanceHistory(filter), [filter]);
+  const { data: stats, error: statsError, refetch: refetchStats } = useAsync(() => dashboardApi.getMarketStats(), [], { subscribe: onHoldingsChanged });
+  const { data: rawSeries, loading, error, refetch } = useAsync(() => dashboardApi.getPerformanceHistory(filter), [filter], { subscribe: onHoldingsChanged });
   const series = rawSeries || [];
 
   const hasHoldings = stats && stats.holdingsCount > 0;

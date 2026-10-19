@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { onHoldingsChanged } from "../../services/holdingsEvents";
 import { useAsync } from "../../hooks/useAsync";
 import { portfolioApi } from "../../services/portfolioApi";
 import { formatAssetPrice, formatPct } from "../../utils/formatters";
@@ -6,35 +8,13 @@ import { getAaiTierColor } from "../../utils/scoring";
 import AssetAvatar from "../shared/AssetAvatar";
 import { IconPlus, IconPencil, IconTrash, IconBell } from "../icons";
 import { ErrorState, useToast } from "../../errors";
+import AddHoldingModal from "./AddHoldingModal";
 
 export default function CryptoHoldingsTable() {
   const navigate = useNavigate();
   const toast = useToast();
-  const { data: holdings, error, refetch } = useAsync(() => portfolioApi.getCryptoHoldings(), []);
-
-  // Minimal wiring until a proper "Add holding" modal exists — prompts for
-  // the three required fields and posts to POST /portfolio/holdings.
-  const handleAddHolding = async () => {
-    const symbol = window.prompt("Asset symbol (e.g. BTC):");
-    if (!symbol) return;
-    const quantity = parseFloat(window.prompt("Quantity:"));
-    if (!quantity || Number.isNaN(quantity)) return;
-    const avgBuyPrice = parseFloat(window.prompt("Average buy price (USD):"));
-    if (!avgBuyPrice || Number.isNaN(avgBuyPrice)) return;
-
-    try {
-      await portfolioApi.addHolding({
-        asset_type: "crypto",
-        symbol: symbol.toUpperCase(),
-        quantity,
-        avg_buy_price_usd: avgBuyPrice,
-        cost_basis_usd: quantity * avgBuyPrice,
-      });
-      refetch();
-    } catch (e) {
-      toast.error(e, { title: "Couldn't add holding" });
-    }
-  };
+  const [adding, setAdding] = useState(false);
+  const { data: holdings, error, refetch } = useAsync(() => portfolioApi.getCryptoHoldings(), [], { subscribe: onHoldingsChanged });
 
   return (
     <div className="sv2-card sv2-card-pad">
@@ -43,7 +23,7 @@ export default function CryptoHoldingsTable() {
           <h2 className="sv2-card-title">Holdings Breakdown</h2>
           <div className="sv2-card-sub">Core portfolio assets with real-time AAI sentiment overlay</div>
         </div>
-        <button className="sv2-btn-outline" style={{ flex: "none" }} type="button" onClick={handleAddHolding}>
+        <button className="sv2-btn-outline" style={{ flex: "none" }} type="button" onClick={() => setAdding(true)}>
           <IconPlus size={14} /> Add holding
         </button>
       </div>
@@ -117,6 +97,7 @@ export default function CryptoHoldingsTable() {
           })
         )}
       </div>
+      {adding && <AddHoldingModal onClose={() => setAdding(false)} />}
     </div>
   );
 }

@@ -1,9 +1,10 @@
 import { useAsync } from "../../hooks/useAsync";
+import { onHoldingsChanged } from "../../services/holdingsEvents";
 import { portfolioApi } from "../../services/portfolioApi";
 import { ErrorState } from "../../errors";
 
 export default function PortfolioIntelligence() {
-  const { data: intel, error, refetch } = useAsync(() => portfolioApi.getIntelligence(), []);
+  const { data: intel, error, refetch } = useAsync(() => portfolioApi.getIntelligence(), [], { subscribe: onHoldingsChanged });
 
   if (error) {
     return (

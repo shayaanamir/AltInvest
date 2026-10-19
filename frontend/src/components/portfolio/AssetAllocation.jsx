@@ -1,4 +1,5 @@
 import { useAsync } from "../../hooks/useAsync";
+import { onHoldingsChanged } from "../../services/holdingsEvents";
 import { portfolioApi } from "../../services/portfolioApi";
 import { ErrorState } from "../../errors";
 
@@ -41,7 +42,7 @@ function DonutChart({ data, track }) {
 }
 
 export default function AssetAllocation() {
-  const { data: allocation, error, refetch } = useAsync(() => portfolioApi.getAllocation(), []);
+  const { data: allocation, error, refetch } = useAsync(() => portfolioApi.getAllocation(), [], { subscribe: onHoldingsChanged });
 
   return (
     <div className="sv2-card sv2-card-pad">

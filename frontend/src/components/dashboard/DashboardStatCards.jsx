@@ -1,11 +1,12 @@
 import { useAsync } from "../../hooks/useAsync";
+import { onHoldingsChanged } from "../../services/holdingsEvents";
 import { dashboardApi } from "../../services/dashboardApi";
 import { formatCurrencyCompact, formatCurrencyFull } from "../../utils/formatters";
 import MiniMoodGauge from "./MiniMoodGauge";
 import { ErrorState } from "../../errors";
 
 export default function DashboardStatCards() {
-  const { data: stats, error, refetch } = useAsync(() => dashboardApi.getMarketStats(), []);
+  const { data: stats, error, refetch } = useAsync(() => dashboardApi.getMarketStats(), [], { subscribe: onHoldingsChanged });
 
   if (error) {
     return (

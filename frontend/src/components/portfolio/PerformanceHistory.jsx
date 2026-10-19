@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { onHoldingsChanged } from "../../services/holdingsEvents";
 import { useAsync } from "../../hooks/useAsync";
 import { useElementSize } from "../../hooks/useElementSize";
 import { portfolioApi } from "../../services/portfolioApi";
@@ -10,7 +11,7 @@ const RANGES = ["1M", "3M", "1Y"];
 export default function PerformanceHistory() {
   const [range, setRange] = useState("3M");
   const [containerRef, dims] = useElementSize({ W: 560, H: 220 });
-  const { data: rawSeries, loading, error, refetch } = useAsync(() => portfolioApi.getPerformanceHistory(range), [range]);
+  const { data: rawSeries, loading, error, refetch } = useAsync(() => portfolioApi.getPerformanceHistory(range), [range], { subscribe: onHoldingsChanged });
   const series = rawSeries || [];
 
   const { W, H } = dims;
