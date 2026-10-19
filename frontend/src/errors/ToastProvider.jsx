@@ -12,6 +12,7 @@ const MAX_VISIBLE = 4;
  * Popups for something the person just tried that failed (save, delete, refresh…).
  *   const toast = useToast();
  *   toast.error(err, { title: "Couldn't save profile" });
+ *   toast.success("Alert created.");
  * Also shows anything sent through errorBus.reportError() and any unhandled promise rejection.
  */
 export function ToastProvider({ children }) {
@@ -34,6 +35,13 @@ export function ToastProvider({ children }) {
     setTimeout(() => dismiss(id), AUTO_DISMISS_MS);
   }, [dismiss]);
 
+  // Confirmation that something the person asked for went through (not an error).
+  const success = useCallback((message, { title } = {}) => {
+    const id = nextId.current++;
+    setToasts((t) => [...t.slice(-(MAX_VISIBLE - 1)), { id, title: title || "Done", message, ok: true }]);
+    setTimeout(() => dismiss(id), AUTO_DISMISS_MS);
+  }, [dismiss]);
+
   useEffect(() => onReportedError((err, options) => error(err, options)), [error]);
 
   // Anything that rejects with nobody catching it would otherwise vanish into the console.
@@ -47,14 +55,14 @@ export function ToastProvider({ children }) {
     return () => window.removeEventListener("unhandledrejection", handler);
   }, [error]);
 
-  const value = useMemo(() => ({ error }), [error]);
+  const value = useMemo(() => ({ error, success }), [error, success]);
 
   return (
     <ToastContext.Provider value={value}>
       {children}
       <div className="err-toasts" aria-live="polite">
         {toasts.map((t) => (
-          <div key={t.id} className="err-toast" role="alert">
+          <div key={t.id} className={`err-toast${t.ok ? " ok" : ""}`} role={t.ok ? "status" : "alert"}>
             <div>
               <div className="err-toast-title">{t.title}</div>
               <div>{t.message}</div>

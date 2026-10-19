@@ -12,20 +12,24 @@ const KINDS = [
 ];
 
 /**
- * Adds a holding to the signed-in user's portfolio (POST /portfolio/holdings).
+ * Adds a holding to the signed-in user's portfolio (POST /portfolio/holdings), or edits one.
  * Assets come from the covered universe (GET /discover), so only assets the platform scores can be picked.
  * Closes itself and calls onAdded() on success; failures stay in the dialog as a toast so nothing typed is lost.
+ *
+ * Edit mode: pass `holding` = { id, kind, assetId, symbol, name, quantity, price, tokenId } (price is the
+ * average buy price: USD for crypto, ETH for an NFT). The asset itself can't be changed, only the numbers.
  */
-export default function AddHoldingModal({ onClose, onAdded, initialKind = "crypto" }) {
+export default function AddHoldingModal({ onClose, onAdded, initialKind = "crypto", holding = null }) {
+  const editing = !!holding;
   const toast = useToast();
   const { data: universe, loading, error, refetch } = useAsync(() => fetchUniverse({ category: "all", sort: "name", order: "asc" }), []);
 
-  const [kind, setKind] = useState(initialKind);
+  const [kind, setKind] = useState(holding?.kind ?? initialKind);
   const [query, setQuery] = useState("");
-  const [selectedId, setSelectedId] = useState(null);
-  const [quantity, setQuantity] = useState("");
-  const [price, setPrice] = useState("");
-  const [tokenId, setTokenId] = useState("");
+  const [selectedId, setSelectedId] = useState(holding?.assetId ?? null);
+  const [quantity, setQuantity] = useState(holding?.quantity != null ? String(holding.quantity) : "");
+  const [price, setPrice] = useState(holding?.price != null ? String(holding.price) : "");
+  const [tokenId, setTokenId] = useState(holding?.tokenId ?? "");
   const [fieldErrors, setFieldErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -42,7 +46,9 @@ export default function AddHoldingModal({ onClose, onAdded, initialKind = "crypt
       .filter((u) => !q || u.name.toLowerCase().includes(q) || (u.symbol || "").toLowerCase().includes(q));
   }, [universe, kind, query]);
 
-  const selected = (universe || []).find((u) => u.id === selectedId && u.type === kind) || null;
+  const selected = editing
+    ? { id: holding.assetId, symbol: holding.symbol, name: holding.name, price: null }
+    : (universe || []).find((u) => u.id === selectedId && u.type === kind) || null;
   const ethUsd = (universe || []).find((u) => u.type === "crypto" && u.symbol === "ETH")?.price ?? null;
   const isNft = kind === "nft";
 
@@ -81,6 +87,31 @@ export default function AddHoldingModal({ onClose, onAdded, initialKind = "crypt
     if (Object.keys(errors).length > 0) return;
 
     const p = Number(price);
+
+    if (editing) {
+      const patch = isNft
+        ? {
+            avg_buy_price_eth: p,
+            ...(ethUsd ? { avg_buy_eth_usd_rate: ethUsd, cost_basis_usd: Math.round(p * ethUsd * 100) / 100 } : {}),
+          }
+        : {
+            quantity: Number(quantity),
+            avg_buy_price_usd: p,
+            cost_basis_usd: Math.round(Number(quantity) * p * 100) / 100,
+          };
+      setSubmitting(true);
+      try {
+        await portfolioApi.updateHolding(holding.id, patch);
+      } catch (err) {
+        toast.error(err, { title: "Couldn't save the changes" });
+        setSubmitting(false);
+        return;
+      }
+      onAdded?.();
+      onClose();
+      return;
+    }
+
     const payload = isNft
       ? {
           asset_type: "nft",
@@ -116,18 +147,22 @@ export default function AddHoldingModal({ onClose, onAdded, initialKind = "crypt
         className="ahm"
         role="dialog"
         aria-modal="true"
-        aria-label="Add a holding"
+        aria-label={editing ? "Edit holding" : "Add a holding"}
         onClick={(e) => e.stopPropagation()}
         onSubmit={handleSubmit}
         noValidate
       >
         <div className="ahm-head">
-          <h2>Add a holding</h2>
+          <h2>{editing ? "Edit holding" : "Add a holding"}</h2>
           <button type="button" className="ahm-close" aria-label="Close" onClick={onClose} disabled={submitting}>×</button>
         </div>
-        <p className="ahm-desc">Record something you own. It feeds your portfolio value, performance and every score shown against your holdings.</p>
+        <p className="ahm-desc">
+          {editing
+            ? `Correct what you recorded for ${holding.name}. Your portfolio value and cost basis update straight away.`
+            : "Record something you own. It feeds your portfolio value, performance and every score shown against your holdings."}
+        </p>
 
-        <div className="ahm-tabs" role="tablist">
+        {!editing && <div className="ahm-tabs" role="tablist">
           {KINDS.map((k) => (
             <button
               key={k.key}
@@ -140,17 +175,18 @@ export default function AddHoldingModal({ onClose, onAdded, initialKind = "crypt
               {k.label}
             </button>
           ))}
-        </div>
+        </div>}
 
         <label className="ahm-label">{isNft ? "Collection" : "Asset"}</label>
-        <input
+        {editing && <div className="ahm-fixed">{holding.name}{holding.symbol ? ` · ${holding.symbol}` : ""}</div>}
+        {!editing && <input
           className="ahm-input"
           placeholder={isNft ? "Search collections" : "Search assets"}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           autoFocus
-        />
-        <div className="ahm-list">
+        />}
+        {!editing && <div className="ahm-list">
           {error ? (
             <ErrorState error={error} onRetry={refetch} title="Couldn't load the asset list" />
           ) : loading ? (
@@ -176,13 +212,13 @@ export default function AddHoldingModal({ onClose, onAdded, initialKind = "crypt
               </button>
             ))
           )}
-        </div>
+        </div>}
         {fieldErrors.asset && <div className="ahm-field-error">{fieldErrors.asset}</div>}
 
         {isNft ? (
           <>
             <label className="ahm-label">Token ID</label>
-            <input className="ahm-input" inputMode="numeric" placeholder="e.g. 4271" value={tokenId} onChange={(e) => setTokenId(e.target.value)} />
+            <input className="ahm-input" inputMode="numeric" placeholder="e.g. 4271" value={tokenId} onChange={(e) => setTokenId(e.target.value)} disabled={editing} />
             {fieldErrors.tokenId && <div className="ahm-field-error">{fieldErrors.tokenId}</div>}
           </>
         ) : (
@@ -208,7 +244,7 @@ export default function AddHoldingModal({ onClose, onAdded, initialKind = "crypt
 
         <div className="ahm-footer">
           <button type="button" className="ahm-cancel" onClick={onClose} disabled={submitting}>Cancel</button>
-          <button type="submit" className="ahm-submit" disabled={submitting}>{submitting ? "Adding…" : "Add holding"}</button>
+          <button type="submit" className="ahm-submit" disabled={submitting}>{submitting ? (editing ? "Saving…" : "Adding…") : editing ? "Save changes" : "Add holding"}</button>
         </div>
       </form>
     </div>

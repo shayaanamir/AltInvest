@@ -45,3 +45,4 @@
 }
 .err-toast-title { color: var(--sv2-text); font-weight: 700; font-size: 13px; margin-bottom: 2px; }
 .err-toast-close { margin-left: auto; background: none; border: none; color: var(--sv2-text-mute); cursor: pointer; font-size: 16px; line-height: 1; padding: 0 0 0 6px; }
+.err-toast.ok { border-left-color: var(--sv2-green); }

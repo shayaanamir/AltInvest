@@ -22,6 +22,7 @@ function mapCryptoHolding(h, meta) {
     name: h.name || meta?.name || h.symbol,
     logoColor: meta?.color || "var(--sv2-accent)",
     quantity: h.quantity,
+    avgBuyPriceUsd: h.avg_buy_price_usd ?? null,
     valueUsd: currentValue,
     costBasisUsd: costBasis,
     // Per-holding 24h P&L isn't computed server-side; the asset's own market change is the closest stored signal.
@@ -43,6 +44,7 @@ function mapNftHolding(h, meta) {
     tokenId: h.nft_token_id,
     quantity: h.quantity,
     avgBuyPriceEth: h.avg_buy_price_eth ?? null,
+    ethUsdRateAtBuy: h.avg_buy_eth_usd_rate ?? null,
     currentPriceEth: floorEth,
     valueUsd: currentValueUsd,
     costBasisUsd: costBasis,

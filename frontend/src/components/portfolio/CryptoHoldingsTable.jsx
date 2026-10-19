@@ -9,11 +9,14 @@ import AssetAvatar from "../shared/AssetAvatar";
 import { IconPlus, IconPencil, IconTrash, IconBell } from "../icons";
 import { ErrorState, useToast } from "../../errors";
 import AddHoldingModal from "./AddHoldingModal";
+import CreateAlertModal from "../alerts/CreateAlertModal";
 
 export default function CryptoHoldingsTable() {
   const navigate = useNavigate();
   const toast = useToast();
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState(null); // holding being edited
+  const [alertFor, setAlertFor] = useState(null); // holding an alert is being set on
   const { data: holdings, error, refetch } = useAsync(() => portfolioApi.getCryptoHoldings(), [], { subscribe: onHoldingsChanged });
 
   return (
@@ -73,8 +76,8 @@ export default function CryptoHoldingsTable() {
                 <span className="pv2-suggested-btn">{h.aiAction}</span>
 
                 <div className="pv2-manage-icons" onClick={(e) => e.stopPropagation()}>
-                  <button type="button" title="Set alert"><IconBell size={14} /></button>
-                  <button type="button" title="Edit"><IconPencil size={13} /></button>
+                  <button type="button" title="Set alert" aria-label={`Set an alert on ${h.symbol}`} onClick={() => setAlertFor(h)}><IconBell size={14} /></button>
+                  <button type="button" title="Edit" aria-label={`Edit ${h.symbol}`} onClick={() => setEditing(h)}><IconPencil size={13} /></button>
                   <button
                     type="button"
                     title="Remove"
@@ -98,6 +101,22 @@ export default function CryptoHoldingsTable() {
         )}
       </div>
       {adding && <AddHoldingModal onClose={() => setAdding(false)} />}
+      {editing && (
+        <AddHoldingModal
+          holding={{
+            id: editing.id, kind: "crypto", assetId: editing.symbol, symbol: editing.symbol, name: editing.name,
+            quantity: editing.quantity, price: editing.avgBuyPriceUsd,
+          }}
+          onClose={() => setEditing(null)}
+        />
+      )}
+      {alertFor && (
+        <CreateAlertModal
+          target={{ type: "crypto", symbol: alertFor.symbol, name: alertFor.name }}
+          hint={alertFor.quantity ? `Currently ${formatAssetPrice(alertFor.valueUsd / alertFor.quantity)}` : undefined}
+          onClose={() => setAlertFor(null)}
+        />
+      )}
     </div>
   );
 }
