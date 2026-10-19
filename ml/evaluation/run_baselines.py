@@ -53,53 +53,66 @@ def counts(rows: list[int]) -> dict:
     return {"n_labelled": len(rows), "n_effective": len(rows) / config.HORIZON_DAYS}
 
 
+def price_metrics(close_now: np.ndarray, actual_price: np.ndarray, actual_r: np.ndarray, pred_r,
+                  block_size: int = 30) -> dict:
+    """Price metrics for predicted log returns (a constant or one per row). Shared with walk-forward."""
+    pred_r = np.broadcast_to(np.asarray(pred_r, dtype=float), actual_r.shape)
+    pred_price = close_now * np.exp(pred_r)
+    res = {
+        "mae_price": m.mae(pred_price, actual_price),
+        "rmse_price": m.rmse(pred_price, actual_price),
+        "mape_pct": m.mape(pred_price, actual_price),
+        "directional_accuracy": m.directional_accuracy(pred_r, actual_r),
+        "skill_vs_last_value": m.skill_vs_naive(m.mae(pred_price, actual_price), m.mae(close_now, actual_price)),
+        "mae_price_ci95": m.bootstrap_ci(np.abs(pred_price - actual_price), np.mean, block_size=block_size),
+    }
+    if res["directional_accuracy"] is None:
+        _add_note(res, "directional_accuracy is null: every prediction is a 0 return, so no sign to compare")
+    return res
+
+
 def price_section(d: dict, rows: list[int], preds: dict[str, float]) -> dict:
     close = d["raw"].set_index("timestamp")["close"]
     now, future = close.loc[d["feats"].index], close.shift(-config.HORIZON_DAYS).loc[d["feats"].index]
-    c, actual_price = now.iloc[rows], future.iloc[rows].to_numpy()
+    c, actual_price = now.iloc[rows].to_numpy(), future.iloc[rows].to_numpy()
     actual_r = d["labels"]["fwd_return_30d"].iloc[rows].to_numpy()
-    naive_mae = m.mae(c.to_numpy(), actual_price)
     out = counts(rows)
     for name, r in preds.items():
-        pred_price = bl.to_price(c, r).to_numpy()
-        res = {
-            "predicted_log_return": r,
-            "mae_price": m.mae(pred_price, actual_price),
-            "rmse_price": m.rmse(pred_price, actual_price),
-            "mape_pct": m.mape(pred_price, actual_price),
-            "directional_accuracy": m.directional_accuracy(np.full(len(rows), r), actual_r),
-            "skill_vs_last_value": m.skill_vs_naive(m.mae(pred_price, actual_price), naive_mae),
-            "mae_price_ci95": m.bootstrap_ci(np.abs(pred_price - actual_price), np.mean),
-        }
-        if res["directional_accuracy"] is None:
-            _add_note(res, "directional_accuracy is null: every prediction is a 0 return, so no sign to compare")
-        out[name] = res
+        out[name] = {"predicted_log_return": r, **price_metrics(c, actual_price, actual_r, r)}
     return out
+
+
+def class_metrics(a: np.ndarray, p: np.ndarray, classes: tuple, block_size: int = 30) -> dict:
+    """Hard-class metrics plus an accuracy CI. Shared with walk-forward."""
+    res = m.classification_summary(a, p, classes)
+    res["accuracy_ci95"] = m.bootstrap_ci((a == p).astype(float), np.mean, block_size=block_size)
+    res["roc_auc_ovr"], res["calibration"] = None, None
+    return _add_note(res, NO_PROBS)
 
 
 def class_section(actual, preds: dict, rows: list[int], classes: tuple) -> dict:
     a = actual.iloc[rows].to_numpy()
     out = counts(rows)
     for name, pred in preds.items():
-        p = pred.iloc[rows].to_numpy()
-        res = m.classification_summary(a, p, classes)
-        res["accuracy_ci95"] = m.bootstrap_ci((a == p).astype(float), np.mean)
-        res["roc_auc_ovr"], res["calibration"] = None, None
-        out[name] = _add_note(res, NO_PROBS)
+        out[name] = class_metrics(a, pred.iloc[rows].to_numpy(), classes)
     return out
 
 
-def risk_ranking(d: dict, rows: list[int]) -> dict:
-    x = bl.risk_ranking_score(d["feats"]).iloc[rows].to_numpy()
-    y = d["labels"]["fwd_vol_30d"].iloc[rows].to_numpy()
-
+def ranking_metrics(x: np.ndarray, y: np.ndarray, block_size: int = 30) -> dict:
+    """Spearman of a risk score against forward vol, with a block-bootstrap CI. Shared with walk-forward."""
     def stat(idx):
         i = idx.astype(int)
         s = m.spearman(x[i], y[i])
         return np.nan if s is None else s
 
     return {"score": "vol_30d (trailing)", "target": "fwd_vol_30d", "spearman": m.spearman(x, y),
-            "spearman_ci95": m.bootstrap_ci(np.arange(len(rows)), stat)}
+            "spearman_ci95": m.bootstrap_ci(np.arange(len(x)), stat, block_size=block_size)}
+
+
+def risk_ranking(d: dict, rows: list[int]) -> dict:
+    x = bl.risk_ranking_score(d["feats"]).iloc[rows].to_numpy()
+    y = d["labels"]["fwd_vol_30d"].iloc[rows].to_numpy()
+    return ranking_metrics(x, y)
 
 
 def risk_persistence_check(d: dict) -> dict:
@@ -135,6 +148,23 @@ def vol_spreads(d: dict) -> dict:
     return out
 
 
+def strategy_stats(r: np.ndarray) -> dict:
+    """Stats of per-window returns from non-overlapping 30-day windows. Shared with walk-forward."""
+    res = {
+        "mean_window_return": float(r.mean()),
+        "median_window_return": float(np.median(r)),
+        "hit_rate": float((r > 0).mean()),
+        "cumulative_return": m.cumulative_return(r),
+        "max_drawdown": m.max_drawdown(r),
+        "sharpe_annualised": m.sharpe(r, WINDOWS_PER_YEAR),
+        "mean_window_return_ci95": m.bootstrap_ci(r, np.mean, block_size=1),
+        "window_returns": r.tolist(),
+    }
+    if res["sharpe_annualised"] is None:
+        _add_note(res, "sharpe_annualised is null: window returns have zero variance")
+    return res
+
+
 def strategy_section(d: dict, split: str) -> dict:
     labelled = d["labels"].notna().all(axis=1)
     starts = bl.window_starts(d["splits"][split], labelled)
@@ -144,19 +174,7 @@ def strategy_section(d: dict, split: str) -> dict:
            "last_window_start": idx[starts[-1]].strftime("%Y-%m-%d") if starts else None,
            **counts(labelled_rows(d, split))}
     for name, r in bl.strategy_window_returns(d["labels"]["fwd_return_30d"], starts).items():
-        res = {
-            "mean_window_return": float(r.mean()),
-            "median_window_return": float(np.median(r)),
-            "hit_rate": float((r > 0).mean()),
-            "cumulative_return": m.cumulative_return(r),
-            "max_drawdown": m.max_drawdown(r),
-            "sharpe_annualised": m.sharpe(r, WINDOWS_PER_YEAR),
-            "mean_window_return_ci95": m.bootstrap_ci(r, np.mean, block_size=1),
-            "window_returns": r.tolist(),
-        }
-        if res["sharpe_annualised"] is None:
-            _add_note(res, "sharpe_annualised is null: window returns have zero variance")
-        out[name] = res
+        out[name] = strategy_stats(r)
     return out
 
 

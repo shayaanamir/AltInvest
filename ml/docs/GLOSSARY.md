@@ -69,7 +69,13 @@ Terms marked *(not used yet)* appear in the plan docs but no code uses them so f
 - **Moving-block bootstrap**: a bootstrap that resamples runs of 30 neighbouring rows together, so overlapping labels stay together.
 - **Max drawdown**: the largest fall from a previous peak of the money curve.
 - **Baseline**: a deliberately simple predictor (for example "price stays the same"). A model is only worth shipping if it beats it. Phase 3 baselines are in `ml/reports/{asset}/baselines.json`.
-- **Walk-forward**: testing by repeatedly training on the past and predicting the next stretch, moving forward in time. *(not used yet)*
+- **Walk-forward**: testing by repeatedly training on the past and predicting the next stretch, moving forward in time (D21, Phase 4.0).
+- **Expanding window**: each walk-forward step trains on all data from the start up to the cut-off, so the training set grows over time.
+- **Fold**: one walk-forward step: a training range plus the 30 rows it predicts.
+- **Origin**: the first row a fold predicts. The fold trains only on rows more than 30 before it.
+- **Pooled**: predictions from all folds put together and scored as one set.
+- **Sealed test split**: the last 15% of rows, which no code reads until the single final evaluation (D21).
+- **Paired bootstrap**: a bootstrap that resamples the same rows for two predictors at once, to get a CI for the difference between them (D22). *(not used yet)*
 - **Non-overlapping windows**: evaluating 30-day periods that do not share days, because daily steps with a 30-day horizon overlap 29/30 (docs/LEARNINGS.md). Used by the Phase 3 strategy baselines.
 - **Backtest**: replaying a strategy on past data to see how it would have done. *(not used yet)*
 

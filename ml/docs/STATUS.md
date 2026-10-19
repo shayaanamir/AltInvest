@@ -1,8 +1,30 @@
 # STATUS
-Current phase: 3 DONE for BTC, ETH, SOL (2026-10-19). No trained models.
+Current phase: 4.0 (walk-forward harness) DONE for BTC, ETH, SOL (2026-10-19). No trained models.
 Next: Phase 4a (price model). Not started; waiting on the user's go-ahead.
-Done: branch ml-v2, v1 archived at tag archive/ml-v1, docs, Phase 0 scaffold, Phase 1 (BTC), Phase 1b (ETH, SOL), Phase 2, Phase 3.
+Done: branch ml-v2, v1 archived at tag archive/ml-v1, docs, Phase 0 scaffold, Phase 1 (BTC), Phase 1b (ETH, SOL), Phase 2, Phase 3, Phase 4.0.
 Blocked: nothing.
+
+## Phase 4.0 (walk-forward harness): what ran (from repo root, 2026-10-19)
+- Started from a clean tree: HEAD a934f10, `git_dirty` False.
+- Docs: D21 (walk-forward, sealed test) and D22 (selection rule) added to DECISIONS.md. config.py: `MIN_TRAIN_ROWS = 730`, `WALKFORWARD_STEP = 30`.
+- Interpretation recorded in D21: first origin = MIN_TRAIN_ROWS + 30 = row 760, so the first fold trains on exactly 730 rows. The last fold is cut at b2-30 (BTC/ETH 21 rows, SOL 24 rows).
+- New modules:
+  - `ml/evaluation/walkforward.py`: `make_folds`, `run_folds`, `Spec(fit, predict)`, `SealedTestError`. Raises on any row >= b2, and on a data frame longer than b2. Predict inputs are features + close only (no labels).
+  - `ml/evaluation/run_walkforward.py`: builds features/labels only from raw rows before the first test row, then writes `ml/reports/{asset}/walkforward_baselines.json`.
+- Reuse changes to Phase 3 code (no output change: in-memory `run_baselines.run()` still equals the committed reports, metadata excluded, for all three assets):
+  - `run_baselines.py`: extracted `price_metrics`, `class_metrics`, `ranking_metrics` (each gained a `block_size` argument, default 30) and `strategy_stats` from the section functions.
+  - `baselines.py`: added `walkforward_specs()` adapters that call the existing rules unchanged.
+- `ml/tests/test_walkforward.py`: 7 tests (required a-f plus "predict inputs have no labels"). `python -m pytest ml` -> `66 passed`.
+- `python -m ml.evaluation.run_walkforward --asset btc|eth|sol` -> exit 0, all four sections. `git_dirty: true` with a stderr warning (Phase 4.0 code not yet committed).
+- Test rows never touched (from each report's metadata): `rows_built` = [0, b2); `max_label_row_reached` = b2-1 (BTC/ETH 2820, SOL 1893); `sealed_test_first_date` (BTC/ETH 2025-06-07, SOL 2025-11-17) equals the Phase 2 test start. Phase 3's reports already contain test metrics; this phase did not read or recompute them.
+
+| Pooled walk-forward | BTC | ETH | SOL |
+|---|---|---|---|
+| n_folds / n_pooled / n_effective | 68 / 2031 / 67.7 | 68 / 2031 / 67.7 | 37 / 1104 / 36.8 |
+| price MAE last-value / drift | 5456.61 / 5583.06 | 346.78 / 361.15 | 22.56 / 23.34 |
+| direction bal. acc. majority / always-UP / momentum | 0.3333 / 0.3333 / 0.3162 | 0.3333 / 0.3333 / 0.3649 | 0.3333 / 0.3333 / 0.326 |
+| risk persistence bal. acc. | 0.4378 | 0.468 | 0.329 |
+| risk persistence Spearman [95% CI] | 0.347215 [0.1611, 0.5143] | 0.515039 [0.3326, 0.6591] | 0.210949 [0.0204, 0.4424] |
 
 ## Phase 3 (baselines + metrics): what ran (from repo root, 2026-10-19)
 - Docs: D20 (evaluation on unbalanced classes) added to DECISIONS.md.
@@ -47,6 +69,33 @@ Blocked: nothing.
 - Reproducibility fix: `ml/gitinfo.py` now holds the git metadata for every report writer. `git_dirty` ignores ml/reports/ and git-ignored files, and warns on stderr when true. `ml/tests/test_gitinfo.py` adds 6 tests on a temporary fixture repo. `python -m pytest ml` -> `59 passed`.
 - Follow-up: added `fwd_vol_30d_spread` and `vol_30d_spread` (n, min, p5-p95, max, std, IQR per split, labelled rows) to baselines.json. VERIFIED: test std and IQR of fwd_vol_30d are 36-56% of train for all three assets (numbers in the verify block, step 6). The explanation stays a HYPOTHESIS.
 
+## How to verify Phase 4.0 yourself (PowerShell, from the repo root)
+```powershell
+Set-Location C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest
+
+# 1. All tests, then only the walk-forward tests (hand-made fixtures, offline)
+python -m pytest ml -q
+python -m pytest ml/tests/test_walkforward.py -v
+
+# 2. Re-run (needs ml/data/raw/*.csv). A WARNING line appears only if code outside ml/reports/ is uncommitted.
+foreach ($a in 'btc','eth','sol') { python -m ml.evaluation.run_walkforward --asset $a; "$a exit: $LASTEXITCODE" }
+
+# 3. Counts, sealing evidence and key pooled numbers
+python -c "import json; [print(a, (d:=json.load(open(f'ml/reports/{a}/walkforward_baselines.json')))['price']['pooled']['n_folds'], d['price']['pooled']['n_pooled'], d['metadata']['rows_built'], d['metadata']['max_label_row_reached'], d['metadata']['sealed_test_first_date'], round(d['price']['pooled']['last_value']['mae_price'],2), d['risk']['pooled']['persistence_ranking']['spearman']) for a in ('btc','eth','sol')]"
+
+# 4. The fold geometry by hand (D21): BTC/ETH b2=2821 -> 68 folds, origins 760..2770
+python -c "from ml.evaluation.walkforward import make_folds; f=make_folds(3319, 2821); print(len(f), f[0].origin, f[-1].origin, len(f[0].train), f[-1].predict)"
+```
+Expected (observed 2026-10-19):
+1. `66 passed`; the walk-forward file shows 7 passed.
+2. `wrote ...walkforward_baselines.json` and `exit: 0` for each asset.
+3. Output:
+   - `btc 68 2031 [0, 2821] 2820 2025-06-07 5456.61 0.347215`
+   - `eth 68 2031 [0, 2821] 2820 2025-06-07 346.78 0.515039`
+   - `sol 37 1104 [0, 1894] 1893 2025-11-17 22.56 0.210949`
+4. `68 760 2770 730 range(2770, 2791)`
+- `max_label_row_reached` must stay below the b2 shown in `rows_built`. If raw data is re-fetched, n and b2 grow and these numbers change.
+
 ## How to verify Phase 3 yourself (PowerShell, from the repo root)
 ```powershell
 Set-Location C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest
@@ -73,14 +122,14 @@ python -c "import json; [print(a, *[(k, (c:=json.load(open(f'ml/reports/{a}/base
 python -c "import json; [print(a, (d:=json.load(open(f'ml/reports/{a}/baselines.json')))['metadata']['git_dirty'], *[(s, v['std'], v['iqr']) for s, v in d['fwd_vol_30d_spread'].items()]) for a in ('btc','eth','sol')]"
 ```
 Expected (observed 2026-10-19):
-1. `59 passed`.
+1. `66 passed` (59 at the end of Phase 3; Phase 4.0 added 7).
 2. `wrote ...baselines.json` and `exit: 0` for each asset, with no WARNING line on a committed tree.
 3. Output:
    - `btc True 8095.51 0.655983 0.006854 16`
    - `eth True 439.12 0.566239 -0.113481 16`
    - `sol True 13.82 0.704918 -0.191428 11`
 4. `{'precision': None, 'recall': None, 'support': 0, 'predicted': 0}`, then `class(es) ['high'] never occur in the actual labels: their r`.
-5. `1 passed, 58 deselected`, then:
+5. `1 passed, 65 deselected`, then:
    - `btc ('train', 0.465702) ('validation', -0.167378) ('test', 0.006854) ('full_labelled', 0.505931) ('full_non_overlapping', 0.520186)`
    - `eth ('train', 0.464212) ('validation', 0.082533) ('test', -0.113481) ('full_labelled', 0.463487) ('full_non_overlapping', 0.445547)`
    - `sol ('train', 0.523997) ('validation', 0.297256) ('test', -0.191428) ('full_labelled', 0.585925) ('full_non_overlapping', 0.563747)`

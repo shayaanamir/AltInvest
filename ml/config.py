@@ -22,5 +22,9 @@ WARMUP_ROWS = 30
 DIRECTION_FLAT_PERCENTILE = 40          # of |fwd_return_30d|
 RISK_PERCENTILES = (33, 67)             # of fwd_vol_30d
 
+# Walk-forward (D21): each fold trains on at least MIN_TRAIN_ROWS rows; a new origin every WALKFORWARD_STEP rows.
+MIN_TRAIN_ROWS = 730
+WALKFORWARD_STEP = 30
+
 # Annualisation for Sharpe and volatility: sqrt(365) (docs/EVALUATION.md rule 5).
 ANNUALISATION_DAYS = 365

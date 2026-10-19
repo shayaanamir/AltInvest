@@ -8,7 +8,8 @@ import numpy as np
 import pandas as pd
 
 from ml import config
-from ml.labels.labels import DIRECTION_CLASSES, RISK_CLASSES, direction_class, risk_class
+from ml.evaluation.walkforward import Spec
+from ml.labels.labels import DIRECTION_CLASSES, RISK_CLASSES, direction_class, fit_thresholds, risk_class
 
 
 def majority_class(train_classes: pd.Series, classes: tuple) -> str:
@@ -67,3 +68,30 @@ def strategy_window_returns(fwd_return: pd.Series, starts: list[int]) -> dict[st
     """Simple return per 30-day window. buy_and_hold holds the asset; always_hold stays in cash."""
     bh = np.exp(fwd_return.iloc[starts].to_numpy()) - 1
     return {"buy_and_hold": bh, "always_hold": np.zeros(len(starts))}
+
+
+# ---------- walk-forward adapters (D21): the same rules, refit per fold ----------
+
+def _constant(value, inputs: pd.DataFrame) -> pd.Series:
+    return pd.Series(value, index=inputs.index)
+
+
+def _class_spec(task: str, name: str) -> Spec:
+    """fit keeps the fold's train classes and thresholds; predict calls the Phase 3 rule unchanged."""
+    rules = direction_baselines if task == "direction" else risk_baselines
+    return Spec(fit=lambda train: (train[task], fit_thresholds(train)),
+                predict=lambda fitted, inputs: rules(inputs, fitted[0], fitted[1])[name])
+
+
+def walkforward_specs() -> dict[str, Spec]:
+    """Every Phase 3 baseline as a walk-forward Spec, named '<section>/<baseline>'."""
+    specs = {
+        "price/last_value": Spec(lambda train: price_baselines(train)["last_value"], _constant),
+        "price/drift": Spec(lambda train: price_baselines(train)["drift"], _constant),
+        "risk_ranking/persistence": Spec(lambda train: None, lambda _, inputs: risk_ranking_score(inputs)),
+    }
+    for name in ("train_majority", "always_up", "momentum"):
+        specs[f"direction/{name}"] = _class_spec("direction", name)
+    for name in ("train_majority", "persistence"):
+        specs[f"risk/{name}"] = _class_spec("risk", name)
+    return specs

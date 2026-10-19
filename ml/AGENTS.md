@@ -35,4 +35,4 @@ AAI score is the backend's job. Do not build it.
 - docs/DECISIONS.md (D-numbers), docs/LEARNINGS.md (v1 lessons).
 - docs/GLOSSARY.md: plain-English term definitions. Add new terms each phase.
 - docs/phases/TEMPLATE.md: the brief 8-section template for phase explanations.
-- docs/phases/PHASE_0_scaffold.md, docs/phases/PHASE_1_btc_data.md, docs/phases/PHASE_1b_eth_sol_data.md, docs/phases/PHASE_2_features_labels.md, docs/phases/PHASE_3_baselines.md: finished phases.
+- docs/phases/PHASE_0_scaffold.md, docs/phases/PHASE_1_btc_data.md, docs/phases/PHASE_1b_eth_sol_data.md, docs/phases/PHASE_2_features_labels.md, docs/phases/PHASE_3_baselines.md, docs/phases/PHASE_4_0_walkforward_harness.md: finished phases.

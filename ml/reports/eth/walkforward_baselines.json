@@ -1,0 +1,1716 @@
+{
+  "price": {
+    "pooled": {
+      "n_folds": 68,
+      "n_pooled": 2031,
+      "n_effective": 67.7,
+      "bootstrap_block_size": 30,
+      "last_value": {
+        "mean_predicted_log_return": 0.0,
+        "mae_price": 346.779503,
+        "rmse_price": 493.026471,
+        "mape_pct": 19.043426,
+        "directional_accuracy": null,
+        "skill_vs_last_value": 0.0,
+        "mae_price_ci95": {
+          "low": 282.457169,
+          "high": 412.955918,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "note": "directional_accuracy is null: every prediction is a 0 return, so no sign to compare"
+      },
+      "drift": {
+        "mean_predicted_log_return": 0.023313,
+        "mae_price": 361.145207,
+        "rmse_price": 509.830061,
+        "mape_pct": 19.773015,
+        "directional_accuracy": 0.495323,
+        "skill_vs_last_value": -0.041426,
+        "mae_price_ci95": {
+          "low": 294.811246,
+          "high": 429.941465,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        }
+      }
+    },
+    "every_30th": {
+      "n_points": 68,
+      "step_rows": 30,
+      "bootstrap_block_size": 1,
+      "note": "rows do not overlap, so the bootstrap resamples single rows",
+      "last_value": {
+        "mean_predicted_log_return": 0.0,
+        "mae_price": 359.830735,
+        "rmse_price": 521.514741,
+        "mape_pct": 19.716504,
+        "directional_accuracy": null,
+        "skill_vs_last_value": 0.0,
+        "mae_price_ci95": {
+          "low": 272.591026,
+          "high": 449.336893,
+          "level": 0.95,
+          "block_size": 1,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "note": "directional_accuracy is null: every prediction is a 0 return, so no sign to compare"
+      },
+      "drift": {
+        "mean_predicted_log_return": 0.023297,
+        "mae_price": 378.297454,
+        "rmse_price": 540.274378,
+        "mape_pct": 20.591948,
+        "directional_accuracy": 0.470588,
+        "skill_vs_last_value": -0.051321,
+        "mae_price_ci95": {
+          "low": 293.461375,
+          "high": 472.819598,
+          "level": 0.95,
+          "block_size": 1,
+          "n_boot": 1000,
+          "seed": 0
+        }
+      }
+    }
+  },
+  "direction": {
+    "pooled": {
+      "n_folds": 68,
+      "n_pooled": 2031,
+      "n_effective": 67.7,
+      "bootstrap_block_size": 30,
+      "train_majority": {
+        "accuracy": 0.506647,
+        "balanced_accuracy": 0.333333,
+        "macro_f1": 0.224183,
+        "mcc": null,
+        "brier_one_hot": 0.986706,
+        "per_class": {
+          "DOWN": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 393,
+            "predicted": 0
+          },
+          "FLAT": {
+            "precision": 0.506647,
+            "recall": 1.0,
+            "support": 1029,
+            "predicted": 2031
+          },
+          "UP": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 609,
+            "predicted": 0
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "DOWN",
+            "FLAT",
+            "UP"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              0,
+              393,
+              0
+            ],
+            [
+              0,
+              1029,
+              0
+            ],
+            [
+              0,
+              609,
+              0
+            ]
+          ]
+        },
+        "note": "class(es) ['DOWN', 'UP'] are never predicted: their precision is null; mcc is null: undefined when the predictions (or the actual labels) are a single class; roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities",
+        "accuracy_ci95": {
+          "low": 0.426366,
+          "high": 0.586915,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "roc_auc_ovr": null,
+        "calibration": null
+      },
+      "always_up": {
+        "accuracy": 0.299852,
+        "balanced_accuracy": 0.333333,
+        "macro_f1": 0.153788,
+        "mcc": null,
+        "brier_one_hot": 1.400295,
+        "per_class": {
+          "DOWN": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 393,
+            "predicted": 0
+          },
+          "FLAT": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 1029,
+            "predicted": 0
+          },
+          "UP": {
+            "precision": 0.299852,
+            "recall": 1.0,
+            "support": 609,
+            "predicted": 2031
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "DOWN",
+            "FLAT",
+            "UP"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              0,
+              0,
+              393
+            ],
+            [
+              0,
+              0,
+              1029
+            ],
+            [
+              0,
+              0,
+              609
+            ]
+          ]
+        },
+        "note": "class(es) ['DOWN', 'FLAT'] are never predicted: their precision is null; mcc is null: undefined when the predictions (or the actual labels) are a single class; roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities",
+        "accuracy_ci95": {
+          "low": 0.210721,
+          "high": 0.386521,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "roc_auc_ovr": null,
+        "calibration": null
+      },
+      "momentum": {
+        "accuracy": 0.399803,
+        "balanced_accuracy": 0.364915,
+        "macro_f1": 0.364169,
+        "mcc": 0.023268,
+        "brier_one_hot": 1.200394,
+        "per_class": {
+          "DOWN": {
+            "precision": 0.31592,
+            "recall": 0.323155,
+            "support": 393,
+            "predicted": 402
+          },
+          "FLAT": {
+            "precision": 0.502863,
+            "recall": 0.512148,
+            "support": 1029,
+            "predicted": 1048
+          },
+          "UP": {
+            "precision": 0.271945,
+            "recall": 0.259442,
+            "support": 609,
+            "predicted": 581
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "DOWN",
+            "FLAT",
+            "UP"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              127,
+              173,
+              93
+            ],
+            [
+              172,
+              527,
+              330
+            ],
+            [
+              103,
+              348,
+              158
+            ]
+          ]
+        },
+        "accuracy_ci95": {
+          "low": 0.336755,
+          "high": 0.476637,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "roc_auc_ovr": null,
+        "calibration": null,
+        "note": "roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities"
+      }
+    },
+    "every_30th": {
+      "n_points": 68,
+      "step_rows": 30,
+      "bootstrap_block_size": 1,
+      "note": "rows do not overlap, so the bootstrap resamples single rows",
+      "train_majority": {
+        "accuracy": 0.514706,
+        "balanced_accuracy": 0.333333,
+        "macro_f1": 0.226537,
+        "mcc": null,
+        "brier_one_hot": 0.970588,
+        "per_class": {
+          "DOWN": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 12,
+            "predicted": 0
+          },
+          "FLAT": {
+            "precision": 0.514706,
+            "recall": 1.0,
+            "support": 35,
+            "predicted": 68
+          },
+          "UP": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 21,
+            "predicted": 0
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "DOWN",
+            "FLAT",
+            "UP"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              0,
+              12,
+              0
+            ],
+            [
+              0,
+              35,
+              0
+            ],
+            [
+              0,
+              21,
+              0
+            ]
+          ]
+        },
+        "note": "class(es) ['DOWN', 'UP'] are never predicted: their precision is null; mcc is null: undefined when the predictions (or the actual labels) are a single class; roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities",
+        "accuracy_ci95": {
+          "low": 0.397059,
+          "high": 0.632353,
+          "level": 0.95,
+          "block_size": 1,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "roc_auc_ovr": null,
+        "calibration": null
+      },
+      "always_up": {
+        "accuracy": 0.308824,
+        "balanced_accuracy": 0.333333,
+        "macro_f1": 0.157303,
+        "mcc": null,
+        "brier_one_hot": 1.382353,
+        "per_class": {
+          "DOWN": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 12,
+            "predicted": 0
+          },
+          "FLAT": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 35,
+            "predicted": 0
+          },
+          "UP": {
+            "precision": 0.308824,
+            "recall": 1.0,
+            "support": 21,
+            "predicted": 68
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "DOWN",
+            "FLAT",
+            "UP"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              0,
+              0,
+              12
+            ],
+            [
+              0,
+              0,
+              35
+            ],
+            [
+              0,
+              0,
+              21
+            ]
+          ]
+        },
+        "note": "class(es) ['DOWN', 'FLAT'] are never predicted: their precision is null; mcc is null: undefined when the predictions (or the actual labels) are a single class; roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities",
+        "accuracy_ci95": {
+          "low": 0.205882,
+          "high": 0.426471,
+          "level": 0.95,
+          "block_size": 1,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "roc_auc_ovr": null,
+        "calibration": null
+      },
+      "momentum": {
+        "accuracy": 0.411765,
+        "balanced_accuracy": 0.371429,
+        "macro_f1": 0.370816,
+        "mcc": 0.028582,
+        "brier_one_hot": 1.176471,
+        "per_class": {
+          "DOWN": {
+            "precision": 0.333333,
+            "recall": 0.333333,
+            "support": 12,
+            "predicted": 12
+          },
+          "FLAT": {
+            "precision": 0.527778,
+            "recall": 0.542857,
+            "support": 35,
+            "predicted": 36
+          },
+          "UP": {
+            "precision": 0.25,
+            "recall": 0.238095,
+            "support": 21,
+            "predicted": 20
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "DOWN",
+            "FLAT",
+            "UP"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              4,
+              4,
+              4
+            ],
+            [
+              5,
+              19,
+              11
+            ],
+            [
+              3,
+              13,
+              5
+            ]
+          ]
+        },
+        "accuracy_ci95": {
+          "low": 0.294118,
+          "high": 0.529412,
+          "level": 0.95,
+          "block_size": 1,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "roc_auc_ovr": null,
+        "calibration": null,
+        "note": "roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities"
+      }
+    }
+  },
+  "risk": {
+    "pooled": {
+      "n_folds": 68,
+      "n_pooled": 2031,
+      "n_effective": 67.7,
+      "bootstrap_block_size": 30,
+      "train_majority": {
+        "accuracy": 0.305268,
+        "balanced_accuracy": 0.333333,
+        "macro_f1": 0.155916,
+        "mcc": null,
+        "brier_one_hot": 1.389463,
+        "per_class": {
+          "low": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 1023,
+            "predicted": 0
+          },
+          "medium": {
+            "precision": 0.305268,
+            "recall": 1.0,
+            "support": 620,
+            "predicted": 2031
+          },
+          "high": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 388,
+            "predicted": 0
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              0,
+              1023,
+              0
+            ],
+            [
+              0,
+              620,
+              0
+            ],
+            [
+              0,
+              388,
+              0
+            ]
+          ]
+        },
+        "note": "class(es) ['low', 'high'] are never predicted: their precision is null; mcc is null: undefined when the predictions (or the actual labels) are a single class; roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities; spearman is null: a constant prediction has no ranking",
+        "accuracy_ci95": {
+          "low": 0.224028,
+          "high": 0.387001,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "roc_auc_ovr": null,
+        "calibration": null,
+        "spearman": null
+      },
+      "persistence": {
+        "accuracy": 0.515017,
+        "balanced_accuracy": 0.467969,
+        "macro_f1": 0.468775,
+        "mcc": 0.209614,
+        "brier_one_hot": 0.969966,
+        "per_class": {
+          "low": {
+            "precision": 0.65392,
+            "recall": 0.668622,
+            "support": 1023,
+            "predicted": 1046
+          },
+          "medium": {
+            "precision": 0.335516,
+            "recall": 0.330645,
+            "support": 620,
+            "predicted": 611
+          },
+          "high": {
+            "precision": 0.419786,
+            "recall": 0.404639,
+            "support": 388,
+            "predicted": 374
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              684,
+              251,
+              88
+            ],
+            [
+              286,
+              205,
+              129
+            ],
+            [
+              76,
+              155,
+              157
+            ]
+          ]
+        },
+        "accuracy_ci95": {
+          "low": 0.429813,
+          "high": 0.607595,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "roc_auc_ovr": null,
+        "calibration": null,
+        "note": "roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities"
+      },
+      "persistence_ranking": {
+        "score": "vol_30d (trailing)",
+        "target": "fwd_vol_30d",
+        "spearman": 0.515039,
+        "spearman_ci95": {
+          "low": 0.332578,
+          "high": 0.659126,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        }
+      }
+    },
+    "every_30th": {
+      "n_points": 68,
+      "step_rows": 30,
+      "bootstrap_block_size": 1,
+      "note": "rows do not overlap, so the bootstrap resamples single rows",
+      "train_majority": {
+        "accuracy": 0.294118,
+        "balanced_accuracy": 0.333333,
+        "macro_f1": 0.151515,
+        "mcc": null,
+        "brier_one_hot": 1.411765,
+        "per_class": {
+          "low": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 33,
+            "predicted": 0
+          },
+          "medium": {
+            "precision": 0.294118,
+            "recall": 1.0,
+            "support": 20,
+            "predicted": 68
+          },
+          "high": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 15,
+            "predicted": 0
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              0,
+              33,
+              0
+            ],
+            [
+              0,
+              20,
+              0
+            ],
+            [
+              0,
+              15,
+              0
+            ]
+          ]
+        },
+        "note": "class(es) ['low', 'high'] are never predicted: their precision is null; mcc is null: undefined when the predictions (or the actual labels) are a single class; roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities; spearman is null: a constant prediction has no ranking",
+        "accuracy_ci95": {
+          "low": 0.191176,
+          "high": 0.411765,
+          "level": 0.95,
+          "block_size": 1,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "roc_auc_ovr": null,
+        "calibration": null,
+        "spearman": null
+      },
+      "persistence": {
+        "accuracy": 0.529412,
+        "balanced_accuracy": 0.50101,
+        "macro_f1": 0.503208,
+        "mcc": 0.247671,
+        "brier_one_hot": 0.941176,
+        "per_class": {
+          "low": {
+            "precision": 0.617647,
+            "recall": 0.636364,
+            "support": 33,
+            "predicted": 34
+          },
+          "medium": {
+            "precision": 0.4,
+            "recall": 0.4,
+            "support": 20,
+            "predicted": 20
+          },
+          "high": {
+            "precision": 0.5,
+            "recall": 0.466667,
+            "support": 15,
+            "predicted": 14
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              21,
+              9,
+              3
+            ],
+            [
+              8,
+              8,
+              4
+            ],
+            [
+              5,
+              3,
+              7
+            ]
+          ]
+        },
+        "accuracy_ci95": {
+          "low": 0.411765,
+          "high": 0.647059,
+          "level": 0.95,
+          "block_size": 1,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "roc_auc_ovr": null,
+        "calibration": null,
+        "note": "roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities"
+      },
+      "persistence_ranking": {
+        "score": "vol_30d (trailing)",
+        "target": "fwd_vol_30d",
+        "spearman": 0.489025,
+        "spearman_ci95": {
+          "low": 0.283741,
+          "high": 0.655189,
+          "level": 0.95,
+          "block_size": 1,
+          "n_boot": 1000,
+          "seed": 0
+        }
+      }
+    }
+  },
+  "strategy": {
+    "pooled": {
+      "n_windows": 68,
+      "step_days": 30,
+      "window_starts": "fold origins",
+      "n_folds": 68,
+      "n_pooled": 2031,
+      "n_effective": 67.7,
+      "buy_and_hold": {
+        "mean_window_return": 0.07552,
+        "median_window_return": 0.026877,
+        "hit_rate": 0.558824,
+        "cumulative_return": 13.186278,
+        "max_drawdown": -0.764578,
+        "sharpe_annualised": 0.920402,
+        "mean_window_return_ci95": {
+          "low": 0.007722,
+          "high": 0.141167,
+          "level": 0.95,
+          "block_size": 1,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "window_returns": [
+          0.031696,
+          -0.208556,
+          0.162712,
+          0.619899,
+          -0.543306,
+          0.27542,
+          0.276985,
+          0.19025,
+          0.022059,
+          0.56102,
+          -0.029208,
+          0.007039,
+          0.19918,
+          0.289814,
+          1.123454,
+          0.324333,
+          0.16064,
+          0.112242,
+          0.879517,
+          -0.337116,
+          -0.106279,
+          0.248216,
+          0.366135,
+          -0.110124,
+          0.289323,
+          -0.09158,
+          -0.085339,
+          -0.288171,
+          -0.021849,
+          0.343164,
+          -0.210173,
+          -0.340662,
+          -0.418231,
+          0.527896,
+          -0.046728,
+          -0.145023,
+          0.196972,
+          -0.235124,
+          -0.013153,
+          0.309549,
+          0.039024,
+          0.09772,
+          0.054582,
+          0.00936,
+          -0.009986,
+          -0.014977,
+          -0.115104,
+          -0.035646,
+          0.125175,
+          0.164334,
+          0.088046,
+          -0.009474,
+          0.32498,
+          0.120526,
+          -0.038843,
+          0.167968,
+          -0.058653,
+          0.004951,
+          -0.272376,
+          -0.041826,
+          0.074229,
+          0.211313,
+          0.130619,
+          -0.042233,
+          -0.233825,
+          -0.274242,
+          -0.180126,
+          0.562925
+        ]
+      },
+      "always_hold": {
+        "mean_window_return": 0.0,
+        "median_window_return": 0.0,
+        "hit_rate": 0.0,
+        "cumulative_return": 0.0,
+        "max_drawdown": 0.0,
+        "sharpe_annualised": null,
+        "mean_window_return_ci95": {
+          "low": 0.0,
+          "high": 0.0,
+          "level": 0.95,
+          "block_size": 1,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "window_returns": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "note": "sharpe_annualised is null: window returns have zero variance"
+      }
+    }
+  },
+  "folds": [
+    {
+      "origin": 760,
+      "origin_date": "2019-10-16",
+      "train_rows": 730,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.18107,
+        "risk_low_max_vol": 0.043934,
+        "risk_high_min_vol": 0.053968
+      }
+    },
+    {
+      "origin": 790,
+      "origin_date": "2019-11-15",
+      "train_rows": 760,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.172261,
+        "risk_low_max_vol": 0.043435,
+        "risk_high_min_vol": 0.05353
+      }
+    },
+    {
+      "origin": 820,
+      "origin_date": "2019-12-15",
+      "train_rows": 790,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.172646,
+        "risk_low_max_vol": 0.042055,
+        "risk_high_min_vol": 0.053247
+      }
+    },
+    {
+      "origin": 850,
+      "origin_date": "2020-01-14",
+      "train_rows": 820,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.163281,
+        "risk_low_max_vol": 0.040241,
+        "risk_high_min_vol": 0.052944
+      }
+    },
+    {
+      "origin": 880,
+      "origin_date": "2020-02-13",
+      "train_rows": 850,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.173063,
+        "risk_low_max_vol": 0.039242,
+        "risk_high_min_vol": 0.052389
+      }
+    },
+    {
+      "origin": 910,
+      "origin_date": "2020-03-14",
+      "train_rows": 880,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.176456,
+        "risk_low_max_vol": 0.03953,
+        "risk_high_min_vol": 0.052315
+      }
+    },
+    {
+      "origin": 940,
+      "origin_date": "2020-04-13",
+      "train_rows": 910,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.183564,
+        "risk_low_max_vol": 0.040124,
+        "risk_high_min_vol": 0.053197
+      }
+    },
+    {
+      "origin": 970,
+      "origin_date": "2020-05-13",
+      "train_rows": 940,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.186366,
+        "risk_low_max_vol": 0.040712,
+        "risk_high_min_vol": 0.053475
+      }
+    },
+    {
+      "origin": 1000,
+      "origin_date": "2020-06-12",
+      "train_rows": 970,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.182759,
+        "risk_low_max_vol": 0.040487,
+        "risk_high_min_vol": 0.053246
+      }
+    },
+    {
+      "origin": 1030,
+      "origin_date": "2020-07-12",
+      "train_rows": 1000,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.172665,
+        "risk_low_max_vol": 0.039637,
+        "risk_high_min_vol": 0.052888
+      }
+    },
+    {
+      "origin": 1060,
+      "origin_date": "2020-08-11",
+      "train_rows": 1030,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.172665,
+        "risk_low_max_vol": 0.038801,
+        "risk_high_min_vol": 0.052385
+      }
+    },
+    {
+      "origin": 1090,
+      "origin_date": "2020-09-10",
+      "train_rows": 1060,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.173757,
+        "risk_low_max_vol": 0.038912,
+        "risk_high_min_vol": 0.052268
+      }
+    },
+    {
+      "origin": 1120,
+      "origin_date": "2020-10-10",
+      "train_rows": 1090,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.170304,
+        "risk_low_max_vol": 0.039112,
+        "risk_high_min_vol": 0.052717
+      }
+    },
+    {
+      "origin": 1150,
+      "origin_date": "2020-11-09",
+      "train_rows": 1120,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.163916,
+        "risk_low_max_vol": 0.038353,
+        "risk_high_min_vol": 0.052341
+      }
+    },
+    {
+      "origin": 1180,
+      "origin_date": "2020-12-09",
+      "train_rows": 1150,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.170304,
+        "risk_low_max_vol": 0.038209,
+        "risk_high_min_vol": 0.052068
+      }
+    },
+    {
+      "origin": 1210,
+      "origin_date": "2021-01-08",
+      "train_rows": 1180,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.172518,
+        "risk_low_max_vol": 0.038451,
+        "risk_high_min_vol": 0.051916
+      }
+    },
+    {
+      "origin": 1240,
+      "origin_date": "2021-02-07",
+      "train_rows": 1210,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.175702,
+        "risk_low_max_vol": 0.038854,
+        "risk_high_min_vol": 0.052505
+      }
+    },
+    {
+      "origin": 1270,
+      "origin_date": "2021-03-09",
+      "train_rows": 1240,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.175275,
+        "risk_low_max_vol": 0.039209,
+        "risk_high_min_vol": 0.053017
+      }
+    },
+    {
+      "origin": 1300,
+      "origin_date": "2021-04-08",
+      "train_rows": 1270,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.172665,
+        "risk_low_max_vol": 0.039519,
+        "risk_high_min_vol": 0.052597
+      }
+    },
+    {
+      "origin": 1330,
+      "origin_date": "2021-05-08",
+      "train_rows": 1300,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.174716,
+        "risk_low_max_vol": 0.039783,
+        "risk_high_min_vol": 0.052315
+      }
+    },
+    {
+      "origin": 1360,
+      "origin_date": "2021-06-07",
+      "train_rows": 1330,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.174446,
+        "risk_low_max_vol": 0.040139,
+        "risk_high_min_vol": 0.052923
+      }
+    },
+    {
+      "origin": 1390,
+      "origin_date": "2021-07-07",
+      "train_rows": 1360,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.175972,
+        "risk_low_max_vol": 0.040444,
+        "risk_high_min_vol": 0.053445
+      }
+    },
+    {
+      "origin": 1420,
+      "origin_date": "2021-08-06",
+      "train_rows": 1390,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.174249,
+        "risk_low_max_vol": 0.040623,
+        "risk_high_min_vol": 0.053514
+      }
+    },
+    {
+      "origin": 1450,
+      "origin_date": "2021-09-05",
+      "train_rows": 1420,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.178585,
+        "risk_low_max_vol": 0.040462,
+        "risk_high_min_vol": 0.053339
+      }
+    },
+    {
+      "origin": 1480,
+      "origin_date": "2021-10-05",
+      "train_rows": 1450,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.173398,
+        "risk_low_max_vol": 0.040665,
+        "risk_high_min_vol": 0.053383
+      }
+    },
+    {
+      "origin": 1510,
+      "origin_date": "2021-11-04",
+      "train_rows": 1480,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.172665,
+        "risk_low_max_vol": 0.040553,
+        "risk_high_min_vol": 0.053246
+      }
+    },
+    {
+      "origin": 1540,
+      "origin_date": "2021-12-04",
+      "train_rows": 1510,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.172261,
+        "risk_low_max_vol": 0.040332,
+        "risk_high_min_vol": 0.052896
+      }
+    },
+    {
+      "origin": 1570,
+      "origin_date": "2022-01-03",
+      "train_rows": 1540,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.168518,
+        "risk_low_max_vol": 0.04039,
+        "risk_high_min_vol": 0.052477
+      }
+    },
+    {
+      "origin": 1600,
+      "origin_date": "2022-02-02",
+      "train_rows": 1570,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.170739,
+        "risk_low_max_vol": 0.040226,
+        "risk_high_min_vol": 0.052144
+      }
+    },
+    {
+      "origin": 1630,
+      "origin_date": "2022-03-04",
+      "train_rows": 1600,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.16505,
+        "risk_low_max_vol": 0.040369,
+        "risk_high_min_vol": 0.05192
+      }
+    },
+    {
+      "origin": 1660,
+      "origin_date": "2022-04-03",
+      "train_rows": 1630,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.162395,
+        "risk_low_max_vol": 0.040322,
+        "risk_high_min_vol": 0.051772
+      }
+    },
+    {
+      "origin": 1690,
+      "origin_date": "2022-05-03",
+      "train_rows": 1660,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.160242,
+        "risk_low_max_vol": 0.04001,
+        "risk_high_min_vol": 0.051634
+      }
+    },
+    {
+      "origin": 1720,
+      "origin_date": "2022-06-02",
+      "train_rows": 1690,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.16559,
+        "risk_low_max_vol": 0.040026,
+        "risk_high_min_vol": 0.051429
+      }
+    },
+    {
+      "origin": 1750,
+      "origin_date": "2022-07-02",
+      "train_rows": 1720,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.169492,
+        "risk_low_max_vol": 0.040189,
+        "risk_high_min_vol": 0.051757
+      }
+    },
+    {
+      "origin": 1780,
+      "origin_date": "2022-08-01",
+      "train_rows": 1750,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.171979,
+        "risk_low_max_vol": 0.040363,
+        "risk_high_min_vol": 0.052109
+      }
+    },
+    {
+      "origin": 1810,
+      "origin_date": "2022-08-31",
+      "train_rows": 1780,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.171979,
+        "risk_low_max_vol": 0.040525,
+        "risk_high_min_vol": 0.052154
+      }
+    },
+    {
+      "origin": 1840,
+      "origin_date": "2022-09-30",
+      "train_rows": 1810,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.169492,
+        "risk_low_max_vol": 0.040825,
+        "risk_high_min_vol": 0.051922
+      }
+    },
+    {
+      "origin": 1870,
+      "origin_date": "2022-10-30",
+      "train_rows": 1840,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.167411,
+        "risk_low_max_vol": 0.04051,
+        "risk_high_min_vol": 0.051811
+      }
+    },
+    {
+      "origin": 1900,
+      "origin_date": "2022-11-29",
+      "train_rows": 1870,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.165986,
+        "risk_low_max_vol": 0.040521,
+        "risk_high_min_vol": 0.051922
+      }
+    },
+    {
+      "origin": 1930,
+      "origin_date": "2022-12-29",
+      "train_rows": 1900,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.162395,
+        "risk_low_max_vol": 0.040378,
+        "risk_high_min_vol": 0.051923
+      }
+    },
+    {
+      "origin": 1960,
+      "origin_date": "2023-01-28",
+      "train_rows": 1930,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.160546,
+        "risk_low_max_vol": 0.040027,
+        "risk_high_min_vol": 0.051816
+      }
+    },
+    {
+      "origin": 1990,
+      "origin_date": "2023-02-27",
+      "train_rows": 1960,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.159591,
+        "risk_low_max_vol": 0.039647,
+        "risk_high_min_vol": 0.051672
+      }
+    },
+    {
+      "origin": 2020,
+      "origin_date": "2023-03-29",
+      "train_rows": 1990,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.157075,
+        "risk_low_max_vol": 0.039147,
+        "risk_high_min_vol": 0.051429
+      }
+    },
+    {
+      "origin": 2050,
+      "origin_date": "2023-04-28",
+      "train_rows": 2020,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.156425,
+        "risk_low_max_vol": 0.038719,
+        "risk_high_min_vol": 0.051097
+      }
+    },
+    {
+      "origin": 2080,
+      "origin_date": "2023-05-28",
+      "train_rows": 2050,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.152545,
+        "risk_low_max_vol": 0.038221,
+        "risk_high_min_vol": 0.050799
+      }
+    },
+    {
+      "origin": 2110,
+      "origin_date": "2023-06-27",
+      "train_rows": 2080,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.149282,
+        "risk_low_max_vol": 0.037875,
+        "risk_high_min_vol": 0.050662
+      }
+    },
+    {
+      "origin": 2140,
+      "origin_date": "2023-07-27",
+      "train_rows": 2110,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.146839,
+        "risk_low_max_vol": 0.037594,
+        "risk_high_min_vol": 0.050396
+      }
+    },
+    {
+      "origin": 2170,
+      "origin_date": "2023-08-26",
+      "train_rows": 2140,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.14426,
+        "risk_low_max_vol": 0.037198,
+        "risk_high_min_vol": 0.050192
+      }
+    },
+    {
+      "origin": 2200,
+      "origin_date": "2023-09-25",
+      "train_rows": 2170,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.14106,
+        "risk_low_max_vol": 0.036934,
+        "risk_high_min_vol": 0.050104
+      }
+    },
+    {
+      "origin": 2230,
+      "origin_date": "2023-10-25",
+      "train_rows": 2200,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.137926,
+        "risk_low_max_vol": 0.036478,
+        "risk_high_min_vol": 0.04999
+      }
+    },
+    {
+      "origin": 2260,
+      "origin_date": "2023-11-24",
+      "train_rows": 2230,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.138281,
+        "risk_low_max_vol": 0.036279,
+        "risk_high_min_vol": 0.049852
+      }
+    },
+    {
+      "origin": 2290,
+      "origin_date": "2023-12-24",
+      "train_rows": 2260,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.137356,
+        "risk_low_max_vol": 0.035953,
+        "risk_high_min_vol": 0.049715
+      }
+    },
+    {
+      "origin": 2320,
+      "origin_date": "2024-01-23",
+      "train_rows": 2290,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.134808,
+        "risk_low_max_vol": 0.03554,
+        "risk_high_min_vol": 0.049593
+      }
+    },
+    {
+      "origin": 2350,
+      "origin_date": "2024-02-22",
+      "train_rows": 2320,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.131811,
+        "risk_low_max_vol": 0.035141,
+        "risk_high_min_vol": 0.0494
+      }
+    },
+    {
+      "origin": 2380,
+      "origin_date": "2024-03-23",
+      "train_rows": 2350,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.134061,
+        "risk_low_max_vol": 0.034962,
+        "risk_high_min_vol": 0.049144
+      }
+    },
+    {
+      "origin": 2410,
+      "origin_date": "2024-04-22",
+      "train_rows": 2380,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.132898,
+        "risk_low_max_vol": 0.035073,
+        "risk_high_min_vol": 0.048964
+      }
+    },
+    {
+      "origin": 2440,
+      "origin_date": "2024-05-22",
+      "train_rows": 2410,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.131077,
+        "risk_low_max_vol": 0.034937,
+        "risk_high_min_vol": 0.048788
+      }
+    },
+    {
+      "origin": 2470,
+      "origin_date": "2024-06-21",
+      "train_rows": 2440,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.132898,
+        "risk_low_max_vol": 0.035029,
+        "risk_high_min_vol": 0.048614
+      }
+    },
+    {
+      "origin": 2500,
+      "origin_date": "2024-07-21",
+      "train_rows": 2470,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.13094,
+        "risk_low_max_vol": 0.03457,
+        "risk_high_min_vol": 0.048523
+      }
+    },
+    {
+      "origin": 2530,
+      "origin_date": "2024-08-20",
+      "train_rows": 2500,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.130293,
+        "risk_low_max_vol": 0.034528,
+        "risk_high_min_vol": 0.048369
+      }
+    },
+    {
+      "origin": 2560,
+      "origin_date": "2024-09-19",
+      "train_rows": 2530,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.130174,
+        "risk_low_max_vol": 0.03449,
+        "risk_high_min_vol": 0.048165
+      }
+    },
+    {
+      "origin": 2590,
+      "origin_date": "2024-10-19",
+      "train_rows": 2560,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.127622,
+        "risk_low_max_vol": 0.034143,
+        "risk_high_min_vol": 0.048027
+      }
+    },
+    {
+      "origin": 2620,
+      "origin_date": "2024-11-18",
+      "train_rows": 2590,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.126696,
+        "risk_low_max_vol": 0.033991,
+        "risk_high_min_vol": 0.047914
+      }
+    },
+    {
+      "origin": 2650,
+      "origin_date": "2024-12-18",
+      "train_rows": 2620,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.128027,
+        "risk_low_max_vol": 0.034111,
+        "risk_high_min_vol": 0.047769
+      }
+    },
+    {
+      "origin": 2680,
+      "origin_date": "2025-01-17",
+      "train_rows": 2650,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.126759,
+        "risk_low_max_vol": 0.034038,
+        "risk_high_min_vol": 0.047636
+      }
+    },
+    {
+      "origin": 2710,
+      "origin_date": "2025-02-16",
+      "train_rows": 2680,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.126117,
+        "risk_low_max_vol": 0.03399,
+        "risk_high_min_vol": 0.047472
+      }
+    },
+    {
+      "origin": 2740,
+      "origin_date": "2025-03-18",
+      "train_rows": 2710,
+      "predict_rows": 30,
+      "thresholds": {
+        "direction_flat_abs_return": 0.127865,
+        "risk_low_max_vol": 0.033992,
+        "risk_high_min_vol": 0.047577
+      }
+    },
+    {
+      "origin": 2770,
+      "origin_date": "2025-04-17",
+      "train_rows": 2740,
+      "predict_rows": 21,
+      "thresholds": {
+        "direction_flat_abs_return": 0.129265,
+        "risk_low_max_vol": 0.034154,
+        "risk_high_min_vol": 0.047716
+      }
+    }
+  ],
+  "metadata": {
+    "asset": "eth",
+    "generated_at": "2026-10-19T11:13:42Z",
+    "git_commit": "a934f10e0f0504197dfab04571fc3d35d0c5577c",
+    "git_dirty": true,
+    "n_feature_rows": 3319,
+    "b2_test_start_row": 2821,
+    "rows_built": [
+      0,
+      2821
+    ],
+    "data_first_date": "2017-09-16",
+    "last_date_built": "2025-06-06",
+    "sealed_test_first_date": "2025-06-07",
+    "pooled_rows": [
+      760,
+      2791
+    ],
+    "max_label_row_reached": 2820,
+    "min_train_rows": 730,
+    "step_rows": 30,
+    "horizon_days": 30,
+    "embargo_days": 30,
+    "note": "Expanding-window walk-forward over rows [0, b2-30) (D21). Thresholds and baseline parameters refit per fold on that fold's train rows. Test rows [b2, n) were never built or read."
+  }
+}
