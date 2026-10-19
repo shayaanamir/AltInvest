@@ -35,6 +35,20 @@ From `ml/reports/{asset}/walkforward_price.json`:
 - No config beats last-value. Over all folds, every model has negative skill vs last-value (for example BTC ridge_all_a1000: -0.012096).
 - The confirmation sets are small (n_effective 27.7, 27.7 and 14.8), so "not approved" reflects limited statistical power as well as possible lack of skill.
 
+## Power check
+How big a gain could the confirmation step have detected? From `ml/reports/{asset}/power_check.json`, which reads the paired CIs in the walk-forward reports:
+
+| | BTC | ETH | SOL |
+|---|---|---|---|
+| n_effective (last 40%) | 27.7 | 27.7 | 14.8 |
+| Price: CI half-width (return MAE) | 0.008646 | 0.009655 | 0.021625 |
+| Price: half-width as % of last-value MAE | 7.733277 | 7.074245 | 12.106436 |
+| Risk: CI half-width (Spearman) | 0.214335 | 0.152608 | 0.237515 |
+
+- A price model would need to cut last-value's error by roughly 7-12% before the protocol could show it. A risk model would need a Spearman about 0.15-0.24 higher than persistence. These are labelled "smallest difference the protocol can reliably detect (approximate)".
+- Approximate, and optimistic: a gain exactly this size is detected only about half the time. Reliable (80%) detection needs about 1.43x these values.
+- D29: a negative verdict means "no demonstrated gain", not "no skill".
+
 ## 6. Decisions
 - D28: return-space target and errors; approval against last-value on the last 40% of folds.
 - D25: configs declared before running; rank on the first 60%, confirm on the last 40%.

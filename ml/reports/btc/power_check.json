@@ -1,0 +1,60 @@
+{
+  "label": "smallest difference the protocol can reliably detect (approximate)",
+  "price": {
+    "n_effective": 27.7,
+    "n_pooled": 831,
+    "top_config": "ridge_all_a1000",
+    "paired_ci95": {
+      "metric": "MAE(last-value) - MAE(top) of fwd_return_30d",
+      "estimate": 0.001055,
+      "low": -0.00794,
+      "high": 0.009353,
+      "level": 0.95,
+      "block_size": 30,
+      "n_boot": 1000,
+      "seed": 0
+    },
+    "ci_half_width": 0.008646,
+    "mae_return_last_value": 0.111809,
+    "half_width_pct_of_last_value_mae": 7.733277,
+    "half_width_x_1.43_pct_of_last_value_mae": 11.047539
+  },
+  "risk": {
+    "n_effective": 27.7,
+    "n_pooled": 831,
+    "top_config": "ridge_all_a10",
+    "paired_ci95": {
+      "metric": "Spearman(top) - Spearman(persistence)",
+      "estimate": 0.056201,
+      "low": -0.180508,
+      "high": 0.248162,
+      "level": 0.95,
+      "block_size": 30,
+      "n_boot": 1000,
+      "seed": 0
+    },
+    "ci_half_width_spearman": 0.214335,
+    "half_width_x_1.43_spearman": 0.306193
+  },
+  "note": "Approximate. A true difference equal to the half-width is detected about 50% of the time; about 80% power needs roughly 1.43x the half-width (normal approximation). A negative verdict means 'no demonstrated gain', not 'no skill' (D29).",
+  "metadata": {
+    "asset": "btc",
+    "generated_at": "2026-10-19T13:32:29Z",
+    "git_commit": "00d09a04327d32030bca80fd8c277ea1d3c53e2f",
+    "git_dirty": true,
+    "sources": [
+      {
+        "file": "ml/reports/btc/walkforward_price.json",
+        "git_commit": "00d09a04327d32030bca80fd8c277ea1d3c53e2f",
+        "git_dirty": false,
+        "generated_at": "2026-10-19T13:30:35Z"
+      },
+      {
+        "file": "ml/reports/btc/walkforward_risk.json",
+        "git_commit": "88d4a79e6639a931dbca3d64c7dc3757c86d48e4",
+        "git_dirty": false,
+        "generated_at": "2026-10-19T11:57:55Z"
+      }
+    ]
+  }
+}

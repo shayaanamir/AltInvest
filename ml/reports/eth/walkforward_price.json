@@ -1124,9 +1124,9 @@
   ],
   "metadata": {
     "asset": "eth",
-    "generated_at": "2026-10-19T12:00:41Z",
-    "git_commit": "88d4a79e6639a931dbca3d64c7dc3757c86d48e4",
-    "git_dirty": true,
+    "generated_at": "2026-10-19T13:30:49Z",
+    "git_commit": "00d09a04327d32030bca80fd8c277ea1d3c53e2f",
+    "git_dirty": false,
     "n_feature_rows": 3319,
     "b2_test_start_row": 2821,
     "rows_built": [

@@ -87,6 +87,9 @@ Terms marked *(not used yet)* appear in the plan docs but no code uses them so f
 - **Return space / USDT space**: measuring errors on the predicted log return (independent of the price level) versus on the predicted price in dollars-pegged USDT (bigger in expensive years) (D28).
 - **Skill vs last-value**: 1 - MAE_model / MAE_last_value. Negative means the model is worse than predicting "no change".
 - **Shrinkage**: what strong regularisation does: it pulls a model's predictions towards the training average.
+- **CI half-width**: half the width of a confidence interval, (high - low) / 2. Roughly the margin of error of the estimate.
+- **Minimum detectable difference (power check)**: the smallest true improvement the protocol is likely to confirm. Approximated here by the CI half-width; reliable (80% power) detection needs about 1.43x that (D29).
+- **No demonstrated gain**: a model was not shown to be better, which is not the same as being shown to be no better (D29).
 - **Statistical power**: the chance a test detects a real effect. Small samples have low power, so "not approved" may mean "not proven" rather than "no skill".
 - **Non-overlapping windows**: evaluating 30-day periods that do not share days, because daily steps with a 30-day horizon overlap 29/30 (docs/LEARNINGS.md). Used by the Phase 3 strategy baselines.
 - **Backtest**: replaying a strategy on past data to see how it would have done. *(not used yet)*
