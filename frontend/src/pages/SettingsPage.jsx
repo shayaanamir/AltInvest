@@ -49,12 +49,18 @@ export default function SettingsPage() {
     // Optimistic local update first
     setSettings((prev) => ({ ...prev, [sectionKey]: { ...prev[sectionKey], ...patch } }));
 
-    applySavedPreference(sectionKey, patch); // takes effect straight away
-    settingsApi.updateSection(sectionKey, patch).catch((e) => {
-      setSettings((prev) => ({ ...prev, [sectionKey]: previous })); // put the old value back
-      applySavedPreference(sectionKey, previous); // undo the live change too
-      toast.error(e, { title: "Couldn't save that setting" });
-    });
+    // Most changes take effect straight away. The currency waits for the save: switching it re-renders
+    // every page (this one included), which reloads settings from the server.
+    const { displayCurrency, ...immediate } = patch;
+    applySavedPreference(sectionKey, immediate);
+    settingsApi
+      .updateSection(sectionKey, patch)
+      .then(() => displayCurrency !== undefined && applySavedPreference(sectionKey, { displayCurrency }))
+      .catch((e) => {
+        setSettings((prev) => ({ ...prev, [sectionKey]: previous })); // put the old value back
+        applySavedPreference(sectionKey, previous); // undo the live change too
+        toast.error(e, { title: "Couldn't save that setting" });
+      });
   };
 
   const handleLogout = () => {

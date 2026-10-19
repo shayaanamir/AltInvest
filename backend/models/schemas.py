@@ -406,6 +406,14 @@ class ProfileUpdate(BaseModel):
     display_currency: Optional[str] = None
 
 
+class FxRatesOut(BaseModel):
+    base: str
+    rates: Dict[str, float]
+    as_of: str
+    source: Optional[str] = None
+    supported: List[str]
+
+
 class UserSettingsOut(BaseModel):
     user_id: str
     preferences: Optional[Dict] = None

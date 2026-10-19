@@ -9,7 +9,7 @@ import SessionExpiredModal from "./components/auth/SessionExpiredModal";
 import { ErrorBoundary, ConnectionBanner, ToastProvider } from "./errors";
 import { onSessionExpired } from "./hooks/sessionEvents";
 import { isAuthenticated } from "./hooks/useAuth";
-import { loadAppPreferences, resetAppPreferences, useAppPreferences } from "./services/appPreferences";
+import { loadAppPreferences, resetAppPreferences, useAppPreferences, getDisplayCurrency } from "./services/appPreferences";
 import { ROUTES, BARE_PAGES, getPath, getPageName } from "./routes";
 
 // Applies the saved settings that act on the whole app: loads them once the user is signed in,
@@ -38,6 +38,7 @@ function PreferencesBridge() {
 function ShellRoutes() {
   const location = useLocation();
   const navigateRouter = useNavigate();
+  useAppPreferences(); // re-render when the display currency changes
   const [sessionExpired, setSessionExpired] = useState(false);
 
   // Track the current path so the modal's "Sign In" button can send the
@@ -82,8 +83,10 @@ function ShellRoutes() {
     </Routes>
   );
 
+  // Changing the display currency (or rates arriving) re-mounts the page so every amount is redone.
+  const fx = getDisplayCurrency();
   const wrappedPageContent = (
-    <ErrorBoundary key={location.pathname} resetKey={location.pathname}>
+    <ErrorBoundary key={`${location.pathname}|${fx.code}|${fx.asOf}`} resetKey={location.pathname}>
       {pageContent}
     </ErrorBoundary>
   );

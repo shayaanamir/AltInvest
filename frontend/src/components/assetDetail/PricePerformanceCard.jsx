@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useElementSize } from "../../hooks/useElementSize";
 import { deriveAaiSignal } from "../../services/assetDetailApi";
+import { formatCurrencyAxis, formatAssetPrice } from "../../utils/formatters";
 
 const FILTERS = ["1D", "1W", "1M", "3M", "1Y"];
 const DAY_MS = 86400000;
@@ -15,12 +16,6 @@ const FILTER_DAYS = { "1D": 1, "1W": 7, "1M": 30, "3M": 90, "1Y": 365 };
 function sliceForFilter(arr, filter) {
   if (!arr) return arr;
   return arr.slice(-(FILTER_DAYS[filter] + 1));
-}
-
-function formatY(v) {
-  if (v >= 1000) return `$${(v / 1000).toFixed(1)}K`;
-  if (v >= 1) return `$${v.toFixed(2)}`;
-  return `$${v.toFixed(4)}`;
 }
 
 export default function PricePerformanceCard({ priceHistory, forecast, aaiPanel }) {
@@ -181,7 +176,7 @@ export default function PricePerformanceCard({ priceHistory, forecast, aaiPanel 
                 return (
                   <g key={i}>
                     <line x1={chart.PAD_L} y1={y} x2={chart.W - chart.PAD_R} y2={y} stroke="var(--sv2-border)" strokeWidth="0.7" strokeDasharray="4,4" />
-                    <text x={chart.PAD_L - 10} y={y + 4} fontSize="10.5" fill="var(--sv2-text-mute)" textAnchor="end">{formatY(v)}</text>
+                    <text x={chart.PAD_L - 10} y={y + 4} fontSize="10.5" fill="var(--sv2-text-mute)" textAnchor="end">{formatCurrencyAxis(v)}</text>
                   </g>
                 );
               })}
@@ -232,7 +227,7 @@ export default function PricePerformanceCard({ priceHistory, forecast, aaiPanel 
                 <div style={{ fontSize: 10, color: hoverPt.isForecast ? "var(--sv2-accent)" : "var(--sv2-text-mute)", fontWeight: 600 }}>
                   {hoverPt.date} {hoverPt.isForecast ? "· Model AI" : ""}
                 </div>
-                <div style={{ fontSize: 12.5, color: "var(--sv2-text)", fontWeight: 800 }}>{formatY(hoverPt.price)}</div>
+                <div style={{ fontSize: 12.5, color: "var(--sv2-text)", fontWeight: 800 }}>{formatAssetPrice(hoverPt.price)}</div>
               </div>
             )}
           </>

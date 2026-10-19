@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAsync } from "../../hooks/useAsync";
 import { fetchUniverse } from "../../services/assetRepository";
 import { portfolioApi } from "../../services/portfolioApi";
-import { formatAssetPrice } from "../../utils/formatters";
+import { formatUsd } from "../../utils/formatters";
 import { ErrorState, useToast } from "../../errors";
 import "./addHoldingModal.css";
 
@@ -212,7 +212,7 @@ export default function AddHoldingModal({ onClose, onAdded, initialKind = "crypt
                   <span className="ahm-item-name">{c.name}</span>
                   <span className="ahm-item-sub">{c.subcategory}</span>
                 </span>
-                <span className="ahm-item-price">{c.priceLabel || formatAssetPrice(c.price)}</span>
+                <span className="ahm-item-price">{c.priceLabel || formatUsd(c.price)}</span>
               </button>
             ))
           )}
@@ -237,7 +237,7 @@ export default function AddHoldingModal({ onClose, onAdded, initialKind = "crypt
         <input
           className="ahm-input"
           inputMode="decimal"
-          placeholder={selected && !isNft ? `Now ${formatAssetPrice(selected.price)}` : "e.g. 2500"}
+          placeholder={selected && !isNft ? `Now ${formatUsd(selected.price)}` : "e.g. 2500"}
           value={price}
           onChange={(e) => setPrice(e.target.value)}
         />

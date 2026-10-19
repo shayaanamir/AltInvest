@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 // The signed-in user's saved display preferences, held where non-React code (formatters) can read them.
-// Loaded from GET /settings after sign-in; the Settings page pushes changes in as they are saved.
+// Loaded from GET /settings (and GET /fx for exchange rates) after sign-in; the Settings page pushes
+// changes in as they are saved.
 import { apiFetch } from "./apiClient";
 
 const DEFAULTS = {
@@ -9,6 +10,8 @@ const DEFAULTS = {
   density: "comfortable",
   theme: null, // null = leave whatever the top-bar toggle says
   landingPage: "Dashboard",
+  displayCurrency: "USD", // what the user chose
+  fx: null, // { rates: { EUR: 0.89, ... }, asOf: "YYYY-MM-DD", source } from GET /fx, or null if unavailable
 };
 
 let state = { ...DEFAULTS };
@@ -27,15 +30,27 @@ export function subscribeAppPreferences(fn) {
   return () => listeners.delete(fn);
 }
 
+// Latest USD exchange rates; null when the backend hasn't got any (values then stay in USD).
+async function fetchFx() {
+  try {
+    const fx = await apiFetch("/fx");
+    return { rates: fx.rates || {}, asOf: fx.as_of, source: fx.source };
+  } catch {
+    return null;
+  }
+}
+
 // Fetch the saved settings once per session; throws if the request fails so the caller can decide.
 export async function loadAppPreferences() {
-  const s = await apiFetch("/settings");
+  const [s, fx] = await Promise.all([apiFetch("/settings"), fetchFx()]);
   set({
     loaded: true,
     dateFormat: s.preferences?.date_format ?? DEFAULTS.dateFormat,
     density: s.appearance?.density ?? DEFAULTS.density,
     theme: s.appearance?.theme ?? null,
     landingPage: s.preferences?.default_landing_page ?? DEFAULTS.landingPage,
+    displayCurrency: s.preferences?.display_currency ?? DEFAULTS.displayCurrency,
+    fx,
   });
   return state;
 }
@@ -46,6 +61,11 @@ export function applySavedPreference(section, patch) {
   if (section === "preferences") {
     if (patch.dateFormat !== undefined) next.dateFormat = patch.dateFormat;
     if (patch.defaultLandingPage !== undefined) next.landingPage = patch.defaultLandingPage;
+    if (patch.displayCurrency !== undefined) {
+      next.displayCurrency = patch.displayCurrency;
+      // Rates may have been unavailable at sign-in; try again now that they're needed.
+      if (!state.fx && patch.displayCurrency !== "USD") fetchFx().then((fx) => fx && set({ fx }));
+    }
   }
   if (section === "appearance") {
     if (patch.density !== undefined) next.density = patch.density;
@@ -56,6 +76,19 @@ export function applySavedPreference(section, patch) {
 
 export function resetAppPreferences() {
   set({ ...DEFAULTS });
+}
+
+/**
+ * The currency values are actually shown in, and the USD→currency rate to apply.
+ * Falls back to USD (rate 1) when there's no stored rate for the chosen currency, and says so via
+ * `unavailable`, so nothing is ever shown converted with a made-up rate.
+ */
+export function getDisplayCurrency() {
+  const wanted = state.displayCurrency || "USD";
+  if (wanted === "USD") return { code: "USD", rate: 1, wanted, unavailable: false, asOf: state.fx?.asOf ?? null };
+  const rate = state.fx?.rates?.[wanted];
+  if (typeof rate === "number" && rate > 0) return { code: wanted, rate, wanted, unavailable: false, asOf: state.fx.asOf };
+  return { code: "USD", rate: 1, wanted, unavailable: true, asOf: null };
 }
 
 const LANDING_PATHS = { Dashboard: "/dashboard", Portfolio: "/portfolio", Sentiment: "/sentiment" };

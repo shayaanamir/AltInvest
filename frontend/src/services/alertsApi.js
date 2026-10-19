@@ -1,4 +1,5 @@
 import { apiFetch } from "./apiClient";
+import { formatUsd } from "../utils/formatters";
 import { fetchUniverse } from "./assetRepository";
 import { ALERT_METRIC_OPTIONS, ALERT_CONDITION_OPTIONS } from "../content/uiOptions";
 
@@ -27,7 +28,7 @@ function lookupAvatar(alert, universe) {
 
 function formatThreshold(metricType, value) {
   if (value == null) return "";
-  if (metricType === "price") return `$${value.toLocaleString()}`;
+  if (metricType === "price") return formatUsd(value);
   return `${value}`;
 }
 

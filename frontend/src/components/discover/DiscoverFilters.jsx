@@ -1,3 +1,5 @@
+import { formatCurrencyCompact } from "../../utils/formatters";
+
 function pct(value, min, max) {
   if (max === min) return 0;
   return ((value - min) / (max - min)) * 100;
@@ -15,7 +17,7 @@ export default function DiscoverFilters({ config, filters, onChange, onReset }) 
   const sentMax = sentimentRange.max * 100;
   const sentStep = sentimentRange.step * 100;
 
-  const fmtCap = (v) => `$${(v / 1e9).toFixed(0)}B`;
+  const fmtCap = (v) => formatCurrencyCompact(v, { digits: 0 });
 
   return (
     <div className="disc-filters-card">

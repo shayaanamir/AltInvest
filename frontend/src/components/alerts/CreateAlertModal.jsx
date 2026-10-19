@@ -3,7 +3,7 @@ import { useAsync } from "../../hooks/useAsync";
 import { alertsApi } from "../../services/alertsApi";
 import { fetchUniverse } from "../../services/assetRepository";
 import { ALERT_METRIC_OPTIONS, ALERT_CONDITION_OPTIONS } from "../../content/uiOptions";
-import { formatAssetPrice } from "../../utils/formatters";
+import { formatUsd } from "../../utils/formatters";
 import { ErrorState, useToast } from "../../errors";
 import "../portfolio/addHoldingModal.css";
 
@@ -165,7 +165,7 @@ export default function CreateAlertModal({ target: fixedTarget, alert, hint, def
                       <span className="ahm-item-name">{c.name}</span>
                       <span className="ahm-item-sub">{c.type === "nft" ? "NFT collection" : c.subcategory}</span>
                     </span>
-                    <span className="ahm-item-price">{c.priceLabel || formatAssetPrice(c.price)}</span>
+                    <span className="ahm-item-price">{c.priceLabel || formatUsd(c.price)}</span>
                   </button>
                 ))
               )}
