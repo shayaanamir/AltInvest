@@ -30,6 +30,8 @@ try:
         COLLECTION_SENTIMENT,
         COLLECTION_SENTIMENT_HISTORY,
         COLLECTION_RAW_ARTICLES,
+        TREND_LOOKBACK_HOURS,
+        TREND_TOLERANCE_HOURS,
     )
     from sentiment_engine.utils.logger import get_logger
 except ImportError:
@@ -39,6 +41,8 @@ except ImportError:
         COLLECTION_SENTIMENT,
         COLLECTION_SENTIMENT_HISTORY,
         COLLECTION_RAW_ARTICLES,
+        TREND_LOOKBACK_HOURS,
+        TREND_TOLERANCE_HOURS,
     )
     from utils.logger import get_logger
 
@@ -235,6 +239,37 @@ def get_sentiment_history(asset_id: str, days: int = 7) -> list[dict]:
 
     except Exception as e:
         logger.error(f"Failed to get sentiment history for {asset_id}: {e}")
+        return []
+
+
+def get_trend_baseline(asset_id: str) -> list[dict]:
+    """
+    Returns the stored readings around TREND_LOOKBACK_HOURS ago (± TREND_TOLERANCE_HOURS),
+    for trend detection to pick the closest from.
+
+    get_sentiment_history can't serve this: it returns the newest rows first and is capped
+    at days*24 of them, which at a 15-minute refresh is only the last few hours.
+    """
+    db = _get_db()
+    if db is None:
+        return []
+
+    try:
+        target = datetime.now(tz=timezone.utc) - timedelta(hours=TREND_LOOKBACK_HOURS)
+        tol    = timedelta(hours=TREND_TOLERANCE_HOURS)
+
+        cursor = db[COLLECTION_SENTIMENT_HISTORY].find(
+            {
+                "asset_id":  asset_id,
+                "timestamp": {"$gte": (target - tol).isoformat(), "$lte": (target + tol).isoformat()},
+            },
+            {"_id": 0, "timestamp": 1, "sentiment_score": 1, "confidence": 1, "data_quality": 1},
+        ).limit(500)
+
+        return list(cursor)
+
+    except Exception as e:
+        logger.error(f"Failed to get trend baseline for {asset_id}: {e}")
         return []
 
 

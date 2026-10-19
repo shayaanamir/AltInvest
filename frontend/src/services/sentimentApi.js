@@ -123,7 +123,7 @@ function normaliseRecord(raw) {
     sentimentScore: raw.sentiment_score ?? 0,
     confidence: raw.confidence ?? 0,
     confidenceLabel: raw.confidence_label ?? "low",
-    trend: raw.trend ?? "stable",
+    trend: raw.trend ?? "unknown",
     articleCount: raw.article_count ?? raw.post_count ?? 0,
     sourceCount: raw.source_count ?? 0,
     sourceBreakdown: raw.source_breakdown ?? { news_nlp: 0, market_signals: 0 },

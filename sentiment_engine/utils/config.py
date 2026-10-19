@@ -201,6 +201,12 @@ CONFIDENCE_HIGH_THRESHOLD   = 30
 
 TREND_DELTA_THRESHOLD = 0.05
 
+# The current score is compared with the stored reading closest to
+# TREND_LOOKBACK_HOURS ago, and only if one exists within TREND_TOLERANCE_HOURS of
+# that point. Otherwise the trend is "unknown" rather than a guess.
+TREND_LOOKBACK_HOURS  = 24
+TREND_TOLERANCE_HOURS = 6
+
 # ── MongoDB Collections ───────────────────────────────────────────────────────
 
 COLLECTION_SENTIMENT        = "sentiment"

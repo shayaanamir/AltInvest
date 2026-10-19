@@ -17,7 +17,7 @@ This is the one function Person B's backend calls.
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 try:
@@ -30,6 +30,8 @@ try:
         NEWS_NLP_WEIGHT,
         MARKET_SIGNAL_WEIGHT,
         TREND_DELTA_THRESHOLD,
+        TREND_LOOKBACK_HOURS,
+        TREND_TOLERANCE_HOURS,
     )
     from sentiment_engine.utils.logger import get_logger
 except ImportError:
@@ -42,6 +44,8 @@ except ImportError:
         NEWS_NLP_WEIGHT,
         MARKET_SIGNAL_WEIGHT,
         TREND_DELTA_THRESHOLD,
+        TREND_LOOKBACK_HOURS,
+        TREND_TOLERANCE_HOURS,
     )
     from utils.logger import get_logger
 
@@ -64,21 +68,46 @@ def _weighted_mean(scores: list[float], weights: list[float]) -> float:
     return round(sum(s * w for s, w in zip(scores, weights)) / total_weight, 4)
 
 
-def _detect_trend(current_score: float, history: list[dict]) -> str:
-    """
-    Compares current score against the most recent historical score.
-    Returns 'improving', 'deteriorating', or 'stable'.
-    """
-    if not history:
-        return "stable"
+def _parse_ts(value) -> Optional[datetime]:
+    """Parses a stored timestamp (ISO string or datetime) to an aware UTC datetime."""
+    if isinstance(value, datetime):
+        ts = value
+    else:
+        try:
+            ts = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    return ts if ts.tzinfo else ts.replace(tzinfo=timezone.utc)
 
-    # Most recent historical entry
-    previous = sorted(history, key=lambda h: h.get("timestamp", ""), reverse=True)
-    if not previous:
-        return "stable"
 
-    prev_score = previous[0].get("sentiment_score", 0.0)
-    delta      = current_score - prev_score
+def _detect_trend(current_score: float, history: list[dict], now: Optional[datetime] = None) -> str:
+    """
+    Compares the current score with the stored reading closest to TREND_LOOKBACK_HOURS
+    ago (24h), counting only readings within TREND_TOLERANCE_HOURS of that point.
+
+    Returns 'improving', 'deteriorating' or 'stable' — or 'unknown' when there is no
+    reading that old, so a lack of history isn't reported as a flat market.
+    """
+    now = now or datetime.now(tz=timezone.utc)
+    target = now - timedelta(hours=TREND_LOOKBACK_HOURS)
+    tolerance = timedelta(hours=TREND_TOLERANCE_HOURS)
+
+    baseline, best_gap = None, None
+    for h in history:
+        ts = _parse_ts(h.get("timestamp") or h.get("last_updated"))
+        if ts is None or h.get("sentiment_score") is None:
+            continue
+        # Skip the neutral placeholders written when no articles were found.
+        if not (h.get("confidence") or 0) > 0 or (h.get("data_quality") or {}).get("reason") == "no_articles":
+            continue
+        gap = abs(ts - target)
+        if gap <= tolerance and (best_gap is None or gap < best_gap):
+            baseline, best_gap = h, gap
+
+    if baseline is None:
+        return "unknown"
+
+    delta = current_score - baseline["sentiment_score"]
 
     if delta > TREND_DELTA_THRESHOLD:
         return "improving"
@@ -86,6 +115,19 @@ def _detect_trend(current_score: float, history: list[dict]) -> str:
         return "deteriorating"
     else:
         return "stable"
+
+
+def _load_trend_history(asset_id: str) -> list[dict]:
+    """Fetches the ~24h-ago readings for trend detection; [] if storage is unavailable."""
+    try:
+        try:
+            from sentiment_engine.storage.mongo_handler import get_trend_baseline
+        except ImportError:
+            from storage.mongo_handler import get_trend_baseline
+        return get_trend_baseline(asset_id)
+    except Exception as exc:
+        logger.warning(f"Could not load trend baseline for {asset_id}: {exc}")
+        return []
 
 
 def _extract_top_headlines(articles: list[dict], n: int = 5) -> list[dict]:
@@ -150,9 +192,10 @@ def run_pipeline(
 
     Args:
         asset_id: e.g. "btc", "eth"
-        history:  Previous sentiment scores for trend detection.
-                  Pass in from MongoDB via storage/mongo_handler.py.
-                  If None, trend will be "stable".
+        history:  Stored readings for trend detection. Normally omitted: when None, the
+                  readings around 24h ago are loaded from MongoDB. Pass a list to
+                  override (e.g. in tests). With no reading near 24h old the trend is
+                  "unknown".
         return_raw_articles: if True, returns (output, raw_articles) instead
             of just output — lets callers reuse the articles already fetched
             here instead of re-fetching for storage purposes.
@@ -205,7 +248,9 @@ def run_pipeline(
     final_score = round((final_score_01 * 2.0) - 1.0, 4)
 
     # ── Step 8: Trend detection ───────────────────────────────────────────────
-    trend = _detect_trend(final_score, history or [])
+    if history is None:
+        history = _load_trend_history(asset_id)
+    trend = _detect_trend(final_score, history)
 
     # ── Assemble output ───────────────────────────────────────────────────────
     source, finbert_unavailable = _scoring_source(scored_articles)
@@ -282,7 +327,7 @@ def _neutral_output(asset_id: str, timestamp: datetime) -> dict:
         "confidence":         0.0,
         "confidence_label":   "low",
         "signal_strength":    "weak",
-        "trend":              "stable",
+        "trend":              "unknown",
         "last_updated":       timestamp.isoformat(),
         "article_count":      0,
         "source_count":       0,

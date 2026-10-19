@@ -98,7 +98,7 @@ def _neutral(asset_id: str, error: str = "") -> dict:
         "confidence":             0.0,
         "confidence_label":       "low",
         "signal_strength":        "weak",
-        "trend":                  "stable",
+        "trend":                  "unknown",
         "last_updated":           datetime.now(tz=timezone.utc).isoformat(),
         "article_count":          0,
         "source_count":           0,
@@ -181,8 +181,7 @@ def get_all_sentiment():
     if missing:
         def _run_one(asset_id: str) -> tuple[str, dict]:
             try:
-                history = get_sentiment_history(asset_id, days=1)
-                raw = run_pipeline(asset_id, history=history)
+                raw = run_pipeline(asset_id)
                 result: dict = raw[0] if isinstance(raw, tuple) else raw
                 save_sentiment(result)
                 return asset_id, result
@@ -289,8 +288,7 @@ def get_sentiment(asset: str):
     if cached and not _is_stale(cached):
         return _map_sentiment(cached)
 
-    history = get_sentiment_history(asset_id, days=1)
-    raw     = run_pipeline(asset_id, history=history)
+    raw     = run_pipeline(asset_id)
     result: dict = raw[0] if isinstance(raw, tuple) else raw
     save_sentiment(result)
     # No articles this run: the last good (if stale) score beats a neutral 0.0.
@@ -339,8 +337,7 @@ def refresh_sentiment(asset: str):
             detail=f"Asset '{asset}' is not active. Active assets: {_ACTIVE_ASSETS}",
         )
 
-    history = get_sentiment_history(asset_id, days=1)
-    raw     = run_pipeline(asset_id, history=history)
+    raw     = run_pipeline(asset_id)
     result: dict = raw[0] if isinstance(raw, tuple) else raw
     save_sentiment(result)
     if _is_no_articles(result):
@@ -374,8 +371,7 @@ def _refresh_all_assets() -> None:
 
     def _run_one(asset_id: str) -> None:
         try:
-            history = get_sentiment_history(asset_id, days=1)
-            raw = run_pipeline(asset_id, history=history)
+            raw = run_pipeline(asset_id)
             # run_pipeline returns dict | tuple — extract the dict
             result: dict = raw[0] if isinstance(raw, tuple) else raw
             save_sentiment(result)

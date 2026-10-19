@@ -10,7 +10,8 @@ const RANGES = [
   { key: 90, label: "90d" },
 ];
 
-const TREND_TEXT = { improving: "Warming up", deteriorating: "Cooling down", stable: "Stable" };
+// Trend is measured against the reading from about 24h ago; "unknown" means there isn't one yet.
+const TREND_TEXT = { improving: "Warming up vs 24h ago", deteriorating: "Cooling down vs 24h ago", stable: "Steady vs 24h ago", unknown: "Not enough history for a 24h trend yet" };
 
 function formatDateLabel(dStr) {
   if (!dStr) return "";
@@ -91,7 +92,7 @@ export default function AssetOverTimeChart({ assetId, trend, colors }) {
           ))}
         </div>
       </div>
-      <div className="sv2-small sv2-mt-8" style={{ color, fontWeight: 700 }}>{TREND_TEXT[trend] ?? "Stable"}</div>
+      <div className="sv2-small sv2-mt-8" style={{ color, fontWeight: 700 }}>{TREND_TEXT[trend] ?? TREND_TEXT.unknown}</div>
       
       <div className="sv2-mt-8" style={{ position: "relative" }}>
         {loading ? (

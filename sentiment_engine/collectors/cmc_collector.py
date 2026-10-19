@@ -85,12 +85,13 @@ def fetch_quote_signals(asset_id: str) -> Optional[dict]:
 
     price_score   = _normalise_pct((p1h * 0.2) + (p24h * 0.5) + (p7d * 0.3))
     volume_score  = _normalise_pct(vol, clip=100.0)
-    dom_score     = min(1.0, dom / 60.0)
 
+    # Market-cap dominance is reported but deliberately not scored: it measures size, not
+    # sentiment. Scoring it as dom/60 gave BTC ~0.9 and almost every other asset ~0.0,
+    # dragging their composite down regardless of what the market was doing.
     composite = round(
-        price_score  * 0.60 +
-        volume_score * 0.25 +
-        dom_score    * 0.15,
+        price_score  * 0.70 +
+        volume_score * 0.30,
         4
     )
 
@@ -104,7 +105,6 @@ def fetch_quote_signals(asset_id: str) -> Optional[dict]:
         "market_cap_dominance": round(dom, 4),
         "price_score":        price_score,
         "volume_score":       volume_score,
-        "dominance_score":    round(dom_score, 4),
         "composite_market_score": composite,
         "is_fallback":        False,
         "fetched_at":         datetime.now(tz=timezone.utc).isoformat(),
@@ -136,18 +136,23 @@ def fetch_global_metrics(force_refresh: bool = False) -> Optional[dict]:
         gdata = data["data"]
         quote = gdata.get("quote", {}).get("USD", {})
 
-        btc_dom  = gdata.get("btc_dominance", 50.0) or 50.0
-        mcap_chg = quote.get("total_market_cap_yesterday_percentage_change", 0) or 0
+        btc_dom = gdata.get("btc_dominance")
 
-        global_score = round(
-            _normalise_pct(mcap_chg) * 0.7 +
-            min(1.0, btc_dom / 60.0) * 0.3,
-            4
-        )
+        # True 24h change: current total market cap vs the value 24h ago. CMC's
+        # total_market_cap_yesterday_percentage_change is a different thing (yesterday's
+        # close vs the day before), so it isn't used. None if either value is missing.
+        mcap_now  = quote.get("total_market_cap")
+        mcap_prev = quote.get("total_market_cap_yesterday")
+        mcap_chg  = ((mcap_now / mcap_prev) - 1) * 100 if mcap_now and mcap_prev else None
+
+        # BTC dominance isn't scored (see fetch_quote_signals): it's a constant ~0.9 here,
+        # which would just add a fixed bullish offset. Without a market-cap change the
+        # score stays neutral.
+        global_score = round(_normalise_pct(mcap_chg), 4) if mcap_chg is not None else 0.5
 
         result = {
-            "btc_dominance":               round(btc_dom, 4),
-            "total_market_cap_change_24h": round(mcap_chg, 4),
+            "btc_dominance":               round(btc_dom, 4) if btc_dom is not None else None,
+            "total_market_cap_change_24h": round(mcap_chg, 4) if mcap_chg is not None else None,
             "global_market_score":         global_score,
             "is_fallback":                 False,
             "fetched_at":                  datetime.now(tz=timezone.utc).isoformat(),
@@ -258,7 +263,6 @@ def _neutral_quote_signals(asset_id: str) -> dict:
         "market_cap_dominance":   0.0,
         "price_score":            0.5,
         "volume_score":           0.5,
-        "dominance_score":        0.5,
         "composite_market_score": 0.5,
         "is_fallback":            True,
         "fetched_at":             datetime.now(tz=timezone.utc).isoformat(),
