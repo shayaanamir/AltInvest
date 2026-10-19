@@ -21,40 +21,56 @@ const LINE_META = {
   realEstate: { label: "Real Estate" },
 };
 
-function formatDateLabel(dStr) {
-  if (!dStr) return "";
-  const d = new Date(dStr);
-  if (isNaN(d.getTime())) return String(dStr);
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+const DAY_MS = 86400000;
+
+// Same scale as the mood gauge above it: -100 (all negative) to +100 (all positive).
+const MIN = -100;
+const MAX = 100;
+const Y_TICKS = [-100, -50, 0, 50, 100];
+const signed = (n) => `${n > 0 ? "+" : ""}${n}`;
+
+function formatDate(ms) {
+  return new Date(ms).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-function buildPathWithPadding(values, W, H, PAD_L, PAD_R, PAD_T, PAD_B, min, max) {
+// Points keyed by their own timestamps; anything without a readable date is dropped rather
+// than given an invented position.
+function toPoints(series) {
+  return (series || [])
+    .map((p) => ({ t: new Date(p.date).getTime(), value: p.value }))
+    .filter((p) => Number.isFinite(p.t))
+    .sort((a, b) => a.t - b.t);
+}
+
+function buildPath(points, t0, t1, geo) {
+  const { W, H, PAD_L, PAD_R, PAD_T, PAD_B } = geo;
   const plotW = W - PAD_L - PAD_R;
   const plotH = H - PAD_T - PAD_B;
-  const range = Math.max(1, max - min);
+  const span = Math.max(1, t1 - t0);
 
-  const pts = values.map((v, i) => {
-    const x = PAD_L + (i / Math.max(1, values.length - 1)) * plotW;
-    const y = PAD_T + plotH - ((v - min) / range) * plotH;
-    return { x, y, value: v };
-  });
+  const pts = points.map((p) => ({
+    x: PAD_L + ((p.t - t0) / span) * plotW,
+    y: PAD_T + plotH - ((p.value - MIN) / (MAX - MIN)) * plotH,
+    t: p.t,
+    value: p.value,
+  }));
 
   const linePath = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
-  const areaPath = `${linePath} L ${pts[pts.length - 1].x.toFixed(1)} ${PAD_T + plotH} L ${pts[0].x.toFixed(1)} ${PAD_T + plotH} Z`;
-  const last = pts[pts.length - 1];
-  return { linePath, areaPath, last, pts };
+  const baseY = PAD_T + plotH - ((0 - MIN) / (MAX - MIN)) * plotH; // fill toward the zero line
+  const areaPath = `${linePath} L ${pts[pts.length - 1].x.toFixed(1)} ${baseY} L ${pts[0].x.toFixed(1)} ${baseY} Z`;
+  return { linePath, areaPath, last: pts[pts.length - 1], pts };
 }
 
 export default function MoodTrendChart({ colors }) {
   const [scope, setScope] = useState("crypto");
   const [days, setDays] = useState(30);
-  const [hoverIdx, setHoverIdx] = useState(null);
+  const [hover, setHover] = useState(null); // timestamp (ms) of the point being inspected
   const containerRef = useRef(null);
 
   const { data: series, loading, error, refetch } = useAsync(() => sentimentApi.getMoodTrend(scope, days), [scope, days]);
 
-  const W = 900, H = 220;
-  const PAD_L = 36, PAD_R = 16, PAD_T = 16, PAD_B = 28;
+  const geo = { W: 900, H: 220, PAD_L: 40, PAD_R: 16, PAD_T: 16, PAD_B: 28 };
+  const { W, H, PAD_L, PAD_R, PAD_T, PAD_B } = geo;
   const plotW = W - PAD_L - PAD_R;
   const plotH = H - PAD_T - PAD_B;
 
@@ -72,76 +88,52 @@ export default function MoodTrendChart({ colors }) {
     realEstate: colors.teal,
   };
 
-  const allValues = Object.values(lines).flat().map((p) => p.value);
-  const min = 0;
-  const max = 100;
-
-  // Primary list of items to sample dates and point positions
-  const primaryKey = Object.keys(lines)[0];
-  const primaryList = primaryKey ? lines[primaryKey] : [];
-
-  const handleMouseMove = (e) => {
-    if (!containerRef.current || !primaryList?.length) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const svgX = (mouseX / rect.width) * W;
-
-    let closest = 0;
-    let minDiff = Infinity;
-    primaryList.forEach((_, i) => {
-      const ptX = PAD_L + (i / Math.max(1, primaryList.length - 1)) * plotW;
-      const diff = Math.abs(ptX - svgX);
-      if (diff < minDiff) {
-        minDiff = diff;
-        closest = i;
-      }
-    });
-    setHoverIdx(closest);
-  };
-
-  // Generate X-axis ticks (5 evenly spaced ticks across date range)
-  const xTicks = [];
-  if (primaryList?.length >= 2) {
-    const count = 5;
-    const now = new Date();
-    for (let c = 0; c < count; c++) {
-      const fraction = c / (count - 1);
-      const idx = Math.round(fraction * (primaryList.length - 1));
-      const pt = primaryList[idx];
-      const x = PAD_L + fraction * plotW;
-
-      // Calculate distinct date if raw dates are missing or uniform
-      const daysAgo = Math.round((1 - fraction) * days);
-      const tickDate = new Date(now.getTime() - daysAgo * 86400000);
-      const formattedDate = pt?.date && primaryList[0]?.date !== primaryList[primaryList.length - 1]?.date
-        ? formatDateLabel(pt.date)
-        : tickDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-
-      xTicks.push({ x, label: formattedDate });
-    }
-  }
-
-  // Precompute line paths and points
-  const lineData = {};
+  const points = {};
   Object.entries(lines).forEach(([key, values]) => {
-    if (values && values.length >= 2) {
-      lineData[key] = buildPathWithPadding(values.map((v) => v.value), W, H, PAD_L, PAD_R, PAD_T, PAD_B, min, max);
-    }
+    points[key] = toPoints(values);
   });
 
-  const hoverX = hoverIdx != null && primaryList.length
-    ? PAD_L + (hoverIdx / Math.max(1, primaryList.length - 1)) * plotW
-    : null;
+  // The x axis spans the selected number of days ending at the newest reading, and every
+  // point sits at its own timestamp. So a gap in the history shows as a gap, and short
+  // history shows as short history instead of being stretched across the whole window.
+  const allTimes = Object.values(points).flat().map((p) => p.t);
+  const t1 = allTimes.length ? Math.max(...allTimes) : 0;
+  const t0 = t1 - days * DAY_MS;
 
-  const hoverDate = hoverIdx != null && primaryList.length
-    ? (() => {
-        const fraction = hoverIdx / Math.max(1, primaryList.length - 1);
-        const daysAgo = Math.round((1 - fraction) * days);
-        const d = new Date();
-        d.setDate(d.getDate() - daysAgo);
-        return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-      })()
-    : "";
+  const lineData = {};
+  Object.entries(points).forEach(([key, pts]) => {
+    if (pts.length >= 2) lineData[key] = buildPath(pts, t0, t1, geo);
+  });
+
+  const xTicks = Object.keys(lineData).length
+    ? Array.from({ length: 5 }, (_, c) => {
+        const fraction = c / 4;
+        return { x: PAD_L + fraction * plotW, label: formatDate(t0 + fraction * (t1 - t0)) };
+      })
+    : [];
+
+  const handleMouseMove = (e) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const svgX = ((e.clientX - rect.left) / rect.width) * W;
+    const t = t0 + ((svgX - PAD_L) / plotW) * (t1 - t0);
+
+    let nearest = null;
+    Object.values(lineData).forEach((data) => {
+      data.pts.forEach((p) => {
+        if (nearest == null || Math.abs(p.t - t) < Math.abs(nearest - t)) nearest = p.t;
+      });
+    });
+    setHover(nearest);
+  };
+
+  // Per line, the reading closest to the hovered time — each line's own timestamp is shown.
+  const hovered = hover == null ? null : Object.entries(lineData).map(([key, data]) => {
+    const pt = data.pts.reduce((best, p) => (Math.abs(p.t - hover) < Math.abs(best.t - hover) ? p : best), data.pts[0]);
+    return { key, pt };
+  });
+  const hoverX = hovered?.length ? hovered[0].pt.x : null;
+  const hoverFraction = hoverX != null ? hoverX / W : 0;
 
   return (
     <div className="sv2-card sv2-card-pad" style={{ position: "relative" }}>
@@ -183,11 +175,11 @@ export default function MoodTrendChart({ colors }) {
             ref={containerRef}
             style={{ position: "relative", cursor: "crosshair" }}
             onMouseMove={handleMouseMove}
-            onMouseLeave={() => setHoverIdx(null)}
+            onMouseLeave={() => setHover(null)}
           >
             <svg width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
               <defs>
-                {Object.keys(lines).map((key) => (
+                {Object.keys(lineData).map((key) => (
                   <linearGradient key={key} id={`sv2TrendGrad-${key}`} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor={lineColor[key]} stopOpacity={isMulti ? 0.08 : 0.18} />
                     <stop offset="100%" stopColor={lineColor[key]} stopOpacity="0" />
@@ -195,20 +187,25 @@ export default function MoodTrendChart({ colors }) {
                 ))}
               </defs>
 
-              {/* Y Axis Grid & Labels */}
-              {[0, 25, 50, 75, 100].map((v) => {
-                const y = PAD_T + plotH - (v / 100) * plotH;
+              {/* Y axis: -100..+100, the same scale as the gauge. The zero line is the neutral point. */}
+              {Y_TICKS.map((v) => {
+                const y = PAD_T + plotH - ((v - MIN) / (MAX - MIN)) * plotH;
                 return (
                   <g key={v}>
-                    <line x1={PAD_L} y1={y} x2={W - PAD_R} y2={y} stroke="var(--sv2-border)" strokeDasharray="3,3" opacity="0.6" />
+                    <line
+                      x1={PAD_L} y1={y} x2={W - PAD_R} y2={y}
+                      stroke="var(--sv2-border)"
+                      strokeDasharray={v === 0 ? undefined : "3,3"}
+                      opacity={v === 0 ? 1 : 0.6}
+                    />
                     <text x={PAD_L - 8} y={y + 3.5} fontSize="10" textAnchor="end" fill="var(--sv2-text-mute)">
-                      {v}
+                      {signed(v)}
                     </text>
                   </g>
                 );
               })}
 
-              {/* X Axis Date Ticks */}
+              {/* X axis: dates of the time span the points are plotted over */}
               {xTicks.map((t, idx) => (
                 <text key={idx} x={t.x} y={H - 6} fontSize="10" textAnchor="middle" fill="var(--sv2-text-mute)">
                   {t.label}
@@ -225,29 +222,26 @@ export default function MoodTrendChart({ colors }) {
               ))}
 
               {/* Hover Crosshair Line and Halo Points */}
-              {hoverIdx != null && hoverX != null && (
+              {hovered && hoverX != null && (
                 <g>
                   <line x1={hoverX} y1={PAD_T} x2={hoverX} y2={PAD_T + plotH} stroke="var(--sv2-accent)" strokeWidth="1" strokeDasharray="3,3" opacity="0.75" />
-                  {Object.entries(lineData).map(([key, data]) => {
-                    const pt = data.pts[hoverIdx];
-                    if (!pt) return null;
-                    return (
-                      <g key={`h-${key}`}>
-                        <circle cx={pt.x} cy={pt.y} r="6.5" fill={lineColor[key]} opacity="0.25" />
-                        <circle cx={pt.x} cy={pt.y} r="4" fill={lineColor[key]} stroke="#fff" strokeWidth="2" />
-                      </g>
-                    );
-                  })}
+                  {hovered.map(({ key, pt }) => (
+                    <g key={`h-${key}`}>
+                      <circle cx={pt.x} cy={pt.y} r="6.5" fill={lineColor[key]} opacity="0.25" />
+                      <circle cx={pt.x} cy={pt.y} r="4" fill={lineColor[key]} stroke="#fff" strokeWidth="2" />
+                    </g>
+                  ))}
                 </g>
               )}
             </svg>
 
-            {/* Hover Tooltip Box */}
-            {hoverIdx != null && hoverX != null && (
+            {/* Hover Tooltip Box — dated from the readings themselves */}
+            {hovered && hoverX != null && (
               <div
                 style={{
                   position: "absolute",
-                  left: Math.min(Math.max((hoverX / W) * (containerRef.current?.clientWidth || W) - 60, 10), (containerRef.current?.clientWidth || W) - 140),
+                  left: `${hoverFraction * 100}%`,
+                  transform: hoverFraction < 0.12 ? "none" : hoverFraction > 0.88 ? "translateX(-100%)" : "translateX(-50%)",
                   top: 10,
                   background: "var(--sv2-card)",
                   border: "1px solid var(--sv2-border)",
@@ -259,17 +253,15 @@ export default function MoodTrendChart({ colors }) {
                   whiteSpace: "nowrap",
                 }}
               >
-                <div style={{ fontSize: 10.5, color: "var(--sv2-text-mute)", fontWeight: 600 }}>{hoverDate}</div>
-                {Object.entries(lineData).map(([key, data]) => {
-                  const val = data.pts[hoverIdx]?.value;
-                  if (val == null) return null;
-                  return (
-                    <div key={`tt-${key}`} style={{ fontSize: 12, color: lineColor[key], fontWeight: 800, display: "flex", alignItems: "center", gap: 5 }}>
+                {hovered.map(({ key, pt }) => (
+                  <div key={`tt-${key}`}>
+                    <div style={{ fontSize: 10.5, color: "var(--sv2-text-mute)", fontWeight: 600 }}>{formatDate(pt.t)}</div>
+                    <div style={{ fontSize: 12, color: lineColor[key], fontWeight: 800, display: "flex", alignItems: "center", gap: 5 }}>
                       <span style={{ width: 6, height: 6, borderRadius: "50%", background: lineColor[key] }} />
-                      {LINE_META[key]?.label}: {Math.round(val)}
+                      {LINE_META[key]?.label}: {signed(Math.round(pt.value))}
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -285,7 +277,7 @@ export default function MoodTrendChart({ colors }) {
             </div>
           ))}
         </div>
-        <span className="sv2-tiny sv2-mute2">Above 50 is net-positive sentiment</span>
+        <span className="sv2-tiny sv2-mute2">Above 0 is net-positive sentiment</span>
       </div>
     </div>
   );

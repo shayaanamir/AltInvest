@@ -132,27 +132,35 @@ def _load_trend_history(asset_id: str) -> list[dict]:
 
 def _extract_top_headlines(articles: list[dict], n: int = 5) -> list[dict]:
     """
-    Returns the top N most impactful headlines (highest absolute nlp_score),
-    sorted by absolute score descending. Each carries the blended score plus
-    the VADER and FinBERT scores it was blended from.
+    Returns the N headlines that moved the news score the most, largest effect first.
+
+    `contribution` is the article's share of the weighted mean in run_pipeline —
+    nlp_score * (recency_weight * trust_weight) / sum of those weights — so the
+    contributions of ALL articles add up to the news score itself. A strongly-worded
+    but old or low-trust article therefore ranks below a milder fresh, trusted one.
+    Each headline also carries the blended score and the VADER and FinBERT scores it
+    was blended from.
     """
-    sorted_articles = sorted(
-        articles,
-        key=lambda a: abs(a.get("nlp_score", 0.0)),
-        reverse=True
+    weights = [a.get("recency_weight", 1.0) * a.get("trust_weight", 1.0) for a in articles]
+    total = sum(weights)
+    ranked = sorted(
+        ((a.get("nlp_score", 0.0) * w / total if total else 0.0, a) for a, w in zip(articles, weights)),
+        key=lambda pair: abs(pair[0]),
+        reverse=True,
     )
 
     return [
         {
             "title":  a.get("title", ""),
             "score":  round(a.get("nlp_score", 0.0), 4),
+            "contribution": round(contribution, 4),
             "vader_score":   _round_or_none(a.get("vader_score")),
             "finbert_score": _round_or_none(a.get("finbert_score")),
             "source": a.get("source", ""),
             "age_hours": a.get("age_hours", 0.0),
             "link":   a.get("link", ""),
         }
-        for a in sorted_articles[:n]
+        for contribution, a in ranked[:n]
     ]
 
 

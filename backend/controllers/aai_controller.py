@@ -70,7 +70,7 @@ def compute_aai_response(asset: str) -> dict:
     pred_score = _normalise_prediction(pred.get("predicted_price"), asset)
 
     raw_sent_score = normalise_sentiment(sent.get("sentiment_score", 0.0))
-    confidence = float(sent.get("confidence", 0.5))
+    confidence = float(sent.get("confidence", 0.0))
     sent_score = round(confidence * raw_sent_score + (1 - confidence) * 50.0, 2)
 
     risk_score = float(risk.get("risk_score", 50.0))

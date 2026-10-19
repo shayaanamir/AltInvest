@@ -242,6 +242,59 @@ def get_sentiment_history(asset_id: str, days: int = 7) -> list[dict]:
         return []
 
 
+def get_mood_trend(asset_ids: list[str], days: int) -> list[dict]:
+    """
+    Average sentiment across assets over time, aggregated inside MongoDB.
+
+    Each asset's readings are averaged within a time bucket (hourly for up to 2 days, daily
+    beyond that), then the assets' averages are averaged, so an asset that happened to be
+    refreshed more often doesn't count for more. Placeholder rows (confidence 0) are ignored.
+
+    This can't reuse get_sentiment_history: that returns only the newest days*24 rows per
+    asset, which at a 15-minute refresh is about the last week — far short of a 30 or 90 day
+    window.
+
+    Returns [{"date": ISO bucket start (UTC), "value": -1..1, "assets": n}] oldest first.
+    """
+    db = _get_db()
+    if db is None:
+        return []
+
+    # Timestamps are stored as UTC ISO strings, so a prefix of one is the start of its bucket.
+    hourly = days <= 2
+    prefix_len = 13 if hourly else 10
+    suffix = ":00:00Z" if hourly else "T00:00:00Z"
+
+    try:
+        cutoff = datetime.now(tz=timezone.utc) - timedelta(days=days)
+        pipeline = [
+            {"$match": {
+                "asset_id":        {"$in": list(asset_ids)},
+                "timestamp":       {"$gte": cutoff.isoformat()},
+                "confidence":      {"$gt": 0},
+                "sentiment_score": {"$ne": None},
+            }},
+            {"$group": {
+                "_id":   {"asset": "$asset_id", "bucket": {"$substrBytes": ["$timestamp", 0, prefix_len]}},
+                "score": {"$avg": "$sentiment_score"},
+            }},
+            {"$group": {
+                "_id":    "$_id.bucket",
+                "value":  {"$avg": "$score"},
+                "assets": {"$sum": 1},
+            }},
+            {"$sort": {"_id": 1}},
+        ]
+        return [
+            {"date": row["_id"] + suffix, "value": round(row["value"], 4), "assets": row["assets"]}
+            for row in db[COLLECTION_SENTIMENT_HISTORY].aggregate(pipeline)
+        ]
+
+    except Exception as e:
+        logger.error(f"Failed to compute mood trend: {e}")
+        return []
+
+
 def get_trend_baseline(asset_id: str) -> list[dict]:
     """
     Returns the stored readings around TREND_LOOKBACK_HOURS ago (± TREND_TOLERANCE_HOURS),

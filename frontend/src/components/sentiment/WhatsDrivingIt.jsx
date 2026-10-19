@@ -3,6 +3,9 @@ export default function WhatsDrivingIt({ detail, colors }) {
     <div className="sv2-card sv2-card-pad-sm">
       <div className="sv2-card-title" style={{ marginBottom: 4 }}>What's driving it</div>
       <div className="sv2-mt-8">
+        {detail.drivingFactors.length === 0 && (
+          <div className="sv2-small sv2-muted">The headline-level breakdown isn't available for this reading yet.</div>
+        )}
         {detail.drivingFactors.map((f, i) => (
           <div key={i} className="sv2-driving-item">
             <span className={`sv2-driving-icon ${f.direction}`}>{f.direction === "up" ? "↑" : "↓"}</span>

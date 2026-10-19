@@ -201,11 +201,14 @@ export const sentimentApi = {
     };
   },
 
-  /** Average mood over time (0–100). Only crypto has history; other scopes are empty. */
+  /**
+   * Average mood over time, on the same -100..+100 scale as the mood gauge (getMoodOverview).
+   * Only crypto has history; other scopes are empty.
+   */
   getMoodTrend: async (scope = "crypto", days = 30) => {
     const crypto = async () => {
       const rows = await getJson(`/sentiment/mood-trend?days=${encodeURIComponent(days)}`, "Mood trend request");
-      return rows.map((r) => ({ date: r.date, value: toScore100(r.value) }));
+      return rows.map((r) => ({ date: r.date, value: Math.round(r.value * 100) }));
     };
     if (scope === "both") return { crypto: await crypto(), nft: [], realEstate: [] };
     if (scope === "crypto") return crypto();
@@ -314,11 +317,23 @@ export const sentimentApi = {
       trend: record.trend,
       distribution: { positive: pct(d.positive), neutral: pct(d.neutral), negative: pct(d.negative) },
       articleCount: record.articleCount,
-      drivingFactors: headlines.slice(0, 3).map((h) => ({
-        direction: (h.score ?? 0) >= 0 ? "up" : "down",
-        title: h.title,
-        description: [h.source, h.age_hours != null ? `${Math.round(h.age_hours)}h ago` : null].filter(Boolean).join(", "),
-      })),
+      sourceCount: record.sourceCount,
+      // The headlines that moved the news score most (the engine ranks them by their weighted
+      // share of it). Readings stored before the engine reported that have no such figure, and
+      // then there is nothing honest to show here, so the list is left empty.
+      drivingFactors: headlines
+        .filter((h) => h.contribution != null)
+        .sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution))
+        .slice(0, 3)
+        .map((h) => ({
+          direction: h.contribution >= 0 ? "up" : "down",
+          title: h.title,
+          description: [
+            `${h.contribution >= 0 ? "+" : ""}${h.contribution.toFixed(2)} of the news score`,
+            h.source,
+            h.age_hours != null ? `${Math.round(h.age_hours)}h ago` : null,
+          ].filter(Boolean).join(" · "),
+        })),
       headlines,
       sourceBreakdown: {
         newsPct: Math.round((record.sourceBreakdown.news_nlp ?? 0) * 100),

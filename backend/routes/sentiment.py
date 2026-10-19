@@ -427,26 +427,13 @@ def get_mood_trend(days: int = Query(default=30, ge=1, le=90, description="Days 
     Overall crypto mood over time: the average sentiment score (-1..1) of every covered asset,
     bucketed by hour for a day or two of history and by day beyond that.
     """
-    _, _, get_sentiment_history, _, _, _ = _engine()
+    _engine()  # fail early with a clear error if the engine isn't installed
+    try:
+        from sentiment_engine.storage.mongo_handler import get_mood_trend as engine_mood_trend
+    except ImportError:
+        from storage.mongo_handler import get_mood_trend as engine_mood_trend
 
-    fmt = "%Y-%m-%dT%H:00:00Z" if days <= 2 else "%Y-%m-%dT00:00:00Z"
-    buckets: dict[str, list[float]] = {}
-    for asset_id in _ACTIVE_ASSETS:
-        for row in get_sentiment_history(asset_id, days=days):
-            score = row.get("sentiment_score")
-            ts = row.get("last_updated") or row.get("timestamp")
-            if score is None or not ts or not (row.get("confidence") or 0) > 0:
-                continue  # skip neutral placeholders written when no articles were found
-            try:
-                when = ts if isinstance(ts, datetime) else datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
-            except ValueError:
-                continue
-            buckets.setdefault(when.strftime(fmt), []).append(float(score))
-
-    return [
-        {"date": key, "value": round(sum(vals) / len(vals), 4), "assets": len(vals)}
-        for key, vals in sorted(buckets.items())
-    ]
+    return engine_mood_trend(_ACTIVE_ASSETS, days)
 
 
 # ── GET /sentiment/{asset} ─────────────────────────────────────────────────────

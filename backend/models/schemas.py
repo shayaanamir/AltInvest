@@ -29,6 +29,7 @@ class HeadlineItem(BaseModel):
     # that found nothing returns no headlines at all.
     title: str
     score: Optional[float] = None                   # blended VADER + FinBERT score
+    contribution: Optional[float] = None            # this headline's share of the news score
     vader_score: Optional[float] = None
     finbert_score: Optional[float] = None
     source: Optional[str] = None
