@@ -1,7 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useAsync } from "../../hooks/useAsync";
 import { alertsApi } from "../../services/alertsApi";
+import { fetchUniverse } from "../../services/assetRepository";
 import { ALERT_METRIC_OPTIONS, ALERT_CONDITION_OPTIONS } from "../../content/uiOptions";
-import { useToast } from "../../errors";
+import { formatAssetPrice } from "../../utils/formatters";
+import { ErrorState, useToast } from "../../errors";
 import "../portfolio/addHoldingModal.css";
 
 const CHANNELS = [
@@ -11,16 +14,29 @@ const CHANNELS = [
 ];
 
 /**
- * Creates an alert rule for a known target (POST /alerts).
- *   target: { type: "crypto" | "nft", symbol?, slug?, name }
- *   hint:   optional line of context shown under the threshold (e.g. the current price)
+ * Create or edit an alert rule.
+ *   Create, target known:   <CreateAlertModal target={{ type, symbol|slug, name }} hint? />
+ *   Create, pick a target:  <CreateAlertModal />               (shows a search over the covered universe)
+ *   Edit:                   <CreateAlertModal alert={alert} />  (target and metric are fixed; condition,
+ *                                                                threshold and delivery channel can change)
+ * Calls onCreated() after a successful save, then closes. Failures stay in the dialog as a toast.
  */
-export default function CreateAlertModal({ target, hint, onClose, onCreated }) {
+export default function CreateAlertModal({ target: fixedTarget, alert, hint, onClose, onCreated }) {
   const toast = useToast();
-  const [metric, setMetric] = useState("price");
-  const [condition, setCondition] = useState("above");
-  const [threshold, setThreshold] = useState("");
-  const [channel, setChannel] = useState("in-app");
+  const editing = !!alert;
+
+  const [picked, setPicked] = useState(null);
+  const [query, setQuery] = useState("");
+  const needsPicker = !editing && !fixedTarget;
+  const { data: universe, loading, error: universeError, refetch } = useAsync(
+    () => (needsPicker ? fetchUniverse({ category: "all", sort: "name", order: "asc" }) : Promise.resolve([])),
+    [needsPicker]
+  );
+
+  const [metric, setMetric] = useState(alert?.metricType ?? "price");
+  const [condition, setCondition] = useState(alert?.condition ?? "above");
+  const [threshold, setThreshold] = useState(alert?.thresholdValue != null ? String(alert.thresholdValue) : "");
+  const [channel, setChannel] = useState(alert?.deliveryChannel ?? "in-app");
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -30,9 +46,19 @@ export default function CreateAlertModal({ target, hint, onClose, onCreated }) {
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose, submitting]);
 
+  const target = editing
+    ? { type: alert.targetType, symbol: alert.targetSymbol, slug: alert.targetSlug, name: alert.name }
+    : fixedTarget || (picked && { type: picked.type, symbol: picked.symbol, slug: picked.id, name: picked.name });
+
+  const choices = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return (universe || []).filter((u) => !q || u.name.toLowerCase().includes(q) || (u.symbol || "").toLowerCase().includes(q));
+  }, [universe, query]);
+
   // "Shifts bullish / bearish" only means something for the sentiment metric.
   const conditions = ALERT_CONDITION_OPTIONS.filter((c) => metric === "sentiment" || !c.key.startsWith("shifts_"));
   const needsThreshold = condition === "above" || condition === "below";
+  const metricLabel = ALERT_METRIC_OPTIONS.find((m) => m.key === metric)?.label ?? metric;
 
   const changeMetric = (next) => {
     setMetric(next);
@@ -42,6 +68,10 @@ export default function CreateAlertModal({ target, hint, onClose, onCreated }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!target) {
+      setError("Choose what to watch.");
+      return;
+    }
     let value = null;
     if (needsThreshold) {
       value = Number(threshold);
@@ -53,21 +83,30 @@ export default function CreateAlertModal({ target, hint, onClose, onCreated }) {
 
     setSubmitting(true);
     try {
-      await alertsApi.createAlert({
-        target_type: target.type,
-        ...(target.type === "nft" ? { target_slug: target.slug } : { target_symbol: target.symbol }),
-        target_name: target.name,
-        metric_type: metric,
-        condition,
-        ...(value != null ? { threshold_value: value } : {}),
-        delivery_channel: channel,
-      });
+      if (editing) {
+        await alertsApi.updateAlert(alert.id, {
+          condition,
+          ...(value != null ? { threshold_value: value } : {}),
+          delivery_channel: channel,
+        });
+      } else {
+        await alertsApi.createAlert({
+          target_type: target.type,
+          ...(target.type === "nft" ? { target_slug: target.slug } : { target_symbol: target.symbol }),
+          target_name: target.name,
+          metric_type: metric,
+          condition,
+          ...(value != null ? { threshold_value: value } : {}),
+          delivery_channel: channel,
+        });
+      }
     } catch (err) {
-      toast.error(err, { title: "Couldn't create the alert" });
+      toast.error(err, { title: editing ? "Couldn't save the alert" : "Couldn't create the alert" });
       setSubmitting(false);
       return;
     }
-    toast.success(`We'll watch ${target.name} for you. Manage it on the Alerts page.`, { title: "Alert created" });
+    if (editing) toast.success(`The alert on ${target.name} was updated.`, { title: "Alert saved" });
+    else toast.success(`We'll watch ${target.name} for you. Manage it on the Alerts page.`, { title: "Alert created" });
     onCreated?.();
     onClose();
   };
@@ -78,21 +117,69 @@ export default function CreateAlertModal({ target, hint, onClose, onCreated }) {
         className="ahm"
         role="dialog"
         aria-modal="true"
-        aria-label={`Set an alert on ${target.name}`}
+        aria-label={editing ? "Edit alert" : "New alert"}
         onClick={(e) => e.stopPropagation()}
         onSubmit={handleSubmit}
         noValidate
       >
         <div className="ahm-head">
-          <h2>Set an alert</h2>
+          <h2>{editing ? "Edit alert" : "New alert"}</h2>
           <button type="button" className="ahm-close" aria-label="Close" onClick={onClose} disabled={submitting}>×</button>
         </div>
-        <p className="ahm-desc">Get notified about <strong>{target.name}</strong> when this rule is met.</p>
+        <p className="ahm-desc">
+          {target
+            ? <>Get notified about <strong>{target.name}</strong> when this rule is met.</>
+            : "Pick an asset or collection, then set the rule that should notify you."}
+        </p>
+
+        {needsPicker && (
+          <>
+            <label className="ahm-label">Asset or collection</label>
+            <input
+              className="ahm-input"
+              placeholder="Search assets and collections"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              autoFocus
+            />
+            <div className="ahm-list">
+              {universeError ? (
+                <ErrorState error={universeError} onRetry={refetch} title="Couldn't load the asset list" />
+              ) : loading ? (
+                <div className="ahm-empty">Loading…</div>
+              ) : choices.length === 0 ? (
+                <div className="ahm-empty">{query ? "No matches." : "Nothing covered yet."}</div>
+              ) : (
+                choices.map((c) => (
+                  <button
+                    key={`${c.type}-${c.id}`}
+                    type="button"
+                    className={`ahm-item ${picked && picked.id === c.id && picked.type === c.type ? "selected" : ""}`}
+                    onClick={() => { setPicked(c); setError(null); }}
+                  >
+                    <span className="ahm-dot" style={{ background: c.color || "var(--sv2-accent)" }}>
+                      {(c.symbol || c.name).slice(0, 3).toUpperCase()}
+                    </span>
+                    <span className="ahm-item-main">
+                      <span className="ahm-item-name">{c.name}</span>
+                      <span className="ahm-item-sub">{c.type === "nft" ? "NFT collection" : c.subcategory}</span>
+                    </span>
+                    <span className="ahm-item-price">{c.priceLabel || formatAssetPrice(c.price)}</span>
+                  </button>
+                ))
+              )}
+            </div>
+          </>
+        )}
 
         <label className="ahm-label">Watch</label>
-        <select className="ahm-input" value={metric} onChange={(e) => changeMetric(e.target.value)}>
-          {ALERT_METRIC_OPTIONS.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
-        </select>
+        {editing ? (
+          <div className="ahm-fixed">{metricLabel}</div>
+        ) : (
+          <select className="ahm-input" value={metric} onChange={(e) => changeMetric(e.target.value)}>
+            {ALERT_METRIC_OPTIONS.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
+          </select>
+        )}
 
         <label className="ahm-label">When it</label>
         <select className="ahm-input" value={condition} onChange={(e) => { setCondition(e.target.value); setError(null); }}>
@@ -108,7 +195,7 @@ export default function CreateAlertModal({ target, hint, onClose, onCreated }) {
               placeholder={metric === "price" ? "e.g. 80000" : "e.g. 60"}
               value={threshold}
               onChange={(e) => { setThreshold(e.target.value); setError(null); }}
-              autoFocus
+              autoFocus={!needsPicker}
             />
             {hint && <div className="ahm-hint">{hint}</div>}
           </>
@@ -122,7 +209,9 @@ export default function CreateAlertModal({ target, hint, onClose, onCreated }) {
 
         <div className="ahm-footer">
           <button type="button" className="ahm-cancel" onClick={onClose} disabled={submitting}>Cancel</button>
-          <button type="submit" className="ahm-submit" disabled={submitting}>{submitting ? "Saving…" : "Create alert"}</button>
+          <button type="submit" className="ahm-submit" disabled={submitting}>
+            {submitting ? "Saving…" : editing ? "Save changes" : "Create alert"}
+          </button>
         </div>
       </form>
     </div>

@@ -5,17 +5,22 @@ import AlertSection from "../components/alerts/AlertSection";
 import AlertRow from "../components/alerts/AlertRow";
 import HowAlertsWorkCard from "../components/alerts/HowAlertsWorkCard";
 import { IconPlus } from "../components/icons";
+import CreateAlertModal from "../components/alerts/CreateAlertModal";
 import { ErrorState, useToast } from "../errors";
+import { useState } from "react";
 
 export default function AlertsPage() {
   const toast = useToast();
   const { data: rawAlerts, loading, error, setData: setAlerts, refetch } = useAsync(() => alertsApi.getAlerts(), []);
   const alerts = rawAlerts || [];
+  const [creating, setCreating] = useState(false);
+  const [editingId, setEditingId] = useState(null);
 
-  const toggle = async (id) => {
+  // forcedStatus comes from the play/pause button; the switch just flips paused <-> active.
+  const toggle = async (id, forcedStatus) => {
     const current = alerts.find((a) => a.id === id);
     if (!current) return;
-    const nextStatus = current.status === "paused" ? "active" : "paused";
+    const nextStatus = forcedStatus ?? (current.status === "paused" ? "active" : "paused");
 
     // Optimistic update
     setAlerts((prev) => prev.map((a) => (a.id === id ? { ...a, status: nextStatus } : a)));
@@ -40,7 +45,8 @@ export default function AlertsPage() {
     }
   };
 
-  const edit = () => {};
+  const edit = (id) => setEditingId(id);
+  const editingAlert = alerts.find((a) => a.id === editingId) || null;
 
   const active = alerts.filter((a) => a.status === "active");
   const triggered = alerts.filter((a) => a.status === "triggered");
@@ -54,7 +60,7 @@ export default function AlertsPage() {
             <h1 className="sv2-h1">Alerts</h1>
             <p className="sv2-lead">Threshold rules that watch the market so you don't have to.</p>
           </div>
-          <button className="alr-new-btn">
+          <button className="alr-new-btn" type="button" onClick={() => setCreating(true)}>
             <IconPlus /> New alert
           </button>
         </div>
@@ -92,6 +98,8 @@ export default function AlertsPage() {
             <HowAlertsWorkCard />
           </div>
         )}
+        {creating && <CreateAlertModal onClose={() => setCreating(false)} onCreated={refetch} />}
+        {editingAlert && <CreateAlertModal alert={editingAlert} onClose={() => setEditingId(null)} onCreated={refetch} />}
       </div>
     </div>
   );

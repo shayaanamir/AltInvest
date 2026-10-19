@@ -101,6 +101,10 @@ export const alertsApi = {
     return apiFetch("/alerts", { method: "POST", body: JSON.stringify(payload) });
   },
 
+  // patch may carry condition, threshold_value and/or delivery_channel (see AlertUpdate in the backend).
+  updateAlert: async (id, patch) =>
+    apiFetch(`/alerts/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
+
   toggleAlert: async (id, nextStatus) => {
     // nextStatus is "active" or "paused"
     return apiFetch(`/alerts/${id}`, {
