@@ -89,7 +89,7 @@ export default function AssetDetailHeader({ detail, switchable, onBack, onSwitch
             <div className="sv2-tiny sv2-mute2">{detail.category === "nft" ? "NFT" : "Crypto"} · {detail.subcategory}</div>
           </div>
           <span className="sv2-asset-price" style={{ marginLeft: 12 }}>
-            {formatAssetPrice(detail.price)}
+            {detail.price != null ? formatAssetPrice(detail.price) : "—"}
           </span>
           <span className={`sv2-small sv2-bold`} style={{ color: (detail.priceChangePct ?? 0) >= 0 ? "var(--sv2-green)" : "var(--sv2-red)" }}>
             {detail.priceChangePct != null

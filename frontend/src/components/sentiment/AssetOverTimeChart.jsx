@@ -98,6 +98,10 @@ export default function AssetOverTimeChart({ assetId, trend, colors }) {
           <div className="sv2-muted sv2-small" style={{ height: H, display: "flex", alignItems: "center", justifyContent: "center" }}>Loading…</div>
         ) : error ? (
           <ErrorState error={error} onRetry={refetch} title="Couldn't load sentiment history" />
+        ) : series.length < 2 ? (
+          <div className="sv2-muted sv2-small" style={{ height: H, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
+            Not enough history yet. Readings are stored each time the pipeline runs.
+          </div>
         ) : (
           <div
             ref={containerRef}

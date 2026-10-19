@@ -20,7 +20,7 @@ export default function MarketContextPanel({ detail }) {
         </div>
         <div>
           <div className="sv2-stat-label">Trending</div>
-          <div className="sv2-stat-value">{s.isTrending ? "Yes — rank 2" : "No"}</div>
+          <div className="sv2-stat-value">{s.isTrending == null ? "—" : s.isTrending ? "Yes" : "No"}</div>
         </div>
         <div>
           <div className="sv2-stat-label">BTC dominance</div>

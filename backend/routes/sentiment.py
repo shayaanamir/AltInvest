@@ -211,6 +211,55 @@ def get_all_sentiment():
     return mapped
 
 
+# ── GET /sentiment/themes ──────────────────────────────────────────────────────
+# Declared before /sentiment/{asset} so "themes" isn't read as an asset id.
+
+@router.get("/sentiment/themes")
+def get_themes():
+    """Recurring themes in the coverage, from the `sentiment_themes` collection."""
+    from utils.http_errors import db_unavailable
+    try:
+        from db.queries import get_sentiment_themes
+        docs = get_sentiment_themes()
+    except Exception as exc:
+        raise db_unavailable(exc)
+    return [
+        {"label": d.get("label"), "direction": d.get("direction"), "category": d.get("category")}
+        for d in docs
+        if d.get("label")
+    ]
+
+
+# ── GET /sentiment/mood-trend ──────────────────────────────────────────────────
+
+@router.get("/sentiment/mood-trend")
+def get_mood_trend(days: int = Query(default=30, ge=1, le=90, description="Days to look back")):
+    """
+    Overall crypto mood over time: the average sentiment score (-1..1) of every covered asset,
+    bucketed by hour for a day or two of history and by day beyond that.
+    """
+    _, _, get_sentiment_history, _, _, _ = _engine()
+
+    fmt = "%Y-%m-%dT%H:00:00Z" if days <= 2 else "%Y-%m-%dT00:00:00Z"
+    buckets: dict[str, list[float]] = {}
+    for asset_id in _ACTIVE_ASSETS:
+        for row in get_sentiment_history(asset_id, days=days):
+            score = row.get("sentiment_score")
+            ts = row.get("last_updated") or row.get("timestamp")
+            if score is None or not ts or not (row.get("confidence") or 0) > 0:
+                continue  # skip neutral placeholders written when no articles were found
+            try:
+                when = ts if isinstance(ts, datetime) else datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
+            except ValueError:
+                continue
+            buckets.setdefault(when.strftime(fmt), []).append(float(score))
+
+    return [
+        {"date": key, "value": round(sum(vals) / len(vals), 4), "assets": len(vals)}
+        for key, vals in sorted(buckets.items())
+    ]
+
+
 # ── GET /sentiment/{asset} ─────────────────────────────────────────────────────
 
 @router.get("/sentiment/{asset}", response_model=SentimentResponse)
@@ -243,7 +292,7 @@ def get_sentiment(asset: str):
 @router.get("/sentiment/{asset}/history")
 def get_sentiment_history_route(
     asset: str,
-    days: int = Query(default=7, ge=1, le=30, description="Days to look back"),
+    days: int = Query(default=7, ge=1, le=90, description="Days to look back"),
 ):
     """Returns historical sentiment scores for chart rendering."""
     run_pipeline, get_latest_sentiment, get_sentiment_history, get_all_latest, save_sentiment, ASSETS = _engine()

@@ -168,9 +168,15 @@ export default function MoodTrendChart({ colors }) {
       <div style={{ marginTop: 20, position: "relative" }}>
         {error ? (
           <ErrorState error={error} onRetry={refetch} title="Couldn't load the mood trend" />
-        ) : loading || Object.keys(lines).length === 0 ? (
+        ) : loading ? (
           <div className="sv2-muted sv2-small" style={{ height: H, display: "flex", alignItems: "center", justifyContent: "center" }}>
             Loading trend…
+          </div>
+        ) : Object.keys(lineData).length === 0 ? (
+          <div className="sv2-muted sv2-small" style={{ height: H, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
+            {scope === "crypto" || scope === "both"
+              ? "Not enough sentiment history yet. Readings are stored each time the pipeline runs."
+              : "There is no sentiment source for this market yet."}
           </div>
         ) : (
           <div

@@ -120,24 +120,6 @@ export default function Sidebar({ activePage, onNavigate }) {
 
       <div style={{ flex: 1 }} />
 
-      {/* Pro Box */}
-      {!collapsed && (
-        <div style={{
-          margin: "0 12px 16px",
-          background: "var(--sv2-card-alt, #f7f3ea)",
-          borderRadius: 16,
-          padding: "14px 16px",
-          border: "1px solid var(--sv2-border, #ece5d7)"
-        }}>
-          <div style={{ fontSize: 10.5, fontWeight: 800, color: "var(--sv2-accent, #bf5d38)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-            Pro Account
-          </div>
-          <div style={{ fontSize: 11.5, color: "var(--sv2-text-soft, #6c6555)", marginTop: 6, lineHeight: 1.45 }}>
-            Full AAI coverage, unlimited alerts and sentiment history.
-          </div>
-        </div>
-      )}
-
       {/* Bottom Nav */}
       <div style={{
         display: "flex", flexDirection: "column", gap: 3,

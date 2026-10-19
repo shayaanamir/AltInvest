@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { ErrorState } from "../../errors";
 import { useAsync } from "../../hooks/useAsync";
-import { sentimentApi, WATCHLIST } from "../../services/sentimentApi";
+import { sentimentApi } from "../../services/sentimentApi";
+import { onWatchlistsChanged } from "../../services/holdingsEvents";
 import { getAaiTierColor } from "../../utils/scoring";
 import { IconStar, IconArrowUpRight, IconArrowDownRight, IconArrowRight, IconListView, IconGrid2 } from "../icons";
 
@@ -28,12 +29,14 @@ export default function AssetSentimentList({ colors, onSelectAsset }) {
   const apiScope = tab === "all" ? "all" : tab === "tokenized" ? "crypto" : tab;
   const { data: rawRows, loading, error, refetch } = useAsync(() => sentimentApi.getAssetList(apiScope), [apiScope]);
   const rows = rawRows || [];
+  // Everything on the signed-in user's watchlists, kept current as they edit them.
+  const { data: watched } = useAsync(() => sentimentApi.getWatchedAssetIds(), [], { subscribe: onWatchlistsChanged });
 
   const filtered = useMemo(() => {
     let r = rows;
-    if (watchlistOnly) r = r.filter((x) => WATCHLIST.includes(x.assetId));
+    if (watchlistOnly) r = r.filter((x) => watched?.has(x.assetId));
     return r;
-  }, [rows, watchlistOnly]);
+  }, [rows, watchlistOnly, watched]);
 
   const toggleFavorite = (id) =>
     setFavorites((f) => (f.includes(id) ? f.filter((x) => x !== id) : [...f, id]));
