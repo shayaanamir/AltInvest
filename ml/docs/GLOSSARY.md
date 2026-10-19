@@ -84,6 +84,9 @@ Terms marked *(not used yet)* appear in the plan docs but no code uses them so f
 - **Standardisation**: shifting and scaling each feature to mean 0 and std 1, using the training fold's statistics only.
 - **Config**: one fixed model setup (model type, features, settings). D25 allows at most 4 per model type, declared before any run.
 - **Ranking set / confirmation set**: the first 60% of folds, used to pick the best config, and the last 40%, used once to check it (D25).
+- **Return space / USDT space**: measuring errors on the predicted log return (independent of the price level) versus on the predicted price in dollars-pegged USDT (bigger in expensive years) (D28).
+- **Skill vs last-value**: 1 - MAE_model / MAE_last_value. Negative means the model is worse than predicting "no change".
+- **Shrinkage**: what strong regularisation does: it pulls a model's predictions towards the training average.
 - **Statistical power**: the chance a test detects a real effect. Small samples have low power, so "not approved" may mean "not proven" rather than "no skill".
 - **Non-overlapping windows**: evaluating 30-day periods that do not share days, because daily steps with a 30-day horizon overlap 29/30 (docs/LEARNINGS.md). Used by the Phase 3 strategy baselines.
 - **Backtest**: replaying a strategy on past data to see how it would have done. *(not used yet)*

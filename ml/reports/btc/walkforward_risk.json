@@ -1152,9 +1152,9 @@
   },
   "metadata": {
     "asset": "btc",
-    "generated_at": "2026-10-19T11:48:52Z",
-    "git_commit": "aeddd75931a508b366370d61f4dbc823c141b5ab",
-    "git_dirty": true,
+    "generated_at": "2026-10-19T11:57:55Z",
+    "git_commit": "88d4a79e6639a931dbca3d64c7dc3757c86d48e4",
+    "git_dirty": false,
     "n_feature_rows": 3319,
     "b2_test_start_row": 2821,
     "rows_built": [

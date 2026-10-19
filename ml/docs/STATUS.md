@@ -1,6 +1,30 @@
 # STATUS
-Current phase: 4a (risk model) DONE for BTC, ETH, SOL (2026-10-19). Verdict: NOT APPROVED for all three (D25).
-Next: Phase 4b (price model, D26). Not started; waiting on the user's go-ahead.
+Current phase: 4b-1 (price model: Ridge/HGB) DONE for BTC, ETH, SOL (2026-10-19). Verdict: NOT APPROVED for all three (D28).
+Next: Phase 4b-2 (Prophet/LSTM price candidates) or 4c (direction). Not started; waiting on the user's go-ahead.
+
+## Phase 4b-1 (price model): what ran (from repo root, 2026-10-19)
+- Started from a clean tree: HEAD 88d4a79, `git_dirty` False.
+- Step 0a: re-ran run_walkforward_risk once per asset. Only generated_at, git_commit and git_dirty (true -> false) changed.
+- Step 0b: D27 (risk fallback = persistence) and D28 (price target, approval rule) added to DECISIONS.md. PLAN.md 4b/4c "Done when" now says walk-forward (D21).
+- New modules:
+  - `ml/models/price.py`: the 3 declared configs and 2 declared baselines; target fwd_return_30d; features standardised on train-fold mean/std.
+  - `ml/evaluation/run_walkforward_price.py`: writes `ml/reports/{asset}/walkforward_price.json`.
+- No changes to earlier modules. Reused: harness, `load_dev`, `run_metadata`, `split_folds`, `price_metrics` (USDT view), `paired_bootstrap_ci`.
+- `ml/tests/test_price_model.py`: 12 tests. `python -m pytest ml` -> `97 passed`.
+- `python -m ml.evaluation.run_walkforward_price --asset btc|eth|sol` -> exit 0. `git_dirty: true` with a stderr warning (code not yet committed; not re-run).
+- Test rows untouched: `rows_built` [0, b2) and `max_label_row_reached` b2-1, as in Phase 4.0.
+- Cross-check: last-value USDT MAE equals the Phase 4.0 report (BTC 5456.61, ETH 346.78, SOL 22.56).
+- Last-value was the best baseline on the first 60% for every asset (`best_baseline`), so comparing against it is consistent with D22.
+
+| walkforward_price.json | BTC | ETH | SOL |
+|---|---|---|---|
+| top config (first 60%) | ridge_all_a1000 | hgb_d2 | ridge_all_a1000 |
+| last-40% n_pooled / n_effective | 831 / 27.7 | 831 / 27.7 | 444 / 14.8 |
+| paired MAE(last-value) - MAE(top) [95% CI] | 0.001055 [-0.00794, 0.009353] | -0.000785 [-0.010447, 0.008863] | -0.004377 [-0.023187, 0.020063] |
+| verdict | not approved | not approved | not approved |
+
+- The confirmation sets are small (n_effective 27.7, 27.7, 14.8), so "not approved" reflects limited statistical power as well as possible lack of skill.
+- Price API fallback is open for Person B (D28).
 
 ## Phase 4a (risk model): what ran (from repo root, 2026-10-19)
 - Started from a clean tree: HEAD aeddd75, `git_dirty` False. Step 0 and Step 1 were not redone.
@@ -100,6 +124,36 @@ Blocked: nothing.
 - HYPOTHESIS: the near-zero/negative validation and test values reflect a regime effect (calmer, narrower-range volatility since 2024), plus small samples (n_effective 10-16). Not proven.
 - Reproducibility fix: `ml/gitinfo.py` now holds the git metadata for every report writer. `git_dirty` ignores ml/reports/ and git-ignored files, and warns on stderr when true. `ml/tests/test_gitinfo.py` adds 6 tests on a temporary fixture repo. `python -m pytest ml` -> `59 passed`.
 - Follow-up: added `fwd_vol_30d_spread` and `vol_30d_spread` (n, min, p5-p95, max, std, IQR per split, labelled rows) to baselines.json. VERIFIED: test std and IQR of fwd_vol_30d are 36-56% of train for all three assets (numbers in the verify block, step 6). The explanation stays a HYPOTHESIS.
+
+## How to verify Phase 4b-1 yourself (PowerShell, from the repo root)
+```powershell
+Set-Location C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest
+
+# 1. All tests, then only the price model tests (hand-made fixtures, offline)
+python -m pytest ml -q
+python -m pytest ml/tests/test_price_model.py -q
+
+# 2. Re-run (needs ml/data/raw/*.csv). WARNING appears only if code outside ml/reports/ is uncommitted.
+foreach ($a in 'btc','eth','sol') { python -m ml.evaluation.run_walkforward_price --asset $a; "$a exit: $LASTEXITCODE" }
+
+# 3. Config count, best baseline, top config, confirmation size, paired MAE difference, verdict, sealing
+python -c "import json; [print(a, (d:=json.load(open(f'ml/reports/{a}/walkforward_price.json')))['configs_declared']['count'], d['ranking_first_60pct']['best_baseline'], (c:=d['confirmation_last_40pct'])['top_config'], c['n_effective'], round((x:=c['paired_diff_mae_last_value_minus_top'])['estimate'],6), round(x['low'],6), round(x['high'],6), d['verdict']['approved'], d['metadata']['max_label_row_reached']) for a in ('btc','eth','sol')]"
+
+# 4. Pooled return MAE of every predictor on all folds
+python -c "import json; [print(a, {k: v['return']['mae_return'] for k, v in json.load(open(f'ml/reports/{a}/walkforward_price.json'))['all_folds'].items()}) for a in ('btc','eth','sol')]"
+```
+Expected (observed 2026-10-19):
+1. `97 passed`; the price model file shows `12 passed`.
+2. `wrote ...walkforward_price.json` and `exit: 0` for each asset.
+3. Output:
+   - `btc 3 last_value ridge_all_a1000 27.7 0.001055 -0.00794 0.009353 False 2820`
+   - `eth 3 last_value hgb_d2 27.7 -0.000785 -0.010447 0.008863 False 2820`
+   - `sol 3 last_value ridge_all_a1000 14.8 -0.004377 -0.023187 0.020063 False 1893`
+4. Output:
+   - `btc {'ridge_all_a100': 0.153931, 'ridge_all_a1000': 0.151327, 'hgb_d2': 0.156496, 'last_value': 0.149519, 'drift': 0.149914}`
+   - `eth {'ridge_all_a100': 0.202902, 'ridge_all_a1000': 0.198734, 'hgb_d2': 0.19767, 'last_value': 0.194302, 'drift': 0.197344}`
+   - `sol {'ridge_all_a100': 0.245028, 'ridge_all_a1000': 0.239465, 'hgb_d2': 0.248905, 'last_value': 0.233252, 'drift': 0.235037}`
+- Ridge and HGB are deterministic (random_state=0), so a re-run on the same data reproduces these values.
 
 ## How to verify Phase 4a yourself (PowerShell, from the repo root)
 ```powershell
