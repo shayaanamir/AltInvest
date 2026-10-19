@@ -391,6 +391,7 @@ class ProfileOut(BaseModel):
     risk_profile: Optional[str] = None
     layout_preference: Optional[str] = None
     display_currency: Optional[str] = None
+    investment_goal: Optional[str] = None
     email_verified: Optional[bool] = None
     created_at: Optional[str] = None
     activity_summary: ActivitySummary
@@ -398,6 +399,7 @@ class ProfileOut(BaseModel):
 
 class ProfileUpdate(BaseModel):
     name: Optional[str] = None
+    investment_goal: Optional[str] = None
     bio: Optional[str] = None
     avatar_initials: Optional[str] = None
     avatar_color: Optional[str] = None
@@ -430,6 +432,10 @@ class SettingsSectionUpdate(BaseModel):
 
 class ForgotPasswordRequest(BaseModel):
     email: str
+
+
+class VerifyEmailRequest(BaseModel):
+    token: str
 
 
 class ResetPasswordRequest(BaseModel):

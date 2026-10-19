@@ -66,7 +66,7 @@ function ShellRoutes() {
       {ROUTES.map(({ key, path, element: Element, protected: isProtected }) => {
         const inner =
           key === "Landing" || key === "Login" || key === "Onboarding"
-            || key === "ForgotPassword" || key === "ResetPassword" ? <Element onNavigate={navigate} />
+            || key === "ForgotPassword" || key === "ResetPassword" || key === "VerifyEmail" ? <Element onNavigate={navigate} />
             : key === "Signup" ? <Element onNavigate={(p) => navigate(p === "Dashboard" ? "Onboarding" : p)} />
               : key === "Asset Detail" ? <Element onNavigate={navigate} />
                 : <Element />;

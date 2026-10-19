@@ -2,6 +2,7 @@
 import { API_BASE_URL } from "../config";
 import { ApiError, kindFromStatus } from "../errors/errorCatalog";
 import { reportApiReachable } from "../errors/connectionStatus";
+import { apiFetch } from "./apiClient";
 
 /**
  * POST JSON to an auth endpoint. Throws ApiError:
@@ -67,5 +68,13 @@ export const authApi = {
      */
     resetPassword: async (token, newPassword) => {
         return authPost("/auth/reset-password", { token, new_password: newPassword }, "This reset link is invalid or has expired.");
-    }
+    },
+
+    /** Confirm an email address with the token from the verification link. */
+    verifyEmail: async (token) => {
+        return authPost("/auth/verify-email", { token }, "This verification link is invalid or has expired.");
+    },
+
+    /** Email the signed-in user a new verification link. Resolves with { message, sent }. */
+    resendVerification: () => apiFetch("/auth/resend-verification", { method: "POST" }),
 };

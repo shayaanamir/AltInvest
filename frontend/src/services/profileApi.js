@@ -10,9 +10,8 @@ function mapBackendProfile(p) {
     bio: p.bio || "",
     memberSince: p.created_at,
     riskProfile: p.risk_profile || "balanced",
-    // investmentGoal isn't part of backend ProfileOut yet — no server field
-    // to read it from, so it's left undefined until the schema grows one.
-    investmentGoal: undefined,
+    investmentGoal: p.investment_goal || "", // "" = not chosen yet
+    emailVerified: !!p.email_verified,
     marketsFollowed: "", // same — onboarding answers aren't persisted server-side yet
     activitySummary: {
       holdingsCount: p.activity_summary?.holdings_count ?? 0,
@@ -29,15 +28,16 @@ function mapBackendProfile(p) {
 export const profileApi = {
   getProfile: async () => {
     const p = await apiFetch("/profile");
-    return { ...mapBackendProfile(p), emailVerified: !!p.email_verified };
+    return mapBackendProfile(p);
   },
 
   updateProfile: (patch) => {
     // Only forward fields the backend actually accepts
     // (see backend/models/schemas.py::ProfileUpdate)
-    const allowed = ["name", "bio", "avatar_initials", "avatar_color", "risk_profile", "layout_preference", "display_currency"];
+    const allowed = ["name", "bio", "avatar_initials", "avatar_color", "risk_profile", "investment_goal", "layout_preference", "display_currency"];
     const backendPatch = {};
-    if (patch.name !== undefined) backendPatch.name = patch.name;
+    if (patch.name !== undefined) backendPatch.name = patch.name.trim();
+    if (patch.investmentGoal) backendPatch.investment_goal = patch.investmentGoal;
     if (patch.bio !== undefined) backendPatch.bio = patch.bio;
     if (patch.avatarInitials !== undefined) backendPatch.avatar_initials = patch.avatarInitials;
     if (patch.avatarColor !== undefined) backendPatch.avatar_color = patch.avatarColor;

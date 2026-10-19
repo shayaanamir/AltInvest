@@ -19,6 +19,10 @@ router = APIRouter(tags=["Profile"])
 
 _VALID_RISK_PROFILES = {"conservative", "balanced", "aggressive"}
 _VALID_LAYOUTS = {"minimal", "analyst", "trader", "ai-first"}
+# Same keys the onboarding goal step and the profile page offer.
+_VALID_GOALS = {"longterm", "trading", "research", "discovery", "portfolio"}
+_MAX_NAME = 80
+_MAX_BIO = 500
 
 
 def _serialize_profile(user: dict, user_id: ObjectId) -> dict:
@@ -33,6 +37,7 @@ def _serialize_profile(user: dict, user_id: ObjectId) -> dict:
         "risk_profile": user.get("risk_profile"),
         "layout_preference": user.get("layout_preference"),
         "display_currency": user.get("display_currency"),
+        "investment_goal": user.get("investment_goal"),
         "email_verified": user.get("email_verified"),
         "created_at": created_at.strftime("%Y-%m-%dT%H:%M:%SZ") if hasattr(created_at, "strftime") else created_at,
         "activity_summary": get_activity_counts(user_id),
@@ -66,8 +71,16 @@ def patch_profile(payload: ProfileUpdate, user_id: ObjectId = Depends(get_curren
         raise HTTPException(status_code=422, detail=f"risk_profile must be one of {_VALID_RISK_PROFILES}.")
     if "layout_preference" in update and update["layout_preference"] not in _VALID_LAYOUTS:
         raise HTTPException(status_code=422, detail=f"layout_preference must be one of {_VALID_LAYOUTS}.")
-    if "name" in update and not update["name"].strip():
-        raise HTTPException(status_code=422, detail="name cannot be empty.")
+    if "investment_goal" in update and update["investment_goal"] not in _VALID_GOALS:
+        raise HTTPException(status_code=422, detail=f"investment_goal must be one of {sorted(_VALID_GOALS)}.")
+    if "name" in update:
+        update["name"] = update["name"].strip()
+        if not update["name"]:
+            raise HTTPException(status_code=422, detail="Name can't be empty.")
+        if len(update["name"]) > _MAX_NAME:
+            raise HTTPException(status_code=422, detail=f"Name must be {_MAX_NAME} characters or fewer.")
+    if "bio" in update and len(update["bio"]) > _MAX_BIO:
+        raise HTTPException(status_code=422, detail=f"Bio must be {_MAX_BIO} characters or fewer.")
 
     try:
         update_user(user_id, update)

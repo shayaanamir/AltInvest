@@ -9,6 +9,7 @@ import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import VerifyEmailPage from "./pages/VerifyEmailPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import ComparePage from "./pages/ComparePage";
 import AlertsPage from "./pages/AlertsPage";
@@ -21,6 +22,7 @@ export const ROUTES = [
   { key: "Signup", path: "/signup", element: SignupPage, bare: true, inNav: false },
   { key: "ForgotPassword", path: "/forgot-password", element: ForgotPasswordPage, bare: true, inNav: false },
   { key: "ResetPassword", path: "/reset-password", element: ResetPasswordPage, bare: true, inNav: false },
+  { key: "VerifyEmail", path: "/verify-email", element: VerifyEmailPage, bare: true, inNav: false },
   { key: "Onboarding", path: "/onboarding", element: OnboardingPage, bare: true, inNav: false, protected: true },
   { key: "Dashboard", path: "/dashboard", element: DashboardPage, inNav: true, icon: "Dashboard", protected: true },
   { key: "Discover", path: "/discover", element: DiscoverPage, inNav: true, icon: "Discover", protected: true },

@@ -10,7 +10,6 @@ export default function InvestmentProfileCard({ profile, editing, onChange }) {
   const riskKey = (profile.riskProfile || "balanced").toLowerCase();
   const pct = RISK_PCT[riskKey] ?? 50;
   const goalOptions = profile.investmentGoalOptions || [];
-  const goalKnown = goalOptions.includes(profile.investmentGoal);
 
   return (
     <div className="sv2-card set-subcard">
@@ -47,7 +46,7 @@ export default function InvestmentProfileCard({ profile, editing, onChange }) {
             disabled={!editing}
             onChange={(e) => onChange && onChange({ investmentGoal: e.target.value })}
           >
-            {!goalKnown && <option value={profile.investmentGoal}>{labelize(profile.investmentGoal)}</option>}
+            {!profile.investmentGoal && <option value="">Not set</option>}
             {goalOptions.map((g) => (
               <option key={g} value={g}>{labelize(g)}</option>
             ))}
