@@ -20,7 +20,7 @@ Terms marked *(not used yet)* appear in the plan docs but no code uses them so f
 - **Log return**: ln(today's close / yesterday's close). Close to the ordinary return for small moves, and daily log returns can be added up over time.
 - **Volatility**: how violently returns swing, usually the standard deviation of returns.
 - **Annualised volatility**: daily volatility scaled to a year: daily std x sqrt(365) for crypto, which trades every day (docs/EVALUATION.md rule 5). *(not used yet)*
-- **Sharpe ratio**: average return divided by volatility, a "return per unit of risk" score. Annualised with sqrt(365). *(not used yet)*
+- **Sharpe ratio**: average return divided by volatility, a "return per unit of risk" score. Annualised with sqrt(365) for daily returns, sqrt(365/30) for 30-day windows.
 - **Kurtosis**: a number describing how fat the extreme ends of a distribution are.
 - **Excess kurtosis**: kurtosis minus 3, so a normal (bell-curve) distribution scores 0. Positive means more extreme days than a bell curve predicts.
 - **Heavy tails**: extreme moves (crashes, spikes) happen far more often than a bell curve would allow. Real crypto has them; high excess kurtosis is the symptom.
@@ -45,10 +45,32 @@ Terms marked *(not used yet)* appear in the plan docs but no code uses them so f
 - **Percentile threshold**: a cut-off set at a percentile of the train data, for example "FLAT if the move is smaller than the 40th percentile of train moves" (D19).
 - **Terciles**: the 33rd and 67th percentiles, which cut data into three roughly equal groups (low, medium, high risk) (D9, D19).
 - **Class balance**: the percent of rows in each class. Very unequal balance makes accuracy misleading.
-- **Majority-class baseline**: always predicting the most common class. Any model must beat it.
-- **Baseline**: a deliberately simple predictor (for example "price stays the same"). A model is only worth shipping if it beats it.
+- **Majority-class baseline**: always predicting the most common class in TRAIN (D20). Any model must beat it.
+- **Last-value / drift baseline**: price forecasts of "no change" and "the train average 30-day return".
+- **Momentum baseline**: predicting the next 30 days' direction from the last 30 days' move.
+- **Persistence baseline**: predicting tomorrow's risk from today's trailing 30-day volatility.
+- **Buy-and-hold / always-HOLD**: holding the asset the whole time, or staying in cash (0 return).
+- **MAE / RMSE**: average absolute error, and the square root of the average squared error (punishes big misses more). Here in price units (USDT).
+- **MAPE**: average absolute error as a percent of the actual price.
+- **Skill vs naive**: 1 - MAE_model / MAE_last_value. Above 0 means better than "no change".
+- **Directional accuracy**: share of forecasts with the right sign (up vs down).
+- **Accuracy / balanced accuracy**: share of correct classes; balanced accuracy averages the per-class recall, so a constant guess scores 1/(number of classes).
+- **Precision / recall**: of the rows predicted as a class, how many were right; of the rows that were that class, how many were found.
+- **F1 / macro-F1**: one score combining precision and recall per class; macro-F1 is the plain average over classes.
+- **Confusion matrix**: table of actual class (rows) against predicted class (columns).
+- **MCC (Matthews correlation)**: a -1 to +1 score of classification quality that stays honest on unbalanced classes. 0 means no better than chance.
+- **Brier score**: average squared error of predicted probabilities; 0 is perfect.
+- **ROC-AUC**: chance a model scores a random positive above a random negative; 0.5 is chance. Needs probabilities. *(not used yet)*
+- **Calibration**: whether "70% likely" events happen about 70% of the time. *(not used yet)*
+- **Spearman correlation**: correlation of ranks: +1 means the predicted order matches the actual order perfectly.
+- **Coverage / interval width**: share of actual values inside a predicted range, and how wide the range is. *(not used yet)*
+- **n_effective**: labelled rows / 30. Rough count of independent observations, since neighbouring 30-day labels overlap (D20).
+- **Bootstrap / confidence interval (CI)**: resampling the data many times to see how much a number could vary; the 95% CI is the range it falls in 95% of the time.
+- **Moving-block bootstrap**: a bootstrap that resamples runs of 30 neighbouring rows together, so overlapping labels stay together.
+- **Max drawdown**: the largest fall from a previous peak of the money curve.
+- **Baseline**: a deliberately simple predictor (for example "price stays the same"). A model is only worth shipping if it beats it. Phase 3 baselines are in `ml/reports/{asset}/baselines.json`.
 - **Walk-forward**: testing by repeatedly training on the past and predicting the next stretch, moving forward in time. *(not used yet)*
-- **Non-overlapping windows**: evaluating 30-day periods that do not share days, because daily steps with a 30-day horizon overlap 29/30 (docs/LEARNINGS.md). *(not used yet)*
+- **Non-overlapping windows**: evaluating 30-day periods that do not share days, because daily steps with a 30-day horizon overlap 29/30 (docs/LEARNINGS.md). Used by the Phase 3 strategy baselines.
 - **Backtest**: replaying a strategy on past data to see how it would have done. *(not used yet)*
 
 ## Engineering

@@ -1,8 +1,57 @@
 # STATUS
-Current phase: 2 DONE for BTC, ETH, SOL (2026-10-19). No models built.
-Next: Phase 3 (baselines + metric functions). Not started; waiting on the user's go-ahead.
-Done: branch ml-v2, v1 archived at tag archive/ml-v1, docs, Phase 0 scaffold, Phase 1 (BTC), Phase 1b (ETH, SOL), Phase 2.
+Current phase: 3 DONE for BTC, ETH, SOL (2026-10-19). No trained models.
+Next: Phase 4a (price model). Not started; waiting on the user's go-ahead.
+Done: branch ml-v2, v1 archived at tag archive/ml-v1, docs, Phase 0 scaffold, Phase 1 (BTC), Phase 1b (ETH, SOL), Phase 2, Phase 3.
 Blocked: nothing.
+
+## Phase 3 (baselines + metrics): what ran (from repo root, 2026-10-19)
+- Docs: D20 (evaluation on unbalanced classes) added to DECISIONS.md.
+- Small refactors, output unchanged (re-ran dataset_summary: only `generated_at` differed, reverted):
+  - `labels.py`: `direction_class` / `risk_class` split out of `apply_thresholds`, so baselines use the exact same class rule.
+  - `dataset_summary.py`: `prepare(asset)` and `require_validated(asset)`, reused by run_baselines.
+- New modules:
+  - `ml/evaluation/metrics.py`: price, classification, risk ranking, interval, calibration, strategy metrics and a moving-block bootstrap. Undefined values return None.
+  - `ml/evaluation/baselines.py`: fixed rules fitted on train only.
+  - `ml/evaluation/run_baselines.py`: writes `ml/reports/{asset}/baselines.json` (tracked; not git-ignored).
+- `ml/tests/test_metrics.py`: 19 tests. `python -m pytest ml` -> `52 passed`.
+- `python -m ml.evaluation.run_baselines --asset btc|eth|sol` -> exit 0; all four sections present for validation and test.
+- Report details:
+  - Majority classes fitted on train: direction FLAT, risk medium (all assets). Drift log return: BTC 0.030048, ETH 0.027303, SOL 0.086301.
+  - Classification `brier_one_hot` treats hard predictions as one-hot probabilities. `roc_auc_ovr` and `calibration` are null with a note (no probabilities).
+  - `accuracy_ci95` and `mae_price_ci95` use a block bootstrap (block 30, 1000 resamples, seed 0). Strategy `mean_window_return_ci95` uses block 1, since windows do not overlap.
+  - SOL test has no high-risk rows: high recall/precision are null with a note; balanced accuracy averages over low and medium only.
+  - `git_dirty: true` in metadata because Phase 3 was not committed when the reports ran. Re-run after committing to record a clean commit.
+- Findings (all from `ml/reports/{asset}/baselines.json`):
+  - Direction: train-majority (always FLAT) has the highest test accuracy (BTC 0.655983, ETH 0.5662, SOL 0.7049), but balanced accuracy 0.3333. Momentum has negative MCC on every split.
+  - Risk: trailing vol barely ranks forward vol (test Spearman BTC 0.006854, ETH -0.113481, SOL -0.191428; every 95% CI contains 0).
+  - Price: drift beats last-value only on BTC validation (skill 0.018417); last-value is the price baseline to beat elsewhere.
+  - n_effective is only 15.6 (BTC, ETH) and about 10.1 (SOL) per split, so all CIs are wide.
+
+## How to verify Phase 3 yourself (PowerShell, from the repo root)
+```powershell
+Set-Location C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest
+
+# 1. All tests (offline, hand-made fixtures)
+python -m pytest ml -q
+
+# 2. Re-run the baselines (needs ml/data/raw/*.csv; rewrites generated_at and git fields only)
+foreach ($a in 'btc','eth','sol') { python -m ml.evaluation.run_baselines --asset $a; "$a exit: $LASTEXITCODE" }
+
+# 3. Sections present + key test numbers
+python -c "import json; [print(a, all(set((d:=json.load(open(f'ml/reports/{a}/baselines.json')))[s])=={'validation','test'} for s in ('price','direction','risk','strategy')), round(d['price']['test']['last_value']['mae_price'],2), d['direction']['test']['train_majority']['accuracy'], d['risk']['test']['persistence_ranking']['spearman'], d['strategy']['test']['n_windows']) for a in ('btc','eth','sol')]"
+
+# 4. A null with a note (SOL test has no high-risk rows)
+python -c "import json; r=json.load(open('ml/reports/sol/baselines.json'))['risk']['test']['persistence']; print(r['per_class']['high']); print(r['note'][:60])"
+```
+Expected (observed 2026-10-19):
+1. `52 passed`.
+2. `wrote ...baselines.json` and `exit: 0` for each asset.
+3. Output:
+   - `btc True 8095.51 0.655983 0.006854 16`
+   - `eth True 439.12 0.566239 -0.113481 16`
+   - `sol True 13.82 0.704918 -0.191428 11`
+4. `{'precision': None, 'recall': None, 'support': 0, 'predicted': 0}`, then `class(es) ['high'] never occur in the actual labels: their r`.
+- If raw data is re-fetched later, test numbers shift; validation numbers stay the same unless n changes the split boundaries.
 
 ## Phase 2 (features, labels, splits): what ran (from repo root, 2026-10-19)
 - Docs: D18 (split n after warm-up) and D19 (train-only thresholds) added to DECISIONS.md.

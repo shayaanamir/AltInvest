@@ -1,0 +1,931 @@
+{
+  "price": {
+    "validation": {
+      "n_labelled": 304,
+      "n_effective": 10.133333,
+      "last_value": {
+        "predicted_log_return": 0.0,
+        "mae_price": 31.986678,
+        "rmse_price": 39.4434,
+        "mape_pct": 19.070214,
+        "directional_accuracy": null,
+        "skill_vs_last_value": 0.0,
+        "mae_price_ci95": {
+          "low": 23.503723,
+          "high": 39.70882,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "note": "directional_accuracy is null: every prediction is a 0 return, so no sign to compare"
+      },
+      "drift": {
+        "predicted_log_return": 0.086301,
+        "mae_price": 34.374324,
+        "rmse_price": 45.064851,
+        "mape_pct": 21.364094,
+        "directional_accuracy": 0.536184,
+        "skill_vs_last_value": -0.074645,
+        "mae_price_ci95": {
+          "low": 21.385394,
+          "high": 46.942714,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        }
+      }
+    },
+    "test": {
+      "n_labelled": 305,
+      "n_effective": 10.166667,
+      "last_value": {
+        "predicted_log_return": 0.0,
+        "mae_price": 13.819279,
+        "rmse_price": 19.684329,
+        "mape_pct": 15.378715,
+        "directional_accuracy": null,
+        "skill_vs_last_value": 0.0,
+        "mae_price_ci95": {
+          "low": 8.517332,
+          "high": 21.117193,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "note": "directional_accuracy is null: every prediction is a 0 return, so no sign to compare"
+      },
+      "drift": {
+        "predicted_log_return": 0.086301,
+        "mae_price": 16.417493,
+        "rmse_price": 23.355017,
+        "mape_pct": 18.733714,
+        "directional_accuracy": 0.495082,
+        "skill_vs_last_value": -0.188014,
+        "mae_price_ci95": {
+          "low": 10.658519,
+          "high": 25.372297,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        }
+      }
+    }
+  },
+  "direction": {
+    "validation": {
+      "n_labelled": 304,
+      "n_effective": 10.133333,
+      "train_majority": {
+        "accuracy": 0.516447,
+        "balanced_accuracy": 0.333333,
+        "macro_f1": 0.227043,
+        "mcc": null,
+        "brier_one_hot": 0.967105,
+        "per_class": {
+          "DOWN": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 78,
+            "predicted": 0
+          },
+          "FLAT": {
+            "precision": 0.516447,
+            "recall": 1.0,
+            "support": 157,
+            "predicted": 304
+          },
+          "UP": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 69,
+            "predicted": 0
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "DOWN",
+            "FLAT",
+            "UP"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              0,
+              78,
+              0
+            ],
+            [
+              0,
+              157,
+              0
+            ],
+            [
+              0,
+              69,
+              0
+            ]
+          ]
+        },
+        "note": "class(es) ['DOWN', 'UP'] are never predicted: their precision is null; mcc is null: undefined when the predictions (or the actual labels) are a single class; roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities",
+        "accuracy_ci95": {
+          "low": 0.407895,
+          "high": 0.654687,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "roc_auc_ovr": null,
+        "calibration": null
+      },
+      "always_up": {
+        "accuracy": 0.226974,
+        "balanced_accuracy": 0.333333,
+        "macro_f1": 0.123324,
+        "mcc": null,
+        "brier_one_hot": 1.546053,
+        "per_class": {
+          "DOWN": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 78,
+            "predicted": 0
+          },
+          "FLAT": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 157,
+            "predicted": 0
+          },
+          "UP": {
+            "precision": 0.226974,
+            "recall": 1.0,
+            "support": 69,
+            "predicted": 304
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "DOWN",
+            "FLAT",
+            "UP"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              0,
+              0,
+              78
+            ],
+            [
+              0,
+              0,
+              157
+            ],
+            [
+              0,
+              0,
+              69
+            ]
+          ]
+        },
+        "note": "class(es) ['DOWN', 'FLAT'] are never predicted: their precision is null; mcc is null: undefined when the predictions (or the actual labels) are a single class; roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities",
+        "accuracy_ci95": {
+          "low": 0.082237,
+          "high": 0.358635,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "roc_auc_ovr": null,
+        "calibration": null
+      },
+      "momentum": {
+        "accuracy": 0.348684,
+        "balanced_accuracy": 0.269175,
+        "macro_f1": 0.269019,
+        "mcc": -0.060395,
+        "brier_one_hot": 1.302632,
+        "per_class": {
+          "DOWN": {
+            "precision": 0.236842,
+            "recall": 0.230769,
+            "support": 78,
+            "predicted": 76
+          },
+          "FLAT": {
+            "precision": 0.540881,
+            "recall": 0.547771,
+            "support": 157,
+            "predicted": 159
+          },
+          "UP": {
+            "precision": 0.028986,
+            "recall": 0.028986,
+            "support": 69,
+            "predicted": 69
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "DOWN",
+            "FLAT",
+            "UP"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              18,
+              33,
+              27
+            ],
+            [
+              31,
+              86,
+              40
+            ],
+            [
+              27,
+              40,
+              2
+            ]
+          ]
+        },
+        "accuracy_ci95": {
+          "low": 0.273026,
+          "high": 0.430921,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "roc_auc_ovr": null,
+        "calibration": null,
+        "note": "roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities"
+      }
+    },
+    "test": {
+      "n_labelled": 305,
+      "n_effective": 10.166667,
+      "train_majority": {
+        "accuracy": 0.704918,
+        "balanced_accuracy": 0.333333,
+        "macro_f1": 0.275641,
+        "mcc": null,
+        "brier_one_hot": 0.590164,
+        "per_class": {
+          "DOWN": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 49,
+            "predicted": 0
+          },
+          "FLAT": {
+            "precision": 0.704918,
+            "recall": 1.0,
+            "support": 215,
+            "predicted": 305
+          },
+          "UP": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 41,
+            "predicted": 0
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "DOWN",
+            "FLAT",
+            "UP"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              0,
+              49,
+              0
+            ],
+            [
+              0,
+              215,
+              0
+            ],
+            [
+              0,
+              41,
+              0
+            ]
+          ]
+        },
+        "note": "class(es) ['DOWN', 'UP'] are never predicted: their precision is null; mcc is null: undefined when the predictions (or the actual labels) are a single class; roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities",
+        "accuracy_ci95": {
+          "low": 0.488525,
+          "high": 0.852541,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "roc_auc_ovr": null,
+        "calibration": null
+      },
+      "always_up": {
+        "accuracy": 0.134426,
+        "balanced_accuracy": 0.333333,
+        "macro_f1": 0.078998,
+        "mcc": null,
+        "brier_one_hot": 1.731148,
+        "per_class": {
+          "DOWN": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 49,
+            "predicted": 0
+          },
+          "FLAT": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 215,
+            "predicted": 0
+          },
+          "UP": {
+            "precision": 0.134426,
+            "recall": 1.0,
+            "support": 41,
+            "predicted": 305
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "DOWN",
+            "FLAT",
+            "UP"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              0,
+              0,
+              49
+            ],
+            [
+              0,
+              0,
+              215
+            ],
+            [
+              0,
+              0,
+              41
+            ]
+          ]
+        },
+        "note": "class(es) ['DOWN', 'FLAT'] are never predicted: their precision is null; mcc is null: undefined when the predictions (or the actual labels) are a single class; roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities",
+        "accuracy_ci95": {
+          "low": 0.016311,
+          "high": 0.327951,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "roc_auc_ovr": null,
+        "calibration": null
+      },
+      "momentum": {
+        "accuracy": 0.42623,
+        "balanced_accuracy": 0.239701,
+        "macro_f1": 0.248336,
+        "mcc": -0.192356,
+        "brier_one_hot": 1.147541,
+        "per_class": {
+          "DOWN": {
+            "precision": 0.014493,
+            "recall": 0.020408,
+            "support": 49,
+            "predicted": 69
+          },
+          "FLAT": {
+            "precision": 0.613861,
+            "recall": 0.576744,
+            "support": 215,
+            "predicted": 202
+          },
+          "UP": {
+            "precision": 0.147059,
+            "recall": 0.121951,
+            "support": 41,
+            "predicted": 34
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "DOWN",
+            "FLAT",
+            "UP"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              1,
+              47,
+              1
+            ],
+            [
+              63,
+              124,
+              28
+            ],
+            [
+              5,
+              31,
+              5
+            ]
+          ]
+        },
+        "accuracy_ci95": {
+          "low": 0.281885,
+          "high": 0.642623,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "roc_auc_ovr": null,
+        "calibration": null,
+        "note": "roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities"
+      }
+    }
+  },
+  "risk": {
+    "validation": {
+      "n_labelled": 304,
+      "n_effective": 10.133333,
+      "train_majority": {
+        "accuracy": 0.351974,
+        "balanced_accuracy": 0.333333,
+        "macro_f1": 0.17356,
+        "mcc": null,
+        "brier_one_hot": 1.296053,
+        "per_class": {
+          "low": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 167,
+            "predicted": 0
+          },
+          "medium": {
+            "precision": 0.351974,
+            "recall": 1.0,
+            "support": 107,
+            "predicted": 304
+          },
+          "high": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 30,
+            "predicted": 0
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              0,
+              167,
+              0
+            ],
+            [
+              0,
+              107,
+              0
+            ],
+            [
+              0,
+              30,
+              0
+            ]
+          ]
+        },
+        "note": "class(es) ['low', 'high'] are never predicted: their precision is null; mcc is null: undefined when the predictions (or the actual labels) are a single class; roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities; spearman is null: a constant prediction has no ranking",
+        "accuracy_ci95": {
+          "low": 0.121711,
+          "high": 0.523026,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "roc_auc_ovr": null,
+        "calibration": null,
+        "spearman": null
+      },
+      "persistence": {
+        "accuracy": 0.338816,
+        "balanced_accuracy": 0.208947,
+        "macro_f1": 0.197683,
+        "mcc": -0.203529,
+        "brier_one_hot": 1.322368,
+        "per_class": {
+          "low": {
+            "precision": 0.529101,
+            "recall": 0.598802,
+            "support": 167,
+            "predicted": 189
+          },
+          "medium": {
+            "precision": 0.035294,
+            "recall": 0.028037,
+            "support": 107,
+            "predicted": 85
+          },
+          "high": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 30,
+            "predicted": 30
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              100,
+              63,
+              4
+            ],
+            [
+              78,
+              3,
+              26
+            ],
+            [
+              11,
+              19,
+              0
+            ]
+          ]
+        },
+        "accuracy_ci95": {
+          "low": 0.138158,
+          "high": 0.605428,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "roc_auc_ovr": null,
+        "calibration": null,
+        "note": "roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities"
+      },
+      "persistence_ranking": {
+        "score": "vol_30d (trailing)",
+        "target": "fwd_vol_30d",
+        "spearman": 0.297256,
+        "spearman_ci95": {
+          "low": -0.137549,
+          "high": 0.597878,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        }
+      }
+    },
+    "test": {
+      "n_labelled": 305,
+      "n_effective": 10.166667,
+      "train_majority": {
+        "accuracy": 0.098361,
+        "balanced_accuracy": 0.5,
+        "macro_f1": 0.089552,
+        "mcc": null,
+        "brier_one_hot": 1.803279,
+        "per_class": {
+          "low": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 275,
+            "predicted": 0
+          },
+          "medium": {
+            "precision": 0.098361,
+            "recall": 1.0,
+            "support": 30,
+            "predicted": 305
+          },
+          "high": {
+            "precision": null,
+            "recall": null,
+            "support": 0,
+            "predicted": 0
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              0,
+              275,
+              0
+            ],
+            [
+              0,
+              30,
+              0
+            ],
+            [
+              0,
+              0,
+              0
+            ]
+          ]
+        },
+        "note": "class(es) ['high'] never occur in the actual labels: their recall is null; balanced_accuracy averages recall over the classes that do occur; class(es) ['low', 'high'] are never predicted: their precision is null; mcc is null: undefined when the predictions (or the actual labels) are a single class; roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities; spearman is null: a constant prediction has no ranking",
+        "accuracy_ci95": {
+          "low": 0.0,
+          "high": 0.268934,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "roc_auc_ovr": null,
+        "calibration": null,
+        "spearman": null
+      },
+      "persistence": {
+        "accuracy": 0.8,
+        "balanced_accuracy": 0.443636,
+        "macro_f1": 0.444444,
+        "mcc": -0.111096,
+        "brier_one_hot": 0.4,
+        "per_class": {
+          "low": {
+            "precision": 0.890511,
+            "recall": 0.887273,
+            "support": 275,
+            "predicted": 274
+          },
+          "medium": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 30,
+            "predicted": 31
+          },
+          "high": {
+            "precision": null,
+            "recall": null,
+            "support": 0,
+            "predicted": 0
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              244,
+              31,
+              0
+            ],
+            [
+              30,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0
+            ]
+          ]
+        },
+        "note": "class(es) ['high'] never occur in the actual labels: their recall is null; balanced_accuracy averages recall over the classes that do occur; class(es) ['high'] are never predicted: their precision is null; roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities",
+        "accuracy_ci95": {
+          "low": 0.547541,
+          "high": 0.973934,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "roc_auc_ovr": null,
+        "calibration": null
+      },
+      "persistence_ranking": {
+        "score": "vol_30d (trailing)",
+        "target": "fwd_vol_30d",
+        "spearman": -0.191428,
+        "spearman_ci95": {
+          "low": -0.597168,
+          "high": 0.171987,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        }
+      }
+    }
+  },
+  "strategy": {
+    "validation": {
+      "n_windows": 11,
+      "step_days": 30,
+      "first_window_start": "2024-12-18",
+      "last_window_start": "2025-10-14",
+      "n_labelled": 304,
+      "n_effective": 10.133333,
+      "buy_and_hold": {
+        "mean_window_return": -0.011553,
+        "median_window_return": 0.062848,
+        "hit_rate": 0.545455,
+        "cumulative_return": -0.29923,
+        "max_drawdown": -0.429047,
+        "sharpe_annualised": -0.196624,
+        "mean_window_return_ci95": {
+          "low": -0.123405,
+          "high": 0.101736,
+          "level": 0.95,
+          "block_size": 1,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "window_returns": [
+          0.062848,
+          -0.142317,
+          -0.334307,
+          0.0758,
+          0.230735,
+          -0.09172,
+          0.152004,
+          0.069631,
+          0.290976,
+          -0.155656,
+          -0.285072
+        ]
+      },
+      "always_hold": {
+        "mean_window_return": 0.0,
+        "median_window_return": 0.0,
+        "hit_rate": 0.0,
+        "cumulative_return": 0.0,
+        "max_drawdown": 0.0,
+        "sharpe_annualised": null,
+        "mean_window_return_ci95": {
+          "low": 0.0,
+          "high": 0.0,
+          "level": 0.95,
+          "block_size": 1,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "window_returns": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "note": "sharpe_annualised is null: window returns have zero variance"
+      }
+    },
+    "test": {
+      "n_windows": 11,
+      "step_days": 30,
+      "first_window_start": "2025-11-17",
+      "last_window_start": "2026-09-13",
+      "n_labelled": 305,
+      "n_effective": 10.166667,
+      "buy_and_hold": {
+        "mean_window_return": -0.00089,
+        "median_window_return": -0.024453,
+        "hit_rate": 0.454545,
+        "cumulative_return": -0.184442,
+        "max_drawdown": -0.489406,
+        "sharpe_annualised": -0.016786,
+        "mean_window_return_ci95": {
+          "low": -0.102235,
+          "high": 0.105373,
+          "level": 0.95,
+          "block_size": 1,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "window_returns": [
+          -0.058936,
+          0.175387,
+          -0.405342,
+          0.098189,
+          -0.058867,
+          -0.028186,
+          -0.145135,
+          0.044742,
+          -0.024453,
+          0.316976,
+          0.075831
+        ]
+      },
+      "always_hold": {
+        "mean_window_return": 0.0,
+        "median_window_return": 0.0,
+        "hit_rate": 0.0,
+        "cumulative_return": 0.0,
+        "max_drawdown": 0.0,
+        "sharpe_annualised": null,
+        "mean_window_return_ci95": {
+          "low": 0.0,
+          "high": 0.0,
+          "level": 0.95,
+          "block_size": 1,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "window_returns": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "note": "sharpe_annualised is null: window returns have zero variance"
+      }
+    }
+  },
+  "metadata": {
+    "asset": "sol",
+    "generated_at": "2026-10-19T08:57:33Z",
+    "git_commit": "d1a78970ad6493334a849fb9a53ec86b7ca5fe7f",
+    "git_dirty": true,
+    "data_first_date": "2020-08-11",
+    "data_last_date": "2026-10-17",
+    "n_feature_rows": 2229,
+    "splits": {
+      "train": {
+        "index_range": [
+          0,
+          1530
+        ],
+        "first": "2020-09-10T00:00:00Z",
+        "last": "2024-11-17T00:00:00Z"
+      },
+      "validation": {
+        "index_range": [
+          1560,
+          1864
+        ],
+        "first": "2024-12-18T00:00:00Z",
+        "last": "2025-10-17T00:00:00Z"
+      },
+      "test": {
+        "index_range": [
+          1894,
+          2229
+        ],
+        "first": "2025-11-17T00:00:00Z",
+        "last": "2026-10-17T00:00:00Z"
+      }
+    },
+    "thresholds": {
+      "fitted_on": "train",
+      "direction_flat_abs_return": 0.172938,
+      "risk_low_max_vol": 0.04593,
+      "risk_high_min_vol": 0.061528
+    },
+    "fitted_on_train": {
+      "drift_log_return": 0.086301,
+      "direction_majority": "FLAT",
+      "risk_majority": "medium"
+    },
+    "horizon_days": 30,
+    "n_effective_rule": "n_labelled / 30 (D20)",
+    "note": "Baselines are fixed rules fitted on train only. Test results are reported, never used to choose."
+  }
+}

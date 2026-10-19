@@ -25,13 +25,29 @@ def class_balance(classes, names) -> dict[str, float]:
     return {k: round(100 * float((c == k).mean()), 2) if len(c) else None for k in names}
 
 
-def summarise(asset: str) -> dict:
+def require_validated(asset: str) -> None:
+    """AGENTS rule 4: never use data whose validation report did not pass."""
+    validation = REPORT_DIR / f"{asset}_validation.json"
+    if not validation.exists() or not json.loads(validation.read_text(encoding="utf-8"))["passed"]:
+        sys.exit(f"{validation.relative_to(ML_ROOT.parent)} missing or not passed; run ml.data.validate first")
+
+
+def prepare(asset: str) -> dict:
+    """The one Phase 2 pipeline: raw -> features, labels, splits, train-only thresholds, classes."""
     raw = load_raw(asset)
     feats = build_features(raw)
     labels = build_labels(raw.set_index("timestamp")["close"]).loc[feats.index]
     splits = make_splits(len(feats))
     thresholds = fit_thresholds(labels.iloc[splits["train"]])
     classes = apply_thresholds(labels, thresholds)
+    return {"raw": raw, "feats": feats, "labels": labels, "splits": splits,
+            "thresholds": thresholds, "classes": classes}
+
+
+def summarise(asset: str) -> dict:
+    d = prepare(asset)
+    raw, feats, labels, splits = d["raw"], d["feats"], d["labels"], d["splits"]
+    thresholds, classes = d["thresholds"], d["classes"]
     dates = split_dates(feats.index, splits)
 
     per_split = {}
@@ -71,11 +87,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Dataset summary: features, labels, splits")
     parser.add_argument("--asset", required=True, choices=config.ASSETS)
     asset = parser.parse_args().asset
-
-    validation = REPORT_DIR / f"{asset}_validation.json"
-    if not validation.exists() or not json.loads(validation.read_text(encoding="utf-8"))["passed"]:
-        sys.exit(f"{validation.relative_to(ML_ROOT.parent)} missing or not passed; run ml.data.validate first")
-
+    require_validated(asset)
     report = summarise(asset)
     out = REPORT_DIR / f"{asset}_dataset_summary.json"
     out.write_text(json.dumps(report, indent=2), encoding="utf-8")
