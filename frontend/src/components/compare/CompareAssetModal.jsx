@@ -10,7 +10,7 @@ export default function CompareAssetModal({ initialSelection, initialSelected, o
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("all");
 
-  const { data: universeRaw, loading } = useAsync(() => compareApi.getAssetUniverse(), []);
+  const { data: universeRaw, loading, error } = useAsync(() => compareApi.getAssetUniverse(), []);
   const universe = universeRaw || [];
 
   const filtered = universe.filter((a) => {
@@ -87,6 +87,8 @@ export default function CompareAssetModal({ initialSelection, initialSelected, o
         <div className="cmp-asset-list">
           {loading ? (
             <div className="sv2-muted sv2-small" style={{ padding: "16px 0" }}>Loading…</div>
+          ) : error ? (
+            <div className="sv2-muted sv2-small" style={{ padding: "16px 0" }}>Couldn't load assets: {error.message}</div>
           ) : filtered.length === 0 ? (
             <div className="sv2-muted sv2-small" style={{ padding: "16px 0" }}>No matches.</div>
           ) : (

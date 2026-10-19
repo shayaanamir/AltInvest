@@ -1,4 +1,5 @@
 import { useMemo, useState, useRef } from "react";
+import { formatCurrencyAxis, formatAssetPrice } from "../../utils/formatters";
 
 export function buildSeriesPaths(data, width, height, { padLeft = 0, padRight = 0, padTop = 0, padBottom = 0 } = {}) {
   if (!data || data.length < 2) return null;
@@ -47,7 +48,7 @@ export default function TimeSeriesAreaChart({
   padRight = 18,
   padTop = 22,
   padBottom = 26,
-  yLabelFormatter = (v) => (v >= 1000 ? `$${(v / 1000).toFixed(1)}K` : `$${v.toFixed(0)}`),
+  yLabelFormatter = formatCurrencyAxis,
   xLabelFormatter,       // optional (date, index) => string
   showDots = true,
   gradientId = "tsa-grad",
@@ -233,7 +234,7 @@ export default function TimeSeriesAreaChart({
             {formatX(activeDataItem.date)}
           </div>
           <div style={{ fontSize: 12.5, color: "var(--sv2-text)", fontWeight: 800 }}>
-            {typeof activeDataItem.value === "number" ? `$${activeDataItem.value.toLocaleString()}` : activeDataItem.value}
+            {typeof activeDataItem.value === "number" ? formatAssetPrice(activeDataItem.value) : activeDataItem.value}
           </div>
         </div>
       )}

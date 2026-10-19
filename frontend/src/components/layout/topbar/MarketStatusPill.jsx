@@ -1,17 +1,22 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { isApiReachable, subscribeConnection } from "../../../errors/connectionStatus";
 
-// Crypto markets trade continuously — there's no exchange open/close
-// schedule in the sample data to read this from, so "open" is a fixed
-// platform fact rather than a fetched value.
+// Reflects whether the app can currently reach the data service, not a claim about any exchange.
 export default function MarketStatusPill() {
+  const [live, setLive] = useState(isApiReachable);
+
+  useEffect(() => subscribeConnection(() => setLive(isApiReachable())), []);
+
   return (
-    <div className="tb-status-pill">
+    <div className="tb-status-pill" style={live ? undefined : { color: "var(--sv2-red)" }}>
       <motion.span
         className="tb-status-dot"
-        animate={{ opacity: [1, 0.35, 1] }}
-        transition={{ repeat: Infinity, duration: 2.4, ease: "easeInOut" }}
+        style={live ? undefined : { background: "var(--sv2-red)" }}
+        animate={{ opacity: live ? [1, 0.35, 1] : 1 }}
+        transition={{ repeat: live ? Infinity : 0, duration: 2.4, ease: "easeInOut" }}
       />
-      Markets open
+      {live ? "Live data" : "Offline"}
     </div>
   );
 }

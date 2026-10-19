@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { describeError } from "../errors/errorCatalog";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import AuthLayout from "../components/auth/AuthLayout";
@@ -37,7 +38,7 @@ export default function ResetPasswordPage({ onNavigate }) {
             await authApi.resetPassword(token, password);
             setDone(true);
         } catch (err) {
-            setError(err.message);
+            setError(describeError(err).message);
         } finally {
             setLoading(false);
         }

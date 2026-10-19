@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import AddHoldingModal from "./AddHoldingModal";
 import { IconColumns, IconPlus } from "../icons";
 
 export default function PortfolioHeader() {
   const navigate = useNavigate();
+  const [adding, setAdding] = useState(false);
 
   return (
     <div className="dv2-hero">
@@ -15,11 +18,12 @@ export default function PortfolioHeader() {
           <IconColumns size={14} />
           Compare holdings
         </button>
-        <button className="dv2-btn-accent" type="button">
+        <button className="dv2-btn-accent" type="button" onClick={() => setAdding(true)}>
           <IconPlus size={14} />
           Add holding
         </button>
       </div>
+      {adding && <AddHoldingModal onClose={() => setAdding(false)} />}
     </div>
   );
 }

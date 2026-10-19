@@ -9,6 +9,7 @@ import CompareRiskReturnChart from "../components/compare/CompareRiskReturnChart
 import CompareSentimentTable from "../components/compare/CompareSentimentTable";
 import { IconColumns } from "../components/icons";
 import { compareApi } from "../services/compareApi";
+import { ErrorState } from "../errors";
 
 export default function ComparePage() {
   const [searchParams] = useSearchParams();
@@ -22,7 +23,9 @@ export default function ComparePage() {
     return [];
   });
   const [assets, setAssets] = useState([]);
+  const [reloadTick, setReloadTick] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const stateIds = location.state?.ids;
@@ -38,12 +41,15 @@ export default function ComparePage() {
       setAssets([]);
       return;
     }
+    let cancelled = false;
     setLoading(true);
-    compareApi.getByIds(selectedIds).then((a) => {
-      setAssets(a);
-      setLoading(false);
-    });
-  }, [selectedIds]);
+    setError(null);
+    compareApi.getByIds(selectedIds)
+      .then((a) => { if (!cancelled) setAssets(a); })
+      .catch((e) => { if (!cancelled) { console.error(e); setAssets([]); setError(e); } })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [selectedIds, reloadTick]);
 
   const handleConfirm = (ids) => {
     setSelectedIds(ids);
@@ -77,8 +83,16 @@ export default function ComparePage() {
 
         {!hasSelection ? (
           <CompareEmptyState onChooseAssets={() => setModalOpen(true)} />
-        ) : loading || assets.length === 0 ? (
+        ) : loading ? (
           <div className="sv2-muted sv2-small">Loading comparison…</div>
+        ) : error ? (
+          <div className="sv2-card sv2-card-pad">
+            <ErrorState error={error} onRetry={() => setReloadTick((t) => t + 1)} variant="panel" title="Couldn't load the comparison" />
+          </div>
+        ) : assets.length < 2 ? (
+          <div className="sv2-muted sv2-small">
+            Fewer than two of the selected items exist in the database. Edit the selection to pick covered assets.
+          </div>
         ) : (
           <div className="cmp-flex-col">
             <div className="cmp-asset-cards-grid" data-count={assets.length}>
@@ -96,7 +110,6 @@ export default function ComparePage() {
 
         {modalOpen && (
           <CompareAssetModal
-            initialSelected={selectedIds}
             initialSelection={selectedIds}
             onClose={() => setModalOpen(false)}
             onConfirm={handleConfirm}

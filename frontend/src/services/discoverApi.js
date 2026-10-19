@@ -1,39 +1,37 @@
-import discoverConfig from "../data/sample_data/discover.json";
-import { ALL_ITEMS, CRYPTO_ITEMS, NFT_ITEMS } from "./assetRepository";
+import discoverConfig from "../content/discover.json";
+import { fetchUniverse } from "./assetRepository";
 
-export { ALL_ITEMS, CRYPTO_ITEMS, NFT_ITEMS };
-
-const SORTERS = {
-  aai_desc: (a, b) => b.aaiScore - a.aaiScore,
-  aai_asc: (a, b) => a.aaiScore - b.aaiScore,
-  change24h_desc: (a, b) => b.changePct - a.changePct,
-  change24h_asc: (a, b) => a.changePct - b.changePct,
-  marketCap_desc: (a, b) => b.marketCap - a.marketCap,
-  name_asc: (a, b) => a.name.localeCompare(b.name),
+// UI-sort key -> backend sort / order
+const SORTS = {
+  aai_desc: { sort: "aai_score", order: "desc" },
+  aai_asc: { sort: "aai_score", order: "asc" },
+  change24h_desc: { sort: "change_24h", order: "desc" },
+  change24h_asc: { sort: "change_24h", order: "asc" },
+  marketCap_desc: { sort: "market_cap", order: "desc" },
+  name_asc: { sort: "name", order: "asc" },
 };
 
+// A range filter is only sent once it differs from its default (the slider's
+// open end), so unscored assets aren't excluded by a filter nobody touched.
+function activeFilterParams(filters, ranges) {
+  const p = {};
+  if (filters.minAai > ranges.aaiScoreRange.min) p.min_aai = filters.minAai;
+  if (filters.minSentiment > ranges.sentimentRange.min * 100) p.min_sentiment = filters.minSentiment / 100;
+  if (filters.maxVolatility < ranges.volatilityRange.max) p.max_volatility = filters.maxVolatility;
+  if (filters.minMarketCap > ranges.marketCapRange.min) p.min_market_cap = filters.minMarketCap;
+  return p;
+}
+
 export const discoverApi = {
+  // Tabs, sort options, slider ranges and empty-state copy are UI configuration, not data.
   getConfig: async () => discoverConfig,
 
-  getItems: async (category, filters) => {
-    let items =
-      category === "crypto" ? CRYPTO_ITEMS :
-      category === "nft" ? NFT_ITEMS :
-      ALL_ITEMS;
-
-    if (filters) {
-      items = items.filter((it) => {
-        if (filters.minAai != null && it.aaiScore < filters.minAai) return false;
-        if (filters.minSentiment != null && it.sentimentScore * 100 < filters.minSentiment) return false;
-        if (filters.maxVolatility != null && it.volatility > filters.maxVolatility) return false;
-        if (filters.minMarketCap != null && it.marketCap < filters.minMarketCap) return false;
-        return true;
-      });
-
-      const sorter = SORTERS[filters.sortBy] || SORTERS.aai_desc;
-      items = [...items].sort(sorter);
-    }
-
-    return items;
+  getItems: (category, filters) => {
+    const sort = SORTS[filters?.sortBy] || SORTS.aai_desc;
+    return fetchUniverse({
+      category: category === "crypto" || category === "nft" ? category : "all",
+      ...sort,
+      ...(filters ? activeFilterParams(filters, discoverConfig.filters) : {}),
+    });
   },
 };

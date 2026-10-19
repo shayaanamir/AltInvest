@@ -1,7 +1,7 @@
 """
 db/seed_predictions_risk.py
 Seeds: predictions, risk_scores, risk_breakdown
-Source: frontend/src/data/sample_data/assetDetail.json (aaiPanel/riskOverview/signalCard)
+Source: db/seed_data/assetDetail.json and assets.json (seed input only)
 NOTE: once ml/api/prediction_service.py writes here directly on each run,
 this seed only matters for assets the ML service hasn't produced yet.
 """
@@ -47,19 +47,79 @@ RISK_BREAKDOWN = [
 ]
 
 
+# ── Remaining covered assets, from the same sample JSON ──────────────────────
+# The hand-written rows above cover BTC/ETH/SOL (predictions, risk_scores) and the
+# first nine assets (risk_breakdown). The other assets come from assets.json.
+# `agreement`, `signal`, `boosted_confidence` and `ensemble_price` only exist when
+# the real ML service runs (Prophet + LSTM), so they are left None here.
+
+def _trend(pct: float) -> str:
+    return "Bullish" if pct > 5 else "Bearish" if pct < -5 else "Neutral"   # ml/api/prediction_service.py rule
+
+
+def _add_remaining_from_sample():
+    import json
+    path = os.path.join(os.path.dirname(__file__), "seed_data", "assets.json")
+    with open(path, encoding="utf-8") as f:
+        sample = json.load(f)["assets"]
+
+    have_pred = {p["asset"] for p in PREDICTIONS}
+    have_risk = {r["asset"] for r in RISK_SCORES}
+    have_breakdown = {b["asset"] for b in RISK_BREAKDOWN}
+    for s in sample:
+        sym, pred, risk = s["symbol"], s.get("prediction"), s.get("risk")
+        if pred and sym not in have_pred:
+            PREDICTIONS.append({
+                "asset": sym, "predicted_price": pred["prophetPrice30d"],
+                "prediction_30d": pred["prediction30dPct"],
+                "lower_bound": pred["lowerBound"], "upper_bound": pred["upperBound"],
+                "confidence": s["aai"]["confidence"],
+                "risk_score": risk["score"] if risk else None,
+                "trend": _trend(pred["prediction30dPct"]),
+                "agreement": None, "signal": None,
+                "boosted_confidence": None, "ensemble_price": None,
+                "model_version": "seed-v1",
+            })
+        if risk and sym not in have_risk:
+            RISK_SCORES.append({
+                "asset": sym, "risk_score": risk["score"],
+                "volatility": risk["volatility"], "sharpe_ratio": risk["sharpeRatio"],
+            })
+        if risk and sym not in have_breakdown:
+            RISK_BREAKDOWN.append({
+                "asset": sym, "volatility_index": risk["volatilityIndex"],
+                "liquidity_score": risk["liquidityScore"],
+                "regulatory_risk": risk["regulatoryRisk"], "market_risk": risk["marketRisk"],
+            })
+
+
+_add_remaining_from_sample()
+
+
+
+def _upsert_daily(collection, doc: dict) -> None:
+    """One row per asset per day, so re-running the seed doesn't stack duplicates."""
+    day = NOW.strftime("%Y-%m-%dT00:00:00Z")
+    collection.update_one(
+        {"asset": doc["asset"], "date": day},
+        {"$set": {**doc, "date": day, "timestamp": NOW}},
+        upsert=True,
+    )
+
+
 def seed():
     db = get_db()
 
     for p in PREDICTIONS:
-        db.predictions.insert_one({**p, "timestamp": NOW})
+        _upsert_daily(db.predictions, p)
     print(f"[predictions] inserted {len(PREDICTIONS)}")
 
     for r in RISK_SCORES:
-        db.risk_scores.insert_one({**r, "timestamp": NOW})
+        _upsert_daily(db.risk_scores, r)
     print(f"[risk_scores] inserted {len(RISK_SCORES)}")
 
     for rb in RISK_BREAKDOWN:
-        db.risk_breakdown.insert_one({**rb, "timestamp": NOW})
+        _upsert_daily(db.risk_breakdown, rb)
     print(f"[risk_breakdown] inserted {len(RISK_BREAKDOWN)}")
 
     db.predictions.create_index([("asset", 1), ("timestamp", -1)])

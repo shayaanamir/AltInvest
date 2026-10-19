@@ -1,13 +1,7 @@
-import { USE_MOCK } from "../config";
 import { apiFetch } from "./apiClient";
-import alertsData from "../data/sample_data/alerts.json";
-import assetsData from "../data/sample_data/assets.json";
-import nftData from "../data/sample_data/nftCollections.json";
-
-const SIM_DELAY = 300;
-function delay(fn) {
-  return new Promise((resolve) => setTimeout(() => resolve(fn()), SIM_DELAY));
-}
+import { formatUsd } from "../utils/formatters";
+import { fetchUniverse } from "./assetRepository";
+import { ALERT_METRIC_OPTIONS, ALERT_CONDITION_OPTIONS } from "../content/uiOptions";
 
 const METRIC_LABELS = {
   price: "Price",
@@ -16,24 +10,25 @@ const METRIC_LABELS = {
   risk: "Risk score",
 };
 
-function lookupAvatar(alert) {
+// Avatar colour/symbol come from the same covered-universe rows Discover uses.
+function lookupAvatar(alert, universe) {
   if (alert.targetType === "nft" && alert.targetSlug) {
-    const c = nftData.collections.find((x) => x.slug === alert.targetSlug);
+    const c = universe.find((x) => x.type === "nft" && x.id === alert.targetSlug);
     return {
-      color: c?.bannerColor || "#8892a6",
+      color: c?.color || "#8892a6",
       symbol: c?.symbol || alert.targetSlug.slice(0, 3).toUpperCase(),
     };
   }
-  const a = assetsData.assets.find((x) => x.symbol === alert.targetSymbol);
+  const a = universe.find((x) => x.type === "crypto" && x.symbol === alert.targetSymbol);
   return {
-    color: a?.logoColor || "#8892a6",
+    color: a?.color || "#8892a6",
     symbol: a?.symbol || (alert.targetSymbol || "").slice(0, 3).toUpperCase(),
   };
 }
 
 function formatThreshold(metricType, value) {
   if (value == null) return "";
-  if (metricType === "price") return `$${value.toLocaleString()}`;
+  if (metricType === "price") return formatUsd(value);
   return `${value}`;
 }
 
@@ -54,8 +49,8 @@ export function describeCondition(alert) {
   }
 }
 
-function normaliseAlert(a) {
-  const avatar = lookupAvatar(a);
+function normaliseAlert(a, universe) {
+  const avatar = lookupAvatar(a, universe);
   return {
     ...a,
     name: a.targetName,
@@ -65,7 +60,7 @@ function normaliseAlert(a) {
   };
 }
 
-function mapBackendAlert(a) {
+function mapBackendAlert(a, universe) {
   const shaped = {
     id: a.id,
     targetType: a.target_type,
@@ -81,27 +76,21 @@ function mapBackendAlert(a) {
     lastTriggeredAt: a.last_triggered_at,
     lastObservedValue: a.last_observed_value,
   };
-  return normaliseAlert(shaped);
+  return normaliseAlert(shaped, universe);
 }
 
 export const alertsApi = {
   getAlerts: async () => {
-    if (USE_MOCK) return delay(() => alertsData.alerts.map(normaliseAlert));
-    const alerts = await apiFetch("/alerts");
-    return alerts.map(mapBackendAlert);
+    const [alerts, universe] = await Promise.all([
+      apiFetch("/alerts"),
+      fetchUniverse({ category: "all" }).catch(() => []), // avatars degrade to grey; the alerts themselves still load
+    ]);
+    return alerts.map((a) => mapBackendAlert(a, universe));
   },
 
-  getMetricOptions: async () => {
-    if (USE_MOCK) return delay(() => alertsData.metricTypeOptions);
-    // Not backend-driven — these are fixed enum options mirrored from
-    // backend/routes/alerts.py's _VALID_METRIC_TYPES.
-    return delay(() => alertsData.metricTypeOptions);
-  },
-
-  getConditionOptions: async () => {
-    if (USE_MOCK) return delay(() => alertsData.conditionOptions);
-    return delay(() => alertsData.conditionOptions);
-  },
+  // Fixed enum options mirrored from backend/routes/alerts.py.
+  getMetricOptions: async () => ALERT_METRIC_OPTIONS,
+  getConditionOptions: async () => ALERT_CONDITION_OPTIONS,
 
   // ── mutations ──────────────────────────────────────────────────────────
 
@@ -110,21 +99,20 @@ export const alertsApi = {
     // { target_type: "crypto", target_symbol: "BTC", target_name: "Bitcoin",
     //   metric_type: "price", condition: "above", threshold_value: 80000,
     //   delivery_channel: "push" }
-    if (USE_MOCK) return delay(() => ({ id: `alt_${Date.now()}` }));
     return apiFetch("/alerts", { method: "POST", body: JSON.stringify(payload) });
   },
 
+  // patch may carry condition, threshold_value and/or delivery_channel (see AlertUpdate in the backend).
+  updateAlert: async (id, patch) =>
+    apiFetch(`/alerts/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
+
   toggleAlert: async (id, nextStatus) => {
     // nextStatus is "active" or "paused"
-    if (USE_MOCK) return delay(() => ({ status: "updated" }));
     return apiFetch(`/alerts/${id}`, {
       method: "PATCH",
       body: JSON.stringify({ status: nextStatus }),
     });
   },
 
-  deleteAlert: async (id) => {
-    if (USE_MOCK) return delay(() => null);
-    return apiFetch(`/alerts/${id}`, { method: "DELETE" });
-  },
+  deleteAlert: async (id) => apiFetch(`/alerts/${id}`, { method: "DELETE" }),
 };

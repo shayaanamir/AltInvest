@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useElementSize } from "../../hooks/useElementSize";
 import { deriveAaiSignal } from "../../services/assetDetailApi";
+import { formatCurrencyAxis, formatAssetPrice } from "../../utils/formatters";
 
 const FILTERS = ["1D", "1W", "1M", "3M", "1Y"];
 const DAY_MS = 86400000;
@@ -9,17 +10,12 @@ function daysApart(a, b) {
   return Math.round((new Date(a).getTime() - new Date(b).getTime()) / DAY_MS);
 }
 
+// priceHistory is one point per day, oldest first.
+const FILTER_DAYS = { "1D": 1, "1W": 7, "1M": 30, "3M": 90, "1Y": 365 };
+
 function sliceForFilter(arr, filter) {
   if (!arr) return arr;
-  if (filter === "1D") return arr.slice(-2);
-  if (filter === "1W") return arr.slice(-4);
-  return arr; // 1M / 3M / 1Y — sample data only has one history window
-}
-
-function formatY(v) {
-  if (v >= 1000) return `$${(v / 1000).toFixed(1)}K`;
-  if (v >= 1) return `$${v.toFixed(2)}`;
-  return `$${v.toFixed(4)}`;
+  return arr.slice(-(FILTER_DAYS[filter] + 1));
 }
 
 export default function PricePerformanceCard({ priceHistory, forecast, aaiPanel }) {
@@ -81,12 +77,16 @@ export default function PricePerformanceCard({ priceHistory, forecast, aaiPanel 
     }
 
     const yTicks = [0, 1, 2, 3].map((i) => minV + (vRange * i) / 3);
-    const xLabels = histPts.map((p, i) => {
-      const ago = daysApart(lastDate, p.date);
-      // When forecast is shown, label the last historical point as "Today" and omit "0d"
-      if (i === histPts.length - 1) return { x: p.x, label: "Today" };
-      return { x: p.x, label: `${ago}d` };
-    });
+    // At most ~6 axis labels however many daily points the range holds.
+    const labelEvery = Math.max(1, Math.ceil(histPts.length / 6));
+    const xLabels = histPts
+      .map((p, i) => {
+        const ago = daysApart(lastDate, p.date);
+        // The last historical point is labelled "Today".
+        if (i === histPts.length - 1) return { x: p.x, label: "Today", i };
+        return { x: p.x, label: `${ago}d`, i };
+      })
+      .filter((l) => l.i === histPts.length - 1 || ((histPts.length - 1 - l.i) % labelEvery === 0 && histPts.length - 1 - l.i >= labelEvery));
     const forecastLabels = forecastPts
       .filter((p) => daysApart(p.date, lastDate) > 0)
       .map((p) => ({
@@ -134,6 +134,9 @@ export default function PricePerformanceCard({ priceHistory, forecast, aaiPanel 
           {showForecast && (
             <div className="adt-chart-sub">Dashed line is the model's forward path, branching from today</div>
           )}
+          {mode === "AI Prediction" && safeForecast.length === 0 && (
+            <div className="adt-chart-sub">No model forecast is stored for this asset yet.</div>
+          )}
         </div>
         <div className="adt-chart-controls">
           <div className="sv2-segmented">
@@ -173,7 +176,7 @@ export default function PricePerformanceCard({ priceHistory, forecast, aaiPanel 
                 return (
                   <g key={i}>
                     <line x1={chart.PAD_L} y1={y} x2={chart.W - chart.PAD_R} y2={y} stroke="var(--sv2-border)" strokeWidth="0.7" strokeDasharray="4,4" />
-                    <text x={chart.PAD_L - 10} y={y + 4} fontSize="10.5" fill="var(--sv2-text-mute)" textAnchor="end">{formatY(v)}</text>
+                    <text x={chart.PAD_L - 10} y={y + 4} fontSize="10.5" fill="var(--sv2-text-mute)" textAnchor="end">{formatCurrencyAxis(v)}</text>
                   </g>
                 );
               })}
@@ -224,7 +227,7 @@ export default function PricePerformanceCard({ priceHistory, forecast, aaiPanel 
                 <div style={{ fontSize: 10, color: hoverPt.isForecast ? "var(--sv2-accent)" : "var(--sv2-text-mute)", fontWeight: 600 }}>
                   {hoverPt.date} {hoverPt.isForecast ? "· Model AI" : ""}
                 </div>
-                <div style={{ fontSize: 12.5, color: "var(--sv2-text)", fontWeight: 800 }}>{formatY(hoverPt.price)}</div>
+                <div style={{ fontSize: 12.5, color: "var(--sv2-text)", fontWeight: 800 }}>{formatAssetPrice(hoverPt.price)}</div>
               </div>
             )}
           </>

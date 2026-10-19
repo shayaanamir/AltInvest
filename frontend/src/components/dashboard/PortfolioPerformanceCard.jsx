@@ -1,16 +1,18 @@
 import { useState } from "react";
+import { onHoldingsChanged } from "../../services/holdingsEvents";
 import { useAsync } from "../../hooks/useAsync";
 import { useElementSize } from "../../hooks/useElementSize";
 import { dashboardApi } from "../../services/dashboardApi";
 import { TIME_FILTERS } from "../../data/constants";
 import TimeSeriesAreaChart from "../charts/TimeSeriesAreaChart";
+import { ErrorState } from "../../errors";
 
 export default function PortfolioPerformanceCard() {
   const [filter, setFilter] = useState("1M");
   const [containerRef, dims] = useElementSize({ W: 560, H: 220 });
 
-  const { data: stats } = useAsync(() => dashboardApi.getMarketStats(), []);
-  const { data: rawSeries, loading } = useAsync(() => dashboardApi.getPerformanceHistory(filter), [filter]);
+  const { data: stats, error: statsError, refetch: refetchStats } = useAsync(() => dashboardApi.getMarketStats(), [], { subscribe: onHoldingsChanged });
+  const { data: rawSeries, loading, error, refetch } = useAsync(() => dashboardApi.getPerformanceHistory(filter), [filter], { subscribe: onHoldingsChanged });
   const series = rawSeries || [];
 
   const hasHoldings = stats && stats.holdingsCount > 0;
@@ -18,6 +20,12 @@ export default function PortfolioPerformanceCard() {
   let chartContent = null;
   if (hasHoldings && series.length >= 2) {
     chartContent = <TimeSeriesAreaChart data={series} width={dims.W} height={dims.H} color="var(--sv2-accent)" gradientId="dv2PerfGrad" />;
+  } else if (hasHoldings) {
+    chartContent = (
+      <div className="sv2-muted sv2-small" style={{ width: "100%", textAlign: "center" }}>
+        No portfolio history has been recorded for this range yet.
+      </div>
+    );
   }
 
   return (
@@ -31,8 +39,10 @@ export default function PortfolioPerformanceCard() {
         </div>
       </div>
 
-      <div style={{ height: 260, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-        {!hasHoldings ? (
+      <div style={{ height: "var(--dv2-perf-h, 260px)", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+        {statsError ? (
+          <ErrorState error={statsError} onRetry={refetchStats} variant="panel" title="Couldn't check your holdings" />
+        ) : !hasHoldings ? (
           <div className="dv2-perf-empty" style={{ height: "100%" }}>
             <div className="dv2-perf-empty-icon" aria-hidden="true">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -46,6 +56,8 @@ export default function PortfolioPerformanceCard() {
           <div className="sv2-muted sv2-small" style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
             Loading…
           </div>
+        ) : error ? (
+          <ErrorState error={error} onRetry={refetch} variant="panel" title="Couldn't load performance" />
         ) : (
           <div ref={containerRef} style={{ width: "100%", height: "100%", display: "flex", alignItems: "center" }}>{chartContent}</div>
         )}

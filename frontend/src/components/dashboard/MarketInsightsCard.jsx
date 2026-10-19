@@ -2,9 +2,10 @@ import { useNavigate } from "react-router-dom";
 import { useAsync } from "../../hooks/useAsync";
 import { dashboardApi } from "../../services/dashboardApi";
 import { timeAgo } from "../../utils/dateTime";
+import { ErrorState } from "../../errors";
 
 export default function MarketInsightsCard() {
-  const { data: insights } = useAsync(() => dashboardApi.getMarketInsights(), []);
+  const { data: insights, error, refetch } = useAsync(() => dashboardApi.getMarketInsights(), []);
   const navigate = useNavigate();
 
   return (
@@ -14,8 +15,10 @@ export default function MarketInsightsCard() {
         <div className="sv2-card-sub">What's moving the numbers</div>
       </div>
 
-      <div style={{ marginTop: 10, overflowY: "auto", maxHeight: 300 }}>
-        {!insights ? (
+      <div style={{ marginTop: 10, overflowY: "auto", maxHeight: "var(--dv2-insights-h, 300px)" }}>
+        {error ? (
+          <ErrorState error={error} onRetry={refetch} title="Couldn't load insights" />
+        ) : !insights ? (
           <div className="sv2-muted sv2-small" style={{ padding: "16px 0" }}>Loading…</div>
         ) : insights.length === 0 ? (
           <div className="sv2-muted sv2-small" style={{ padding: "16px 0" }}>No market insights right now.</div>
@@ -30,11 +33,13 @@ export default function MarketInsightsCard() {
               </div>
               <p className="dv2-insight-title">{item.title}</p>
               <div className="dv2-insight-links">
-                <span className="dv2-insight-link" title="No source URL in this insight's data">
-                  Read source ↗
-                </span>
+                {item.url && (
+                  <a className="dv2-insight-link" href={item.url} target="_blank" rel="noopener noreferrer">
+                    Read source ↗
+                  </a>
+                )}
                 {item.relatedAssetSymbol && (
-                  <button type="button" className="dv2-insight-link" onClick={() => navigate("/asset-detail")}>
+                  <button type="button" className="dv2-insight-link" onClick={() => navigate(`/asset-detail?symbol=${item.relatedAssetSymbol}`)}>
                     Open asset →
                   </button>
                 )}

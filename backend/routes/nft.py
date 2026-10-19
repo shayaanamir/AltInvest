@@ -10,6 +10,7 @@ Public routes — no auth required, same as routes/assets.py.
 import path_setup  # noqa: F401
 
 from fastapi import APIRouter, HTTPException, Query
+from utils.http_errors import db_unavailable
 
 from models.schemas import NFTCollectionListItem, NFTCollectionDetail, NFTTokenDetail
 from db.queries import (
@@ -55,7 +56,7 @@ def list_nft_collections(
         collections = get_nft_collections()
         market_by_slug = {m["slug"]: m for m in get_nft_market_data_all_latest()}
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=f"Unable to reach the database: {exc}")
+        raise db_unavailable(exc)
 
     items = []
     for c in collections:
@@ -82,7 +83,7 @@ def get_nft_collection_detail(slug: str):
     try:
         collection = get_nft_collection(slug)
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=f"Unable to reach the database: {exc}")
+        raise db_unavailable(exc)
 
     if not collection:
         raise HTTPException(status_code=404, detail=f"NFT collection '{slug}' not found.")
@@ -114,7 +115,7 @@ def get_nft_token_detail(slug: str, token_id: str):
     try:
         collection = get_nft_collection(slug)
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=f"Unable to reach the database: {exc}")
+        raise db_unavailable(exc)
 
     if not collection:
         raise HTTPException(status_code=404, detail=f"NFT collection '{slug}' not found.")

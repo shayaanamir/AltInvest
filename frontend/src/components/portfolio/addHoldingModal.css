@@ -1,0 +1,37 @@
+/* Add-holding dialog. Tokens only, so it follows the light/dark theme. */
+.ahm-overlay { position: fixed; inset: 0; background: var(--sv2-overlay); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px; }
+.ahm { background: var(--sv2-card); border: 1px solid var(--sv2-border); border-radius: 18px; width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto; padding: 24px; box-shadow: var(--sv2-shadow); color: var(--sv2-text); }
+.ahm-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.ahm-head h2 { font-size: 18px; font-weight: 800; margin: 0; }
+.ahm-close { background: none; border: none; color: var(--sv2-text-mute); cursor: pointer; font-size: 20px; line-height: 1; padding: 4px; }
+.ahm-desc { font-size: 12.5px; color: var(--sv2-text-soft); margin: 0 0 16px; line-height: 1.5; }
+
+.ahm-tabs { display: flex; gap: 6px; background: var(--sv2-chip); border-radius: 10px; padding: 4px; margin-bottom: 16px; }
+.ahm-tabs button { flex: 1; background: none; border: none; color: var(--sv2-text-soft); font-family: inherit; font-size: 12.5px; font-weight: 700; padding: 7px; border-radius: 7px; cursor: pointer; }
+.ahm-tabs button.active { background: var(--sv2-card); color: var(--sv2-text); }
+
+.ahm-label { display: block; font-size: 12px; font-weight: 700; margin: 14px 0 6px; }
+.ahm-input { width: 100%; box-sizing: border-box; background: var(--sv2-input); border: 1px solid var(--sv2-border-strong); border-radius: 10px; padding: 10px 13px; font-size: 13.5px; color: var(--sv2-text); outline: none; font-family: inherit; }
+.ahm-input:focus { border-color: var(--sv2-accent); }
+
+.ahm-list { max-height: 190px; overflow-y: auto; margin-top: 8px; border: 1px solid var(--sv2-border); border-radius: 12px; }
+.ahm-empty { padding: 16px; font-size: 12.5px; color: var(--sv2-text-mute); }
+.ahm-item { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: none; border-bottom: 1px solid var(--sv2-border); padding: 10px 12px; cursor: pointer; text-align: left; font-family: inherit; color: inherit; }
+.ahm-item:last-child { border-bottom: none; }
+.ahm-item:hover { background: var(--sv2-chip); }
+.ahm-item.selected { background: var(--sv2-accent-soft); }
+.ahm-dot { flex: none; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; color: #fff; }
+.ahm-item-main { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.ahm-item-name { font-size: 13px; font-weight: 700; }
+.ahm-item-sub { font-size: 11px; color: var(--sv2-text-mute); }
+.ahm-item-price { font-size: 12px; color: var(--sv2-text-soft); }
+
+.ahm-field-error { color: var(--sv2-red); font-size: 11.5px; margin-top: 5px; }
+.ahm-hint { color: var(--sv2-text-mute); font-size: 11.5px; margin-top: 5px; }
+
+.ahm-footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 22px; }
+.ahm-cancel { background: none; border: none; color: var(--sv2-text-soft); font-size: 13px; font-weight: 600; cursor: pointer; padding: 10px 6px; font-family: inherit; }
+.ahm-submit { background: var(--sv2-accent); color: var(--sv2-accent-contrast); border: none; border-radius: 10px; padding: 10px 20px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.ahm-submit:disabled { opacity: 0.55; cursor: not-allowed; }
+.ahm-fixed { background: var(--sv2-chip); border: 1px solid var(--sv2-border); border-radius: 10px; padding: 10px 13px; font-size: 13.5px; font-weight: 700; }
+.ahm-input:disabled { opacity: 0.6; cursor: not-allowed; }

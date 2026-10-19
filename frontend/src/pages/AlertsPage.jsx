@@ -1,32 +1,35 @@
-import { useState } from "react";
 import "../styles/alerts.css";
 import { useAsync } from "../hooks/useAsync";
 import { alertsApi } from "../services/alertsApi";
-import { USE_MOCK } from "../config";
 import AlertSection from "../components/alerts/AlertSection";
 import AlertRow from "../components/alerts/AlertRow";
 import HowAlertsWorkCard from "../components/alerts/HowAlertsWorkCard";
 import { IconPlus } from "../components/icons";
+import CreateAlertModal from "../components/alerts/CreateAlertModal";
+import { ErrorState, useToast } from "../errors";
+import { useState } from "react";
 
 export default function AlertsPage() {
-  const { data: rawAlerts, loading, setData: setAlerts, refetch } = useAsync(() => alertsApi.getAlerts(), []);
+  const toast = useToast();
+  const { data: rawAlerts, loading, error, setData: setAlerts, refetch } = useAsync(() => alertsApi.getAlerts(), []);
   const alerts = rawAlerts || [];
+  const [creating, setCreating] = useState(false);
+  const [editingId, setEditingId] = useState(null);
 
-  const toggle = async (id) => {
+  // forcedStatus comes from the play/pause button; the switch just flips paused <-> active.
+  const toggle = async (id, forcedStatus) => {
     const current = alerts.find((a) => a.id === id);
     if (!current) return;
-    const nextStatus = current.status === "paused" ? "active" : "paused";
+    const nextStatus = forcedStatus ?? (current.status === "paused" ? "active" : "paused");
 
     // Optimistic update
     setAlerts((prev) => prev.map((a) => (a.id === id ? { ...a, status: nextStatus } : a)));
 
-    if (!USE_MOCK) {
-      try {
-        await alertsApi.toggleAlert(id, nextStatus);
-      } catch (e) {
-        console.error("Failed to toggle alert, reverting:", e);
-        refetch();
-      }
+    try {
+      await alertsApi.toggleAlert(id, nextStatus);
+    } catch (e) {
+      toast.error(e, { title: "Couldn't update the alert" });
+      refetch(); // revert the optimistic change
     }
   };
 
@@ -34,17 +37,16 @@ export default function AlertsPage() {
     // Optimistic update
     setAlerts((prev) => prev.filter((a) => a.id !== id));
 
-    if (!USE_MOCK) {
-      try {
-        await alertsApi.deleteAlert(id);
-      } catch (e) {
-        console.error("Failed to delete alert, reverting:", e);
-        refetch();
-      }
+    try {
+      await alertsApi.deleteAlert(id);
+    } catch (e) {
+      toast.error(e, { title: "Couldn't delete the alert" });
+      refetch(); // bring the alert back
     }
   };
 
-  const edit = () => {};
+  const edit = (id) => setEditingId(id);
+  const editingAlert = alerts.find((a) => a.id === editingId) || null;
 
   const active = alerts.filter((a) => a.status === "active");
   const triggered = alerts.filter((a) => a.status === "triggered");
@@ -58,13 +60,17 @@ export default function AlertsPage() {
             <h1 className="sv2-h1">Alerts</h1>
             <p className="sv2-lead">Threshold rules that watch the market so you don't have to.</p>
           </div>
-          <button className="alr-new-btn">
+          <button className="alr-new-btn" type="button" onClick={() => setCreating(true)}>
             <IconPlus /> New alert
           </button>
         </div>
 
         {loading ? (
           <div className="sv2-muted sv2-small">Loading alerts…</div>
+        ) : error ? (
+          <div className="sv2-card sv2-card-pad">
+            <ErrorState error={error} onRetry={refetch} variant="panel" title="Couldn't load your alerts" />
+          </div>
         ) : (
           <div className="alr-flex-col">
             <AlertSection title="Active" count={active.length} subtitle="Watching in the background">
@@ -92,6 +98,8 @@ export default function AlertsPage() {
             <HowAlertsWorkCard />
           </div>
         )}
+        {creating && <CreateAlertModal onClose={() => setCreating(false)} onCreated={refetch} />}
+        {editingAlert && <CreateAlertModal alert={editingAlert} onClose={() => setEditingId(null)} onCreated={refetch} />}
       </div>
     </div>
   );

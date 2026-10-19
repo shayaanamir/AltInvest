@@ -7,21 +7,25 @@ import path_setup  # noqa: F401
 
 from datetime import datetime, timezone
 from typing import Optional
-
 from bson import ObjectId
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+from utils.http_errors import db_unavailable
+from controllers.market_controller import aai_signal
 from controllers.portfolio_controller import get_valued_holdings
 
-from auth.dependencies import get_current_user_id
+from auth.dependencies import get_current_user_id, get_optional_user_id
 from models.schemas import DashboardStats, MarketInsightItem
 from db.queries import (
     get_portfolio_holdings,
     get_portfolio_snapshots,
+    get_all_latest_aai_scores,
     get_asset_market_data_all_latest,
-    get_nft_market_data_latest,
     get_market_insights,
-    get_asset,
-    get_latest_aai_score,
+    get_nft_collections,
+    get_nft_market_data_all_latest,
+    get_price_sparklines,
+    get_supported_assets,
+    get_user_flags,
 )
 from db.mongo_connection import get_db
 
@@ -34,22 +38,31 @@ _FILTER_DAYS = {"1D": 1, "1W": 7, "1M": 30, "3M": 90, "1Y": 365}
 
 @router.get("/dashboard/stats", response_model=DashboardStats)
 def get_dashboard_stats(user_id: ObjectId = Depends(get_current_user_id)):
-    valued_holdings = get_valued_holdings(user_id)
-    portfolio_value = sum(h["current_value_usd"] for h in valued_holdings)
+    try:
+        valued_holdings = get_valued_holdings(user_id)
+        market_latest = get_asset_market_data_all_latest()
+        nft_market = get_nft_market_data_all_latest()
+        crypto_aai = get_all_latest_aai_scores("crypto")
+        nft_aai = get_all_latest_aai_scores("nft")
+    except Exception as exc:
+        raise db_unavailable(exc)
 
-    market_latest = get_asset_market_data_all_latest()
-    volume_24h = sum(m.get("volume_24h", 0.0) for m in market_latest)
+    portfolio_value = sum(h.get("current_value_usd") or 0.0 for h in valued_holdings)
+    volume_24h = sum(m.get("volume_24h") or 0.0 for m in market_latest)
 
-    sentiment_scores = []
+    # Sentiment engine output. Neutral placeholders (confidence 0, written when no
+    # articles were found) are ignored so they don't drag the average to zero.
+    sentiment_scores, confidences = [], []
     try:
         try:
             from sentiment_engine.storage.mongo_handler import get_all_latest
         except ImportError:
             from storage.mongo_handler import get_all_latest
         for doc in get_all_latest():
-            score = doc.get("sentiment_score")
-            if score is not None:
+            score, conf = doc.get("sentiment_score"), doc.get("confidence") or 0.0
+            if score is not None and conf > 0:
                 sentiment_scores.append(score)
+                confidences.append(conf)
     except Exception as exc:
         print(f"[dashboard] sentiment engine unavailable ({exc})")
 
@@ -66,6 +79,12 @@ def get_dashboard_stats(user_id: ObjectId = Depends(get_current_user_id)):
         volume_24h_usd=round(volume_24h, 2),
         global_sentiment=round(avg_sentiment, 3),
         global_sentiment_label=label,
+        holdings_count=len(valued_holdings),
+        assets_count=len(market_latest),
+        collections_count=len(nft_market),
+        crypto_score_count=len(crypto_aai),
+        nft_score_count=len(nft_aai),
+        market_mood_confidence=round(sum(confidences) / len(confidences) * 100, 1) if confidences else None,
     )
 
 
@@ -121,27 +140,75 @@ def get_dashboard_insights(limit: int = Query(6, ge=1, le=20)):
 # ── GET /dashboard/trending ──────────────────────────────────────────────────
 
 @router.get("/dashboard/trending")
-def get_dashboard_trending(limit: int = Query(6, ge=1, le=20)):
+def get_dashboard_trending(
+    limit: int = Query(6, ge=1, le=20),
+    user_id: Optional[ObjectId] = Depends(get_optional_user_id),
+):
     """
-    Trending = biggest absolute 24h movers. `is_trending` from the sentiment
-    engine's market_signals could be folded in later; for now this only
-    needs asset_market_data, which is always populated.
+    Trending = biggest absolute 24h movers across asset_market_data, joined with
+    the latest AAI score and a 7-day price sparkline from `prices`.
     """
-    market_latest = get_asset_market_data_all_latest()
-    market_latest.sort(key=lambda m: abs(m.get("change_24h", 0.0)), reverse=True)
-    top = market_latest[:limit]
+    try:
+        market_latest = get_asset_market_data_all_latest()
+        assets = {a["asset_id"]: a for a in get_supported_assets()}
+        aai_scores = get_all_latest_aai_scores("crypto")
+        market_latest.sort(key=lambda m: abs(m.get("change_24h") or 0.0), reverse=True)
+        top = market_latest[:limit]
+        sparks = get_price_sparklines([m["asset_id"] for m in top])
+        watching = get_user_flags(user_id)["watching"]
+    except Exception as exc:
+        raise db_unavailable(exc)
 
     results = []
     for m in top:
-        asset = get_asset(m["asset_id"]) or {}
-        aai = get_latest_aai_score("crypto", m["asset_id"])
+        asset_id = m["asset_id"]
+        asset = assets.get(asset_id) or {}
+        aai = aai_scores.get(asset_id) or {}
+        score = aai.get("aai_score")
         results.append({
-            "asset_id": m["asset_id"],
-            "symbol": asset.get("symbol", m["asset_id"]),
-            "name": asset.get("name", m["asset_id"]),
+            "asset_id": asset_id,
+            "symbol": asset.get("symbol", asset_id),
+            "name": asset.get("name", asset_id),
             "logo_color": asset.get("logo_color"),
             "price": m.get("price"),
             "change_24h": m.get("change_24h"),
-            "aai_score": aai.get("aai_score") if aai else None,
+            "aai_score": score,
+            "signal": aai_signal(score),
+            "sparkline": sparks.get(asset_id, []),
+            "watching": asset_id in watching,
+        })
+    return results
+
+
+# ── GET /dashboard/trending-collections ──────────────────────────────────────
+
+@router.get("/dashboard/trending-collections")
+def get_dashboard_trending_collections(limit: int = Query(4, ge=1, le=20)):
+    """
+    Trending collections = biggest absolute 24h floor movers across nft_market_data.
+    No per-collection floor history is stored, so there is no sparkline.
+    """
+    try:
+        market_latest = get_nft_market_data_all_latest()
+        collections = {c["slug"]: c for c in get_nft_collections()}
+        aai_scores = get_all_latest_aai_scores("nft")
+    except Exception as exc:
+        raise db_unavailable(exc)
+
+    market_latest.sort(key=lambda m: abs(m.get("change_24h") or 0.0), reverse=True)
+    results = []
+    for m in market_latest[:limit]:
+        slug = m["slug"]
+        c = collections.get(slug) or {}
+        aai = aai_scores.get(slug) or {}
+        results.append({
+            "slug": slug,
+            "name": c.get("name", slug),
+            "symbol": c.get("symbol"),
+            "banner_color": c.get("banner_color"),
+            "floor_eth": m.get("floor_eth"),
+            "floor_usd": m.get("floor_usd"),
+            "change_24h": m.get("change_24h"),
+            "aai_score": aai.get("aai_score"),
         })
     return results

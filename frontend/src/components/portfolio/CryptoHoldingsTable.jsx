@@ -1,39 +1,23 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { onHoldingsChanged } from "../../services/holdingsEvents";
 import { useAsync } from "../../hooks/useAsync";
 import { portfolioApi } from "../../services/portfolioApi";
 import { formatAssetPrice, formatPct } from "../../utils/formatters";
 import { getAaiTierColor } from "../../utils/scoring";
 import AssetAvatar from "../shared/AssetAvatar";
 import { IconPlus, IconPencil, IconTrash, IconBell } from "../icons";
+import { ErrorState, useToast } from "../../errors";
+import AddHoldingModal from "./AddHoldingModal";
+import CreateAlertModal from "../alerts/CreateAlertModal";
 
 export default function CryptoHoldingsTable() {
   const navigate = useNavigate();
-  const { data: holdings, refetch } = useAsync(() => portfolioApi.getCryptoHoldings(), []);
-
-  // Minimal wiring until a proper "Add holding" modal exists — prompts for
-  // the three required fields and posts to POST /portfolio/holdings.
-  const handleAddHolding = async () => {
-    const symbol = window.prompt("Asset symbol (e.g. BTC):");
-    if (!symbol) return;
-    const quantity = parseFloat(window.prompt("Quantity:"));
-    if (!quantity || Number.isNaN(quantity)) return;
-    const avgBuyPrice = parseFloat(window.prompt("Average buy price (USD):"));
-    if (!avgBuyPrice || Number.isNaN(avgBuyPrice)) return;
-
-    try {
-      await portfolioApi.addHolding({
-        asset_type: "crypto",
-        symbol: symbol.toUpperCase(),
-        quantity,
-        avg_buy_price_usd: avgBuyPrice,
-        cost_basis_usd: quantity * avgBuyPrice,
-      });
-      refetch();
-    } catch (e) {
-      console.error("Failed to add holding:", e);
-      window.alert(e.message || "Failed to add holding");
-    }
-  };
+  const toast = useToast();
+  const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState(null); // holding being edited
+  const [alertFor, setAlertFor] = useState(null); // holding an alert is being set on
+  const { data: holdings, error, refetch } = useAsync(() => portfolioApi.getCryptoHoldings(), [], { subscribe: onHoldingsChanged });
 
   return (
     <div className="sv2-card sv2-card-pad">
@@ -42,7 +26,7 @@ export default function CryptoHoldingsTable() {
           <h2 className="sv2-card-title">Holdings Breakdown</h2>
           <div className="sv2-card-sub">Core portfolio assets with real-time AAI sentiment overlay</div>
         </div>
-        <button className="sv2-btn-outline" style={{ flex: "none" }} type="button" onClick={handleAddHolding}>
+        <button className="sv2-btn-outline" style={{ flex: "none" }} type="button" onClick={() => setAdding(true)}>
           <IconPlus size={14} /> Add holding
         </button>
       </div>
@@ -58,7 +42,9 @@ export default function CryptoHoldingsTable() {
           <span style={{ textAlign: "right" }}>Manage</span>
         </div>
 
-        {!holdings ? (
+        {error ? (
+          <ErrorState error={error} onRetry={refetch} title="Couldn't load your holdings" />
+        ) : !holdings ? (
           <div className="sv2-muted sv2-small sv2-mt-12">Loading holdings…</div>
         ) : holdings.length === 0 ? (
           <div className="sv2-muted sv2-small sv2-mt-12">No holdings yet — add your first one above.</div>
@@ -66,7 +52,7 @@ export default function CryptoHoldingsTable() {
           holdings.map((h) => {
             const positive = h.change24hPct >= 0;
             return (
-              <div key={h.symbol} className="pv2-holdings-row" onClick={() => navigate("/asset-detail")}>
+              <div key={h.symbol} className="pv2-holdings-row" onClick={() => navigate(`/asset-detail?symbol=${h.symbol}`)}>
                 <div className="pv2-asset-cell">
                   <AssetAvatar symbol={h.symbol} color={h.logoColor} size={36} />
                   <div>
@@ -90,16 +76,20 @@ export default function CryptoHoldingsTable() {
                 <span className="pv2-suggested-btn">{h.aiAction}</span>
 
                 <div className="pv2-manage-icons" onClick={(e) => e.stopPropagation()}>
-                  <button type="button" title="Set alert"><IconBell size={14} /></button>
-                  <button type="button" title="Edit"><IconPencil size={13} /></button>
+                  <button type="button" title="Set alert" aria-label={`Set an alert on ${h.symbol}`} onClick={() => setAlertFor(h)}><IconBell size={14} /></button>
+                  <button type="button" title="Edit" aria-label={`Edit ${h.symbol}`} onClick={() => setEditing(h)}><IconPencil size={13} /></button>
                   <button
                     type="button"
                     title="Remove"
                     onClick={async () => {
                       if (!h.id) return;
                       if (!window.confirm(`Remove ${h.symbol} from your portfolio?`)) return;
-                      await portfolioApi.removeHolding(h.id);
-                      refetch();
+                      try {
+                        await portfolioApi.removeHolding(h.id);
+                        refetch();
+                      } catch (e) {
+                        toast.error(e, { title: `Couldn't remove ${h.symbol}` });
+                      }
                     }}
                   >
                     <IconTrash size={13} />
@@ -110,6 +100,23 @@ export default function CryptoHoldingsTable() {
           })
         )}
       </div>
+      {adding && <AddHoldingModal onClose={() => setAdding(false)} />}
+      {editing && (
+        <AddHoldingModal
+          holding={{
+            id: editing.id, kind: "crypto", assetId: editing.symbol, symbol: editing.symbol, name: editing.name,
+            quantity: editing.quantity, price: editing.avgBuyPriceUsd,
+          }}
+          onClose={() => setEditing(null)}
+        />
+      )}
+      {alertFor && (
+        <CreateAlertModal
+          target={{ type: "crypto", symbol: alertFor.symbol, name: alertFor.name }}
+          hint={alertFor.quantity ? `Currently ${formatAssetPrice(alertFor.valueUsd / alertFor.quantity)}` : undefined}
+          onClose={() => setAlertFor(null)}
+        />
+      )}
     </div>
   );
 }

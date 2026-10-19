@@ -1,7 +1,12 @@
-export default function ProfileHeaderCard({ profile, editing, onChange }) {
+import { formatDate, useAppPreferences } from "../../services/appPreferences";
+
+export const NAME_MAX = 80;
+
+export default function ProfileHeaderCard({ profile, editing, onChange, nameError, onResendVerification, resending }) {
+  useAppPreferences(); // re-render when the date format changes
   if (!profile) return null;
 
-  const memberSince = profile.memberSince ? new Date(profile.memberSince).toISOString().slice(0, 10) : "";
+  const memberSince = profile.memberSince ? formatDate(profile.memberSince) : "";
 
   return (
     <div className="sv2-card set-subcard prof-identity-card">
@@ -11,11 +16,17 @@ export default function ProfileHeaderCard({ profile, editing, onChange }) {
         </div>
         <div className="prof-identity-text">
           {editing ? (
-            <input
-              className="set-input prof-name-input"
-              value={profile.name}
-              onChange={(e) => onChange({ name: e.target.value })}
-            />
+            <>
+              <input
+                className="set-input prof-name-input"
+                value={profile.name}
+                maxLength={NAME_MAX}
+                aria-invalid={!!nameError}
+                aria-describedby={nameError ? "prof-name-error" : undefined}
+                onChange={(e) => onChange({ name: e.target.value })}
+              />
+              {nameError && <div id="prof-name-error" className="prof-field-error" role="alert">{nameError}</div>}
+            </>
           ) : (
             <div className="prof-name">{profile.name}</div>
           )}
@@ -43,6 +54,11 @@ export default function ProfileHeaderCard({ profile, editing, onChange }) {
           <div className={`prof-meta-value ${profile.emailVerified ? "verified" : ""}`}>
             {profile.emailVerified ? "Verified" : "Unverified"}
           </div>
+          {!profile.emailVerified && onResendVerification && (
+            <button type="button" className="prof-verify-btn" onClick={onResendVerification} disabled={resending}>
+              {resending ? "Sending…" : "Send verification email"}
+            </button>
+          )}
         </div>
         <div>
           <div className="prof-meta-label">Markets followed</div>

@@ -171,3 +171,49 @@
 .dv2-collection-price-row { display: flex; align-items: baseline; justify-content: space-between; }
 .dv2-collection-price { font-size: 16px; font-weight: 800; color: var(--sv2-text); }
 .dv2-collection-price-label { font-size: 10.5px; color: var(--sv2-text-mute); margin-top: 2px; }
+/* Wrapper around trending assets + collections: no box of its own unless compact. */
+.dv2-bottom-grid { display: contents; }
+
+/* ---------- compact density: the whole dashboard on one screen ----------
+   Stats in one slim row, chart + insights side by side and shorter, and trending assets next to
+   trending collections (2x2 each) with smaller cards and no artwork band. */
+[data-density="compact"] .dv2-hero-actions .dv2-btn-ghost,
+[data-density="compact"] .dv2-hero-actions .dv2-btn-accent { padding: 7px 12px; font-size: 12px; }
+[data-density="compact"] .dv2-getstarted { padding: 12px 14px; margin-bottom: 10px; gap: 12px; }
+[data-density="compact"] .dv2-getstarted-icon { width: 34px; height: 34px; }
+
+[data-density="compact"] .dv2-stats-grid { gap: 8px; margin-bottom: 10px; }
+[data-density="compact"] .dv2-stat-card { padding: 10px 14px; }
+[data-density="compact"] .dv2-stat-label { margin-bottom: 4px; }
+[data-density="compact"] .dv2-stat-value { font-size: 20px; }
+[data-density="compact"] .dv2-stat-sub { margin-top: 2px; }
+
+[data-density="compact"] .dv2-main-grid { grid-template-columns: 1.5fr 1fr; gap: 8px; margin-bottom: 10px; --dv2-perf-h: 170px; --dv2-insights-h: 170px; }
+[data-density="compact"] .dv2-perf-head { margin-bottom: 6px; }
+[data-density="compact"] .dv2-insight-item { padding: 7px 2px; }
+[data-density="compact"] .dv2-insight-title { margin-bottom: 4px; font-size: 12px; }
+
+[data-density="compact"] .dv2-bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: start; }
+[data-density="compact"] .dv2-section-head { margin: 0 0 8px; }
+[data-density="compact"] .dv2-section-title { font-size: 15px; }
+[data-density="compact"] .dv2-section-sub { display: none; }
+[data-density="compact"] .dv2-asset-grid,
+[data-density="compact"] .dv2-collection-grid { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 0; }
+[data-density="compact"] .dv2-asset-card { padding: 10px 12px; }
+[data-density="compact"] .dv2-asset-card-top { margin-bottom: 6px; }
+[data-density="compact"] .dv2-asset-avatar { width: 26px; height: 26px; font-size: 9px; }
+[data-density="compact"] .dv2-asset-price-row { margin: 0 0 4px; }
+[data-density="compact"] .dv2-asset-price { font-size: 16px; }
+[data-density="compact"] .dv2-asset-price-label { display: none; }
+[data-density="compact"] .dv2-asset-chart { margin: 2px 0 6px; height: 26px; overflow: hidden; }
+[data-density="compact"] .dv2-asset-chart svg { transform: scaleY(0.6); transform-origin: top; } /* 44px sparkline shown at ~26px */
+[data-density="compact"] .dv2-asset-badges { padding-top: 6px; }
+[data-density="compact"] .dv2-collection-art { height: 6px; }
+[data-density="compact"] .dv2-collection-body { padding: 10px 12px; }
+[data-density="compact"] .dv2-collection-top { margin-bottom: 6px; }
+[data-density="compact"] .dv2-collection-price { font-size: 14px; }
+
+@media (max-width: 1100px) {
+  [data-density="compact"] .dv2-main-grid,
+  [data-density="compact"] .dv2-bottom-grid { grid-template-columns: 1fr; }
+}

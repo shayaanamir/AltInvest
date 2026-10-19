@@ -5,10 +5,11 @@ import SentimentHub from "../components/sentiment/SentimentHub";
 import AssetSentimentDetail from "../components/sentiment/AssetSentimentDetail";
 import { sentimentApi } from "../services/sentimentApi";
 import { useSentimentPoller } from "../hooks/useSentimentPoller";
-import { USE_MOCK } from "../config";
+import { ErrorBoundary, useToast } from "../errors";
 
 export default function SentimentPage() {
   const { isDark } = useTheme();
+  const toast = useToast();
   const [selectedAsset, setSelectedAsset]   = useState(null);
   const [refreshKey, setRefreshKey]         = useState(0);
   const [refreshing, setRefreshing]         = useState(false);
@@ -24,21 +25,21 @@ export default function SentimentPage() {
     setLastUpdated(new Date());
   }, []);
 
-  // Live poll: every 5 min, only when not in mock mode
+  // Live poll: every 5 min
   useSentimentPoller({
     onUpdate: handlePollUpdate,
-    enabled: !USE_MOCK && !selectedAsset, // pause when drilling into an asset
+    enabled: !selectedAsset, // pause when drilling into an asset
   });
 
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
       await sentimentApi.refreshAllActive();
-      setRefreshKey((prev) => prev + 1);
       setLastUpdated(new Date());
     } catch (e) {
-      console.error("Pipeline refresh failed:", e);
+      toast.error(e, { title: "Couldn't refresh the sentiment pipeline" });
     } finally {
+      setRefreshKey((prev) => prev + 1); // reload whatever did update, even after a partial failure
       setRefreshing(false);
     }
   };
@@ -50,7 +51,7 @@ export default function SentimentPage() {
   return (
     <div className="sv2">
       <div className="sv2-page">
-        {!USE_MOCK && liveLabel && !selectedAsset && (
+        {liveLabel && !selectedAsset && (
           <div style={{
             display: "flex", alignItems: "center", gap: 6,
             fontSize: 11, color: isDark ? "#3fcf8e" : "#2f8f5b",
@@ -65,6 +66,7 @@ export default function SentimentPage() {
           </div>
         )}
 
+        <ErrorBoundary variant="section" label="Sentiment" resetKey={selectedAsset}>
         {selectedAsset ? (
           <AssetSentimentDetail
             assetId={selectedAsset}
@@ -81,7 +83,8 @@ export default function SentimentPage() {
             refreshing={refreshing}
           />
         )}
+        </ErrorBoundary>
       </div>
     </div>
   );
-}
+}

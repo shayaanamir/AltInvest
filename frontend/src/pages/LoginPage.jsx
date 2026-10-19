@@ -1,4 +1,6 @@
+import { resolveLandingPath } from "../services/appPreferences";
 import { useState, useEffect } from "react";
+import { describeError } from "../errors/errorCatalog";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import AuthLayout from "../components/auth/AuthLayout";
@@ -23,7 +25,7 @@ export default function LoginPage({ onNavigate }) {
     useEffect(() => {
         if (isAuthenticated()) {
             if (returnPath) navigate(returnPath, { replace: true });
-            else onNavigate && onNavigate("Dashboard");
+            else resolveLandingPath().then((path) => navigate(path, { replace: true }));
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -50,10 +52,9 @@ export default function LoginPage({ onNavigate }) {
         try {
             const response = await authApi.login(email.trim(), password);
             setSession({ token: response.token, user: response.user });
-            if (returnPath) navigate(returnPath, { replace: true });
-            else onNavigate && onNavigate("Dashboard");
+            navigate(returnPath || (await resolveLandingPath()), { replace: true });
         } catch (err) {
-            setError(err.message);
+            setError(describeError(err).message);
         } finally {
             setLoading(false);
         }

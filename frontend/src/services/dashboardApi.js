@@ -1,76 +1,91 @@
-import dashboardData from "../data/sample_data/dashboard.json";
-import assetsData from "../data/sample_data/assets.json";
-import portfolioData from "../data/sample_data/portfolio.json";
-import nftCollectionsData from "../data/sample_data/nftCollections.json";
-import userData from "../data/sample_data/user.json";
-import notificationsData from "../data/sample_data/notifications.json";
+import { apiFetch } from "./apiClient";
 
-const SIM_DELAY = 400;
+// Backend global_sentiment is -1..1; the dashboard gauge reads 0..100.
+const sentimentTo100 = (s) => Math.round(((s ?? 0) + 1) * 50);
 
-function delay(fn) {
-  return new Promise((resolve) => setTimeout(() => resolve(fn()), SIM_DELAY));
+// Only plain http(s) links are ever rendered as hrefs (blocks javascript: and data: URLs).
+function safeHttpUrl(u) {
+  try {
+    const parsed = new URL(u);
+    return parsed.protocol === "https:" || parsed.protocol === "http:" ? parsed.href : null;
+  } catch {
+    return null;
+  }
 }
 
 export const dashboardApi = {
-  getCurrentUser: () =>
-    delay(() => ({
-      name: userData.name,
-      initials: userData.avatarInitials,
-      color: userData.avatarColor,
-    })),
+  getCurrentUser: async () => {
+    const p = await apiFetch("/profile");
+    return { name: p.name, initials: p.avatar_initials, color: p.avatar_color };
+  },
 
-  getNotificationCount: () => delay(() => notificationsData.unreadCount ?? 0),
+  getNotificationCount: async () => {
+    const items = await apiFetch("/notifications?limit=20");
+    return items.filter((n) => !n.read).length;
+  },
 
-  getMarketStats: () =>
-    delay(() => {
-      const { stats } = dashboardData;
-      const holdingsCount =
-        (portfolioData.cryptoHoldings?.length || 0) + (portfolioData.nftHoldings?.length || 0);
-      const assetsCount = assetsData.assets.length;
-      const collectionsCount = nftCollectionsData.collections.length;
-      const cryptoScores = assetsData.assets
-        .map((a) => a.aai?.score)
-        .filter((v) => typeof v === "number");
-      const nftScores = nftCollectionsData.collections
-        .map((c) => c.aai?.score)
-        .filter((v) => typeof v === "number");
+  getMarketStats: async () => {
+    const s = await apiFetch("/dashboard/stats");
+    return {
+      totalPortfolioValue: s.portfolio_value_usd,
+      holdingsCount: s.holdings_count,
+      totalVolume24h: s.volume_24h_usd,
+      assetsCount: s.assets_count,
+      collectionsCount: s.collections_count,
+      globalSentiment: sentimentTo100(s.global_sentiment),
+      cryptoScoreCount: s.crypto_score_count,
+      nftScoreCount: s.nft_score_count,
+      marketMood: s.global_sentiment_label.toLowerCase(),
+      marketMoodConfidence: s.market_mood_confidence == null ? null : Math.round(s.market_mood_confidence),
+    };
+  },
 
-      return {
-        totalPortfolioValue: stats.totalPortfolioValue,
-        holdingsCount,
-        totalVolume24h: stats.totalVolume24h,
-        assetsCount,
-        collectionsCount,
-        globalSentiment: Math.round(stats.globalSentiment),
-        cryptoScoreCount: cryptoScores.length,
-        nftScoreCount: nftScores.length,
-        marketMood: stats.marketMood,
-        marketMoodConfidence: stats.marketMoodConfidence,
-      };
-    }),
+  // [{date, value}] — empty when portfolio_snapshots has nothing for the range.
+  getPerformanceHistory: async (filter = "1M") => {
+    const res = await apiFetch(`/dashboard/performance?filter=${filter}`);
+    return res.points.map((p) => ({ date: p.timestamp, value: p.value }));
+  },
 
-  getPerformanceHistory: (filter = "1M") =>
-    delay(() => dashboardData.performanceHistory[filter] || []),
+  getMarketInsights: async () => {
+    const rows = await apiFetch("/dashboard/insights");
+    return rows.map((r, i) => ({
+      id: `${r.published_at}-${i}`,
+      source: r.source,
+      title: r.title,
+      summary: r.summary,
+      impact: r.impact,
+      publishedAt: r.published_at,
+      url: safeHttpUrl(r.url),
+      relatedAssetSymbol: r.related_asset_symbol,
+      relatedNftSlug: r.related_nft_slug,
+    }));
+  },
 
-  getMarketInsights: () => delay(() => dashboardData.insights),
+  getTrendingAssets: async () => {
+    const rows = await apiFetch("/dashboard/trending");
+    return rows.map((r) => ({
+      symbol: r.symbol,
+      name: r.name,
+      logoColor: r.logo_color,
+      price: r.price,
+      change24h: r.change_24h,
+      sparkline: r.sparkline,
+      watching: !!r.watching,
+      aai: { score: r.aai_score, signal: r.signal },
+    }));
+  },
 
-  getTrendingAssets: () =>
-    delay(() =>
-      dashboardData.trendingAssets
-        .map((t) => {
-          const asset = assetsData.assets.find((a) => a.symbol === t.symbol);
-          return asset ? { ...asset, sparkline: t.sparkline } : null;
-        })
-        .filter(Boolean)
-    ),
-
-  getTrendingCollections: () =>
-    delay(() =>
-      dashboardData.trendingCollections
-        .map((t) => {
-          const collection = nftCollectionsData.collections.find((c) => c.slug === t.slug);
-          return collection ? { ...collection, sparkline: t.sparkline } : null;
-        })
-        .filter(Boolean)
-    ),
+  getTrendingCollections: async () => {
+    const rows = await apiFetch("/dashboard/trending-collections");
+    return rows.map((r) => ({
+      slug: r.slug,
+      name: r.name,
+      symbol: r.symbol,
+      bannerColor: r.banner_color,
+      floorEth: r.floor_eth,
+      floorUsd: r.floor_usd,
+      change24h: r.change_24h,
+      aai: { score: r.aai_score },
+    }));
+  },
 };

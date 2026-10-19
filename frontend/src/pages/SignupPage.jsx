@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { describeError } from "../errors/errorCatalog";
 import { motion } from "framer-motion";
 import AuthLayout from "../components/auth/AuthLayout";
 import { AuthInput, AuthButton, OAuthButton, Divider, GoogleIcon } from "../components/auth/AuthPrimitives";
@@ -50,10 +51,11 @@ export default function SignupPage({ onNavigate }) {
             // Duplicate-account errors come through as a specific message
             // from authApi (backend returns 409 -> "An account with this
             // email already exists."); surface it on the email field.
-            if (/already exists/i.test(err.message)) {
-                setFieldErrors({ email: err.message });
+            const { message } = describeError(err);
+            if (/already exists/i.test(message)) {
+                setFieldErrors({ email: message });
             } else {
-                setError(err.message);
+                setError(message);
             }
         } finally {
             setLoading(false);

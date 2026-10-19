@@ -1,14 +1,4 @@
-import { USE_MOCK } from "../config";
 import { apiFetch } from "./apiClient";
-import profileData from "../data/sample_data/profile.json";
-import userData from "../data/sample_data/user.json";
-
-const SIM_DELAY = 300;
-const delay = (fn) => new Promise((resolve) => setTimeout(() => resolve(fn()), SIM_DELAY));
-
-function capitalize(s) {
-  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
-}
 
 function mapBackendProfile(p) {
   return {
@@ -20,9 +10,8 @@ function mapBackendProfile(p) {
     bio: p.bio || "",
     memberSince: p.created_at,
     riskProfile: p.risk_profile || "balanced",
-    // investmentGoal isn't part of backend ProfileOut yet — no server field
-    // to read it from, so it's left undefined until the schema grows one.
-    investmentGoal: undefined,
+    investmentGoal: p.investment_goal || "", // "" = not chosen yet
+    emailVerified: !!p.email_verified,
     marketsFollowed: "", // same — onboarding answers aren't persisted server-side yet
     activitySummary: {
       holdingsCount: p.activity_summary?.holdings_count ?? 0,
@@ -37,30 +26,18 @@ function mapBackendProfile(p) {
 }
 
 export const profileApi = {
-  getProfile: () => {
-    if (USE_MOCK) {
-      return delay(() => {
-        const markets = userData.onboarding?.answers?.markets || [];
-        return {
-          ...profileData,
-          emailVerified: userData.accountSummary?.emailVerified ?? false,
-          marketsFollowed: markets.map(capitalize).join(", "),
-        };
-      });
-    }
-    return (async () => {
-      const p = await apiFetch("/profile");
-      return { ...mapBackendProfile(p), emailVerified: !!p.email_verified };
-    })();
+  getProfile: async () => {
+    const p = await apiFetch("/profile");
+    return mapBackendProfile(p);
   },
 
   updateProfile: (patch) => {
-    if (USE_MOCK) return delay(() => ({ ...profileData, ...patch }));
     // Only forward fields the backend actually accepts
     // (see backend/models/schemas.py::ProfileUpdate)
-    const allowed = ["name", "bio", "avatar_initials", "avatar_color", "risk_profile", "layout_preference", "display_currency"];
+    const allowed = ["name", "bio", "avatar_initials", "avatar_color", "risk_profile", "investment_goal", "layout_preference", "display_currency"];
     const backendPatch = {};
-    if (patch.name !== undefined) backendPatch.name = patch.name;
+    if (patch.name !== undefined) backendPatch.name = patch.name.trim();
+    if (patch.investmentGoal) backendPatch.investment_goal = patch.investmentGoal;
     if (patch.bio !== undefined) backendPatch.bio = patch.bio;
     if (patch.avatarInitials !== undefined) backendPatch.avatar_initials = patch.avatarInitials;
     if (patch.avatarColor !== undefined) backendPatch.avatar_color = patch.avatarColor;

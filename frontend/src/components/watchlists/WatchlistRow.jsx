@@ -6,7 +6,7 @@ import { formatAssetPrice } from "../../utils/formatters";
 const SIGNAL_CLASS = { BUY: "signal-buy", HOLD: "signal-hold", SELL: "signal-sell" };
 const SIGNAL_LABEL = { BUY: "Buy", HOLD: "Hold", SELL: "Sell" };
 
-export default function WatchlistRow({ item, onAddToPortfolio, onRemove }) {
+export default function WatchlistRow({ item, onAddToPortfolio, onSetAlert, onRemove }) {
   const positive = (item.changePct ?? 0) >= 0;
 
   return (
@@ -42,7 +42,7 @@ export default function WatchlistRow({ item, onAddToPortfolio, onRemove }) {
           <IconCheck size={13} />
           Add to portfolio
         </button>
-        <button className="wl-icon-btn" title="Set alert">
+        <button className="wl-icon-btn" title="Set alert" aria-label={`Set an alert on ${item.name}`} onClick={() => onSetAlert(item)}>
           <IconBell size={15} />
         </button>
         <button className="wl-icon-btn danger" onClick={() => onRemove(item)} title="Remove">

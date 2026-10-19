@@ -1,85 +1,92 @@
-import assetDetailData from "../data/sample_data/assetDetail.json";
-import assetsData from "../data/sample_data/assets.json";
-import portfolioData from "../data/sample_data/portfolio.json";
-
-const SIM_DELAY = 350;
-function delay(fn) {
-  return new Promise((resolve) => setTimeout(() => resolve(fn()), SIM_DELAY));
-}
-
-function findHolding(symbol) {
-  return portfolioData.cryptoHoldings.find((h) => h.symbol === symbol) || null;
-}
-
-function findAssetMeta(symbol) {
-  return assetsData.assets.find((a) => a.symbol === symbol) || null;
-}
-
+import { apiFetch } from "./apiClient";
+import { formatAssetPrice, formatCurrencyCompact } from "../utils/formatters";
 import { getAaiSignal, getRiskTone, getEvidencePhrase } from "../utils/scoring";
+import { mapUniverseItem } from "./assetRepository";
 
 export const deriveAaiSignal = getAaiSignal;
 export const confidenceLabel = getEvidencePhrase;
 export const riskLevelTone = getRiskTone;
 
+function formatSupply(n) {
+  if (n >= 1e9) return `${(n / 1e9).toFixed(2)}B`;
+  if (n >= 1e6) return `${(n / 1e6).toFixed(1)}M`;
+  return n.toLocaleString();
+}
+
+// Only rows the database actually has a value for.
+function buildMarketStats(m) {
+  const rows = [
+    m.market_rank != null && { label: "Market Rank", value: `#${m.market_rank} by Cap` },
+    m.market_cap != null && { label: "Market Cap", value: formatCurrencyCompact(m.market_cap) },
+    m.volume_24h != null && { label: "24h Volume", value: formatCurrencyCompact(m.volume_24h) },
+    m.circulating_supply != null && { label: "Circulating Supply", value: formatSupply(m.circulating_supply) },
+    m.all_time_high != null && { label: "All Time High", value: formatAssetPrice(m.all_time_high) },
+  ];
+  return rows.filter(Boolean);
+}
+
+function sentimentLabel(score) {
+  return score > 0.1 ? "Positive" : score < -0.1 ? "Negative" : "Neutral";
+}
+
 export const assetDetailApi = {
-  getAssetDetail: (symbol = "BTC") =>
-    delay(() => {
-      const detail = assetDetailData[symbol];
-      if (!detail) return null;
+  /** Resolves to null when the backend has no such asset (404); throws on any other failure. */
+  getAssetDetail: async (symbol) => {
+    let d;
+    try {
+      d = await apiFetch(`/assets/${encodeURIComponent(symbol)}/detail`);
+    } catch (e) {
+      if (e.status === 404) return null;
+      throw e;
+    }
 
-      const meta = findAssetMeta(symbol);
-      const holding = findHolding(symbol);
-
-      return {
-        symbol,
-        header: {
-          ...detail.header,
-          logoColor: meta?.logoColor || "var(--sv2-accent)",
-          subcategory: meta?.subcategory || null,
-          held: !!holding,
-          quantityHeld: holding?.quantity ?? null,
-        },
-        priceHistory: detail.priceHistory,
-        forecast: detail.forecast,
-        aaiPanel: detail.aaiPanel,
-        riskOverview: detail.riskOverview,
-        marketStats: detail.marketStats,
-        signalCard: detail.signalCard,
-        about: detail.about,
-        relatedAssets: detail.relatedAssets || [],
-        sentimentSnippet: detail.sentimentSnippet,
-      };
-    }),
-
-  // Builds "Similar assets" from relatedAssets, backfilled by market cap
-  // if fewer than 4 related symbols are available for this asset.
-  getSimilarAssets: (symbol = "BTC", relatedAssets = []) =>
-    delay(() => {
-      const pool = assetsData.assets.filter((a) => a.symbol !== symbol);
-      const related = relatedAssets
-        .map((sym) => pool.find((a) => a.symbol === sym))
-        .filter(Boolean);
-
-      const remaining = pool
-        .filter((a) => !related.includes(a))
-        .sort((a, b) => b.marketCap - a.marketCap);
-
-      const combined = [...related, ...remaining].slice(0, 4);
-
-      return combined.map((a) => {
-        const history = assetDetailData[a.symbol]?.priceHistory || [];
+    const h = d.header;
+    return {
+      symbol: d.symbol,
+      header: {
+        symbol: h.symbol,
+        name: h.name,
+        assetType: h.category,
+        subcategory: h.subcategory,
+        logoColor: h.logo_color || "var(--sv2-accent)",
+        price: h.price,
+        change24h: h.change_24h ?? 0,
+        held: h.held,
+        quantityHeld: h.quantity_held,
+        watching: h.watching,
+      },
+      priceHistory: d.price_history,
+      // Only the model's target point; the chart draws the branch from the last actual price.
+      forecast: d.forecast ? d.forecast.points.slice(1) : null,
+      aaiPanel: d.aai_panel && {
+        score: d.aai_panel.score,
+        signal: d.aai_panel.signal,
+        confidence: d.aai_panel.confidence,
+      },
+      riskOverview: d.risk_overview,
+      marketStats: buildMarketStats(d.market_stats),
+      sentimentSnippet: d.sentiment && {
+        score: d.sentiment.score,
+        label: sentimentLabel(d.sentiment.score),
+        confidence: d.sentiment.confidence == null ? null : Math.round(d.sentiment.confidence * 100),
+        trend: d.sentiment.trend,
+      },
+      about: d.about,
+      similarAssets: d.similar.map((s) => {
+        const m = mapUniverseItem(s);
         return {
-          symbol: a.symbol,
-          name: a.name,
-          logoColor: a.logoColor,
-          price: a.price,
-          change24h: a.change24h,
-          sparkline: history.map((p) => p.price),
-          aaiScore: a.aai?.score ?? null,
-          signal: a.aai?.signal ?? null,
-          held: !!findHolding(a.symbol),
-          watching: !!a.watching,
+          symbol: m.symbol,
+          name: m.name,
+          logoColor: m.color,
+          price: m.price,
+          change24h: m.change24h ?? 0,
+          sparkline: m.sparkline,
+          aaiScore: m.aaiScore,
+          signal: m.signal,
+          held: m.held,
+          watching: m.watching,
         };
-      });
-    }),
+      }),
+    };
+  },
 };

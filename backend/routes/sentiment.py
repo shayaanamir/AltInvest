@@ -18,14 +18,17 @@ from datetime import datetime, timezone, timedelta
 from typing import List
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+import logging
+
 from fastapi import APIRouter, HTTPException, Query
+from pydantic import ValidationError
 from fastapi.responses import JSONResponse
 
 from models.schemas import SentimentResponse
 
 router = APIRouter(tags=["Sentiment"])
 
-_CACHE_TTL_MINUTES = 15
+_CACHE_TTL_MINUTES = 20
 
 # ── Scope limiter ─────────────────────────────────────────────────────────────
 # Only these asset IDs are processed by the sentiment engine for now.
@@ -112,6 +115,10 @@ def _map_sentiment(result: dict) -> dict:
     if not result:
         return {}
 
+    # Normalise optional blocks so a partial engine result can't fail response validation.
+    market_signals = result.get("market_signals") or None          # {} -> None
+    headlines = [h for h in (result.get("top_headlines") or []) if isinstance(h, dict) and h.get("title")]
+
     dist = result.get("sentiment_distribution") or {}
     mapped_dist = {
         "positive": dist.get("positive") or dist.get("Positive") or 0,
@@ -121,8 +128,8 @@ def _map_sentiment(result: dict) -> dict:
 
     return {
         "asset": (result.get("asset_id") or result.get("asset") or "").upper(),
-        "sentiment_score": result.get("sentiment_score", 0.0),
-        "source": result.get("source", "Ensemble (VADER + FinBERT)"),
+        "sentiment_score": result.get("sentiment_score") or 0.0,
+        "source": result.get("source") or "Ensemble (VADER + FinBERT)",
         "post_count": result.get("article_count") or result.get("post_count") or 0,
         "timestamp": result.get("last_updated") or result.get("timestamp") or "",
         "confidence": result.get("confidence"),
@@ -132,8 +139,8 @@ def _map_sentiment(result: dict) -> dict:
         "source_count": result.get("source_count"),
         "source_breakdown": result.get("source_breakdown"),
         "sentiment_distribution": mapped_dist,
-        "top_headlines": result.get("top_headlines"),
-        "market_signals": result.get("market_signals"),
+        "top_headlines": headlines,
+        "market_signals": market_signals,
         "articles_by_source": result.get("articles_by_source"),
         "note": result.get("note") or result.get("error"),
     }
@@ -172,7 +179,10 @@ def get_all_sentiment():
                 save_sentiment(result)
                 return asset_id, result
             except Exception as exc:
-                return asset_id, _neutral(asset_id, str(exc))
+                import logging
+                logging.getLogger("sentiment_api").error("pipeline failed for %s: %s", asset_id, exc)
+                # The exception text stays in the server log; clients get a fixed message.
+                return asset_id, _neutral(asset_id, "Sentiment could not be computed for this asset right now.")
 
         with ThreadPoolExecutor(max_workers=len(missing)) as executor:
             future_to_asset = {
@@ -183,9 +193,71 @@ def get_all_sentiment():
                 aid, result = future.result()
                 cached_map[aid] = result
 
-    # Return in _ACTIVE_ASSETS order for a stable response shape
-    results = [cached_map[a] for a in _ACTIVE_ASSETS if a in cached_map]
-    return [_map_sentiment(r) for r in results]
+    # Return in _ACTIVE_ASSETS order for a stable response shape. Each record is checked on its
+    # own: FastAPI validates the whole list after we return, so one unreadable record would
+    # otherwise turn the entire response into a 500 for every asset.
+    mapped = []
+    for asset_id in _ACTIVE_ASSETS:
+        record = cached_map.get(asset_id)
+        if record is None:
+            continue
+        try:
+            item = _map_sentiment(record)
+            SentimentResponse.model_validate(item)
+        except (ValidationError, AttributeError, TypeError, ValueError) as exc:
+            logging.getLogger("sentiment_api").error("unreadable sentiment record for %s: %s", asset_id, exc)
+            item = _map_sentiment(_neutral(asset_id, "Stored sentiment for this asset could not be read."))
+        mapped.append(item)
+    return mapped
+
+
+# ── GET /sentiment/themes ──────────────────────────────────────────────────────
+# Declared before /sentiment/{asset} so "themes" isn't read as an asset id.
+
+@router.get("/sentiment/themes")
+def get_themes():
+    """Recurring themes in the coverage, from the `sentiment_themes` collection."""
+    from utils.http_errors import db_unavailable
+    try:
+        from db.queries import get_sentiment_themes
+        docs = get_sentiment_themes()
+    except Exception as exc:
+        raise db_unavailable(exc)
+    return [
+        {"label": d.get("label"), "direction": d.get("direction"), "category": d.get("category")}
+        for d in docs
+        if d.get("label")
+    ]
+
+
+# ── GET /sentiment/mood-trend ──────────────────────────────────────────────────
+
+@router.get("/sentiment/mood-trend")
+def get_mood_trend(days: int = Query(default=30, ge=1, le=90, description="Days to look back")):
+    """
+    Overall crypto mood over time: the average sentiment score (-1..1) of every covered asset,
+    bucketed by hour for a day or two of history and by day beyond that.
+    """
+    _, _, get_sentiment_history, _, _, _ = _engine()
+
+    fmt = "%Y-%m-%dT%H:00:00Z" if days <= 2 else "%Y-%m-%dT00:00:00Z"
+    buckets: dict[str, list[float]] = {}
+    for asset_id in _ACTIVE_ASSETS:
+        for row in get_sentiment_history(asset_id, days=days):
+            score = row.get("sentiment_score")
+            ts = row.get("last_updated") or row.get("timestamp")
+            if score is None or not ts or not (row.get("confidence") or 0) > 0:
+                continue  # skip neutral placeholders written when no articles were found
+            try:
+                when = ts if isinstance(ts, datetime) else datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
+            except ValueError:
+                continue
+            buckets.setdefault(when.strftime(fmt), []).append(float(score))
+
+    return [
+        {"date": key, "value": round(sum(vals) / len(vals), 4), "assets": len(vals)}
+        for key, vals in sorted(buckets.items())
+    ]
 
 
 # ── GET /sentiment/{asset} ─────────────────────────────────────────────────────
@@ -220,7 +292,7 @@ def get_sentiment(asset: str):
 @router.get("/sentiment/{asset}/history")
 def get_sentiment_history_route(
     asset: str,
-    days: int = Query(default=7, ge=1, le=30, description="Days to look back"),
+    days: int = Query(default=7, ge=1, le=90, description="Days to look back"),
 ):
     """Returns historical sentiment scores for chart rendering."""
     run_pipeline, get_latest_sentiment, get_sentiment_history, get_all_latest, save_sentiment, ASSETS = _engine()
@@ -263,8 +335,8 @@ def refresh_sentiment(asset: str):
 
 # ── Background scheduled refresh ───────────────────────────────────────────────
 
-# Pipeline refresh interval — every 15 minutes matches the cache TTL so a
-# user hitting /sentiment always gets data that is less than 15 min stale.
+# Pipeline refresh interval — every 15 minutes, well inside the 20 min cache
+# TTL, so a user hitting /sentiment always gets data that is fresh.
 _REFRESH_INTERVAL_SECONDS = 15 * 60
 
 

@@ -25,11 +25,13 @@ class PredictionResponse(BaseModel):
     note: Optional[str] = None
 
 class HeadlineItem(BaseModel):
+    # Only the title is guaranteed: feeds omit links and timestamps, and a pipeline
+    # that found nothing returns no headlines at all.
     title: str
-    score: float
-    source: str
-    age_hours: float
-    link: str
+    score: Optional[float] = None
+    source: Optional[str] = None
+    age_hours: Optional[float] = None
+    link: Optional[str] = None
 
 
 class SentimentDistribution(BaseModel):
@@ -39,10 +41,12 @@ class SentimentDistribution(BaseModel):
 
 
 class MarketSignals(BaseModel):
-    price_change_24h: float
-    volume_change_24h: float
-    is_trending: bool
-    btc_dominance: float
+    # Every field is optional: the market-data source can be down or rate-limited, in which
+    # case the engine returns none of them (and a neutral result has none to give).
+    price_change_24h: Optional[float] = None
+    volume_change_24h: Optional[float] = None
+    is_trending: Optional[bool] = None
+    btc_dominance: Optional[float] = None
 
 
 class SentimentResponse(BaseModel):
@@ -124,6 +128,7 @@ class MarketInsightItem(BaseModel):
     title: str
     summary: str
     impact: str
+    url: Optional[str] = None            # link to the original article, when the insight has one
     related_asset_symbol: Optional[str] = None
     related_nft_slug: Optional[str] = None
     published_at: str
@@ -134,6 +139,12 @@ class DashboardStats(BaseModel):
     volume_24h_usd: float
     global_sentiment: float
     global_sentiment_label: str
+    holdings_count: int = 0
+    assets_count: int = 0
+    collections_count: int = 0
+    crypto_score_count: int = 0
+    nft_score_count: int = 0
+    market_mood_confidence: Optional[float] = None   # avg sentiment confidence, 0-100
 
 
 class PortfolioHoldingIn(BaseModel):
@@ -326,26 +337,31 @@ class DiscoverItem(BaseModel):
     id: str                         # asset_id or slug
     symbol: Optional[str] = None
     name: str
+    subcategory: Optional[str] = None
     logo_color: Optional[str] = None
     price: Optional[float] = None   # crypto price or nft floor_usd
+    floor_eth: Optional[float] = None        # nft only
     change_24h: Optional[float] = None
     change_7d: Optional[float] = None
-    market_cap: Optional[float] = None       # crypto only
+    market_cap: Optional[float] = None
     volume_24h: Optional[float] = None
     aai_score: Optional[float] = None
-    verified: Optional[bool] = None          # nft only
-
-
-class CompareItem(BaseModel):
-    category: str
-    id: str
-    name: str
-    price: Optional[float] = None
-    change_24h: Optional[float] = None
-    change_7d: Optional[float] = None
-    aai_score: Optional[float] = None
+    signal: Optional[str] = None             # BUY | HOLD | SELL, derived from aai_score
     risk_score: Optional[float] = None
+    volatility: Optional[float] = None       # crypto: volatility_index, nft: illiquidity risk
+    expected_return: Optional[float] = None  # predicted 30d %, crypto only
     sentiment_score: Optional[float] = None
+    sentiment_confidence: Optional[float] = None
+    sentiment_confidence_label: Optional[str] = None
+    sentiment_trend: Optional[str] = None
+    verified: Optional[bool] = None          # nft only
+    held: bool = False
+    watching: bool = False
+    sparkline: List[float] = []
+
+
+class CompareItem(DiscoverItem):
+    pass
 
 
 class CompareResponse(BaseModel):
@@ -375,6 +391,7 @@ class ProfileOut(BaseModel):
     risk_profile: Optional[str] = None
     layout_preference: Optional[str] = None
     display_currency: Optional[str] = None
+    investment_goal: Optional[str] = None
     email_verified: Optional[bool] = None
     created_at: Optional[str] = None
     activity_summary: ActivitySummary
@@ -382,12 +399,21 @@ class ProfileOut(BaseModel):
 
 class ProfileUpdate(BaseModel):
     name: Optional[str] = None
+    investment_goal: Optional[str] = None
     bio: Optional[str] = None
     avatar_initials: Optional[str] = None
     avatar_color: Optional[str] = None
     risk_profile: Optional[str] = None
     layout_preference: Optional[str] = None
     display_currency: Optional[str] = None
+
+
+class FxRatesOut(BaseModel):
+    base: str
+    rates: Dict[str, float]
+    as_of: str
+    source: Optional[str] = None
+    supported: List[str]
 
 
 class UserSettingsOut(BaseModel):
@@ -406,6 +432,10 @@ class SettingsSectionUpdate(BaseModel):
 
 class ForgotPasswordRequest(BaseModel):
     email: str
+
+
+class VerifyEmailRequest(BaseModel):
+    token: str
 
 
 class ResetPasswordRequest(BaseModel):

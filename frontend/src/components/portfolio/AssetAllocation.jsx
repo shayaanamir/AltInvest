@@ -1,5 +1,7 @@
 import { useAsync } from "../../hooks/useAsync";
+import { onHoldingsChanged } from "../../services/holdingsEvents";
 import { portfolioApi } from "../../services/portfolioApi";
+import { ErrorState } from "../../errors";
 
 const CATEGORY_COLOR_VAR = {
   Crypto: "var(--sv2-accent)",
@@ -40,15 +42,19 @@ function DonutChart({ data, track }) {
 }
 
 export default function AssetAllocation() {
-  const { data: allocation } = useAsync(() => portfolioApi.getAllocation(), []);
+  const { data: allocation, error, refetch } = useAsync(() => portfolioApi.getAllocation(), [], { subscribe: onHoldingsChanged });
 
   return (
     <div className="sv2-card sv2-card-pad">
       <div className="sv2-card-title">Asset allocation</div>
       <div className="sv2-card-sub" style={{ marginBottom: 16 }}>By category</div>
 
-      {!allocation ? (
+      {error ? (
+        <ErrorState error={error} onRetry={refetch} title="Couldn't load allocation" />
+      ) : !allocation ? (
         <div className="sv2-muted sv2-small" style={{ padding: "24px 0" }}>Loading…</div>
+      ) : allocation.length === 0 ? (
+        <div className="sv2-muted sv2-small" style={{ padding: "24px 0" }}>No allocation data yet.</div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
           <DonutChart data={allocation} track="var(--sv2-grey-arc)" />
@@ -61,7 +67,7 @@ export default function AssetAllocation() {
                   />
                   <span className="sv2-small sv2-muted">{a.label}</span>
                 </div>
-                <span className="sv2-small sv2-bold">{a.pct.toFixed(1)}%</span>
+                <span className="sv2-small sv2-bold">{(a.pct ?? 0).toFixed(1)}%</span>
               </div>
             ))}
           </div>

@@ -2,35 +2,25 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { L } from "../landingPage/landingTokens";
 import { IconCheck2 } from "../icons";
+import { useAsync } from "../../hooks/useAsync";
+import { fetchUniverse } from "../../services/assetRepository";
+import { formatPct } from "../../utils/formatters";
+import { ErrorState } from "../../errors";
 
-const ALL_ASSETS = [
-    // ── Crypto: Layer 1 ────────────────────────────────────────
-    { sym: "BTC",   name: "Bitcoin",       chg: "+2.14%",  pos: true,  aiPick: true,  cat: "Layer 1",        spark: "M0,12 C5,10 10,6 15,4 C20,2 25,8 30,6 C35,4 38,2 42,1" },
-    { sym: "ETH",   name: "Ethereum",      chg: "-0.85%",  pos: false, aiPick: true,  cat: "Layer 1",        spark: "M0,10 C5,8 10,5 15,5 C20,5 25,9 30,7 C35,5 38,4 42,2" },
-    { sym: "SOL",   name: "Solana",        chg: "+1.83%",  pos: true,  aiPick: false, cat: "Layer 1",        spark: "M0,4 C5,6 10,8 15,10 C20,12 25,10 30,12 C35,13 38,13 42,14" },
-    { sym: "ADA",   name: "Cardano",       chg: "+0.88%",  pos: true,  aiPick: false, cat: "Layer 1",        spark: "M0,10 C5,9 10,9 15,10 C20,10 25,9 30,9 C35,8 38,8 42,9" },
-    { sym: "AVAX",  name: "Avalanche",     chg: "+2.70%",  pos: true,  aiPick: false, cat: "Layer 1",        spark: "M0,10 C5,8 10,7 15,6 C20,5 25,6 30,5 C35,4 38,3 42,3" },
-    { sym: "NEAR",  name: "NEAR Protocol", chg: "+3.20%",  pos: true,  aiPick: false, cat: "Layer 1",        spark: "M0,12 C5,10 10,8 15,7 C20,6 25,5 30,4 C35,3 38,3 42,2" },
-    // ── Crypto: Layer 2 / Infrastructure ──────────────────────────────
-    { sym: "MATIC", name: "Polygon",       chg: "+1.40%",  pos: true,  aiPick: false, cat: "Layer 2",        spark: "M0,10 C5,9 10,9 15,9 C20,8 25,8 30,7 C35,7 38,7 42,7" },
-    { sym: "ARB",   name: "Arbitrum",      chg: "+3.87%",  pos: true,  aiPick: false, cat: "Layer 2",        spark: "M0,10 C5,8 10,7 15,7 C20,6 25,6 30,5 C35,5 38,4 42,4" },
-    { sym: "DOT",   name: "Polkadot",      chg: "-2.10%",  pos: false, aiPick: false, cat: "Layer 0",        spark: "M0,4 C5,6 10,8 15,10 C20,11 25,12 30,13 C35,13 38,14 42,14" },
-    { sym: "LINK",  name: "Chainlink",     chg: "+1.10%",  pos: true,  aiPick: true,  cat: "Infrastructure", spark: "M0,8 C5,7 10,6 15,6 C20,5 25,6 30,5 C35,5 38,4 42,4" },
-    { sym: "ATOM",  name: "Cosmos",        chg: "-1.80%",  pos: false, aiPick: false, cat: "Infrastructure", spark: "M0,5 C5,7 10,9 15,10 C20,11 25,10 30,11 C35,12 38,12 42,13" },
-    // ── Crypto: Exchange / Payments ─────────────────────────────────────
-    { sym: "BNB",   name: "BNB",           chg: "+1.55%",  pos: true,  aiPick: false, cat: "Exchange Token", spark: "M0,9 C5,8 10,7 15,7 C20,6 25,7 30,6 C35,6 38,5 42,5" },
-    { sym: "XRP",   name: "XRP",           chg: "-1.20%",  pos: false, aiPick: false, cat: "Payments",       spark: "M0,6 C5,7 10,9 15,10 C20,10 25,11 30,10 C35,11 38,11 42,12" },
-    { sym: "LTC",   name: "Litecoin",      chg: "+0.60%",  pos: true,  aiPick: false, cat: "Payments",       spark: "M0,10 C5,9 10,9 15,9 C20,8 25,8 30,8 C35,7 38,7 42,7" },
-    // ── Crypto: DeFi / Community ───────────────────────────────────────────
-    { sym: "UNI",   name: "Uniswap",       chg: "-4.06%",  pos: false, aiPick: false, cat: "DeFi",           spark: "M0,3 C5,5 10,7 15,9 C20,11 25,12 30,13 C35,14 38,14 42,15" },
-    { sym: "DOGE",  name: "Dogecoin",      chg: "+11.62%", pos: true,  aiPick: true,  cat: "Meme/Community", spark: "M0,14 C5,12 10,9 15,7 C20,5 25,4 30,3 C35,2 38,1 42,0" },
-    // ── Commodities ────────────────────────────────────────────────────────
-    { sym: "GOLD",   name: "Gold",         chg: "+0.2%",   pos: true,  aiPick: false, cat: "Commodity",      spark: "M0,10 C5,9 10,8 15,8 C20,8 25,7 30,7 C35,6 38,6 42,5" },
-    { sym: "SILVER", name: "Silver",       chg: "-1.1%",   pos: false, aiPick: false, cat: "Commodity",      spark: "M0,6 C5,8 10,10 15,11 C20,12 25,10 30,12 C35,13 38,13 42,14" },
-];
+// Draws a sparkline path from real price points (scaled into the 42x16 box).
+function sparkPath(values) {
+    if (!values || values.length < 2) return "";
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const span = max - min || 1;
+    return values
+        .map((v, i) => `${i === 0 ? "M" : "L"}${((i / (values.length - 1)) * 42).toFixed(1)},${(15 - ((v - min) / span) * 14).toFixed(1)}`)
+        .join(" ");
+}
 
-
-function Spark({ path, pos }) {
+function Spark({ values, pos }) {
+    const path = sparkPath(values);
+    if (!path) return <div style={{ width: 42, height: 16 }} />;
     return (
         <svg width="42" height="16" viewBox="0 0 42 16" preserveAspectRatio="none">
             <path d={path} fill="none"
@@ -44,6 +34,20 @@ export default function Step4Assets({ answers, setAnswer }) {
     const [query, setQuery] = useState("");
     const selected = answers.assets || [];
 
+    // The crypto assets the platform covers, best AAI score first, with their real 24h move and price trail.
+    const { data: universe, loading, error, refetch } = useAsync(
+        () => fetchUniverse({ category: "crypto", sort: "aai_score", order: "desc" }),
+        []
+    );
+    const assets = (universe || []).map((a) => ({
+        sym: a.symbol,
+        name: a.name,
+        chg: formatPct(a.changePct ?? 0, { withSign: true }),
+        pos: (a.changePct ?? 0) >= 0,
+        aiPick: a.signal === "BUY", // the platform's own BUY read
+        spark: a.sparkline,
+    }));
+
     const toggle = (sym) => {
         const next = selected.includes(sym)
             ? selected.filter(s => s !== sym)
@@ -51,7 +55,7 @@ export default function Step4Assets({ answers, setAnswer }) {
         setAnswer("assets", next);
     };
 
-    const filtered = ALL_ASSETS.filter(a =>
+    const filtered = assets.filter(a =>
         a.sym.toLowerCase().includes(query.toLowerCase()) ||
         a.name.toLowerCase().includes(query.toLowerCase())
     );
@@ -108,9 +112,17 @@ export default function Step4Assets({ answers, setAnswer }) {
                 style={{ width: "100%", maxWidth: 560 }}
             >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: L.ink3, textTransform: "uppercase", letterSpacing: "0.07em" }}>Trending Assets</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: L.ink3, textTransform: "uppercase", letterSpacing: "0.07em" }}>Covered assets</span>
                     <span style={{ fontSize: 11, color: L.ink2 }}>{selected.length} asset{selected.length !== 1 ? "s" : ""} selected</span>
                 </div>
+
+                {error ? (
+                    <ErrorState error={error} onRetry={refetch} title="Couldn't load assets" />
+                ) : loading ? (
+                    <div style={{ fontSize: 12, color: L.ink3 }}>Loading assets…</div>
+                ) : filtered.length === 0 ? (
+                    <div style={{ fontSize: 12, color: L.ink3 }}>{query ? "No assets match your search." : "No assets are covered yet."}</div>
+                ) : null}
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
                     {filtered.map((a, i) => {
@@ -146,7 +158,7 @@ export default function Step4Assets({ answers, setAnswer }) {
                                 </div>
                                 <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                                     <div>
-                                        <Spark path={a.spark} pos={a.pos} />
+                                        <Spark values={a.spark} pos={a.pos} />
                                         <div style={{ fontSize: 10, fontWeight: 600, color: a.pos ? L.green : L.red, textAlign: "right" }}>{a.chg}</div>
                                     </div>
                                     <div style={{

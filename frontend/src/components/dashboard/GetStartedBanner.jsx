@@ -1,8 +1,14 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAsync } from "../../hooks/useAsync";
+import { onHoldingsChanged } from "../../services/holdingsEvents";
+import AddHoldingModal from "../portfolio/AddHoldingModal";
 import { dashboardApi } from "../../services/dashboardApi";
 
 export default function GetStartedBanner() {
-  const { data: stats } = useAsync(() => dashboardApi.getMarketStats(), []);
+  const navigate = useNavigate();
+  const [adding, setAdding] = useState(false);
+  const { data: stats } = useAsync(() => dashboardApi.getMarketStats(), [], { subscribe: onHoldingsChanged });
 
   // Only shows once the person actually has zero tracked holdings.
   if (!stats || stats.holdingsCount > 0) return null;
@@ -24,9 +30,10 @@ export default function GetStartedBanner() {
         </p>
       </div>
       <div className="dv2-getstarted-actions">
-        <button className="dv2-btn-accent" type="button">+ Add your first holding</button>
-        <button className="dv2-btn-ghost" type="button">⌕ Explore Discover</button>
+        <button className="dv2-btn-accent" type="button" onClick={() => setAdding(true)}>+ Add your first holding</button>
+        <button className="dv2-btn-ghost" type="button" onClick={() => navigate("/discover")}>⌕ Explore Discover</button>
       </div>
+      {adding && <AddHoldingModal onClose={() => setAdding(false)} />}
     </div>
   );
 }

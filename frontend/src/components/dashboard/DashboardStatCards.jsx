@@ -1,10 +1,22 @@
 import { useAsync } from "../../hooks/useAsync";
+import { onHoldingsChanged } from "../../services/holdingsEvents";
 import { dashboardApi } from "../../services/dashboardApi";
 import { formatCurrencyCompact, formatCurrencyFull } from "../../utils/formatters";
 import MiniMoodGauge from "./MiniMoodGauge";
+import { ErrorState } from "../../errors";
 
 export default function DashboardStatCards() {
-  const { data: stats } = useAsync(() => dashboardApi.getMarketStats(), []);
+  const { data: stats, error, refetch } = useAsync(() => dashboardApi.getMarketStats(), [], { subscribe: onHoldingsChanged });
+
+  if (error) {
+    return (
+      <div className="dv2-stats-grid">
+        <div className="sv2-card dv2-stat-card" style={{ gridColumn: "1 / -1" }}>
+          <ErrorState error={error} onRetry={refetch} title="Couldn't load market stats" />
+        </div>
+      </div>
+    );
+  }
 
   if (!stats) {
     return (
@@ -62,7 +74,9 @@ export default function DashboardStatCards() {
           </div>
           <MiniMoodGauge score={stats.globalSentiment} />
         </div>
-        <div className="dv2-stat-sub">{stats.marketMoodConfidence}% AI confidence</div>
+        <div className="dv2-stat-sub">
+          {stats.marketMoodConfidence != null ? `${stats.marketMoodConfidence}% AI confidence` : "No sentiment readings yet"}
+        </div>
       </div>
     </div>
   );

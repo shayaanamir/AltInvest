@@ -24,6 +24,7 @@ from routes import (
     search,
     profile,
     settings,
+    fx,
 )
 
 app = FastAPI(
@@ -58,6 +59,7 @@ app.include_router(compare.router)
 app.include_router(search.router)
 app.include_router(profile.router)
 app.include_router(settings.router)
+app.include_router(fx.router)
 
 
 def _warmup_sentiment_engine() -> None:
@@ -86,6 +88,14 @@ def on_startup():
     #    Starts 90 s after launch (after FinBERT has loaded) then loops forever.
     from routes.sentiment import _run_scheduler
     threading.Thread(target=_run_scheduler, daemon=True, name="sentiment-scheduler").start()
+
+    # 3. Daily portfolio snapshots (Dashboard 1W/1M/3M/1Y performance chart).
+    from controllers.snapshot_controller import run_snapshot_scheduler
+    threading.Thread(target=run_snapshot_scheduler, daemon=True, name="portfolio-snapshots").start()
+
+    # 4. USD exchange rates for the display-currency setting (Frankfurter / ECB), every 6 hours.
+    from controllers.fx_controller import run_fx_scheduler
+    threading.Thread(target=run_fx_scheduler, daemon=True, name="fx-rates").start()
 
 
 @app.get("/")

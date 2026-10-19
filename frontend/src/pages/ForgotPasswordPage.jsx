@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { describeError } from "../errors/errorCatalog";
 import { motion } from "framer-motion";
 import AuthLayout from "../components/auth/AuthLayout";
 import { AuthInput, AuthButton } from "../components/auth/AuthPrimitives";
@@ -26,7 +27,7 @@ export default function ForgotPasswordPage({ onNavigate }) {
             await authApi.forgotPassword(email.trim());
             setSent(true);
         } catch (err) {
-            setError(err.message);
+            setError(describeError(err).message);
         } finally {
             setLoading(false);
         }

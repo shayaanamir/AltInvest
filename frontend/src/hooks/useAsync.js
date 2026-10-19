@@ -8,15 +8,21 @@ import { useState, useEffect, useCallback, useRef } from "react";
  *
  * Usage:
  *   const { data, loading, error, refetch } = useAsync(() => sentimentApi.getMoodOverview(), []);
+ *
+ * Optional third argument: { subscribe } — a function (handler) => unsubscribe. The hook re-fetches
+ * whenever the subscription fires, e.g. { subscribe: onHoldingsChanged }.
  */
-export function useAsync(asyncFn, deps = []) {
+export function useAsync(asyncFn, deps = [], { subscribe } = {}) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const fnRef = useRef(asyncFn);
   fnRef.current = asyncFn;
 
+  const cancelPrevRef = useRef(null);
+
   const run = useCallback(() => {
+    cancelPrevRef.current?.(); // a newer request supersedes one still in flight
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -24,11 +30,18 @@ export function useAsync(asyncFn, deps = []) {
       .then((result) => { if (!cancelled) setData(result); })
       .catch((err) => { if (!cancelled) { console.error(err); setError(err); } })
       .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+    const cancel = () => { cancelled = true; };
+    cancelPrevRef.current = cancel;
+    return cancel;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 
   useEffect(() => run(), [run]);
+
+  useEffect(() => {
+    if (!subscribe) return undefined;
+    return subscribe(() => run());
+  }, [subscribe, run]);
 
   return { data, loading, error, refetch: run, setData };
 }

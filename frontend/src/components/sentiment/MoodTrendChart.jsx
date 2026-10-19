@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { ErrorState } from "../../errors";
 import { useAsync } from "../../hooks/useAsync";
 import { sentimentApi } from "../../services/sentimentApi";
 
@@ -50,7 +51,7 @@ export default function MoodTrendChart({ colors }) {
   const [hoverIdx, setHoverIdx] = useState(null);
   const containerRef = useRef(null);
 
-  const { data: series, loading } = useAsync(() => sentimentApi.getMoodTrend(scope, days), [scope, days]);
+  const { data: series, loading, error, refetch } = useAsync(() => sentimentApi.getMoodTrend(scope, days), [scope, days]);
 
   const W = 900, H = 220;
   const PAD_L = 36, PAD_R = 16, PAD_T = 16, PAD_B = 28;
@@ -165,9 +166,17 @@ export default function MoodTrendChart({ colors }) {
       </div>
 
       <div style={{ marginTop: 20, position: "relative" }}>
-        {loading || Object.keys(lines).length === 0 ? (
+        {error ? (
+          <ErrorState error={error} onRetry={refetch} title="Couldn't load the mood trend" />
+        ) : loading ? (
           <div className="sv2-muted sv2-small" style={{ height: H, display: "flex", alignItems: "center", justifyContent: "center" }}>
             Loading trend…
+          </div>
+        ) : Object.keys(lineData).length === 0 ? (
+          <div className="sv2-muted sv2-small" style={{ height: H, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
+            {scope === "crypto" || scope === "both"
+              ? "Not enough sentiment history yet. Readings are stored each time the pipeline runs."
+              : "There is no sentiment source for this market yet."}
           </div>
         ) : (
           <div
