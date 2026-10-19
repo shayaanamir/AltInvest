@@ -1,22 +1,28 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { isApiReachable, subscribeConnection } from "../../../errors/connectionStatus";
+import { getApiState, subscribeConnection } from "../../../errors/connectionStatus";
 
 // Reflects whether the app can currently reach the data service, not a claim about any exchange.
-export default function MarketStatusPill() {
-  const [live, setLive] = useState(isApiReachable);
+// "Live data" is only shown once a request has actually succeeded; before that it says so.
+const LABELS = { up: "Live data", down: "Offline", unknown: "Connecting…" };
 
-  useEffect(() => subscribeConnection(() => setLive(isApiReachable())), []);
+export default function MarketStatusPill() {
+  const [state, setState] = useState(getApiState);
+
+  useEffect(() => subscribeConnection(() => setState(getApiState())), []);
+
+  const live = state === "up";
+  const down = state === "down";
 
   return (
-    <div className="tb-status-pill" style={live ? undefined : { color: "var(--sv2-red)" }}>
+    <div className="tb-status-pill" style={down ? { color: "var(--sv2-red)" } : undefined}>
       <motion.span
         className="tb-status-dot"
-        style={live ? undefined : { background: "var(--sv2-red)" }}
+        style={down ? { background: "var(--sv2-red)" } : undefined}
         animate={{ opacity: live ? [1, 0.35, 1] : 1 }}
         transition={{ repeat: live ? Infinity : 0, duration: 2.4, ease: "easeInOut" }}
       />
-      {live ? "Live data" : "Offline"}
+      {LABELS[state]}
     </div>
   );
 }

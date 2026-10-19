@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import { API_BASE_URL } from "../config";
+import { reportApiReachable } from "../errors/connectionStatus";
 
 /**
  * useSentimentPoller
@@ -48,6 +49,7 @@ export function useSentimentPoller({ onUpdate, enabled = true } = {}) {
       const res = await fetch(`${API_BASE_URL}/sentiment`, {
         signal: AbortSignal.timeout(10_000),
       });
+      reportApiReachable(true); // the server answered, even if with an error status
       if (!res.ok) return;
 
       const data    = await res.json();
@@ -58,7 +60,8 @@ export function useSentimentPoller({ onUpdate, enabled = true } = {}) {
         onUpdateRef.current?.();
       }
     } catch {
-      // Swallow — network/timeout errors are non-fatal for a poller
+      // Non-fatal for a poller, but it must not leave the UI claiming the data is live
+      reportApiReachable(false);
     }
   }, [enabled]);
 

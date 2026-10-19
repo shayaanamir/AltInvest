@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useTheme } from "../context/ThemeContext";
 import "../styles/sentiment.css";
 import SentimentHub from "../components/sentiment/SentimentHub";
@@ -6,6 +6,7 @@ import AssetSentimentDetail from "../components/sentiment/AssetSentimentDetail";
 import { sentimentApi } from "../services/sentimentApi";
 import { useSentimentPoller } from "../hooks/useSentimentPoller";
 import { ErrorBoundary, useToast } from "../errors";
+import { getApiState, subscribeConnection } from "../errors/connectionStatus";
 
 export default function SentimentPage() {
   const { isDark } = useTheme();
@@ -14,6 +15,9 @@ export default function SentimentPage() {
   const [refreshKey, setRefreshKey]         = useState(0);
   const [refreshing, setRefreshing]         = useState(false);
   const [lastUpdated, setLastUpdated]       = useState(null);
+  const [apiState, setApiState]             = useState(getApiState);
+
+  useEffect(() => subscribeConnection(() => setApiState(getApiState())), []);
 
   const colors = isDark
     ? { green: "#3fcf8e", red: "#f0616f", arcGreen: "#2e6059", arcRed: "#6e3545", accent: "#e2825a", greyArc: "#343852", border: "rgba(255,255,255,0.08)", textSoft: "#9aa0ba", textMute: "#5b6280", purple: "#9b8cf0", teal: "#4fb4b0" }
@@ -44,9 +48,16 @@ export default function SentimentPage() {
     }
   };
 
-  const liveLabel = lastUpdated
-    ? `Updated ${lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+  const updatedAt = lastUpdated
+    ? lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     : null;
+
+  // "Live" only while the data service is answering. If it stops, say so and keep the time of
+  // the last update the user can still see.
+  const offline = apiState === "down";
+  const liveLabel = offline
+    ? (updatedAt ? `Offline · last updated ${updatedAt}` : "Offline")
+    : (updatedAt ? `Live · Updated ${updatedAt}` : null);
 
   return (
     <div className="sv2">
@@ -54,15 +65,15 @@ export default function SentimentPage() {
         {liveLabel && !selectedAsset && (
           <div style={{
             display: "flex", alignItems: "center", gap: 6,
-            fontSize: 11, color: isDark ? "#3fcf8e" : "#2f8f5b",
+            fontSize: 11, color: offline ? colors.red : (isDark ? "#3fcf8e" : "#2f8f5b"),
             marginBottom: -8, paddingLeft: 2,
           }}>
             <span style={{
               width: 7, height: 7, borderRadius: "50%",
               background: "currentColor", display: "inline-block",
-              animation: "sv2-pulse 2s ease-in-out infinite",
+              animation: offline ? "none" : "sv2-pulse 2s ease-in-out infinite",
             }} />
-            Live · {liveLabel}
+            {liveLabel}
           </div>
         )}
 

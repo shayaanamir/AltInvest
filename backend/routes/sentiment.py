@@ -33,14 +33,24 @@ router = APIRouter(tags=["Sentiment"])
 
 _CACHE_TTL_MINUTES = 20
 
-# ── Scope limiter ─────────────────────────────────────────────────────────────
-# Only these asset IDs are processed by the sentiment engine for now.
-# Expand this list when you're ready to add more assets.
-_ACTIVE_ASSETS = [
-    "btc", "eth", "sol", "bnb", "xrp",
-    "ada", "avax", "doge", "dot", "link",
-    "matic", "uni", "ltc", "atom", "near",
-]
+# ── Coverage ──────────────────────────────────────────────────────────────────
+# The assets this API serves sentiment for are exactly the ones the engine is configured
+# for (ASSETS in sentiment_engine/utils/config.py): add an asset there and it is covered
+# here. The engine is imported lazily elsewhere in this module so the backend can start
+# without it; if it isn't installed, nothing is covered.
+
+def _covered_assets() -> list:
+    try:
+        try:
+            from sentiment_engine.utils.config import ASSETS
+        except ImportError:
+            from utils.config import ASSETS
+        return list(ASSETS)
+    except Exception:
+        return []
+
+
+_ACTIVE_ASSETS = _covered_assets()
 
 
 def _engine():
@@ -110,7 +120,7 @@ _MIN_RETRY_SECONDS = 120
 # room left to serialise the response. Requests hand their pipelines to a shared pool instead
 # of running them inline, so a request giving up doesn't cancel the work.
 _REQUEST_BUDGET_SECONDS = 12
-_request_pool = ThreadPoolExecutor(max_workers=len(_ACTIVE_ASSETS), thread_name_prefix="sentiment-request")
+_request_pool = ThreadPoolExecutor(max_workers=max(1, len(_ACTIVE_ASSETS)), thread_name_prefix="sentiment-request")
 
 _UNAVAILABLE = "Sentiment could not be computed for this asset right now."
 _PENDING = "Sentiment is still being computed for this asset. Try again shortly."
@@ -338,7 +348,7 @@ def get_all_sentiment():
     Returns latest sentiment for every configured asset.
     Serves cached results from MongoDB where they are fresh; runs the pipeline for assets
     that are missing from the cache or whose cached result is stale (the same freshness
-    rule as GET /sentiment/{asset}). Adding a new asset to _ACTIVE_ASSETS never requires
+    rule as GET /sentiment/{asset}). Adding a new asset to the engine's ASSETS never requires
     a full cache flush — only the new one is run on the next request.
     """
     _engine()  # fail early with a clear error if the engine isn't installed
@@ -547,7 +557,7 @@ def _refresh_all_assets() -> None:
         except Exception as exc:
             log.error(f"[scheduler] Failed to refresh {asset_id}: {exc}")
 
-    with ThreadPoolExecutor(max_workers=len(_ACTIVE_ASSETS)) as executor:
+    with ThreadPoolExecutor(max_workers=max(1, len(_ACTIVE_ASSETS))) as executor:
         futures = {executor.submit(_run_one, a): a for a in _ACTIVE_ASSETS}
         for f in as_completed(futures):
             pass  # errors already logged inside _run_one

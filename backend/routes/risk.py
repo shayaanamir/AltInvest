@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from models.schemas import RiskResponse
-from shared.mock_data import mock_risk, SUPPORTED_ASSETS
+from shared.mock_data import mock_risk
+from utils.asset_gate import require_known_asset
 
 router = APIRouter(tags=["Risk"])
 
@@ -26,12 +27,7 @@ def get_risk(asset: str):
     Reads the latest doc from MongoDB `risk_scores`. Falls back to mock
     data if nothing's in the DB yet, or Mongo is down.
     """
-    asset = asset.upper()
-    if asset not in SUPPORTED_ASSETS:
-        raise HTTPException(
-            status_code=422,
-            detail=f"Asset '{asset}' is not supported. Supported: {list(SUPPORTED_ASSETS.keys())}"
-        )
+    asset = require_known_asset(asset)
 
     try:
         from db.queries import get_latest_risk
