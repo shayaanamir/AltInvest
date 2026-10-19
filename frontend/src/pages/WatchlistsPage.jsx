@@ -7,15 +7,12 @@ import CreateWatchlistModal from "../components/watchlists/CreateWatchlistModal.
 import "../styles/watchlists.css";
 import { formatAssetPrice } from "../utils/formatters";
 import { ErrorState, useToast } from "../errors";
+import { formatDate, useAppPreferences } from "../services/appPreferences";
 import AddHoldingModal from "../components/portfolio/AddHoldingModal";
 import CreateAlertModal from "../components/alerts/CreateAlertModal";
 
-function formatDate(iso) {
-  if (!iso) return "";
-  return new Date(iso).toISOString().slice(0, 10);
-}
-
 export default function WatchlistsPage() {
+  useAppPreferences(); // re-render when the date format changes
   const [lists, setLists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);

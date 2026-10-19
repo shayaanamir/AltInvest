@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";
-import { ThemeProvider } from "./context/ThemeContext";
+import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import "./styles/tokens.css";
 import Sidebar from "./components/layout/Sidebar";
 import Topbar from "./components/layout/Topbar";
@@ -8,7 +8,32 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import SessionExpiredModal from "./components/auth/SessionExpiredModal";
 import { ErrorBoundary, ConnectionBanner, ToastProvider } from "./errors";
 import { onSessionExpired } from "./hooks/sessionEvents";
+import { isAuthenticated } from "./hooks/useAuth";
+import { loadAppPreferences, resetAppPreferences, useAppPreferences } from "./services/appPreferences";
 import { ROUTES, BARE_PAGES, getPath, getPageName } from "./routes";
+
+// Applies the saved settings that act on the whole app: loads them once the user is signed in,
+// then sets the theme (density and date format are read from the same store).
+function PreferencesBridge() {
+  const location = useLocation();
+  const { loaded, theme } = useAppPreferences();
+  const { setTheme } = useTheme();
+
+  useEffect(() => {
+    if (isAuthenticated()) {
+      if (!loaded) loadAppPreferences().catch(() => {}); // settings are optional; defaults apply if this fails
+    } else if (loaded) {
+      resetAppPreferences();
+    }
+  }, [location.pathname, loaded]);
+
+  useEffect(() => {
+    if (theme) setTheme(theme);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [theme]);
+
+  return null;
+}
 
 function ShellRoutes() {
   const location = useLocation();
@@ -87,6 +112,7 @@ export default function App() {
     <ThemeProvider>
       <ToastProvider>
         <BrowserRouter>
+          <PreferencesBridge />
           <ShellRoutes />
         </BrowserRouter>
       </ToastProvider>

@@ -4,6 +4,7 @@ import "../styles/settingsProfile.css";
 import { clearSession } from "../hooks/useAuth";
 import { useAsync } from "../hooks/useAsync";
 import { settingsApi } from "../services/settingsApi";
+import { applySavedPreference, resetAppPreferences } from "../services/appPreferences";
 import SettingsSidebar from "../components/settings/SettingsSidebar";
 import PreferencesSection from "../components/settings/PreferencesSection";
 import AppearanceSection from "../components/settings/AppearanceSection";
@@ -48,14 +49,17 @@ export default function SettingsPage() {
     // Optimistic local update first
     setSettings((prev) => ({ ...prev, [sectionKey]: { ...prev[sectionKey], ...patch } }));
 
+    applySavedPreference(sectionKey, patch); // takes effect straight away
     settingsApi.updateSection(sectionKey, patch).catch((e) => {
       setSettings((prev) => ({ ...prev, [sectionKey]: previous })); // put the old value back
+      applySavedPreference(sectionKey, previous); // undo the live change too
       toast.error(e, { title: "Couldn't save that setting" });
     });
   };
 
   const handleLogout = () => {
     clearSession();
+    resetAppPreferences();
     navigate("/");
   };
 

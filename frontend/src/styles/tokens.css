@@ -587,3 +587,12 @@
   color: var(--sv2-accent);
   font-weight: 700;
 }
+/* ---------- density (Settings > Appearance) ---------- */
+[data-density="compact"] .sv2-card-pad { padding: 14px 16px; }
+[data-density="compact"] .sv2-card-pad-sm { padding: 10px 12px; }
+[data-density="compact"] .sv2-3col,
+[data-density="compact"] .sv2-hub-bottom,
+[data-density="compact"] .sv2-detail-grid,
+[data-density="compact"] .sv2-subgrid-2 { gap: 8px; }
+[data-density="compact"] .sv2-page { padding-top: 12px; }
+[data-density="compact"] .sv2-card { border-radius: 14px; }

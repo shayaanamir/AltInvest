@@ -1,7 +1,10 @@
+import { formatDate, useAppPreferences } from "../../services/appPreferences";
+
 export default function ProfileHeaderCard({ profile, editing, onChange }) {
+  useAppPreferences(); // re-render when the date format changes
   if (!profile) return null;
 
-  const memberSince = profile.memberSince ? new Date(profile.memberSince).toISOString().slice(0, 10) : "";
+  const memberSince = profile.memberSince ? formatDate(profile.memberSince) : "";
 
   return (
     <div className="sv2-card set-subcard prof-identity-card">

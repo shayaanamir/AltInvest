@@ -5,19 +5,62 @@ import { watchlistApi } from "../../services/watchlistApi";
 import { alertsApi } from "../../services/alertsApi";
 import { useToast } from "../../errors";
 
-// Quote a CSV cell when it holds a comma, quote or newline.
+// Quote a CSV cell when it holds a comma, quote or newline. Text starting with = + - @ would be run as
+// a formula by spreadsheets, so those get a leading apostrophe (numbers are left alone).
 const cell = (v) => {
-  const s = String(v ?? "");
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  let s = String(v ?? "");
+  if (typeof v === "string" && /^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
-function toCsv(payload) {
-  const rows = ["type,name,value"];
-  payload.cryptoHoldings.forEach((h) => rows.push(["crypto", h.symbol, h.valueUsd].map(cell).join(",")));
-  payload.nftHoldings.forEach((h) => rows.push(["nft", h.collectionName, h.valueUsd].map(cell).join(",")));
-  payload.watchlists.forEach((l) => rows.push(["watchlist", l.name, l.items.length].map(cell).join(",")));
-  payload.alerts.forEach((a) => rows.push(["alert", a.targetName || a.targetSymbol || a.targetSlug, a.status].map(cell).join(",")));
-  return rows.join("\n");
+// One section per kind of data, each with its own header row, separated by a blank line.
+function section(title, columns, records) {
+  const lines = [cell(title), columns.map(([label]) => cell(label)).join(",")];
+  records.forEach((r) => lines.push(columns.map(([, get]) => cell(get(r))).join(",")));
+  return lines.join("\n");
+}
+
+function toCsv({ cryptoHoldings, nftHoldings, watchlists, alerts }) {
+  const watchlistItems = watchlists.flatMap((l) => l.items.map((i) => ({ list: l.name, item: i })));
+  return [
+    section("Crypto holdings", [
+      ["Symbol", (h) => h.symbol],
+      ["Name", (h) => h.name],
+      ["Quantity", (h) => h.quantity],
+      ["Avg buy price (USD)", (h) => h.avgBuyPriceUsd],
+      ["Cost basis (USD)", (h) => h.costBasisUsd],
+      ["Current value (USD)", (h) => h.valueUsd],
+      ["Date added", (h) => h.dateAdded],
+    ], cryptoHoldings),
+    section("NFT holdings", [
+      ["Collection", (h) => h.collectionName],
+      ["Slug", (h) => h.collectionSlug],
+      ["Token ID", (h) => h.tokenId],
+      ["Quantity", (h) => h.quantity],
+      ["Avg buy price (ETH)", (h) => h.avgBuyPriceEth],
+      ["ETH/USD at buy", (h) => h.ethUsdRateAtBuy],
+      ["Cost basis (USD)", (h) => h.costBasisUsd],
+      ["Current value (USD)", (h) => h.valueUsd],
+      ["Date added", (h) => h.dateAdded],
+    ], nftHoldings),
+    section("Watchlists", [
+      ["Watchlist", (r) => r.list],
+      ["Type", (r) => r.item.type],
+      ["Asset", (r) => r.item.name || r.item.symbol || r.item.id],
+      ["ID", (r) => r.item.id],
+    ], watchlistItems),
+    section("Alerts", [
+      ["Target", (a) => a.targetName || a.targetSymbol || a.targetSlug],
+      ["Target type", (a) => a.targetType],
+      ["Metric", (a) => a.metricType],
+      ["Condition", (a) => a.condition],
+      ["Threshold", (a) => a.thresholdValue],
+      ["Status", (a) => a.status],
+      ["Channel", (a) => a.deliveryChannel],
+      ["Created", (a) => a.createdAt],
+      ["Last triggered", (a) => a.lastTriggeredAt],
+    ], alerts),
+  ].join("\n\n");
 }
 
 export default function DataAccountSection({ data }) {

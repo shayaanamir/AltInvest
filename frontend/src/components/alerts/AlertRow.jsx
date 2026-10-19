@@ -1,8 +1,10 @@
 import { relativeTime } from "../../utils/dateTime";
+import { formatDate, useAppPreferences } from "../../services/appPreferences";
 import { IconTrash, IconPlay, IconPause, IconPencil } from "../icons";
 import ToggleSwitch from "../shared/ToggleSwitch";
 
 export default function AlertRow({ alert, onToggle, onEdit, onDelete }) {
+  useAppPreferences(); // re-render when the date format changes
   const isPaused = alert.status === "paused";
   // The icon shows the action a click performs: pause a running alert, resume a paused one,
   // re-arm one that has already fired.
@@ -11,7 +13,7 @@ export default function AlertRow({ alert, onToggle, onEdit, onDelete }) {
   const dateLine =
     alert.status === "triggered" && alert.lastTriggeredAt
       ? `triggered ${relativeTime(alert.lastTriggeredAt)}`
-      : `created ${(alert.createdAt || "").slice(0, 10)}`;
+      : `created ${formatDate(alert.createdAt)}`;
 
   return (
     <div className="alr-row">
