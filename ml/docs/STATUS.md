@@ -1,8 +1,59 @@
 # STATUS
-Current phase: 1b DONE for ETH and SOL (2026-10-18).
-Next: Phase 2 (features, labels, splits). Not started; waiting on the user's go-ahead.
-Done: branch ml-v2, v1 archived at tag archive/ml-v1, docs, Phase 0 scaffold, Phase 1 (BTC), Phase 1b (ETH, SOL).
+Current phase: 2 DONE for BTC, ETH, SOL (2026-10-19). No models built.
+Next: Phase 3 (baselines + metric functions). Not started; waiting on the user's go-ahead.
+Done: branch ml-v2, v1 archived at tag archive/ml-v1, docs, Phase 0 scaffold, Phase 1 (BTC), Phase 1b (ETH, SOL), Phase 2.
 Blocked: nothing.
+
+## Phase 2 (features, labels, splits): what ran (from repo root, 2026-10-19)
+- Docs: D18 (split n after warm-up) and D19 (train-only thresholds) added to DECISIONS.md.
+- config.py: added `WARMUP_ROWS = 30`, `DIRECTION_FLAT_PERCENTILE = 40`, `RISK_PERCENTILES = (33, 67)`.
+- New modules:
+  - `ml/features/features.py`: `build_features(df)`, 10 trailing-window columns, first 30 rows dropped. Refuses data with gaps (row windows equal day windows only without gaps).
+  - `ml/labels/labels.py`: `fwd_return_30d`, `fwd_vol_30d`, `build_labels`, `fit_thresholds` (D19), `apply_thresholds`. Direction: UP if r > t, DOWN if r < -t, else FLAT. Risk: low if vol <= p33, high if vol > p67, else medium.
+  - `ml/evaluation/splits.py`: `make_splits(n)` (D18, exact fractions so 0.70n has no float error), `split_dates`.
+  - `ml/data/dataset_summary.py`: refuses an asset whose validation report did not pass; writes `ml/reports/data/{asset}_dataset_summary.json`.
+- `ml/tests/test_leakage.py`: required tests a-g plus thresholds-to-classes, warm-up/no-NaN and gap-refusal tests.
+- `python -m pytest ml` -> `33 passed`.
+  - First run: 1 failure in test d at n=200. Not leakage: n=200 gives b2-30 = b1 = 140, so validation is empty and `make_splits` correctly raises. Moved n=200 to the "too small raises" test and used n=250 in test d. No assertion was weakened.
+- `python -m ml.data.dataset_summary --asset btc|eth|sol` -> exit 0 for all three; `feature_nan_count` 0.
+
+| | BTC | ETH | SOL |
+|---|---|---|---|
+| feature rows n | 3319 | 3319 | 2229 |
+| train rows (dates) | 2293 (2017-09-16 to 2023-12-26) | 2293 (same) | 1530 (2020-09-10 to 2024-11-17) |
+| validation rows (dates) | 468 (2024-01-26 to 2025-05-07) | 468 (same) | 304 (2024-12-18 to 2025-10-17) |
+| test rows / labelled (dates) | 498 / 468 (2025-06-07 to 2026-10-17) | 498 / 468 (same) | 335 / 305 (2025-11-17 to 2026-10-17) |
+| direction flat threshold \|r\| | 0.108207 | 0.134363 | 0.172938 |
+| risk vol thresholds p33 / p67 | 0.027831 / 0.037694 | 0.035513 / 0.049568 | 0.04593 / 0.061528 |
+
+- Finding to carry into Phase 3: class balance shifts a lot after train, because recent markets were calmer than 2017-2023. Example: BTC test risk is 92.74% low, 6.2% high; SOL test risk has 0.0% high (all from `{asset}_dataset_summary.json`). This is expected with train-only thresholds (D19), not a bug, but accuracy on test must be compared against a majority-class baseline.
+
+## How to verify Phase 2 yourself (PowerShell, from the repo root)
+```powershell
+Set-Location C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest
+
+# 1. All tests, then only the leakage tests (offline, hand-made fixtures)
+python -m pytest ml -q
+python -m pytest ml/tests/test_leakage.py -v
+
+# 2. Re-build the summaries (needs ml/data/raw/*.csv; rewrites generated_at only)
+foreach ($a in 'btc','eth','sol') { python -m ml.data.dataset_summary --asset $a | Out-Null; "$a exit: $LASTEXITCODE" }
+
+# 3. Key numbers from the tracked reports
+python -c "import json; [print(a, (d:=json.load(open(f'ml/reports/data/{a}_dataset_summary.json')))['n_feature_rows'], d['feature_nan_count'], {k: (s['rows'], s['labelled_rows'], s['first_date'][:10]) for k, s in d['splits'].items()}) for a in ('btc','eth','sol')]"
+
+# 4. The split rule by hand (D18): n=3319 -> b1=2323, b2=2821
+python -c "from ml.evaluation.splits import make_splits; print(make_splits(3319))"
+```
+Expected (observed 2026-10-19):
+1. `33 passed`; the leakage file shows 23 passed test cases.
+2. `btc exit: 0`, `eth exit: 0`, `sol exit: 0`.
+3. Output:
+   - `btc 3319 0 {'train': (2293, 2293, '2017-09-16'), 'validation': (468, 468, '2024-01-26'), 'test': (498, 468, '2025-06-07')}`
+   - `eth 3319 0 {'train': (2293, 2293, '2017-09-16'), 'validation': (468, 468, '2024-01-26'), 'test': (498, 468, '2025-06-07')}`
+   - `sol 2229 0 {'train': (1530, 1530, '2020-09-10'), 'validation': (304, 304, '2024-12-18'), 'test': (335, 305, '2025-11-17')}`
+4. `{'train': range(0, 2293), 'validation': range(2323, 2791), 'test': range(2821, 3319)}`
+- If you re-fetch raw data later, n grows and the test end date moves; thresholds and balances shift slightly.
 
 ## Phase 1b (ETH, SOL): what ran (from repo root, 2026-10-18)
 - No code changed: fetch.py, loader.py and validate.py already take `--asset`.

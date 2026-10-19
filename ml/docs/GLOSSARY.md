@@ -33,7 +33,19 @@ Terms marked *(not used yet)* appear in the plan docs but no code uses them so f
 - **Feature**: an input to a model, built only from the past.
 - **Leakage**: information from the future getting into training or features, which makes results look better than they could be in real use.
 - **Train / validation / test split**: three chronological pieces of the data. Train teaches the model, validation is for choosing between options, test is a final exam used once.
-- **Embargo**: a gap (30 days) left between splits so labels, which look 30 days ahead, in one piece cannot overlap the next piece (D16).
+- **Embargo**: a gap (30 days) left between splits so labels, which look 30 days ahead, in one piece cannot overlap the next piece (D16, D18).
+- **Warm-up rows**: the first 30 rows, dropped because their 30-day features cannot be computed yet (D18).
+- **Trailing window**: a calculation over the last k rows up to and including today, for example a 7-day moving average. It never uses future rows.
+- **Moving average (MA7, MA30)**: the average close over the last 7 or 30 days.
+- **MA cross (`ma_cross`)**: +1 if close > MA7 > MA30 (uptrend), -1 if close < MA7 < MA30 (downtrend), else 0.
+- **Volume ratio**: ln(today's volume / average volume of the last 30 days). Above 0 means busier than usual.
+- **High-low range**: ln(high / low) of a day, a simple measure of how much the price moved within it.
+- **Forward return / forward volatility**: the log return, or the std of daily log returns, over the next 30 days. These are labels, so they use the future.
+- **Percentile**: the value below which a given percent of the data falls. The 40th percentile is bigger than 40% of the values.
+- **Percentile threshold**: a cut-off set at a percentile of the train data, for example "FLAT if the move is smaller than the 40th percentile of train moves" (D19).
+- **Terciles**: the 33rd and 67th percentiles, which cut data into three roughly equal groups (low, medium, high risk) (D9, D19).
+- **Class balance**: the percent of rows in each class. Very unequal balance makes accuracy misleading.
+- **Majority-class baseline**: always predicting the most common class. Any model must beat it.
 - **Baseline**: a deliberately simple predictor (for example "price stays the same"). A model is only worth shipping if it beats it.
 - **Walk-forward**: testing by repeatedly training on the past and predicting the next stretch, moving forward in time. *(not used yet)*
 - **Non-overlapping windows**: evaluating 30-day periods that do not share days, because daily steps with a 30-day horizon overlap 29/30 (docs/LEARNINGS.md). *(not used yet)*

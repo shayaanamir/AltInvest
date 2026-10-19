@@ -15,5 +15,12 @@ SPLIT_FRACTIONS = {"train": 0.70, "validation": 0.15, "test": 0.15}
 # Gap between consecutive splits, equal to the horizon, cut from the end of the earlier split (D16).
 EMBARGO_DAYS = HORIZON_DAYS
 
+# Rows dropped at the start of the feature table: the longest trailing window (30 bars) plus one (D18).
+WARMUP_ROWS = 30
+
+# Label thresholds, fitted on train only (D19). Percentiles in 0-100.
+DIRECTION_FLAT_PERCENTILE = 40          # of |fwd_return_30d|
+RISK_PERCENTILES = (33, 67)             # of fwd_vol_30d
+
 # Annualisation for Sharpe and volatility: sqrt(365) (docs/EVALUATION.md rule 5).
 ANNUALISATION_DAYS = 365
