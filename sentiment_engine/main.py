@@ -114,7 +114,10 @@ Examples:
     # exactly once here and is reused for every subsequent asset in this process.
     # When running --asset all, this saves N-1 model load cycles.
     logger.info("Warming up NLP models (loads once, reused for all assets)...")
-    warmup_pipeline()
+    if warmup_pipeline():
+        logger.info("NLP models warmed up.")
+    else:
+        logger.warning("FinBERT failed to load; articles will be scored with VADER only.")
 
     if asset == "all":
         results = {}

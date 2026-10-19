@@ -335,6 +335,7 @@ export const sentimentApi = {
       dataQuality: {
         cmcKeyMissing: !!record.dataQuality.cmc_key_missing,
         cmcFallback: !!record.dataQuality.cmc_fallback,
+        finbertUnavailable: !!record.dataQuality.finbert_unavailable,
       },
       lastUpdated: record.lastUpdated,
     };

@@ -15,6 +15,11 @@ export default function WhatWeReadList({ detail, colors }) {
   return (
     <div className="sv2-card sv2-card-pad">
       <div className="sv2-card-title" style={{ marginBottom: 8 }}>What we read</div>
+      {detail.dataQuality?.finbertUnavailable && (
+        <div className="sv2-small sv2-muted sv2-mb-16">
+          The FinBERT model wasn't available for some or all of these articles, so their scores come from VADER alone.
+        </div>
+      )}
 
       {visible.map((h, i) => (
         <div key={i} className="sv2-news-item">

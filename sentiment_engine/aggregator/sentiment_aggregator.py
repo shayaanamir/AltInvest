@@ -114,6 +114,19 @@ def _extract_top_headlines(articles: list[dict], n: int = 5) -> list[dict]:
     ]
 
 
+def _scoring_source(articles: list[dict]) -> tuple[str, bool]:
+    """
+    Describes which models actually scored the articles, so the label never claims
+    FinBERT when it didn't run. Returns (source label, finbert_unavailable).
+    """
+    with_finbert = sum(1 for a in articles if a.get("nlp_models") == "vader+finbert")
+    if with_finbert == len(articles):
+        return "Ensemble (VADER + FinBERT)", False
+    if with_finbert == 0:
+        return "VADER only (FinBERT unavailable)", True
+    return "Ensemble (VADER + FinBERT, partial)", True
+
+
 def _round_or_none(value: Optional[float]) -> Optional[float]:
     return round(value, 4) if value is not None else None
 
@@ -195,6 +208,7 @@ def run_pipeline(
     trend = _detect_trend(final_score, history or [])
 
     # ── Assemble output ───────────────────────────────────────────────────────
+    source, finbert_unavailable = _scoring_source(scored_articles)
     quote_fallback  = bool(cmc_data.get("quote", {}).get("is_fallback", False))
     global_fallback = bool(cmc_data.get("global", {}).get("is_fallback", False))
 
@@ -202,6 +216,7 @@ def run_pipeline(
         # Core contract fields (what Person B needs)
         "asset_id":        asset_id,
         "sentiment_score": final_score,          # 0.0 – 1.0
+        "source":          source,
         "confidence":      volume_metrics["confidence"],
         "confidence_label": volume_metrics["confidence_label"],
         "signal_strength": volume_metrics["signal_strength"],
@@ -243,6 +258,7 @@ def run_pipeline(
             "global_fallback":   global_fallback,
             "trending_fallback": cmc_data.get("trending_fallback", False),
             "cmc_key_missing":   cmc_data.get("key_missing", False),
+            "finbert_unavailable": finbert_unavailable,
         },
     }
 

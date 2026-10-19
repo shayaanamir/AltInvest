@@ -60,6 +60,7 @@ class DataQuality(BaseModel):
     global_fallback: Optional[bool] = None
     trending_fallback: Optional[bool] = None
     cmc_key_missing: Optional[bool] = None
+    finbert_unavailable: Optional[bool] = None
     reason: Optional[str] = None
 
 

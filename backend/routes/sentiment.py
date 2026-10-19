@@ -134,7 +134,8 @@ def _map_sentiment(result: dict) -> dict:
     return {
         "asset": (result.get("asset_id") or result.get("asset") or "").upper(),
         "sentiment_score": result.get("sentiment_score") or 0.0,
-        "source": result.get("source") or "Ensemble (VADER + FinBERT)",
+        # The engine states which models scored the articles; don't claim FinBERT for records that don't say.
+        "source": result.get("source") or "Sentiment engine",
         "post_count": result.get("article_count") or result.get("post_count") or 0,
         "timestamp": result.get("last_updated") or result.get("timestamp") or "",
         "confidence": result.get("confidence"),

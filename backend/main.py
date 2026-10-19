@@ -71,9 +71,14 @@ def _warmup_sentiment_engine() -> None:
     guards still handle a missing/broken engine at request time.
     """
     try:
-        from sentiment_engine.nlp.finbert_scorer import warmup_pipeline
-        warmup_pipeline()
-        print("[startup] Sentiment engine (FinBERT) warmed up successfully.")
+        from sentiment_engine.nlp.finbert_scorer import warmup_pipeline, get_load_error
+        if warmup_pipeline():
+            print("[startup] Sentiment engine (FinBERT) warmed up successfully.")
+        else:
+            print(
+                f"[startup] FinBERT failed to load ({get_load_error()}); "
+                "sentiment will be scored with VADER only until it loads."
+            )
     except Exception as exc:
         print(f"[startup] Sentiment engine warmup skipped/failed: {exc}")
 
