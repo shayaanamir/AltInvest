@@ -25,7 +25,7 @@ from models.schemas import SentimentResponse
 
 router = APIRouter(tags=["Sentiment"])
 
-_CACHE_TTL_MINUTES = 15
+_CACHE_TTL_MINUTES = 20
 
 # ── Scope limiter ─────────────────────────────────────────────────────────────
 # Only these asset IDs are processed by the sentiment engine for now.
@@ -263,9 +263,9 @@ def refresh_sentiment(asset: str):
 
 # ── Background scheduled refresh ───────────────────────────────────────────────
 
-# Pipeline refresh interval — every 2 minutes, well inside the 15 min cache
+# Pipeline refresh interval — every 15 minutes, well inside the 20 min cache
 # TTL, so a user hitting /sentiment always gets data that is fresh.
-_REFRESH_INTERVAL_SECONDS = 2 * 60
+_REFRESH_INTERVAL_SECONDS = 15 * 60
 
 
 def _refresh_all_assets() -> None:

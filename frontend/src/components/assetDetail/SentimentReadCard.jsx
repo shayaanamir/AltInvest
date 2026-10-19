@@ -6,8 +6,8 @@ export default function SentimentReadCard({ sentimentSnippet }) {
   if (!sentimentSnippet) return null;
 
   const { score, label, confidence } = sentimentSnippet;
-  const tone = score > 0.1 ? "positive" : score < -0.1 ? "negative" : "neutral";
-  const formatted = (score >= 0 ? "+" : "") + score.toFixed(2);
+  const tone = score != null ? (score > 0.1 ? "positive" : score < -0.1 ? "negative" : "neutral") : "neutral";
+  const formatted = score != null ? `${score >= 0 ? "+" : ""}${Number(score).toFixed(2)}` : "—";
 
   return (
     <div className="sv2-card adt-panel-card">

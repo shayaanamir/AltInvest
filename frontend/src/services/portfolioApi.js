@@ -44,11 +44,15 @@ function countSignals() {
 // ── real-data mappers ───────────────────────────────────────────────────────
 
 function assetMetaFor(symbol) {
-  return assetsData.assets.find((a) => a.symbol === symbol);
+  if (!symbol) return undefined;
+  const s = String(symbol).trim().toUpperCase();
+  return assetsData.assets.find((a) => (a.symbol || "").trim().toUpperCase() === s);
 }
 
 function nftMetaFor(slug) {
-  return nftCollectionsData.collections.find((c) => c.slug === slug);
+  if (!slug) return undefined;
+  const s = String(slug).trim().toLowerCase();
+  return nftCollectionsData.collections.find((c) => (c.slug || "").trim().toLowerCase() === s);
 }
 
 function mapCryptoHolding(h) {
@@ -230,13 +234,22 @@ export const portfolioApi = {
         }
       });
 
+      const suggestions = [];
+      if (holdings.length === 0) {
+        suggestions.push("No holdings yet — add assets to your portfolio to view risk, sentiment, and AI signal breakdown.");
+      } else if (cryptoHoldings.length === 0) {
+        suggestions.push("Only NFT holdings detected — add crypto assets to compute risk volatility and sentiment exposure.");
+      } else {
+        suggestions.push(
+          "Portfolio intelligence is computed from held-asset metadata across your positions.",
+        );
+      }
+
       return {
         aggregateRiskScore: riskCount ? Math.round(riskSum / riskCount) : null,
         sentimentExposure: sentimentCount ? round2(sentimentSum / sentimentCount) : null,
         signalMix,
-        suggestions: [
-          "Portfolio intelligence (rebalancing suggestions) isn't computed server-side yet — this is a client-side approximation from held-asset metadata.",
-        ],
+        suggestions,
         concentrated: false,
       };
     })();

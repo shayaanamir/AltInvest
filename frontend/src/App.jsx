@@ -6,6 +6,7 @@ import Sidebar from "./components/layout/Sidebar";
 import Topbar from "./components/layout/Topbar";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import SessionExpiredModal from "./components/auth/SessionExpiredModal";
+import ErrorBoundary from "./components/shared/ErrorBoundary";
 import { onSessionExpired } from "./hooks/sessionEvents";
 import { ROUTES, BARE_PAGES, getPath, getPageName } from "./routes";
 
@@ -56,12 +57,18 @@ function ShellRoutes() {
     </Routes>
   );
 
-  const shell = isBare ? pageContent : (
+  const wrappedPageContent = (
+    <ErrorBoundary key={location.pathname}>
+      {pageContent}
+    </ErrorBoundary>
+  );
+
+  const shell = isBare ? wrappedPageContent : (
     <div className="sv2" style={{ display: "flex", height: "100vh", width: "100vw", background: "var(--sv2-bg)", fontFamily: "'DM Sans','Segoe UI',sans-serif", color: "var(--sv2-text)", overflow: "hidden", transition: "background 0.25s, color 0.25s" }}>
       <Sidebar activePage={activePage} onNavigate={navigate} />
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--sv2-bg)", transition: "background 0.25s" }}>
         <Topbar />
-        <div style={{ flex: 1, overflow: "auto", padding: "40px 40px 20px" }}>{pageContent}</div>
+        <div style={{ flex: 1, overflow: "auto", padding: "40px 40px 20px" }}>{wrappedPageContent}</div>
       </div>
     </div>
   );

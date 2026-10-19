@@ -45,8 +45,10 @@ export default function AssetDetailHeader({ detail, switchable, onBack, onSwitch
           <span className="sv2-asset-price" style={{ marginLeft: 12 }}>
             {formatAssetPrice(detail.price)}
           </span>
-          <span className={`sv2-small sv2-bold`} style={{ color: detail.priceChangePct >= 0 ? "var(--sv2-green)" : "var(--sv2-red)" }}>
-            {detail.priceChangePct >= 0 ? "↗" : "↘"} {Math.abs(detail.priceChangePct).toFixed(2)}% price, 24h
+          <span className={`sv2-small sv2-bold`} style={{ color: (detail.priceChangePct ?? 0) >= 0 ? "var(--sv2-green)" : "var(--sv2-red)" }}>
+            {detail.priceChangePct != null
+              ? `${detail.priceChangePct >= 0 ? "↗" : "↘"} ${Math.abs(Number(detail.priceChangePct)).toFixed(2)}% price, 24h`
+              : "—"}
           </span>
         </div>
 

@@ -1,6 +1,9 @@
 export default function AssetReadCard({ detail, colors }) {
-  const scoreColor = detail.score >= 58 ? colors.green : detail.score >= 45 ? colors.accent : colors.red;
-  const formattedScore = (detail.sentimentScore >= 0 ? "+" : "") + detail.sentimentScore.toFixed(2);
+  const score = detail?.score ?? 50;
+  const scoreColor = score >= 58 ? colors.green : score >= 45 ? colors.accent : colors.red;
+  const formattedScore = detail?.sentimentScore != null
+    ? `${detail.sentimentScore >= 0 ? "+" : ""}${Number(detail.sentimentScore).toFixed(2)}`
+    : "—";
 
   return (
     <div className="sv2-card sv2-card-pad">

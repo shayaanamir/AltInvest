@@ -6,7 +6,8 @@ const RING_R = 30;
 const RING_CIRC = 2 * Math.PI * RING_R;
 
 function DiversificationRing({ score, color, track }) {
-  const pct = Math.max(0, Math.min(100, score));
+  const safeScore = score != null && !Number.isNaN(score) ? score : 0;
+  const pct = Math.max(0, Math.min(100, safeScore));
   const dash = (pct / 100) * RING_CIRC;
   return (
     <svg width="76" height="76" viewBox="0 0 76 76">
@@ -18,7 +19,7 @@ function DiversificationRing({ score, color, track }) {
         transform="rotate(-90 38 38)"
       />
       <text x="38" y="35" textAnchor="middle" fontSize="18" fontWeight="800" fill="currentColor">
-        {Math.round(score)}
+        {Math.round(safeScore)}
       </text>
       <text x="38" y="49" textAnchor="middle" fontSize="7" fontWeight="700" letterSpacing="0.06em" fill="currentColor" opacity="0.55">
         SCORE
@@ -68,9 +69,9 @@ export default function PortfolioStats() {
         </div>
         <div className="pv2-diversification-text">
           <div className="dv2-stat-label">Diversification</div>
-          <div className="pv2-diversification-title">{summary.diversificationLabel}</div>
+          <div className="pv2-diversification-title">{summary.diversificationLabel || "—"}</div>
           <div className={`pv2-diversification-note ${summary.needsRebalancing ? "warn" : ""}`}>
-            {summary.rebalanceNote}
+            {summary.rebalanceNote || summary.balancedNote || ""}
           </div>
         </div>
       </div>
