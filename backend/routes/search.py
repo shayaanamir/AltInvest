@@ -11,6 +11,7 @@ from typing import Optional
 
 from bson import ObjectId
 from fastapi import APIRouter, Header, HTTPException, Query
+from utils.http_errors import db_unavailable
 
 from auth.security import decode_access_token
 from models.schemas import SearchResults
@@ -50,7 +51,7 @@ def search(
     try:
         results = search_all(q.strip(), limit=limit)
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=f"Unable to reach the database: {exc}")
+        raise db_unavailable(exc)
 
     user_id = _optional_user_id(authorization)
     if user_id:

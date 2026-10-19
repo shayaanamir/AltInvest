@@ -11,6 +11,7 @@ from typing import Optional
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Query
+from utils.http_errors import db_unavailable
 
 from auth.dependencies import get_optional_user_id
 from controllers.market_controller import build_crypto_items, build_nft_items
@@ -65,7 +66,7 @@ def compare(
         crypto = {i["id"]: i for i in build_crypto_items(user_id, with_sparklines=False)} if asset_symbols else {}
         nfts = {i["id"]: i for i in build_nft_items(user_id)} if nft_slugs else {}
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=f"Unable to reach the database: {exc}")
+        raise db_unavailable(exc)
 
     items = []
     for sym in asset_symbols:

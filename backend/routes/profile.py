@@ -9,6 +9,7 @@ import path_setup  # noqa: F401
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException
+from utils.http_errors import db_unavailable
 
 from auth.dependencies import get_current_user_id
 from models.schemas import ProfileOut, ProfileUpdate
@@ -45,7 +46,7 @@ def get_profile(user_id: ObjectId = Depends(get_current_user_id)):
     try:
         user = get_user_by_id(str(user_id))
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=f"Unable to reach the database: {exc}")
+        raise db_unavailable(exc)
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
@@ -72,6 +73,6 @@ def patch_profile(payload: ProfileUpdate, user_id: ObjectId = Depends(get_curren
         update_user(user_id, update)
         user = get_user_by_id(str(user_id))
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=f"Unable to reach the database: {exc}")
+        raise db_unavailable(exc)
 
     return _serialize_profile(user, user_id)

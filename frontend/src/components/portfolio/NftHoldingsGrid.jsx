@@ -1,17 +1,20 @@
 import { useAsync } from "../../hooks/useAsync";
 import { portfolioApi } from "../../services/portfolioApi";
+import { ErrorState } from "../../errors";
 import { formatPct } from "../../utils/formatters";
 import NftArtPlaceholder from "./NftArtPlaceholder";
 
 export default function NftHoldingsGrid() {
-  const { data: holdings } = useAsync(() => portfolioApi.getNftHoldings(), []);
+  const { data: holdings, error, refetch } = useAsync(() => portfolioApi.getNftHoldings(), []);
 
   return (
     <div className="sv2-card sv2-card-pad" style={{ marginTop: 10 }}>
       <div className="sv2-card-title">NFT holdings</div>
       <div className="sv2-card-sub" style={{ marginBottom: 14 }}>Valued against current collection floor</div>
 
-      {!holdings ? (
+      {error ? (
+        <ErrorState error={error} onRetry={refetch} title="Couldn't load NFT holdings" />
+      ) : !holdings ? (
         <div className="sv2-muted sv2-small" style={{ padding: "24px 0" }}>Loading…</div>
       ) : holdings.length === 0 ? (
         <div className="sv2-muted sv2-small" style={{ padding: "24px 0" }}>No NFTs in this portfolio yet.</div>

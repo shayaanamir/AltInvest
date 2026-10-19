@@ -6,9 +6,11 @@ import AssetSentimentDetail from "../components/sentiment/AssetSentimentDetail";
 import { sentimentApi } from "../services/sentimentApi";
 import { useSentimentPoller } from "../hooks/useSentimentPoller";
 import { USE_MOCK } from "../config";
+import { ErrorBoundary, useToast } from "../errors";
 
 export default function SentimentPage() {
   const { isDark } = useTheme();
+  const toast = useToast();
   const [selectedAsset, setSelectedAsset]   = useState(null);
   const [refreshKey, setRefreshKey]         = useState(0);
   const [refreshing, setRefreshing]         = useState(false);
@@ -34,11 +36,11 @@ export default function SentimentPage() {
     setRefreshing(true);
     try {
       await sentimentApi.refreshAllActive();
-      setRefreshKey((prev) => prev + 1);
       setLastUpdated(new Date());
     } catch (e) {
-      console.error("Pipeline refresh failed:", e);
+      toast.error(e, { title: "Couldn't refresh the sentiment pipeline" });
     } finally {
+      setRefreshKey((prev) => prev + 1); // reload whatever did update, even after a partial failure
       setRefreshing(false);
     }
   };
@@ -65,6 +67,7 @@ export default function SentimentPage() {
           </div>
         )}
 
+        <ErrorBoundary variant="section" label="Sentiment" resetKey={selectedAsset}>
         {selectedAsset ? (
           <AssetSentimentDetail
             assetId={selectedAsset}
@@ -81,7 +84,8 @@ export default function SentimentPage() {
             refreshing={refreshing}
           />
         )}
+        </ErrorBoundary>
       </div>
     </div>
   );
-}
+}

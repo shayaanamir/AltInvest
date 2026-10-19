@@ -9,6 +9,7 @@ import path_setup  # noqa: F401
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException
+from utils.http_errors import db_unavailable
 
 from auth.dependencies import get_current_user_id
 from models.schemas import UserSettingsOut, SettingsSectionUpdate
@@ -26,7 +27,7 @@ def get_settings(user_id: ObjectId = Depends(get_current_user_id)):
     try:
         settings = get_user_settings(user_id)
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=f"Unable to reach the database: {exc}")
+        raise db_unavailable(exc)
 
     if not settings:
         raise HTTPException(status_code=404, detail="Settings not found for this user.")
@@ -49,6 +50,6 @@ def patch_settings_section(
         update_user_settings(user_id, section, payload)
         settings = get_user_settings(user_id)
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=f"Unable to reach the database: {exc}")
+        raise db_unavailable(exc)
 
     return {**settings, "user_id": str(user_id)}

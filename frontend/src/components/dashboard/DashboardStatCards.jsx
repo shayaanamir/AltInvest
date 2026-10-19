@@ -2,15 +2,16 @@ import { useAsync } from "../../hooks/useAsync";
 import { dashboardApi } from "../../services/dashboardApi";
 import { formatCurrencyCompact, formatCurrencyFull } from "../../utils/formatters";
 import MiniMoodGauge from "./MiniMoodGauge";
+import { ErrorState } from "../../errors";
 
 export default function DashboardStatCards() {
-  const { data: stats, error } = useAsync(() => dashboardApi.getMarketStats(), []);
+  const { data: stats, error, refetch } = useAsync(() => dashboardApi.getMarketStats(), []);
 
   if (error) {
     return (
       <div className="dv2-stats-grid">
-        <div className="sv2-card dv2-stat-card sv2-muted sv2-small" style={{ gridColumn: "1 / -1" }}>
-          Couldn't load market stats: {error.message}
+        <div className="sv2-card dv2-stat-card" style={{ gridColumn: "1 / -1" }}>
+          <ErrorState error={error} onRetry={refetch} title="Couldn't load market stats" />
         </div>
       </div>
     );

@@ -7,22 +7,23 @@ import AssetAllocation from "../components/portfolio/AssetAllocation";
 import CryptoHoldingsTable from "../components/portfolio/CryptoHoldingsTable";
 import NftHoldingsGrid from "../components/portfolio/NftHoldingsGrid";
 import PortfolioIntelligence from "../components/portfolio/PortfolioIntelligence";
+import { ErrorBoundary } from "../errors";
 
 export default function PortfolioPage() {
   return (
     <div className="sv2">
       <div className="sv2-page">
         <PortfolioHeader />
-        <PortfolioStats />
+        <ErrorBoundary variant="section" label="Portfolio summary"><PortfolioStats /></ErrorBoundary>
 
         <div className="dv2-main-grid" style={{ marginTop: 14 }}>
-          <PerformanceHistory />
-          <AssetAllocation />
+          <ErrorBoundary variant="section" label="Performance history"><PerformanceHistory /></ErrorBoundary>
+          <ErrorBoundary variant="section" label="Asset allocation"><AssetAllocation /></ErrorBoundary>
         </div>
 
-        <CryptoHoldingsTable />
-        <NftHoldingsGrid />
-        <PortfolioIntelligence />
+        <ErrorBoundary variant="section" label="Holdings"><CryptoHoldingsTable /></ErrorBoundary>
+        <ErrorBoundary variant="section" label="NFT holdings"><NftHoldingsGrid /></ErrorBoundary>
+        <ErrorBoundary variant="section" label="Portfolio intelligence"><PortfolioIntelligence /></ErrorBoundary>
       </div>
     </div>
   );

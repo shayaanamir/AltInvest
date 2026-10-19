@@ -5,10 +5,12 @@ import { formatAssetPrice, formatPct } from "../../utils/formatters";
 import { getAaiTierColor } from "../../utils/scoring";
 import AssetAvatar from "../shared/AssetAvatar";
 import { IconPlus, IconPencil, IconTrash, IconBell } from "../icons";
+import { ErrorState, useToast } from "../../errors";
 
 export default function CryptoHoldingsTable() {
   const navigate = useNavigate();
-  const { data: holdings, refetch } = useAsync(() => portfolioApi.getCryptoHoldings(), []);
+  const toast = useToast();
+  const { data: holdings, error, refetch } = useAsync(() => portfolioApi.getCryptoHoldings(), []);
 
   // Minimal wiring until a proper "Add holding" modal exists — prompts for
   // the three required fields and posts to POST /portfolio/holdings.
@@ -30,8 +32,7 @@ export default function CryptoHoldingsTable() {
       });
       refetch();
     } catch (e) {
-      console.error("Failed to add holding:", e);
-      window.alert(e.message || "Failed to add holding");
+      toast.error(e, { title: "Couldn't add holding" });
     }
   };
 
@@ -58,7 +59,9 @@ export default function CryptoHoldingsTable() {
           <span style={{ textAlign: "right" }}>Manage</span>
         </div>
 
-        {!holdings ? (
+        {error ? (
+          <ErrorState error={error} onRetry={refetch} title="Couldn't load your holdings" />
+        ) : !holdings ? (
           <div className="sv2-muted sv2-small sv2-mt-12">Loading holdings…</div>
         ) : holdings.length === 0 ? (
           <div className="sv2-muted sv2-small sv2-mt-12">No holdings yet — add your first one above.</div>
@@ -98,8 +101,12 @@ export default function CryptoHoldingsTable() {
                     onClick={async () => {
                       if (!h.id) return;
                       if (!window.confirm(`Remove ${h.symbol} from your portfolio?`)) return;
-                      await portfolioApi.removeHolding(h.id);
-                      refetch();
+                      try {
+                        await portfolioApi.removeHolding(h.id);
+                        refetch();
+                      } catch (e) {
+                        toast.error(e, { title: `Couldn't remove ${h.symbol}` });
+                      }
                     }}
                   >
                     <IconTrash size={13} />

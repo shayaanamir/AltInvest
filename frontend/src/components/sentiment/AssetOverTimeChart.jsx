@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { ErrorState } from "../../errors";
 import { useAsync } from "../../hooks/useAsync";
 import { sentimentApi } from "../../services/sentimentApi";
 
@@ -23,7 +24,7 @@ export default function AssetOverTimeChart({ assetId, trend, colors }) {
   const [hoverIdx, setHoverIdx] = useState(null);
   const containerRef = useRef(null);
 
-  const { data: rawSeries, loading } = useAsync(() => sentimentApi.getAssetOverTime(assetId, range), [assetId, range]);
+  const { data: rawSeries, loading, error, refetch } = useAsync(() => sentimentApi.getAssetOverTime(assetId, range), [assetId, range]);
   const series = rawSeries || [];
 
   const W = 420, H = 170;
@@ -95,6 +96,8 @@ export default function AssetOverTimeChart({ assetId, trend, colors }) {
       <div className="sv2-mt-8" style={{ position: "relative" }}>
         {loading ? (
           <div className="sv2-muted sv2-small" style={{ height: H, display: "flex", alignItems: "center", justifyContent: "center" }}>Loading…</div>
+        ) : error ? (
+          <ErrorState error={error} onRetry={refetch} title="Couldn't load sentiment history" />
         ) : (
           <div
             ref={containerRef}

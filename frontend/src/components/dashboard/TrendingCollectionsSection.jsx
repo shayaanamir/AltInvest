@@ -3,9 +3,10 @@ import { useAsync } from "../../hooks/useAsync";
 import { dashboardApi } from "../../services/dashboardApi";
 import { formatPct } from "../../utils/formatters";
 import { getAaiTierClass } from "../../utils/scoring";
+import { ErrorState } from "../../errors";
 
 export default function TrendingCollectionsSection() {
-  const { data: collections, error } = useAsync(() => dashboardApi.getTrendingCollections(), []);
+  const { data: collections, error, refetch } = useAsync(() => dashboardApi.getTrendingCollections(), []);
   const navigate = useNavigate();
 
   return (
@@ -22,7 +23,7 @@ export default function TrendingCollectionsSection() {
 
       <div className="dv2-collection-grid">
         {error ? (
-          <div className="sv2-muted sv2-small">Couldn't load trending collections: {error.message}</div>
+          <ErrorState error={error} onRetry={refetch} title="Couldn't load trending collections" />
         ) : !collections ? (
           <div className="sv2-muted sv2-small">Loading trending collections…</div>
         ) : collections.length === 0 ? (

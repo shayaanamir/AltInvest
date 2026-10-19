@@ -1,5 +1,6 @@
 import { useAsync } from "../../hooks/useAsync";
 import { portfolioApi } from "../../services/portfolioApi";
+import { ErrorState } from "../../errors";
 import { formatCurrencyFull, formatCurrencyWhole, formatPct } from "../../utils/formatters";
 
 const RING_R = 30;
@@ -29,7 +30,15 @@ function DiversificationRing({ score, color, track }) {
 }
 
 export default function PortfolioStats() {
-  const { data: summary } = useAsync(() => portfolioApi.getSummary(), []);
+  const { data: summary, error, refetch } = useAsync(() => portfolioApi.getSummary(), []);
+
+  if (error) {
+    return (
+      <div className="sv2-card dv2-stat-card" style={{ marginBottom: 14 }}>
+        <ErrorState error={error} onRetry={refetch} title="Couldn't load your portfolio summary" />
+      </div>
+    );
+  }
 
   if (!summary) {
     return (

@@ -11,6 +11,7 @@ from typing import Optional
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Query
+from utils.http_errors import db_unavailable
 
 from auth.dependencies import get_optional_user_id
 from controllers.market_controller import build_crypto_items, build_nft_items
@@ -52,7 +53,7 @@ def discover(
         if category in ("all", "nft"):
             items += build_nft_items(user_id)
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=f"Unable to reach the database: {exc}")
+        raise db_unavailable(exc)
 
     if q:
         needle = q.strip().lower()

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { describeError } from "../errors/errorCatalog";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import AuthLayout from "../components/auth/AuthLayout";
@@ -53,7 +54,7 @@ export default function LoginPage({ onNavigate }) {
             if (returnPath) navigate(returnPath, { replace: true });
             else onNavigate && onNavigate("Dashboard");
         } catch (err) {
-            setError(err.message);
+            setError(describeError(err).message);
         } finally {
             setLoading(false);
         }

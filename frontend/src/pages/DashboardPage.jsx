@@ -6,6 +6,7 @@ import PortfolioPerformanceCard from "../components/dashboard/PortfolioPerforman
 import MarketInsightsCard from "../components/dashboard/MarketInsightsCard";
 import TrendingAssetsSection from "../components/dashboard/TrendingAssetsSection";
 import TrendingCollectionsSection from "../components/dashboard/TrendingCollectionsSection";
+import { ErrorBoundary } from "../errors";
 
 export default function DashboardPage() {
   return (
@@ -13,15 +14,15 @@ export default function DashboardPage() {
       <div className="sv2-page">
         <DashboardHeroHeader />
         <GetStartedBanner />
-        <DashboardStatCards />
+        <ErrorBoundary variant="section" label="Market stats"><DashboardStatCards /></ErrorBoundary>
 
         <div className="dv2-main-grid">
-          <PortfolioPerformanceCard />
-          <MarketInsightsCard />
+          <ErrorBoundary variant="section" label="Portfolio performance"><PortfolioPerformanceCard /></ErrorBoundary>
+          <ErrorBoundary variant="section" label="Market insights"><MarketInsightsCard /></ErrorBoundary>
         </div>
 
-        <TrendingAssetsSection />
-        <TrendingCollectionsSection />
+        <ErrorBoundary variant="section" label="Trending assets"><TrendingAssetsSection /></ErrorBoundary>
+        <ErrorBoundary variant="section" label="Trending collections"><TrendingCollectionsSection /></ErrorBoundary>
       </div>
     </div>
   );

@@ -4,13 +4,15 @@ import { useDisclosure } from "../../../hooks/useDisclosure";
 import { topbarApi } from "../../../services/topbarApi";
 import NotificationItem from "./NotificationItem";
 import { IconBell } from "../../icons";
+import { ErrorState, useToast } from "../../../errors";
 
 const RECENT_LIMIT = 5;
 
 export default function NotificationsMenu() {
   const { isOpen, toggle, close, ref } = useDisclosure();
   const navigate = useNavigate();
-  const { data, setData } = useAsync(() => topbarApi.getNotifications(), []);
+  const toast = useToast();
+  const { data, error, refetch, setData } = useAsync(() => topbarApi.getNotifications(), []);
 
   const items = (data?.items || []).slice(0, RECENT_LIMIT);
   const unreadCount = data?.unreadCount ?? 0;
@@ -30,7 +32,8 @@ export default function NotificationsMenu() {
       try {
         await topbarApi.markNotificationRead(notification.id);
       } catch (e) {
-        console.error("Failed to mark notification read:", e);
+        setData(data); // put the unread state back
+        toast.error(e, { title: "Couldn't mark notification as read" });
       }
     }
 
@@ -68,7 +71,11 @@ export default function NotificationsMenu() {
           </div>
 
           <div className="tb-notifications-list">
-            {items.length === 0 ? (
+            {error ? (
+              <div style={{ padding: "8px 14px" }}>
+                <ErrorState error={error} onRetry={refetch} title="Couldn't load notifications" />
+              </div>
+            ) : items.length === 0 ? (
               <div className="tb-dropdown-empty">You&apos;re all caught up.</div>
             ) : (
               items.map((notification) => (

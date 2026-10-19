@@ -3,13 +3,14 @@ import { useAsync } from "../../hooks/useAsync";
 import { useElementSize } from "../../hooks/useElementSize";
 import { portfolioApi } from "../../services/portfolioApi";
 import TimeSeriesAreaChart from "../charts/TimeSeriesAreaChart";
+import { ErrorState } from "../../errors";
 
 const RANGES = ["1M", "3M", "1Y"];
 
 export default function PerformanceHistory() {
   const [range, setRange] = useState("3M");
   const [containerRef, dims] = useElementSize({ W: 560, H: 220 });
-  const { data: rawSeries, loading } = useAsync(() => portfolioApi.getPerformanceHistory(range), [range]);
+  const { data: rawSeries, loading, error, refetch } = useAsync(() => portfolioApi.getPerformanceHistory(range), [range]);
   const series = rawSeries || [];
 
   const { W, H } = dims;
@@ -55,6 +56,8 @@ export default function PerformanceHistory() {
           <div className="sv2-muted sv2-small" style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
             Loading…
           </div>
+        ) : error ? (
+          <ErrorState error={error} onRetry={refetch} variant="panel" title="Couldn't load performance history" />
         ) : content}
       </div>
     </div>

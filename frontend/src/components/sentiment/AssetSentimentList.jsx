@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { ErrorState } from "../../errors";
 import { useAsync } from "../../hooks/useAsync";
 import { sentimentApi, WATCHLIST } from "../../services/sentimentApi";
 import { getAaiTierColor } from "../../utils/scoring";
@@ -25,7 +26,7 @@ export default function AssetSentimentList({ colors, onSelectAsset }) {
 
   // "all" (Everything) fetches the combined feed; "tokenized" is disabled/unreachable
   const apiScope = tab === "all" ? "all" : tab === "tokenized" ? "crypto" : tab;
-  const { data: rawRows, loading } = useAsync(() => sentimentApi.getAssetList(apiScope), [apiScope]);
+  const { data: rawRows, loading, error, refetch } = useAsync(() => sentimentApi.getAssetList(apiScope), [apiScope]);
   const rows = rawRows || [];
 
   const filtered = useMemo(() => {
@@ -77,7 +78,9 @@ export default function AssetSentimentList({ colors, onSelectAsset }) {
       </div>
 
       <div className={`sv2-mt-16 ${view === "grid" ? "sv2-asset-grid" : "sv2-flex-col"}`}>
-        {loading ? (
+        {error ? (
+          <ErrorState error={error} onRetry={refetch} title="Couldn't load the asset list" />
+        ) : loading ? (
           <div className="sv2-muted sv2-small" style={{ padding: "24px 0" }}>Loading assets…</div>
         ) : filtered.length === 0 ? (
           <div className="sv2-muted sv2-small" style={{ padding: "24px 0" }}>No assets match this filter yet.</div>

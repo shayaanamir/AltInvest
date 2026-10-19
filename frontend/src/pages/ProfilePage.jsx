@@ -5,9 +5,11 @@ import { profileApi } from "../services/profileApi";
 import ProfileHeaderCard from "../components/profile/ProfileHeaderCard";
 import ActivityCard from "../components/profile/ActivityCard";
 import InvestmentProfileCard from "../components/profile/InvestmentProfileCard";
+import { ErrorState, useToast } from "../errors";
 
 export default function ProfilePage() {
-  const { data: profile, setData: setProfile } = useAsync(() => profileApi.getProfile(), []);
+  const toast = useToast();
+  const { data: profile, error, refetch, setData: setProfile } = useAsync(() => profileApi.getProfile(), []);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -22,7 +24,7 @@ export default function ProfilePage() {
       setProfile((p) => ({ ...p, ...saved }));
       setEditing(false);
     } catch (e) {
-      console.error("Failed to save profile:", e);
+      toast.error(e, { title: "Couldn't save your profile" });
     } finally {
       setSaving(false);
     }
@@ -46,7 +48,11 @@ export default function ProfilePage() {
           )}
         </div>
 
-        {!profile ? (
+        {error ? (
+          <div className="sv2-card set-subcard">
+            <ErrorState error={error} onRetry={refetch} variant="panel" title="Couldn't load your profile" />
+          </div>
+        ) : !profile ? (
           <div className="sv2-card set-subcard sv2-muted sv2-small">Loading profile…</div>
         ) : (
           <>

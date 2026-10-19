@@ -4,13 +4,14 @@ import { useElementSize } from "../../hooks/useElementSize";
 import { dashboardApi } from "../../services/dashboardApi";
 import { TIME_FILTERS } from "../../data/constants";
 import TimeSeriesAreaChart from "../charts/TimeSeriesAreaChart";
+import { ErrorState } from "../../errors";
 
 export default function PortfolioPerformanceCard() {
   const [filter, setFilter] = useState("1M");
   const [containerRef, dims] = useElementSize({ W: 560, H: 220 });
 
-  const { data: stats } = useAsync(() => dashboardApi.getMarketStats(), []);
-  const { data: rawSeries, loading, error } = useAsync(() => dashboardApi.getPerformanceHistory(filter), [filter]);
+  const { data: stats, error: statsError, refetch: refetchStats } = useAsync(() => dashboardApi.getMarketStats(), []);
+  const { data: rawSeries, loading, error, refetch } = useAsync(() => dashboardApi.getPerformanceHistory(filter), [filter]);
   const series = rawSeries || [];
 
   const hasHoldings = stats && stats.holdingsCount > 0;
@@ -38,7 +39,9 @@ export default function PortfolioPerformanceCard() {
       </div>
 
       <div style={{ height: 260, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-        {!hasHoldings ? (
+        {statsError ? (
+          <ErrorState error={statsError} onRetry={refetchStats} variant="panel" title="Couldn't check your holdings" />
+        ) : !hasHoldings ? (
           <div className="dv2-perf-empty" style={{ height: "100%" }}>
             <div className="dv2-perf-empty-icon" aria-hidden="true">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -53,9 +56,7 @@ export default function PortfolioPerformanceCard() {
             Loading…
           </div>
         ) : error ? (
-          <div className="sv2-muted sv2-small" style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            Couldn't load performance: {error.message}
-          </div>
+          <ErrorState error={error} onRetry={refetch} variant="panel" title="Couldn't load performance" />
         ) : (
           <div ref={containerRef} style={{ width: "100%", height: "100%", display: "flex", alignItems: "center" }}>{chartContent}</div>
         )}

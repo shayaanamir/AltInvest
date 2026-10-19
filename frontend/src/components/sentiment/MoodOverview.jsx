@@ -1,9 +1,18 @@
 import { useAsync } from "../../hooks/useAsync";
+import { ErrorState } from "../../errors";
 import { sentimentApi } from "../../services/sentimentApi";
 import MoodGaugeCard from "./MoodGaugeCard";
 
 export default function MoodOverview({ colors }) {
-  const { data } = useAsync(() => sentimentApi.getMoodOverview(), []);
+  const { data, error, refetch } = useAsync(() => sentimentApi.getMoodOverview(), []);
+
+  if (error) {
+    return (
+      <div className="sv2-card sv2-card-pad">
+        <ErrorState error={error} onRetry={refetch} title="Couldn't load market mood" />
+      </div>
+    );
+  }
 
   if (!data) {
     return (

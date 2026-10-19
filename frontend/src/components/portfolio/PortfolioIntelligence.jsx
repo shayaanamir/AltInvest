@@ -1,8 +1,17 @@
 import { useAsync } from "../../hooks/useAsync";
 import { portfolioApi } from "../../services/portfolioApi";
+import { ErrorState } from "../../errors";
 
 export default function PortfolioIntelligence() {
-  const { data: intel } = useAsync(() => portfolioApi.getIntelligence(), []);
+  const { data: intel, error, refetch } = useAsync(() => portfolioApi.getIntelligence(), []);
+
+  if (error) {
+    return (
+      <div className="sv2-card sv2-card-pad" style={{ marginTop: 10 }}>
+        <ErrorState error={error} onRetry={refetch} title="Couldn't load portfolio intelligence" />
+      </div>
+    );
+  }
 
   if (!intel) {
     return <div className="sv2-card sv2-card-pad sv2-muted sv2-small" style={{ marginTop: 10 }}>Loading…</div>;

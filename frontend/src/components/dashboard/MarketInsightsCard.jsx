@@ -2,9 +2,10 @@ import { useNavigate } from "react-router-dom";
 import { useAsync } from "../../hooks/useAsync";
 import { dashboardApi } from "../../services/dashboardApi";
 import { timeAgo } from "../../utils/dateTime";
+import { ErrorState } from "../../errors";
 
 export default function MarketInsightsCard() {
-  const { data: insights, error } = useAsync(() => dashboardApi.getMarketInsights(), []);
+  const { data: insights, error, refetch } = useAsync(() => dashboardApi.getMarketInsights(), []);
   const navigate = useNavigate();
 
   return (
@@ -16,7 +17,7 @@ export default function MarketInsightsCard() {
 
       <div style={{ marginTop: 10, overflowY: "auto", maxHeight: 300 }}>
         {error ? (
-          <div className="sv2-muted sv2-small" style={{ padding: "16px 0" }}>Couldn't load insights: {error.message}</div>
+          <ErrorState error={error} onRetry={refetch} title="Couldn't load insights" />
         ) : !insights ? (
           <div className="sv2-muted sv2-small" style={{ padding: "16px 0" }}>Loading…</div>
         ) : insights.length === 0 ? (

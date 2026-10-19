@@ -7,9 +7,11 @@ import AlertSection from "../components/alerts/AlertSection";
 import AlertRow from "../components/alerts/AlertRow";
 import HowAlertsWorkCard from "../components/alerts/HowAlertsWorkCard";
 import { IconPlus } from "../components/icons";
+import { ErrorState, useToast } from "../errors";
 
 export default function AlertsPage() {
-  const { data: rawAlerts, loading, setData: setAlerts, refetch } = useAsync(() => alertsApi.getAlerts(), []);
+  const toast = useToast();
+  const { data: rawAlerts, loading, error, setData: setAlerts, refetch } = useAsync(() => alertsApi.getAlerts(), []);
   const alerts = rawAlerts || [];
 
   const toggle = async (id) => {
@@ -24,8 +26,8 @@ export default function AlertsPage() {
       try {
         await alertsApi.toggleAlert(id, nextStatus);
       } catch (e) {
-        console.error("Failed to toggle alert, reverting:", e);
-        refetch();
+        toast.error(e, { title: "Couldn't update the alert" });
+        refetch(); // revert the optimistic change
       }
     }
   };
@@ -38,8 +40,8 @@ export default function AlertsPage() {
       try {
         await alertsApi.deleteAlert(id);
       } catch (e) {
-        console.error("Failed to delete alert, reverting:", e);
-        refetch();
+        toast.error(e, { title: "Couldn't delete the alert" });
+        refetch(); // bring the alert back
       }
     }
   };
@@ -65,6 +67,10 @@ export default function AlertsPage() {
 
         {loading ? (
           <div className="sv2-muted sv2-small">Loading alerts…</div>
+        ) : error ? (
+          <div className="sv2-card sv2-card-pad">
+            <ErrorState error={error} onRetry={refetch} variant="panel" title="Couldn't load your alerts" />
+          </div>
         ) : (
           <div className="alr-flex-col">
             <AlertSection title="Active" count={active.length} subtitle="Watching in the background">

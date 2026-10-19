@@ -4,6 +4,7 @@ import { discoverApi } from "../services/discoverApi";
 import DiscoverFilters from "../components/discover/DiscoverFilters";
 import DiscoverAssetCard from "../components/discover/DiscoverAssetCard";
 import "../styles/discover.css";
+import { ErrorState } from "../errors";
 
 function defaultFilters(config) {
   const f = config.filters;
@@ -25,6 +26,7 @@ export default function DiscoverPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [reloadTick, setReloadTick] = useState(0);
   const [watchingIds, setWatchingIds] = useState(() => new Set());
   const [compareIds, setCompareIds] = useState([]);
 
@@ -50,7 +52,7 @@ export default function DiscoverPage() {
       .catch((e) => { if (!cancelled) { console.error(e); setItems([]); setError(e); } })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [category, filters]);
+  }, [category, filters, reloadTick]);
 
   const toggleWatch = (item) => {
     setWatchingIds((prev) => {
@@ -126,10 +128,7 @@ export default function DiscoverPage() {
             </div>
 
             {error ? (
-              <div className="disc-empty">
-                <h3>Couldn't load the market universe</h3>
-                <p>{error.message}</p>
-              </div>
+              <ErrorState error={error} onRetry={() => setReloadTick((t) => t + 1)} variant="panel" title="Couldn't load the market universe" />
             ) : !loading && items.length === 0 ? (
               <div className="disc-empty">
                 <h3>{config?.emptyState?.title}</h3>

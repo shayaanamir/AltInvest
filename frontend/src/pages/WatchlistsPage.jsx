@@ -6,6 +6,7 @@ import WatchlistSidebar from "../components/watchlists/WatchlistSidebar.jsx";
 import WatchlistRow from "../components/watchlists/WatchlistRow.jsx";
 import CreateWatchlistModal from "../components/watchlists/CreateWatchlistModal.jsx";
 import "../styles/watchlists.css";
+import { ErrorState, useToast } from "../errors";
 
 function formatDate(iso) {
   if (!iso) return "";
@@ -15,6 +16,8 @@ function formatDate(iso) {
 export default function WatchlistsPage() {
   const [lists, setLists] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+  const toast = useToast();
   const [activeId, setActiveId] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
@@ -24,10 +27,16 @@ export default function WatchlistsPage() {
 
   const refetch = async () => {
     setLoading(true);
-    const fetched = await watchlistApi.getInitialListsAsync();
-    setLists(fetched);
-    setActiveId((prev) => (fetched.some((l) => l.id === prev) ? prev : fetched[0]?.id ?? null));
-    setLoading(false);
+    setLoadError(null);
+    try {
+      const fetched = await watchlistApi.getInitialListsAsync();
+      setLists(fetched);
+      setActiveId((prev) => (fetched.some((l) => l.id === prev) ? prev : fetched[0]?.id ?? null));
+    } catch (e) {
+      setLoadError(e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -49,16 +58,34 @@ export default function WatchlistsPage() {
       return;
     }
 
-    const { id } = await watchlistApi.createList(name);
+    let id;
+    try {
+      ({ id } = await watchlistApi.createList(name));
+    } catch (e) {
+      toast.error(e, { title: "Couldn't create the watchlist" }); // modal stays open so nothing is lost
+      return;
+    }
+
     // Add each chosen starter asset as a real watchlist item
+    const failed = [];
     for (const di of chosenDiscoverItems) {
       const type = di.type === "nft" ? "nft" : "crypto";
       const symbolOrSlug = di.type === "nft" ? di.id : di.symbol;
-      await watchlistApi.addItem(id, type, symbolOrSlug);
+      try {
+        await watchlistApi.addItem(id, type, symbolOrSlug);
+      } catch {
+        failed.push(di.symbol || di.name);
+      }
     }
     await refetch();
     setActiveId(id);
     setShowModal(false);
+    if (failed.length > 0) {
+      toast.error(
+        { kind: "partial", detail: `The list was created, but ${failed.join(", ")} could not be added.` },
+        { title: "Some assets weren't added" }
+      );
+    }
   };
 
   const handleDeleteList = async () => {
@@ -69,7 +96,12 @@ export default function WatchlistsPage() {
       setActiveId(remaining[0]?.id ?? null);
       return;
     }
-    await watchlistApi.deleteList(activeList.id);
+    try {
+      await watchlistApi.deleteList(activeList.id);
+    } catch (e) {
+      toast.error(e, { title: "Couldn't delete the watchlist" });
+      return;
+    }
     await refetch();
   };
 
@@ -82,8 +114,13 @@ export default function WatchlistsPage() {
       );
       return;
     }
-    await watchlistApi.removeItem(activeId, item.id);
-    // Optimistic local update so the row disappears immediately
+    try {
+      await watchlistApi.removeItem(activeId, item.id);
+    } catch (e) {
+      toast.error(e, { title: `Couldn't remove ${item.symbol || "that item"}` });
+      return;
+    }
+    // Drop the row once the server confirms
     setLists((prev) =>
       prev.map((l) =>
         l.id === activeId ? { ...l, items: l.items.filter((i) => i.id !== item.id) } : l
@@ -114,6 +151,10 @@ export default function WatchlistsPage() {
 
         {loading ? (
           <div className="sv2-muted sv2-small">Loading watchlists…</div>
+        ) : loadError ? (
+          <div className="sv2-card sv2-card-pad">
+            <ErrorState error={loadError} onRetry={refetch} variant="panel" title="Couldn't load your watchlists" />
+          </div>
         ) : lists.length === 0 ? (
           <div className="wl-empty-lists">
             <h3>{emptyState.title}</h3>

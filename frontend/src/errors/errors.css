@@ -1,0 +1,47 @@
+/* frontend/src/errors/errors.css — styles for ErrorState, toasts and banners. Tokens only. */
+
+.err-state { display: flex; align-items: center; gap: 12px; color: var(--sv2-text-soft); font-size: 13px; line-height: 1.5; }
+.err-state-icon {
+  flex: none; width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--sv2-red-soft); color: var(--sv2-red); font-weight: 800; font-size: 14px;
+}
+.err-state-title { color: var(--sv2-text); font-weight: 700; }
+.err-state-msg { color: var(--sv2-text-soft); }
+.err-state-details { margin-top: 4px; font-size: 11.5px; color: var(--sv2-text-mute); }
+.err-state-details summary { cursor: pointer; }
+.err-state-actions { display: flex; gap: 8px; margin-top: 10px; }
+
+.err-state.panel { flex-direction: column; text-align: center; padding: 28px 20px; }
+.err-state.panel .err-state-icon { width: 40px; height: 40px; font-size: 18px; }
+.err-state.panel .err-state-title { font-size: 15px; }
+.err-state.panel .err-state-actions { justify-content: center; }
+.err-state.inline { padding: 12px 0; }
+.err-state.inline .err-state-actions { margin-top: 0; margin-left: auto; flex: none; }
+
+.err-btn {
+  background: var(--sv2-chip); border: 1px solid var(--sv2-chip-border); color: var(--sv2-text);
+  border-radius: 8px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
+}
+.err-btn:hover { background: var(--sv2-border); }
+.err-btn.primary { background: var(--sv2-accent); border-color: var(--sv2-accent); color: var(--sv2-accent-contrast); }
+
+/* Banner: persistent, app-wide conditions (offline, server unreachable) */
+.err-banner {
+  display: flex; align-items: center; gap: 10px; padding: 8px 40px;
+  background: var(--sv2-red-soft); color: var(--sv2-text); font-size: 12.5px;
+  border-bottom: 1px solid var(--sv2-border);
+}
+.err-banner strong { color: var(--sv2-red); }
+.err-banner .err-btn { margin-left: auto; }
+
+/* Toasts: one-off failures of something the person just did */
+.err-toasts { position: fixed; right: 20px; bottom: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 10px; max-width: 360px; }
+.err-toast {
+  display: flex; gap: 10px; align-items: flex-start;
+  background: var(--sv2-card); border: 1px solid var(--sv2-border-strong); border-left: 3px solid var(--sv2-red);
+  border-radius: 10px; padding: 12px 14px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  font-size: 12.5px; color: var(--sv2-text-soft);
+}
+.err-toast-title { color: var(--sv2-text); font-weight: 700; font-size: 13px; margin-bottom: 2px; }
+.err-toast-close { margin-left: auto; background: none; border: none; color: var(--sv2-text-mute); cursor: pointer; font-size: 16px; line-height: 1; padding: 0 0 0 6px; }

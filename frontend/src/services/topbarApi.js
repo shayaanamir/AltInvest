@@ -41,12 +41,13 @@ export const topbarApi = {
       };
     } catch (e) {
       const stored = getStoredUser();
-      if (!stored) return { name: "Signed out", email: "", initials: "?", color: "var(--sv2-accent)" };
+      if (!stored) throw e; // nothing to show, let the menu offer a retry
       return {
         name: stored.name,
         email: stored.email,
         initials: initialsFor(stored.name),
         color: "var(--sv2-accent)",
+        stale: true, // from the saved login, not freshly loaded
       };
     }
   },

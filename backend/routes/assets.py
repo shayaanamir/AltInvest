@@ -4,6 +4,7 @@ from datetime import datetime, timezone, timedelta
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Query
+from utils.http_errors import db_unavailable
 from auth.dependencies import get_optional_user_id
 from models.schemas import AssetItem, AssetHeader, AAIResponse
 from typing import List, Optional
@@ -81,7 +82,7 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=f"Unable to reach the database: {exc}")
+        raise db_unavailable(exc)
 
     # Forecast: the single latest model run, drawn from the last known price to
     # its 30-day target. `predictions` holds one target per run, not a curve.
@@ -197,7 +198,7 @@ def get_asset_header(symbol: str):
     try:
         asset = get_asset(symbol)
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=f"Unable to reach the database: {exc}")
+        raise db_unavailable(exc)
 
     if not asset:
         raise HTTPException(status_code=404, detail=f"Asset '{symbol}' not found.")
@@ -243,7 +244,7 @@ def get_asset_performance(
             history = get_prediction_history(symbol, days=days)
             points = [{"timestamp": h["timestamp"], "value": h["predicted_price"]} for h in reversed(history)]
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=f"Unable to reach the database: {exc}")
+        raise db_unavailable(exc)
 
     return {"asset": symbol, "mode": mode, "filter": filter, "points": points}
 
@@ -259,7 +260,7 @@ def get_asset_intelligence(symbol: str):
     try:
         asset = get_asset(symbol)
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=f"Unable to reach the database: {exc}")
+        raise db_unavailable(exc)
 
     if not asset:
         raise HTTPException(status_code=404, detail=f"Asset '{symbol}' not found.")
@@ -307,7 +308,7 @@ def get_asset_risk_breakdown(symbol: str):
     try:
         breakdown = get_latest_risk_breakdown(symbol)
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=f"Unable to reach the database: {exc}")
+        raise db_unavailable(exc)
 
     if not breakdown:
         raise HTTPException(status_code=404, detail=f"No risk breakdown found for '{symbol}'.")
@@ -324,7 +325,7 @@ def get_asset_market_stats(symbol: str):
     try:
         market = get_asset_market_data_latest(symbol)
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=f"Unable to reach the database: {exc}")
+        raise db_unavailable(exc)
 
     if not market:
         raise HTTPException(status_code=404, detail=f"No market data found for '{symbol}'.")

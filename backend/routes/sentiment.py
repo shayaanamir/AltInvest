@@ -172,7 +172,10 @@ def get_all_sentiment():
                 save_sentiment(result)
                 return asset_id, result
             except Exception as exc:
-                return asset_id, _neutral(asset_id, str(exc))
+                import logging
+                logging.getLogger("sentiment_api").error("pipeline failed for %s: %s", asset_id, exc)
+                # The exception text stays in the server log; clients get a fixed message.
+                return asset_id, _neutral(asset_id, "Sentiment could not be computed for this asset right now.")
 
         with ThreadPoolExecutor(max_workers=len(missing)) as executor:
             future_to_asset = {

@@ -8,6 +8,7 @@ import path_setup  # noqa: F401
 from datetime import datetime, timezone
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Query
+from utils.http_errors import db_unavailable
 from controllers.market_controller import aai_signal
 from controllers.portfolio_controller import get_valued_holdings
 
@@ -42,7 +43,7 @@ def get_dashboard_stats(user_id: ObjectId = Depends(get_current_user_id)):
         crypto_aai = get_all_latest_aai_scores("crypto")
         nft_aai = get_all_latest_aai_scores("nft")
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=f"Unable to reach the database: {exc}")
+        raise db_unavailable(exc)
 
     portfolio_value = sum(h.get("current_value_usd") or 0.0 for h in valued_holdings)
     volume_24h = sum(m.get("volume_24h") or 0.0 for m in market_latest)
@@ -150,7 +151,7 @@ def get_dashboard_trending(limit: int = Query(6, ge=1, le=20)):
         top = market_latest[:limit]
         sparks = get_price_sparklines([m["asset_id"] for m in top])
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=f"Unable to reach the database: {exc}")
+        raise db_unavailable(exc)
 
     results = []
     for m in top:
@@ -185,7 +186,7 @@ def get_dashboard_trending_collections(limit: int = Query(4, ge=1, le=20)):
         collections = {c["slug"]: c for c in get_nft_collections()}
         aai_scores = get_all_latest_aai_scores("nft")
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=f"Unable to reach the database: {exc}")
+        raise db_unavailable(exc)
 
     market_latest.sort(key=lambda m: abs(m.get("change_24h") or 0.0), reverse=True)
     results = []

@@ -1,5 +1,7 @@
 import { asset_sentiment, newsArticles } from "../data/sample_data";
 import { USE_MOCK, API_BASE_URL } from "../config";
+import { ApiError, kindFromStatus } from "../errors/errorCatalog";
+import { reportApiReachable } from "../errors/connectionStatus";
 import { confidenceLabelFromValue, getEvidencePhrase as evidencePhrase, bandByThreshold } from "../utils/scoring";
 
 /* ============================================================
@@ -81,9 +83,31 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = FETCH_TIMEOUT_MS)
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    return await fetch(url, { ...options, signal: controller.signal });
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    reportApiReachable(true);
+    return res;
+  } catch (e) {
+    reportApiReachable(false);
+    throw e;
   } finally {
     clearTimeout(timeoutId);
+  }
+}
+
+async function postRefresh(assetId) {
+  let res;
+  try {
+    res = await fetchWithTimeout(`${API_BASE_URL}/sentiment/${assetId}/refresh`, { method: "POST" }, REFRESH_TIMEOUT_MS);
+  } catch (e) {
+    throw new ApiError(describeFetchError(e), { kind: e.name === "AbortError" ? "timeout" : "network" });
+  }
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new ApiError(`Refresh failed for ${assetId}`, {
+      status: res.status,
+      kind: kindFromStatus(res.status),
+      detail: typeof body.detail === "string" ? body.detail : null,
+    });
   }
 }
 
@@ -446,26 +470,25 @@ export const sentimentApi = {
     return synthesizeWave(n, 58, 10).map((v) => ({ date: null, value: v }));
   },
 
+  /** Throws an ApiError if the refresh itself failed, so the UI can say so instead of re-showing old data. */
   refreshAsset: async (assetId) => {
     if (USE_MOCK) return sentimentApi.getAssetDetail(assetId);
-    try {
-      await fetchWithTimeout(`${API_BASE_URL}/sentiment/${assetId}/refresh`, { method: "POST" }, REFRESH_TIMEOUT_MS);
-    } catch (e) {
-      console.warn(`sentimentApi: refresh failed for ${assetId} (${describeFetchError(e)})`);
-    }
+    await postRefresh(assetId);
     return sentimentApi.getAssetDetail(assetId);
   },
 
   /** Refreshes every actively-covered asset — used by the Hub's "Refresh Pipeline" button. */
   refreshAllActive: async () => {
     if (USE_MOCK) return;
-    await Promise.all(
-      ACTIVE_ASSETS.map((assetId) =>
-        fetchWithTimeout(`${API_BASE_URL}/sentiment/${assetId}/refresh`, { method: "POST" }, REFRESH_TIMEOUT_MS).catch(
-          (e) => console.warn(`sentimentApi: refresh failed for ${assetId} (${describeFetchError(e)})`)
-        )
-      )
-    );
+    const results = await Promise.allSettled(ACTIVE_ASSETS.map((assetId) => postRefresh(assetId)));
+    const failed = results.filter((r) => r.status === "rejected");
+    if (failed.length === ACTIVE_ASSETS.length) throw failed[0].reason; // everything failed: surface the real cause
+    if (failed.length > 0) {
+      throw new ApiError(`${failed.length} of ${ACTIVE_ASSETS.length} assets could not be refreshed.`, {
+        kind: "partial",
+        detail: `${failed.length} of ${ACTIVE_ASSETS.length} assets could not be refreshed. The rest were updated.`,
+      });
+    }
   },
 
   getSwitchableAssets: async () => {

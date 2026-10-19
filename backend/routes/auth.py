@@ -16,6 +16,7 @@ import os
 import path_setup  # noqa: F401 — must be first, fixes sys.path
 
 from fastapi import APIRouter, HTTPException
+from utils.http_errors import db_unavailable
 from bson import ObjectId
 from models.schemas import (
     LoginRequest, AuthResponse, AuthUser, SignupRequest,
@@ -48,10 +49,7 @@ def login(payload: LoginRequest):
         from db.queries import get_user_by_email
         user = get_user_by_email(email)
     except Exception as exc:
-        raise HTTPException(
-            status_code=503,
-            detail=f"Unable to reach the database right now: {exc}",
-        )
+        raise db_unavailable(exc)
 
     invalid_credentials = HTTPException(
         status_code=401, detail="Invalid email or password."
@@ -95,10 +93,7 @@ def signup(payload: SignupRequest):
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(
-            status_code=503,
-            detail=f"Unable to reach the database right now: {exc}",
-        )
+        raise db_unavailable(exc)
 
     token = create_access_token(user_id=user_id, email=email)
 
@@ -125,10 +120,7 @@ def forgot_password(payload: ForgotPasswordRequest):
         from db.queries import get_user_by_email
         user = get_user_by_email(email)
     except Exception as exc:
-        raise HTTPException(
-            status_code=503,
-            detail=f"Unable to reach the database right now: {exc}",
-        )
+        raise db_unavailable(exc)
 
     if user:
         token = create_reset_token(str(user["_id"]), email)
@@ -156,10 +148,7 @@ def reset_password(payload: ResetPasswordRequest):
         from db.queries import update_user
         updated = update_user(ObjectId(user_id), {"password_hash": hash_password(payload.new_password)})
     except Exception as exc:
-        raise HTTPException(
-            status_code=503,
-            detail=f"Unable to reach the database right now: {exc}",
-        )
+        raise db_unavailable(exc)
 
     if not updated:
         raise HTTPException(status_code=404, detail="Account not found.")

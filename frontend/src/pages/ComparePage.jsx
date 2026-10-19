@@ -9,6 +9,7 @@ import CompareRiskReturnChart from "../components/compare/CompareRiskReturnChart
 import CompareSentimentTable from "../components/compare/CompareSentimentTable";
 import { IconColumns } from "../components/icons";
 import { compareApi } from "../services/compareApi";
+import { ErrorState } from "../errors";
 
 export default function ComparePage() {
   const [searchParams] = useSearchParams();
@@ -22,6 +23,7 @@ export default function ComparePage() {
     return [];
   });
   const [assets, setAssets] = useState([]);
+  const [reloadTick, setReloadTick] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -47,7 +49,7 @@ export default function ComparePage() {
       .catch((e) => { if (!cancelled) { console.error(e); setAssets([]); setError(e); } })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [selectedIds]);
+  }, [selectedIds, reloadTick]);
 
   const handleConfirm = (ids) => {
     setSelectedIds(ids);
@@ -84,7 +86,9 @@ export default function ComparePage() {
         ) : loading ? (
           <div className="sv2-muted sv2-small">Loading comparison…</div>
         ) : error ? (
-          <div className="sv2-muted sv2-small">Couldn't load the comparison: {error.message}</div>
+          <div className="sv2-card sv2-card-pad">
+            <ErrorState error={error} onRetry={() => setReloadTick((t) => t + 1)} variant="panel" title="Couldn't load the comparison" />
+          </div>
         ) : assets.length < 2 ? (
           <div className="sv2-muted sv2-small">
             Fewer than two of the selected items exist in the database. Edit the selection to pick covered assets.

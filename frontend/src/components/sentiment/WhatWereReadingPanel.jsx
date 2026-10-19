@@ -1,11 +1,12 @@
 import { useState } from "react";
+import { ErrorState } from "../../errors";
 import { useAsync } from "../../hooks/useAsync";
 import { sentimentApi, WATCHLIST } from "../../services/sentimentApi";
 import { relativeTime } from "../../utils/dateTime";
 import { IconExternal } from "../icons";
 
 export default function WhatWereReadingPanel() {
-  const { data: rawItems, loading } = useAsync(() => sentimentApi.getWhatWereReading("news"), []);
+  const { data: rawItems, loading, error, refetch } = useAsync(() => sentimentApi.getWhatWereReading("news"), []);
   const items = rawItems || [];
   const [watchlistOnly, setWatchlistOnly] = useState(false);
   const [showAll, setShowAll] = useState(false);
@@ -24,7 +25,9 @@ export default function WhatWereReadingPanel() {
       </div>
 
       <div className="sv2-mt-12">
-        {loading ? (
+        {error ? (
+          <ErrorState error={error} onRetry={refetch} title="Couldn't load headlines" />
+        ) : loading ? (
           <div className="sv2-muted sv2-small" style={{ padding: "16px 0" }}>Loading…</div>
         ) : visible.length === 0 ? (
           <div className="sv2-muted sv2-small" style={{ padding: "16px 0" }}>Nothing matches this filter.</div>

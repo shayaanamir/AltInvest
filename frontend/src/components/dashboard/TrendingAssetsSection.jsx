@@ -7,9 +7,10 @@ import { getAaiTierClass } from "../../utils/scoring";
 import Sparkline from "../charts/Sparkline";
 import AssetAvatar from "../shared/AssetAvatar";
 import { IconStar } from "../icons";
+import { ErrorState } from "../../errors";
 
 export default function TrendingAssetsSection() {
-  const { data: assets, error } = useAsync(() => dashboardApi.getTrendingAssets(), []);
+  const { data: assets, error, refetch } = useAsync(() => dashboardApi.getTrendingAssets(), []);
   const [favorites, setFavorites] = useState([]);
   const navigate = useNavigate();
 
@@ -30,7 +31,7 @@ export default function TrendingAssetsSection() {
 
       <div className="dv2-asset-grid">
         {error ? (
-          <div className="sv2-muted sv2-small">Couldn't load trending assets: {error.message}</div>
+          <ErrorState error={error} onRetry={refetch} title="Couldn't load trending assets" />
         ) : !assets ? (
           <div className="sv2-muted sv2-small">Loading trending assets…</div>
         ) : assets.length === 0 ? (

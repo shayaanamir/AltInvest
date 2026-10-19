@@ -10,13 +10,14 @@ import RiskOverviewCard from "../components/assetDetail/RiskOverviewCard";
 import SentimentReadCard from "../components/assetDetail/SentimentReadCard";
 import AboutAssetCard from "../components/assetDetail/AboutAssetCard";
 import SimilarAssetsSection from "../components/assetDetail/SimilarAssetsSection";
+import { ErrorState, ErrorBoundary } from "../errors";
 
 export default function AssetDetailPage({ onNavigate }) {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const symbol = searchParams.get("symbol");
 
-  const { data: detail, loading, error } = useAsync(
+  const { data: detail, loading, error, refetch } = useAsync(
     () => (symbol ? assetDetailApi.getAssetDetail(symbol) : Promise.resolve(null)),
     [symbol]
   );
@@ -34,7 +35,9 @@ export default function AssetDetailPage({ onNavigate }) {
         ) : error ? (
           <>
             <button className="adt-back-btn" onClick={handleBack}>Back</button>
-            <div className="sv2-muted sv2-small">Couldn't load {symbol}: {error.message}</div>
+            <div className="sv2-card sv2-card-pad">
+              <ErrorState error={error} onRetry={refetch} variant="panel" title={`Couldn't load ${symbol}`} />
+            </div>
           </>
         ) : !detail ? (
           <>
@@ -47,24 +50,26 @@ export default function AssetDetailPage({ onNavigate }) {
           <>
             <AssetHeaderCard header={detail.header} onBack={handleBack} />
 
-            <PricePerformanceCard
-              priceHistory={detail.priceHistory}
-              forecast={detail.forecast}
-              aaiPanel={detail.aaiPanel}
-            />
+            <ErrorBoundary variant="section" label="Price chart">
+              <PricePerformanceCard
+                priceHistory={detail.priceHistory}
+                forecast={detail.forecast}
+                aaiPanel={detail.aaiPanel}
+              />
+            </ErrorBoundary>
 
             <MarketStatisticsCard marketStats={detail.marketStats} />
 
             {/* AAI Score comes first in this row, per the redesign */}
             <div className="adt-panel-row">
-              <AaiScoreCard aaiPanel={detail.aaiPanel} />
-              <RiskOverviewCard riskOverview={detail.riskOverview} />
-              <SentimentReadCard sentimentSnippet={detail.sentimentSnippet} />
+              <ErrorBoundary variant="section" label="AAI score"><AaiScoreCard aaiPanel={detail.aaiPanel} /></ErrorBoundary>
+              <ErrorBoundary variant="section" label="Risk overview"><RiskOverviewCard riskOverview={detail.riskOverview} /></ErrorBoundary>
+              <ErrorBoundary variant="section" label="Sentiment"><SentimentReadCard sentimentSnippet={detail.sentimentSnippet} /></ErrorBoundary>
             </div>
 
             <AboutAssetCard name={detail.header.name} about={detail.about} aaiScore={detail.aaiPanel?.score} />
 
-            <SimilarAssetsSection assets={detail.similarAssets} />
+            <ErrorBoundary variant="section" label="Similar assets"><SimilarAssetsSection assets={detail.similarAssets} /></ErrorBoundary>
           </>
         )}
       </div>

@@ -1,9 +1,10 @@
 import { useAsync } from "../../hooks/useAsync";
 import { dashboardApi } from "../../services/dashboardApi";
 import { IconFileText, IconSparkle } from "../icons";
+import { ErrorState } from "../../errors";
 
 export default function DashboardHeroHeader() {
-  const { data: user } = useAsync(() => dashboardApi.getCurrentUser(), []);
+  const { data: user, error, refetch } = useAsync(() => dashboardApi.getCurrentUser(), []);
   const userName = user?.name ?? null;
 
   return (
@@ -15,6 +16,9 @@ export default function DashboardHeroHeader() {
             ? `${userName.split(" ")[0]}, here's how your markets look right now.`
             : "Here's how your markets look right now."}
         </p>
+        {error && (
+          <ErrorState error={error} onRetry={refetch} title="Couldn't load your profile" message="Your name may be missing from this greeting." />
+        )}
       </div>
       <div className="dv2-hero-actions">
         <button className="dv2-btn-ghost" type="button">

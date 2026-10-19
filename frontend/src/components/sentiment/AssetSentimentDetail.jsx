@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { ErrorState, useToast } from "../../errors";
 import { useAsync } from "../../hooks/useAsync";
 import { sentimentApi, WATCHLIST } from "../../services/sentimentApi";
 import AssetDetailHeader from "./AssetDetailHeader";
@@ -11,7 +12,8 @@ import WhatWeReadList from "./WhatWeReadList";
 import MarketContextPanel from "./MarketContextPanel";
 
 export default function AssetSentimentDetail({ assetId, colors, onBack, onSwitchAsset }) {
-  const { data: detail, setData: setDetail } = useAsync(() => sentimentApi.getAssetDetail(assetId), [assetId]);
+  const toast = useToast();
+  const { data: detail, error, refetch, setData: setDetail } = useAsync(() => sentimentApi.getAssetDetail(assetId), [assetId]);
   const { data: switchableRaw } = useAsync(() => sentimentApi.getSwitchableAssets(), []);
   const switchable = switchableRaw || [];
   const [refreshing, setRefreshing] = useState(false);
@@ -21,10 +23,26 @@ export default function AssetSentimentDetail({ assetId, colors, onBack, onSwitch
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    const fresh = await sentimentApi.refreshAsset(assetId);
-    setDetail(fresh);
-    setRefreshing(false);
+    try {
+      const fresh = await sentimentApi.refreshAsset(assetId);
+      setDetail(fresh);
+    } catch (e) {
+      toast.error(e, { title: "Couldn't refresh sentiment" });
+    } finally {
+      setRefreshing(false);
+    }
   };
+
+  if (error) {
+    return (
+      <div className="sv2-card sv2-card-pad">
+        <ErrorState error={error} onRetry={refetch} variant="panel" title="Couldn't load this asset's sentiment" />
+        <div className="err-state-actions" style={{ justifyContent: "center" }}>
+          <button type="button" className="err-btn" onClick={onBack}>Back</button>
+        </div>
+      </div>
+    );
+  }
 
   if (!detail) {
     return <div className="sv2-muted sv2-small">Loading asset sentiment…</div>;

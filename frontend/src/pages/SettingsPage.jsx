@@ -13,6 +13,7 @@ import SecuritySection from "../components/settings/SecuritySection";
 import ConnectedAccountsSection from "../components/settings/ConnectedAccountsSection";
 import DataAccountSection from "../components/settings/DataAccountSection";
 import SettingsFooter from "../components/settings/SettingsFooter";
+import { ErrorState, useToast } from "../errors";
 
 const TABS = [
   { key: "preferences", label: "Preferences", icon: "tune" },
@@ -35,7 +36,8 @@ const TAB_TO_SECTION = {
 export default function SettingsPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("preferences");
-  const { data: initialSettings, loading } = useAsync(() => settingsApi.getSettings(), []);
+  const toast = useToast();
+  const { data: initialSettings, loading, error, refetch } = useAsync(() => settingsApi.getSettings(), []);
   const [settings, setSettings] = useState(null);
 
   useEffect(() => {
@@ -43,13 +45,15 @@ export default function SettingsPage() {
   }, [initialSettings]);
 
   const updateSection = (sectionKey, patch) => {
+    const previous = settings?.[sectionKey];
     // Optimistic local update first
     setSettings((prev) => ({ ...prev, [sectionKey]: { ...prev[sectionKey], ...patch } }));
 
     if (USE_MOCK) return;
 
     settingsApi.updateSection(sectionKey, patch).catch((e) => {
-      console.error(`Failed to save ${sectionKey} settings:`, e);
+      setSettings((prev) => ({ ...prev, [sectionKey]: previous })); // put the old value back
+      toast.error(e, { title: "Couldn't save that setting" });
     });
   };
 
@@ -75,7 +79,11 @@ export default function SettingsPage() {
           <SettingsSidebar tabs={TABS} activeTab={activeTab} onSelect={setActiveTab} />
 
           <div className="set-content-col">
-            {loading || !settings ? (
+            {error ? (
+              <div className="sv2-card set-subcard">
+                <ErrorState error={error} onRetry={refetch} variant="panel" title="Couldn't load your settings" />
+              </div>
+            ) : loading || !settings ? (
               <div className="sv2-card set-subcard sv2-muted sv2-small">Loading settings…</div>
             ) : (
               <>
