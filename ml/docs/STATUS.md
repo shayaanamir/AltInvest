@@ -1,7 +1,49 @@
 # STATUS
 
-Current phase: 4c (direction model) DONE for BTC, ETH, SOL (2026-10-19). Verdict (D31): APPROVED for ETH (logreg_c0.1); NOT APPROVED for BTC and SOL.
-Next: waiting on the user. The ETH approval goes against the expectation written in D31; see the concerns below before Phase 5 relies on it.
+Current phase: 5a (Step 0 of Phase 5) STOPPED before D33, waiting on the user (see below). 4c verdict unchanged: ETH approved, BTC and SOL not (D31, D32).
+Next: the user rewords D33; then D33 and D34 are appended and 5a finishes. 5b (signal logic + backtest) has not started.
+
+## Phase 5a: what ran (from repo root, 2026-10-19), stopped before Step 0d
+
+- Started from a clean tree: HEAD 3bd9090, `git_dirty` False.
+- The task was split into 5a (Step 0 a-e plus its tests and docs) and 5b (Steps 1-5), following the review table in the task. The mechanism check runs once, in 0b. The `signal` shadowing check moves to 5b.
+- 0a: re-ran run_walkforward_direction once per asset. Numbers are identical; only generated_at, git_commit and git_dirty (true -> false) changed. ETH approved, BTC and SOL not.
+- 0b: new `ml/evaluation/direction_mechanism.py` writes `ml/reports/{asset}/direction_mechanism.json` (report only).
+  - The recomputed confirmation log losses equal walkforward_direction.json, after rounding to 6 dp, within 1e-9.
+  - `max_label_row_reached` 2820 / 2820 / 1893.
+  - `git_dirty: true` (code uncommitted; not re-run).
+- `ml/tests/test_direction_mechanism.py`: 2 tests. `python -m pytest ml` -> `117 passed`.
+- 0c: D32 appended (numbers checked against walkforward_direction.json).
+
+| direction_mechanism.json, last 40% [95% CI] | BTC | ETH | SOL |
+|---|---|---|---|
+| n_pooled / n_effective | 831 / 27.7 | 831 / 27.7 | 444 / 14.8 |
+| 1. Spearman(P(FLAT), vol_30d) | -0.373706 [-0.584241, -0.129533] | -0.52739 [-0.66579, -0.3105] | 0.031874 [-0.236687, 0.210437] |
+| 2. Spearman(P(FLAT), abs fwd_return_30d) | 0.094892 [-0.112403, 0.310917] | -0.045538 [-0.245999, 0.209584] | -0.051227 [-0.217209, 0.157597] |
+| 3. Spearman(P(UP)-P(DOWN), fwd_return_30d) | -0.040797 [-0.298151, 0.17909] | 0.014782 [-0.154854, 0.137813] | -0.155432 [-0.487636, 0.159246] |
+| mean P(FLAT) / observed FLAT share | 0.410172 / 0.561974 | 0.440101 / 0.602888 | 0.435216 / 0.542793 |
+
+- STOP rule (ETH check 3 CI entirely above 0): not triggered. The CI contains 0.
+- Why I stopped before 0d: D33's reason says ETH's gain "is move-vs-no-move information". But ETH check 2, which measures exactly that, has a CI containing 0 (-0.045538 [-0.245999, 0.209584]). Only check 1 is clear: P(FLAT) rises when trailing volatility is low. D33 is a pre-registered user decision, so the user rewords it. D34 is held as well, because D32, D33 and D34 must be appended in that order.
+- Proposed reason text for D33 (needs approval): "Reason: ETH's 4c gain shows no demonstrated up/down skill and no demonstrated row-level move-vs-no-move skill (direction_mechanism.json, ETH last 40%, n_effective 27.7, D29/D30: Spearman(P(UP)-P(DOWN), fwd_return_30d) = 0.0148 [-0.1549, 0.1378]; Spearman(P(FLAT), abs fwd_return_30d) = -0.0455 [-0.2460, 0.2096]). It reflects P(FLAT) tracking trailing volatility (Spearman(P(FLAT), vol_30d) = -0.5274 [-0.6658, -0.3105]), so it cannot support BUY or SELL."
+
+## How to verify Phase 5a so far (PowerShell, from the repo root)
+
+```powershell
+Set-Location C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest
+python -m pytest ml/tests/test_direction_mechanism.py -q
+foreach ($a in 'btc','eth','sol') { python -m ml.evaluation.direction_mechanism --asset $a; "$a exit: $LASTEXITCODE" }
+python -c "import json; [print(a, (d:=json.load(open(f'ml/reports/{a}/direction_mechanism.json')))['consistency_check']['matches'], *[(k[:7], (b:=d['last_40pct'])[k]['spearman'], b[k]['spearman_ci95']['low'], b[k]['spearman_ci95']['high']) for k in ('check_1_pflat_vs_vol30d','check_2_pflat_vs_abs_fwd_return','check_3_up_minus_down_vs_fwd_return')], d['metadata']['max_label_row_reached']) for a in ('btc','eth','sol')]"
+```
+
+Expected (observed 2026-10-19):
+
+1. `2 passed`.
+2. `wrote ...direction_mechanism.json` and `exit: 0` for each asset (takes about a minute in total).
+3. Output:
+   - `btc {'logloss_prior': True, 'logloss_top': True} ('check_1', -0.373706, -0.584241, -0.129533) ('check_2', 0.094892, -0.112403, 0.310917) ('check_3', -0.040797, -0.298151, 0.17909) 2820`
+   - `eth {'logloss_prior': True, 'logloss_top': True} ('check_1', -0.52739, -0.66579, -0.3105) ('check_2', -0.045538, -0.245999, 0.209584) ('check_3', 0.014782, -0.154854, 0.137813) 2820`
+   - `sol {'logloss_prior': True, 'logloss_top': True} ('check_1', 0.031874, -0.236687, 0.210437) ('check_2', -0.051227, -0.217209, 0.157597) ('check_3', -0.155432, -0.487636, 0.159246) 1893`
 
 ## Phase 4c (direction model): what ran (from repo root, 2026-10-19)
 

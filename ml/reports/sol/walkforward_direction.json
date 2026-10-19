@@ -3782,9 +3782,9 @@
   ],
   "metadata": {
     "asset": "sol",
-    "generated_at": "2026-10-19T14:43:29Z",
-    "git_commit": "5b60be2fd8481974ce00d8c8a7597d9b4ff5b853",
-    "git_dirty": true,
+    "generated_at": "2026-10-19T15:17:35Z",
+    "git_commit": "3bd9090da3a47ba8d8101b5900820a3955e3c0b1",
+    "git_dirty": false,
     "n_feature_rows": 2229,
     "b2_test_start_row": 1894,
     "rows_built": [
