@@ -5,6 +5,7 @@ import DiscoverFilters from "../components/discover/DiscoverFilters";
 import DiscoverAssetCard from "../components/discover/DiscoverAssetCard";
 import "../styles/discover.css";
 import { ErrorState } from "../errors";
+import { onWatchlistsChanged } from "../services/holdingsEvents";
 
 function defaultFilters(config) {
   const f = config.filters;
@@ -27,8 +28,9 @@ export default function DiscoverPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [reloadTick, setReloadTick] = useState(0);
-  const [watchingIds, setWatchingIds] = useState(() => new Set());
   const [compareIds, setCompareIds] = useState([]);
+
+  useEffect(() => onWatchlistsChanged(() => setReloadTick((t) => t + 1)), []);
 
   useEffect(() => {
     discoverApi.getConfig().then((cfg) => {
@@ -46,21 +48,11 @@ export default function DiscoverPage() {
       .then((res) => {
         if (cancelled) return;
         setItems(res);
-        // The stars start from what the backend says the user already watches.
-        setWatchingIds((prev) => new Set([...prev, ...res.filter((i) => i.watching).map((i) => i.id)]));
       })
       .catch((e) => { if (!cancelled) { console.error(e); setItems([]); setError(e); } })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [category, filters, reloadTick]);
-
-  const toggleWatch = (item) => {
-    setWatchingIds((prev) => {
-      const next = new Set(prev);
-      next.has(item.id) ? next.delete(item.id) : next.add(item.id);
-      return next;
-    });
-  };
 
   const toggleCompare = (item) => {
     setCompareIds((prev) => {
@@ -140,8 +132,6 @@ export default function DiscoverPage() {
                   <DiscoverAssetCard
                     key={item.id}
                     item={item}
-                    isWatching={watchingIds.has(item.id)}
-                    onToggleWatch={toggleWatch}
                     isComparing={compareIds.includes(item.id)}
                     onToggleCompare={toggleCompare}
                   />

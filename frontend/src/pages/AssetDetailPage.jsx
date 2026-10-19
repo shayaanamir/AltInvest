@@ -11,6 +11,7 @@ import SentimentReadCard from "../components/assetDetail/SentimentReadCard";
 import AboutAssetCard from "../components/assetDetail/AboutAssetCard";
 import SimilarAssetsSection from "../components/assetDetail/SimilarAssetsSection";
 import { ErrorState, ErrorBoundary } from "../errors";
+import { onWatchlistsChanged } from "../services/holdingsEvents";
 
 export default function AssetDetailPage({ onNavigate }) {
   const [searchParams] = useSearchParams();
@@ -19,7 +20,8 @@ export default function AssetDetailPage({ onNavigate }) {
 
   const { data: detail, loading, error, refetch } = useAsync(
     () => (symbol ? assetDetailApi.getAssetDetail(symbol) : Promise.resolve(null)),
-    [symbol]
+    [symbol],
+    { subscribe: onWatchlistsChanged }
   );
 
   const handleBack = () => {

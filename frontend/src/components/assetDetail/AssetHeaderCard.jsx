@@ -1,11 +1,10 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatAssetPrice, formatPct } from "../../utils/formatters";
-import { IconArrowLeft, IconStar, IconClock, IconPlus, IconColumns, IconBell } from "../icons";
+import { IconArrowLeft, IconClock, IconPlus, IconColumns, IconBell } from "../icons";
+import WatchStar from "../watchlists/WatchStar";
 
 export default function AssetHeaderCard({ header, onBack }) {
   const navigate = useNavigate();
-  const [watching, setWatching] = useState(!!header?.watching);
 
   if (!header) return null;
   const positive = (header.change24h ?? 0) >= 0;
@@ -40,10 +39,14 @@ export default function AssetHeaderCard({ header, onBack }) {
           </div>
 
           <div className="adt-header-actions">
-            <button className={`adt-action-btn ${watching ? "active" : ""}`} onClick={() => setWatching((w) => !w)}>
-              <IconStar size={14} filled={watching} />
-              {watching ? "Watching" : "Add to watchlist"}
-            </button>
+            <WatchStar
+              item={{ type: "crypto", id: header.symbol, name: header.name }}
+              watching={header.watching}
+              className="adt-action-btn"
+              size={14}
+            >
+              {header.watching ? "Watching" : "Add to watchlist"}
+            </WatchStar>
 
             <button className="adt-action-btn" onClick={() => navigate("/sentiment")}>
               <IconClock size={14} />

@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAsync } from "../../hooks/useAsync";
 import { dashboardApi } from "../../services/dashboardApi";
@@ -7,15 +6,13 @@ import { getAaiTierClass } from "../../utils/scoring";
 import Sparkline from "../charts/Sparkline";
 import AssetAvatar from "../shared/AssetAvatar";
 import { IconStar } from "../icons";
+import WatchStar from "../watchlists/WatchStar";
+import { onWatchlistsChanged } from "../../services/holdingsEvents";
 import { ErrorState } from "../../errors";
 
 export default function TrendingAssetsSection() {
-  const { data: assets, error, refetch } = useAsync(() => dashboardApi.getTrendingAssets(), []);
-  const [favorites, setFavorites] = useState([]);
+  const { data: assets, error, refetch } = useAsync(() => dashboardApi.getTrendingAssets(), [], { subscribe: onWatchlistsChanged });
   const navigate = useNavigate();
-
-  const toggleFavorite = (symbol) =>
-    setFavorites((f) => (f.includes(symbol) ? f.filter((x) => x !== symbol) : [...f, symbol]));
 
   return (
     <section>
@@ -39,7 +36,7 @@ export default function TrendingAssetsSection() {
         ) : (
           assets.map((a) => {
             const positive = a.change24h >= 0;
-            const watching = a.watching || favorites.includes(a.symbol);
+            const watching = !!a.watching;
             return (
               <div
                 key={a.symbol}
@@ -55,12 +52,7 @@ export default function TrendingAssetsSection() {
                       <div className="dv2-asset-sym">{a.symbol}</div>
                     </div>
                   </div>
-                  <button
-                    className={`sv2-star-btn ${watching ? "active" : ""}`}
-                    onClick={(e) => { e.stopPropagation(); toggleFavorite(a.symbol); }}
-                  >
-                    <IconStar size={16} filled={watching} />
-                  </button>
+                  <WatchStar item={{ type: "crypto", id: a.symbol, name: a.name }} watching={watching} />
                 </div>
 
                 <div className="dv2-asset-price-row">

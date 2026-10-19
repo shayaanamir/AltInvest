@@ -6,13 +6,14 @@ DASH-01 — Dashboard stats, performance chart, insights feed, trending assets.
 import path_setup  # noqa: F401
 
 from datetime import datetime, timezone
+from typing import Optional
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Query
 from utils.http_errors import db_unavailable
 from controllers.market_controller import aai_signal
 from controllers.portfolio_controller import get_valued_holdings
 
-from auth.dependencies import get_current_user_id
+from auth.dependencies import get_current_user_id, get_optional_user_id
 from models.schemas import DashboardStats, MarketInsightItem
 from db.queries import (
     get_portfolio_holdings,
@@ -24,6 +25,7 @@ from db.queries import (
     get_nft_market_data_all_latest,
     get_price_sparklines,
     get_supported_assets,
+    get_user_flags,
 )
 from db.mongo_connection import get_db
 
@@ -138,7 +140,10 @@ def get_dashboard_insights(limit: int = Query(6, ge=1, le=20)):
 # ── GET /dashboard/trending ──────────────────────────────────────────────────
 
 @router.get("/dashboard/trending")
-def get_dashboard_trending(limit: int = Query(6, ge=1, le=20)):
+def get_dashboard_trending(
+    limit: int = Query(6, ge=1, le=20),
+    user_id: Optional[ObjectId] = Depends(get_optional_user_id),
+):
     """
     Trending = biggest absolute 24h movers across asset_market_data, joined with
     the latest AAI score and a 7-day price sparkline from `prices`.
@@ -150,6 +155,7 @@ def get_dashboard_trending(limit: int = Query(6, ge=1, le=20)):
         market_latest.sort(key=lambda m: abs(m.get("change_24h") or 0.0), reverse=True)
         top = market_latest[:limit]
         sparks = get_price_sparklines([m["asset_id"] for m in top])
+        watching = get_user_flags(user_id)["watching"]
     except Exception as exc:
         raise db_unavailable(exc)
 
@@ -169,6 +175,7 @@ def get_dashboard_trending(limit: int = Query(6, ge=1, le=20)):
             "aai_score": score,
             "signal": aai_signal(score),
             "sparkline": sparks.get(asset_id, []),
+            "watching": asset_id in watching,
         })
     return results
 

@@ -3,8 +3,9 @@ import { ErrorState } from "../../errors";
 import { useAsync } from "../../hooks/useAsync";
 import { sentimentApi } from "../../services/sentimentApi";
 import { onWatchlistsChanged } from "../../services/holdingsEvents";
+import WatchStar from "../watchlists/WatchStar";
 import { getAaiTierColor } from "../../utils/scoring";
-import { IconStar, IconArrowUpRight, IconArrowDownRight, IconArrowRight, IconListView, IconGrid2 } from "../icons";
+import { IconArrowUpRight, IconArrowDownRight, IconArrowRight, IconListView, IconGrid2 } from "../icons";
 
 const CATEGORY_TABS = [
   { key: "crypto", label: "Crypto" },
@@ -23,7 +24,6 @@ export default function AssetSentimentList({ colors, onSelectAsset }) {
   const [tab, setTab] = useState("crypto");
   const [watchlistOnly, setWatchlistOnly] = useState(false);
   const [view, setView] = useState("list"); // "list" | "grid"
-  const [favorites, setFavorites] = useState([]);
 
   // "all" (Everything) fetches the combined feed; "tokenized" is disabled/unreachable
   const apiScope = tab === "all" ? "all" : tab === "tokenized" ? "crypto" : tab;
@@ -37,9 +37,6 @@ export default function AssetSentimentList({ colors, onSelectAsset }) {
     if (watchlistOnly) r = r.filter((x) => watched?.has(x.assetId));
     return r;
   }, [rows, watchlistOnly, watched]);
-
-  const toggleFavorite = (id) =>
-    setFavorites((f) => (f.includes(id) ? f.filter((x) => x !== id) : [...f, id]));
 
   return (
     <div className="sv2-card sv2-card-pad">
@@ -120,12 +117,10 @@ export default function AssetSentimentList({ colors, onSelectAsset }) {
                   <span className={`sv2-change ${row.changePct > 0 ? "positive" : row.changePct < 0 ? "negative" : ""}`}>
                     {row.changePct >= 0 ? "+" : ""}{row.changePct.toFixed(2)}%
                   </span>
-                  <button
-                    className={`sv2-star-btn ${favorites.includes(row.assetId) ? "active" : ""}`}
-                    onClick={(e) => { e.stopPropagation(); toggleFavorite(row.assetId); }}
-                  >
-                    <IconStar filled={favorites.includes(row.assetId)} />
-                  </button>
+                  <WatchStar
+                    item={{ type: row.category === "nft" ? "nft" : "crypto", id: row.category === "nft" ? row.assetId : row.symbol, name: row.name }}
+                    watching={!!watched?.has(row.assetId)}
+                  />
                 </div>
               </div>
             );
@@ -148,12 +143,10 @@ export default function AssetSentimentList({ colors, onSelectAsset }) {
                     </div>
                     <div className="sv2-asset-sub">{row.subcategory}</div>
                   </div>
-                  <button
-                    className={`sv2-star-btn ${favorites.includes(row.assetId) ? "active" : ""}`}
-                    onClick={(e) => { e.stopPropagation(); toggleFavorite(row.assetId); }}
-                  >
-                    <IconStar filled={favorites.includes(row.assetId)} />
-                  </button>
+                  <WatchStar
+                    item={{ type: row.category === "nft" ? "nft" : "crypto", id: row.category === "nft" ? row.assetId : row.symbol, name: row.name }}
+                    watching={!!watched?.has(row.assetId)}
+                  />
                 </div>
 
                 <div className="sv2-flex sv2-gap-10 sv2-mt-12" style={{ alignItems: "center" }}>

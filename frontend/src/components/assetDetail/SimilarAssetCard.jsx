@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import AssetAvatar from "../shared/AssetAvatar";
 import Sparkline from "../charts/Sparkline";
 import { formatAssetPrice, formatPct } from "../../utils/formatters";
-import { IconStar } from "../icons";
+import WatchStar from "../watchlists/WatchStar";
 
 const SIGNAL_CLASS = { BUY: "positive", HOLD: "neutral", SELL: "negative" };
 const SIGNAL_LABEL = { BUY: "Buy", HOLD: "Hold", SELL: "Sell" };
@@ -21,9 +21,7 @@ export default function SimilarAssetCard({ asset }) {
             <div className="adt-similar-sym">{asset.symbol}</div>
           </div>
         </div>
-        <button className={`sv2-star-btn ${asset.watching ? "active" : ""}`} onClick={(e) => e.stopPropagation()}>
-          <IconStar size={15} filled={asset.watching} />
-        </button>
+        <WatchStar item={{ type: "crypto", id: asset.symbol, name: asset.name }} watching={asset.watching} size={15} />
       </div>
 
       <div className="adt-similar-price">{formatAssetPrice(asset.price)}</div>

@@ -70,6 +70,7 @@ export const dashboardApi = {
       price: r.price,
       change24h: r.change_24h,
       sparkline: r.sparkline,
+      watching: !!r.watching,
       aai: { score: r.aai_score, signal: r.signal },
     }));
   },

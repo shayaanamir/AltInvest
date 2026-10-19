@@ -1,14 +1,15 @@
 import { useNavigate } from "react-router-dom";
 import Sparkline from "../charts/Sparkline";
 import AssetAvatar from "../shared/AssetAvatar";
-import { IconStar } from "../icons";
+import WatchStar from "../watchlists/WatchStar";
 import { getAaiTierColor } from "../../utils/scoring";
 import { formatAssetPrice } from "../../utils/formatters";
 
 const SIGNAL_CLASS = { BUY: "signal-buy", HOLD: "signal-hold", SELL: "signal-sell" };
 const SIGNAL_LABEL = { BUY: "Buy", HOLD: "Hold", SELL: "Sell" };
 
-export default function DiscoverAssetCard({ item, isWatching, onToggleWatch, isComparing, onToggleCompare }) {
+export default function DiscoverAssetCard({ item, isComparing, onToggleCompare }) {
+  const isWatching = item.watching;
   const navigate = useNavigate();
   const positive = item.changePct >= 0;
   const lineColor = positive ? "var(--sv2-green)" : "var(--sv2-red)";
@@ -37,16 +38,12 @@ export default function DiscoverAssetCard({ item, isWatching, onToggleWatch, isC
           >
             Compare
           </button>
-          <button
-            className={`disc-star-btn ${isWatching ? "active" : ""}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleWatch(item);
-            }}
-            title="Add to watchlist"
-          >
-            <IconStar size={17} filled={isWatching} />
-          </button>
+          <WatchStar
+            item={{ type: item.type === "nft" ? "nft" : "crypto", id: item.id, name: item.name }}
+            watching={isWatching}
+            className="disc-star-btn"
+            size={17}
+          />
         </div>
       </div>
 
