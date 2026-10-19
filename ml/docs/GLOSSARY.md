@@ -90,6 +90,12 @@ Terms marked *(not used yet)* appear in the plan docs but no code uses them so f
 - **CI half-width**: half the width of a confidence interval, (high - low) / 2. Roughly the margin of error of the estimate.
 - **Minimum detectable difference (power check)**: the smallest true improvement the protocol is likely to confirm. Approximated here by the CI half-width; reliable (80% power) detection needs about 1.43x that (D29).
 - **No demonstrated gain**: a model was not shown to be better, which is not the same as being shown to be no better (D29).
+- **Log loss (multiclass)**: the average of -ln(probability given to the class that actually happened). Saying 1/3 for each of three classes scores ln 3 = 1.0986; lower is better, and confident wrong answers are punished hard (D31).
+- **Class prior baseline**: predicting each class with the probability it had in the training fold, the same for every row (D31).
+- **Multinomial logistic regression**: a linear model that gives one score per class and turns the scores into probabilities that sum to 1 (softmax).
+- **Calibration / reliability table**: grouping predictions by stated probability (for example 0.3-0.4) and checking how often the class really happened in each group.
+- **ECE (expected calibration error)**: the count-weighted average gap between stated probability and observed frequency over the reliability table; 0 is perfectly calibrated.
+- **Convergence warning**: the fitting algorithm stopped at its iteration limit before settling. Phase 4c counts these per fold (D31).
 - **Statistical power**: the chance a test detects a real effect. Small samples have low power, so "not approved" may mean "not proven" rather than "no skill".
 - **Non-overlapping windows**: evaluating 30-day periods that do not share days, because daily steps with a 30-day horizon overlap 29/30 (docs/LEARNINGS.md). Used by the Phase 3 strategy baselines.
 - **Backtest**: replaying a strategy on past data to see how it would have done. *(not used yet)*

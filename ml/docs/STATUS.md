@@ -1,7 +1,44 @@
 # STATUS
 
-Current phase: 4b-1 (price model: Ridge/HGB) DONE for BTC, ETH, SOL (2026-10-19). Verdict: NOT APPROVED for all three (D28).
-Next: Phase 4b-2 (Prophet/LSTM price candidates) or 4c (direction). Not started; waiting on the user's go-ahead.
+Current phase: 4c (direction model) DONE for BTC, ETH, SOL (2026-10-19). Verdict (D31): APPROVED for ETH (logreg_c0.1); NOT APPROVED for BTC and SOL.
+Next: waiting on the user. The ETH approval goes against the expectation written in D31; see the concerns below before Phase 5 relies on it.
+
+## Phase 4c (direction model): what ran (from repo root, 2026-10-19)
+
+- Started from a clean tree: HEAD 5b60be2, `git_dirty` False. scikit-learn 1.7.2. LogisticRegression default solver is lbfgs; on a hand-made 3-class array coef_ has shape (3, 2) and softmax(X @ coef_.T + intercept_) equals predict_proba.
+- Step 0:
+  - power_check re-run once per asset: numbers identical, git_dirty false; only generated_at, git_commit and git_dirty changed.
+  - D30 appended.
+  - `PHASE_<N>_<name>.md` restored in AGENTS rule 16 and STATUS.
+- Step 1: D31 appended before any model code (DECISIONS.md diff: additions only).
+- New modules:
+  - `ml/models/direction.py`: 2 declared configs and the prior baseline; EPS = 1e-6; FitCache gives one fit per (fold, config) and counts ConvergenceWarnings.
+  - `ml/evaluation/prob_metrics.py`: `log_loss_rows`, `ece`.
+  - `ml/evaluation/run_walkforward_direction.py`: writes `ml/reports/{asset}/walkforward_direction.json`.
+  - No earlier module changed.
+- `ml/tests/test_direction_model.py`: 15 tests. `python -m pytest ml` -> `115 passed`.
+  - First run: 1 failure in my ECE test from float rounding (3/10 vs 0.3 differ by 5.6e-17). Changed exact equality to an absolute tolerance of 1e-12; the miscalibrated case still checks its hand-computed values.
+- `python -m ml.evaluation.run_walkforward_direction --asset btc|eth|sol` -> exit 0. `git_dirty: true` with a stderr warning (code not yet committed; not re-run).
+- `max_label_row_reached` 2820 / 2820 / 1893; the ranking order contains only the 2 configs.
+- STOP-AND-CHECK not triggered: max logloss(prior) - logloss(top) on the last 40% is 0.035904 (ETH, below 0.05), and max top-config balanced accuracy is 0.358599 (SOL, below 0.45).
+
+| walkforward_direction.json (last 40% unless noted) | BTC | ETH | SOL |
+|---|---|---|---|
+| top config (first 60%) | logreg_c0.1 | logreg_c0.1 | logreg_c0.1 |
+| n_pooled / n_effective | 831 / 27.7 | 831 / 27.7 | 444 / 14.8 |
+| log loss prior / top | 1.017508 / 1.030682 | 1.03113 / 0.995226 | 1.055915 / 1.048813 |
+| paired diff prior - top [95% CI] | -0.013174 [-0.045709, 0.017069] | 0.035904 [0.003531, 0.060357] | 0.007102 [-0.026359, 0.037926] |
+| CI half-width | 0.031389 | 0.028413 | 0.032143 |
+| balanced accuracy top / train_majority / momentum | 0.299088 / 0.333333 / 0.268803 | 0.358145 / 0.333333 / 0.416488 | 0.358599 / 0.333333 / 0.274997 |
+| macro ECE top / prior | 0.118662 / 0.107982 | 0.11057 / 0.135259 | 0.07528 / 0.095195 |
+| convergence warnings (c0.1, c1) | 0/68, 0/68 | 0/68, 0/68 | 0/37, 0/37 |
+| verdict | not approved | APPROVED | not approved |
+
+- Power: n_effective 27.7 / 27.7 / 14.8. "Not approved" means "no demonstrated gain" (D29, D30).
+- Concerns about the ETH approval (all numbers from `ml/reports/eth/walkforward_direction.json`):
+  - On the first 60% of folds, the top config's log loss (1.169426) is worse than the prior's (1.084441). Over all folds it is also worse (1.098151 vs 1.062628). The gain appears only on the last 40%.
+  - Its CI lower bound is close to 0 (0.003531).
+  - Three assets are tested, so the chance that at least one passes by luck is higher than 2.5%.
 
 ## Power check (2026-10-19, no new models)
 
@@ -147,6 +184,37 @@ Next: Phase 4b-2 (Prophet/LSTM price candidates) or 4c (direction). Not started;
 - HYPOTHESIS: the near-zero/negative validation and test values reflect a regime effect (calmer, narrower-range volatility since 2024), plus small samples (n_effective 10-16). Not proven.
 - Reproducibility fix: `ml/gitinfo.py` now holds the git metadata for every report writer. `git_dirty` ignores ml/reports/ and git-ignored files, and warns on stderr when true. `ml/tests/test_gitinfo.py` adds 6 tests on a temporary fixture repo. `python -m pytest ml` -> `59 passed`.
 - Follow-up: added `fwd_vol_30d_spread` and `vol_30d_spread` (n, min, p5-p95, max, std, IQR per split, labelled rows) to baselines.json. VERIFIED: test std and IQR of fwd_vol_30d are 36-56% of train for all three assets (numbers in the verify block, step 6). The explanation stays a HYPOTHESIS.
+
+## How to verify Phase 4c yourself (PowerShell, from the repo root)
+
+```powershell
+Set-Location C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest
+
+# 1. All tests, then only the direction model tests (hand-made fixtures, offline)
+python -m pytest ml -q
+python -m pytest ml/tests/test_direction_model.py -q
+
+# 2. Re-run (needs ml/data/raw/*.csv). WARNING appears only if code outside ml/reports/ is uncommitted.
+foreach ($a in 'btc','eth','sol') { python -m ml.evaluation.run_walkforward_direction --asset $a; "$a exit: $LASTEXITCODE" }
+
+# 3. Config count, ranking order, top config, n_effective, log loss prior/top, paired diff and CI, half-width, verdict, sealing
+python -c "import json; [print(a, (d:=json.load(open(f'ml/reports/{a}/walkforward_direction.json')))['configs_declared']['count'], d['ranking_first_60pct']['order'], (c:=d['confirmation_last_40pct'])['top_config'], c['n_effective'], c['logloss_prior'], c['logloss_top'], (x:=c['paired_diff_logloss_prior_minus_top'])['estimate'], x['low'], x['high'], c['ci_half_width'], d['verdict']['approved'], d['metadata']['max_label_row_reached']) for a in ('btc','eth','sol')]"
+
+# 4. Convergence warnings per config (folds with a warning)
+python -c "import json; [print(a, {k: v['folds_with_warning'] for k, v in json.load(open(f'ml/reports/{a}/walkforward_direction.json'))['configs_declared']['convergence_warnings'].items()}) for a in ('btc','eth','sol')]"
+```
+
+Expected (observed 2026-10-19):
+
+1. `115 passed`; the direction model file shows `15 passed`.
+2. `wrote ...walkforward_direction.json` and `exit: 0` for each asset.
+3. Output:
+   - `btc 2 ['logreg_c0.1', 'logreg_c1'] logreg_c0.1 27.7 1.017508 1.030682 -0.013174 -0.045709 0.017069 0.031389 False 2820`
+   - `eth 2 ['logreg_c0.1', 'logreg_c1'] logreg_c0.1 27.7 1.03113 0.995226 0.035904 0.003531 0.060357 0.028413 True 2820`
+   - `sol 2 ['logreg_c0.1', 'logreg_c1'] logreg_c0.1 14.8 1.055915 1.048813 0.007102 -0.026359 0.037926 0.032143 False 1893`
+4. `{'logreg_c0.1': 0, 'logreg_c1': 0}` for each asset.
+
+- LogisticRegression (lbfgs) is deterministic, so a re-run on the same data reproduces these values.
 
 ## How to verify the power check yourself (PowerShell, from the repo root)
 
@@ -483,7 +551,8 @@ Expected (observed 2026-10-18):
 - AGENTS rule 16 and a Docs list added.
 - Created docs/GLOSSARY.md, docs/phases/TEMPLATE.md, PHASE_0_scaffold.md, PHASE_1_btc_data.md.
 - Open "UNCLEAR: ask the author" items are in section 7 of the Phase 0 and Phase 1 files.
-- Phase 1b must also ship docs/phases/PHASE*1b*<name>.md before it counts as done.
+- Phase 1b must also ship `docs/phases/PHASE_1b_<name>.md` before it counts as done.
+- Restored PHASE_<N>_<name>.md in AGENTS rule 16 and STATUS. A Markdown formatter in 8e2a260 had escaped it. 8e2a260's edits to existing text were formatting only (verified by the planner with git word-diff); no D-number.
 
 ## How to verify Phase 0 yourself (PowerShell, from the repo root)
 

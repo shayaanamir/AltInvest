@@ -39,9 +39,9 @@
   "note": "Approximate. A true difference equal to the half-width is detected about 50% of the time; about 80% power needs roughly 1.43x the half-width (normal approximation). A negative verdict means 'no demonstrated gain', not 'no skill' (D29).",
   "metadata": {
     "asset": "btc",
-    "generated_at": "2026-10-19T13:32:29Z",
-    "git_commit": "00d09a04327d32030bca80fd8c277ea1d3c53e2f",
-    "git_dirty": true,
+    "generated_at": "2026-10-19T14:39:05Z",
+    "git_commit": "5b60be2fd8481974ce00d8c8a7597d9b4ff5b853",
+    "git_dirty": false,
     "sources": [
       {
         "file": "ml/reports/btc/walkforward_price.json",

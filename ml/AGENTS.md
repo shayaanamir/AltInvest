@@ -30,7 +30,7 @@ AAI score is the backend's job. Do not build it.
 13. Update docs/STATUS.md at the end of every task.
 14. API responses must validate against docs/CONTRACT.md (additionalProperties: false).
 15. Every phase ends with a 'How to verify yourself' block in docs/STATUS.md: copy-paste PowerShell commands, plus the expected output or value ranges, that the user can run without the agent. A phase is not done until this block exists.
-16. Every phase ends with an explanation file at docs/phases/PHASE*<N>*<name>.md, written for a reader who is a student and not an ML expert. Keep it brief and simple, with only the important things (under 1 page). A phase is not done until it exists. Follow the 8-section template in docs/phases/TEMPLATE.md.
+16. Every phase ends with an explanation file at `docs/phases/PHASE_<N>_<name>.md`, written for a reader who is a student and not an ML expert. Keep it brief and simple, with only the important things (under 1 page). A phase is not done until it exists. Follow the 8-section template in docs/phases/TEMPLATE.md.
 
 ## Docs
 
@@ -39,4 +39,4 @@ AAI score is the backend's job. Do not build it.
 - docs/DECISIONS.md (D-numbers), docs/LEARNINGS.md (v1 lessons).
 - docs/GLOSSARY.md: plain-English term definitions. Add new terms each phase.
 - docs/phases/TEMPLATE.md: the brief 8-section template for phase explanations.
-- docs/phases/PHASE_0_scaffold.md, docs/phases/PHASE_1_btc_data.md, docs/phases/PHASE_1b_eth_sol_data.md, docs/phases/PHASE_2_features_labels.md, docs/phases/PHASE_3_baselines.md, docs/phases/PHASE_4_0_walkforward_harness.md, docs/phases/PHASE_4a_risk_model.md, docs/phases/PHASE_4b1_price_model.md: finished phases.
+- docs/phases/PHASE_0_scaffold.md, docs/phases/PHASE_1_btc_data.md, docs/phases/PHASE_1b_eth_sol_data.md, docs/phases/PHASE_2_features_labels.md, docs/phases/PHASE_3_baselines.md, docs/phases/PHASE_4_0_walkforward_harness.md, docs/phases/PHASE_4a_risk_model.md, docs/phases/PHASE_4b1_price_model.md, docs/phases/PHASE_4c_direction_model.md: finished phases.
