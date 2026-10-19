@@ -899,10 +899,153 @@
       }
     }
   },
+  "risk_persistence_check": {
+    "train": {
+      "n_labelled": 2293,
+      "n_effective": 76.433333,
+      "score": "vol_30d (trailing)",
+      "target": "fwd_vol_30d",
+      "spearman": 0.464212,
+      "spearman_ci95": {
+        "low": 0.270192,
+        "high": 0.619904,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      }
+    },
+    "validation": {
+      "n_labelled": 468,
+      "n_effective": 15.6,
+      "score": "vol_30d (trailing)",
+      "target": "fwd_vol_30d",
+      "spearman": 0.082533,
+      "spearman_ci95": {
+        "low": -0.446954,
+        "high": 0.331513,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      }
+    },
+    "test": {
+      "n_labelled": 468,
+      "n_effective": 15.6,
+      "score": "vol_30d (trailing)",
+      "target": "fwd_vol_30d",
+      "spearman": -0.113481,
+      "spearman_ci95": {
+        "low": -0.371181,
+        "high": 0.21686,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      }
+    },
+    "full_labelled": {
+      "n_labelled": 3289,
+      "n_effective": 109.633333,
+      "score": "vol_30d (trailing)",
+      "target": "fwd_vol_30d",
+      "spearman": 0.463487,
+      "spearman_ci95": {
+        "low": 0.328378,
+        "high": 0.593331,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      }
+    },
+    "full_non_overlapping": {
+      "step_rows": 30,
+      "n_points": 110,
+      "spearman": 0.445547
+    }
+  },
+  "fwd_vol_30d_spread": {
+    "train": {
+      "n": 2293,
+      "min": 0.00784,
+      "p5": 0.020001,
+      "p25": 0.031967,
+      "p50": 0.043016,
+      "p75": 0.053351,
+      "p95": 0.078007,
+      "max": 0.135281,
+      "std": 0.018985,
+      "iqr": 0.021384
+    },
+    "validation": {
+      "n": 468,
+      "min": 0.017778,
+      "p5": 0.021058,
+      "p25": 0.030021,
+      "p50": 0.036337,
+      "p75": 0.043585,
+      "p95": 0.050126,
+      "max": 0.054336,
+      "std": 0.009016,
+      "iqr": 0.013563
+    },
+    "test": {
+      "n": 468,
+      "min": 0.014787,
+      "p5": 0.017945,
+      "p25": 0.024858,
+      "p50": 0.032565,
+      "p75": 0.036928,
+      "p95": 0.051819,
+      "max": 0.055494,
+      "std": 0.009042,
+      "iqr": 0.01207
+    }
+  },
+  "vol_30d_spread": {
+    "train": {
+      "n": 2293,
+      "min": 0.00784,
+      "p5": 0.020001,
+      "p25": 0.032375,
+      "p50": 0.043411,
+      "p75": 0.053988,
+      "p95": 0.080733,
+      "max": 0.135281,
+      "std": 0.019304,
+      "iqr": 0.021613
+    },
+    "validation": {
+      "n": 468,
+      "min": 0.017778,
+      "p5": 0.020238,
+      "p25": 0.02793,
+      "p50": 0.034809,
+      "p75": 0.041341,
+      "p95": 0.050048,
+      "max": 0.054336,
+      "std": 0.008907,
+      "iqr": 0.013411
+    },
+    "test": {
+      "n": 468,
+      "min": 0.014787,
+      "p5": 0.017945,
+      "p25": 0.027058,
+      "p50": 0.03309,
+      "p75": 0.036928,
+      "p95": 0.051819,
+      "max": 0.055494,
+      "std": 0.008733,
+      "iqr": 0.00987
+    }
+  },
   "metadata": {
     "asset": "eth",
-    "generated_at": "2026-10-19T08:57:31Z",
-    "git_commit": "d1a78970ad6493334a849fb9a53ec86b7ca5fe7f",
+    "generated_at": "2026-10-19T11:01:33Z",
+    "git_commit": "a78f98f1da400efc79e47898968708fa513701f3",
     "git_dirty": true,
     "data_first_date": "2017-08-17",
     "data_last_date": "2026-10-17",

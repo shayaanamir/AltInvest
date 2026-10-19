@@ -8,12 +8,12 @@ Test results are reported only; nothing is chosen on them (docs/EVALUATION.md ru
 
 import argparse
 import json
-import subprocess
 from datetime import datetime, timezone
 
 import numpy as np
 
 from ml import config
+from ml.gitinfo import git_metadata
 from ml.data.dataset_summary import prepare, require_validated
 from ml.data.validate import ML_ROOT
 from ml.evaluation import baselines as bl
@@ -24,14 +24,6 @@ from ml.labels.labels import DIRECTION_CLASSES, RISK_CLASSES
 EVAL_SPLITS = ("validation", "test")
 WINDOWS_PER_YEAR = config.ANNUALISATION_DAYS / config.HORIZON_DAYS
 NO_PROBS = "roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities"
-
-
-def _git(*args: str) -> str | None:
-    try:
-        return subprocess.run(["git", *args], cwd=ML_ROOT.parent, capture_output=True, text=True,
-                              check=True).stdout.strip()
-    except (OSError, subprocess.CalledProcessError):
-        return None
 
 
 def _clean(x):
@@ -110,6 +102,39 @@ def risk_ranking(d: dict, rows: list[int]) -> dict:
             "spearman_ci95": m.bootstrap_ci(np.arange(len(rows)), stat)}
 
 
+def risk_persistence_check(d: dict) -> dict:
+    """Sanity check: Spearman(vol_30d, fwd_vol_30d) per split, on the full labelled series, and on
+    non-overlapping rows (every 30th labelled row). Train is included as a diagnostic of a fixed rule."""
+    ok = d["labels"].notna().all(axis=1)
+    full = [i for i in range(len(ok)) if ok.iloc[i]]
+    out = {split: {**counts(labelled_rows(d, split)), **risk_ranking(d, labelled_rows(d, split))}
+           for split in ("train", "validation", "test")}
+    out["full_labelled"] = {**counts(full), **risk_ranking(d, full)}
+    step = full[::config.HORIZON_DAYS]
+    x = bl.risk_ranking_score(d["feats"]).iloc[step].to_numpy()
+    y = d["labels"]["fwd_vol_30d"].iloc[step].to_numpy()
+    out["full_non_overlapping"] = {"step_rows": config.HORIZON_DAYS, "n_points": len(step),
+                                   "spearman": m.spearman(x, y)}
+    return out
+
+
+def spread(values: np.ndarray) -> dict:
+    """Distribution summary: n, min, percentiles, max, std (ddof=1) and IQR."""
+    q = {p: float(np.percentile(values, p)) for p in (5, 25, 50, 75, 95)}
+    return {"n": len(values), "min": float(values.min()), **{f"p{p}": v for p, v in q.items()},
+            "max": float(values.max()), "std": float(np.std(values, ddof=1)), "iqr": q[75] - q[25]}
+
+
+def vol_spreads(d: dict) -> dict:
+    """Spread of fwd_vol_30d (target) and vol_30d (trailing predictor) on each split's labelled rows."""
+    out = {"fwd_vol_30d_spread": {}, "vol_30d_spread": {}}
+    for split in ("train", "validation", "test"):
+        rows = labelled_rows(d, split)
+        out["fwd_vol_30d_spread"][split] = spread(d["labels"]["fwd_vol_30d"].iloc[rows].to_numpy())
+        out["vol_30d_spread"][split] = spread(d["feats"]["vol_30d"].iloc[rows].to_numpy())
+    return out
+
+
 def strategy_section(d: dict, split: str) -> dict:
     labelled = d["labels"].notna().all(axis=1)
     starts = bl.window_starts(d["splits"][split], labelled)
@@ -154,12 +179,13 @@ def run(asset: str) -> dict:
         _add_note(risk["train_majority"], "spearman is null: a constant prediction has no ranking")
         report["risk"][split] = risk
         report["strategy"][split] = strategy_section(d, split)
+    report["risk_persistence_check"] = risk_persistence_check(d)
+    report.update(vol_spreads(d))
 
     report["metadata"] = {
         "asset": asset,
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "git_commit": _git("rev-parse", "HEAD"),
-        "git_dirty": bool(_git("status", "--porcelain")),
+        **git_metadata(),
         "data_first_date": d["raw"]["timestamp"].min().strftime("%Y-%m-%d"),
         "data_last_date": d["raw"]["timestamp"].max().strftime("%Y-%m-%d"),
         "n_feature_rows": len(feats),

@@ -75,6 +75,17 @@ def test_fwd_return_manual_and_last_rows_nan():
     assert v.iloc[-30:].isna().all() and v.iloc[:-30].notna().all()
 
 
+# Phase 3 sanity check: forward vol shifted 30 rows is exactly the trailing vol (same 30 returns, both ddof=1)
+def test_fwd_vol_shifted_equals_trailing_vol():
+    df = _bars()                                     # hand-made fixture, not market data
+    feats = build_features(df)
+    fwd = build_labels(df.set_index("timestamp")["close"]).loc[feats.index, "fwd_vol_30d"]
+    shifted, trailing = fwd.shift(30), feats["vol_30d"]
+    both = shifted.notna() & trailing.notna()
+    assert both.sum() == len(feats) - 30             # only the first 30 rows are lost to the shift
+    np.testing.assert_allclose(shifted[both], trailing[both], rtol=1e-12, atol=0)
+
+
 # d. boundaries follow D18 and labels never cross into the next split
 @pytest.mark.parametrize("n", [250, 300, 1000, 1234, 2229, 3319])
 def test_split_boundaries_d18(n):

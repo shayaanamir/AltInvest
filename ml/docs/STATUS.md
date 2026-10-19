@@ -27,14 +27,36 @@ Blocked: nothing.
   - Price: drift beats last-value only on BTC validation (skill 0.018417); last-value is the price baseline to beat elsewhere.
   - n_effective is only 15.6 (BTC, ETH) and about 10.1 (SOL) per split, so all CIs are wide.
 
+## Phase 3 sanity check: risk persistence (2026-10-19, no new features or models)
+- Std definitions match: both `vol_30d` (features.py:50) and `fwd_vol_30d` (labels.py:25) use pandas `.std()`, ddof=1. Windows: r[t-29..t] and r[t+1..t+30].
+- New test `test_fwd_vol_shifted_equals_trailing_vol` (test_leakage.py): fwd_vol_30d.shift(30) == vol_30d, rtol 1e-12. Passes. `python -m pytest ml` -> `53 passed`.
+  - First run failed on my own row-count line (expected n-60, correct is n-30: the shift fills the 30 unlabelled end rows). Corrected the count, still exact; the tolerance check was not changed.
+  - On real BTC data the max difference is 1.05e-15 over 3289 rows (one-off console check).
+- New `risk_persistence_check` block in `ml/reports/{asset}/baselines.json`. Re-ran all three assets: exit 0, `git_dirty: true` (this task is uncommitted; HEAD a78f98f).
+
+| Spearman(vol_30d, fwd_vol_30d) [95% CI] | BTC | ETH | SOL |
+|---|---|---|---|
+| train | 0.465702 [0.2883, 0.6063] | 0.464212 [0.2702, 0.6199] | 0.523997 [0.2979, 0.6695] |
+| validation | -0.167378 [-0.4355, 0.159] | 0.082533 [-0.447, 0.3315] | 0.297256 [-0.1375, 0.5979] |
+| test | 0.006854 [-0.3887, 0.3615] | -0.113481 [-0.3712, 0.2169] | -0.191428 [-0.5972, 0.172] |
+| full labelled (n) | 0.505931 (3289) | 0.463487 (3289) | 0.585925 (2199) |
+| non-overlapping every 30th row (points) | 0.520186 (110) | 0.445547 (110) | 0.563747 (74) |
+
+- VERIFIED: alignment is correct (identity test passes; train Spearman positive with CIs above 0).
+- HYPOTHESIS: the near-zero/negative validation and test values reflect a regime effect (calmer, narrower-range volatility since 2024), plus small samples (n_effective 10-16). Not proven.
+- Reproducibility fix: `ml/gitinfo.py` now holds the git metadata for every report writer. `git_dirty` ignores ml/reports/ and git-ignored files, and warns on stderr when true. `ml/tests/test_gitinfo.py` adds 6 tests on a temporary fixture repo. `python -m pytest ml` -> `59 passed`.
+- Follow-up: added `fwd_vol_30d_spread` and `vol_30d_spread` (n, min, p5-p95, max, std, IQR per split, labelled rows) to baselines.json. VERIFIED: test std and IQR of fwd_vol_30d are 36-56% of train for all three assets (numbers in the verify block, step 6). The explanation stays a HYPOTHESIS.
+
 ## How to verify Phase 3 yourself (PowerShell, from the repo root)
 ```powershell
 Set-Location C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest
 
-# 1. All tests (offline, hand-made fixtures)
+# 1. All tests (offline, hand-made fixtures; test_gitinfo uses a temporary fixture git repo)
 python -m pytest ml -q
 
-# 2. Re-run the baselines (needs ml/data/raw/*.csv; rewrites generated_at and git fields only)
+# 2. Re-run the baselines (needs ml/data/raw/*.csv; rewrites generated_at and git fields only).
+#    git_dirty = uncommitted changes OUTSIDE ml/reports/ (tracked or untracked, git-ignored files excluded).
+#    Changed report files never make it true. If true, a one-line WARNING goes to stderr; the run still completes.
 foreach ($a in 'btc','eth','sol') { python -m ml.evaluation.run_baselines --asset $a; "$a exit: $LASTEXITCODE" }
 
 # 3. Sections present + key test numbers
@@ -42,15 +64,30 @@ python -c "import json; [print(a, all(set((d:=json.load(open(f'ml/reports/{a}/ba
 
 # 4. A null with a note (SOL test has no high-risk rows)
 python -c "import json; r=json.load(open('ml/reports/sol/baselines.json'))['risk']['test']['persistence']; print(r['per_class']['high']); print(r['note'][:60])"
+
+# 5. Sanity check: identity test, then the risk persistence Spearman values
+python -m pytest ml -q -k fwd_vol_shifted
+python -c "import json; [print(a, *[(k, (c:=json.load(open(f'ml/reports/{a}/baselines.json'))['risk_persistence_check'])[k]['spearman']) for k in ('train','validation','test','full_labelled','full_non_overlapping')]) for a in ('btc','eth','sol')]"
+
+# 6. Volatility spread per split (std and IQR of fwd_vol_30d), and the git state recorded in the report
+python -c "import json; [print(a, (d:=json.load(open(f'ml/reports/{a}/baselines.json')))['metadata']['git_dirty'], *[(s, v['std'], v['iqr']) for s, v in d['fwd_vol_30d_spread'].items()]) for a in ('btc','eth','sol')]"
 ```
 Expected (observed 2026-10-19):
-1. `52 passed`.
-2. `wrote ...baselines.json` and `exit: 0` for each asset.
+1. `59 passed`.
+2. `wrote ...baselines.json` and `exit: 0` for each asset, with no WARNING line on a committed tree.
 3. Output:
    - `btc True 8095.51 0.655983 0.006854 16`
    - `eth True 439.12 0.566239 -0.113481 16`
    - `sol True 13.82 0.704918 -0.191428 11`
 4. `{'precision': None, 'recall': None, 'support': 0, 'predicted': 0}`, then `class(es) ['high'] never occur in the actual labels: their r`.
+5. `1 passed, 58 deselected`, then:
+   - `btc ('train', 0.465702) ('validation', -0.167378) ('test', 0.006854) ('full_labelled', 0.505931) ('full_non_overlapping', 0.520186)`
+   - `eth ('train', 0.464212) ('validation', 0.082533) ('test', -0.113481) ('full_labelled', 0.463487) ('full_non_overlapping', 0.445547)`
+   - `sol ('train', 0.523997) ('validation', 0.297256) ('test', -0.191428) ('full_labelled', 0.585925) ('full_non_overlapping', 0.563747)`
+6. Output (git_dirty is `False` when everything outside ml/reports/ is committed, even after step 2 rewrote the reports):
+   - `btc False ('train', 0.015606, 0.015899) ('validation', 0.00643, 0.00882) ('test', 0.006979, 0.007573)`
+   - `eth False ('train', 0.018985, 0.021384) ('validation', 0.009016, 0.013563) ('test', 0.009042, 0.01207)`
+   - `sol False ('train', 0.024828, 0.027889) ('validation', 0.012379, 0.015975) ('test', 0.009178, 0.009948)`
 - If raw data is re-fetched later, test numbers shift; validation numbers stay the same unless n changes the split boundaries.
 
 ## Phase 2 (features, labels, splits): what ran (from repo root, 2026-10-19)

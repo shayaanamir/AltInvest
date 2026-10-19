@@ -51,6 +51,22 @@ Test split, from `ml/reports/{asset}/baselines.json`:
 - Baselines give hard classes only, so ROC-AUC and calibration are null until a model gives probabilities.
 - The random-signal strategy baseline (docs/EVALUATION.md) is left for Phase 5.
 
+## Sanity check: risk persistence
+Because trailing volatility barely ranked forward volatility on test, we checked the alignment.
+- A new test confirms that forward volatility shifted 30 days equals trailing volatility (`ml/tests/test_leakage.py`), so both use the same 30 returns.
+- Spearman(vol_30d, fwd_vol_30d), from `risk_persistence_check` in `ml/reports/{asset}/baselines.json`:
+
+| | BTC | ETH | SOL |
+|---|---|---|---|
+| Train | 0.465702 | 0.464212 | 0.523997 |
+| Validation | -0.167378 | 0.082533 | 0.297256 |
+| Test | 0.006854 | -0.113481 | -0.191428 |
+| Full series, every 30th row (points) | 0.520186 (110) | 0.445547 (110) | 0.563747 (74) |
+
+- Verified: the alignment is correct; over the full history, volatility does persist.
+- Hypothesis (not proven): validation and test (2024 onwards) are a calmer period with a narrow range of volatility, which makes ranking harder; the samples are also small.
+- Spread of forward volatility (VERIFIED numbers, `fwd_vol_30d_spread` in `ml/reports/{asset}/baselines.json`). Std, train vs test: BTC 0.015606 vs 0.006979, ETH 0.018985 vs 0.009042, SOL 0.024828 vs 0.009178. IQR, train vs test: BTC 0.015899 vs 0.007573, ETH 0.021384 vs 0.01207, SOL 0.027889 vs 0.009948. So the test spread is clearly narrower than train: about 36-56% of the train value on both measures. The trailing predictor `vol_30d` shrinks the same way (test std BTC 0.007028, ETH 0.008733, SOL 0.009605). HYPOTHESIS: with less spread, small noisy changes decide the ranking, so Spearman falls even if volatility still persists. This fits the near-zero test values but does not prove the cause.
+
 ## 8. Verify and next
 - Verify: see "How to verify Phase 3 yourself" in ml/docs/STATUS.md.
 - Next: Phase 4a (price model), compared against these baselines on validation.
