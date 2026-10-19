@@ -3,6 +3,16 @@ import { apiFetch } from "./apiClient";
 // Backend global_sentiment is -1..1; the dashboard gauge reads 0..100.
 const sentimentTo100 = (s) => Math.round(((s ?? 0) + 1) * 50);
 
+// Only plain http(s) links are ever rendered as hrefs (blocks javascript: and data: URLs).
+function safeHttpUrl(u) {
+  try {
+    const parsed = new URL(u);
+    return parsed.protocol === "https:" || parsed.protocol === "http:" ? parsed.href : null;
+  } catch {
+    return null;
+  }
+}
+
 export const dashboardApi = {
   getCurrentUser: async () => {
     const p = await apiFetch("/profile");
@@ -45,6 +55,7 @@ export const dashboardApi = {
       summary: r.summary,
       impact: r.impact,
       publishedAt: r.published_at,
+      url: safeHttpUrl(r.url),
       relatedAssetSymbol: r.related_asset_symbol,
       relatedNftSlug: r.related_nft_slug,
     }));

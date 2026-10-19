@@ -33,9 +33,11 @@ export default function MarketInsightsCard() {
               </div>
               <p className="dv2-insight-title">{item.title}</p>
               <div className="dv2-insight-links">
-                <span className="dv2-insight-link" title="No source URL in this insight's data">
-                  Read source ↗
-                </span>
+                {item.url && (
+                  <a className="dv2-insight-link" href={item.url} target="_blank" rel="noopener noreferrer">
+                    Read source ↗
+                  </a>
+                )}
                 {item.relatedAssetSymbol && (
                   <button type="button" className="dv2-insight-link" onClick={() => navigate(`/asset-detail?symbol=${item.relatedAssetSymbol}`)}>
                     Open asset →

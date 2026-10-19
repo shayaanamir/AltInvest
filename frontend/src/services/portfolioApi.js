@@ -49,6 +49,7 @@ function mapNftHolding(h, meta) {
     valueUsd: currentValueUsd,
     costBasisUsd: costBasis,
     changePct: costBasis > 0 ? round2(((currentValueUsd - costBasis) / costBasis) * 100) : 0,
+    aaiScore: meta?.aaiScore ?? null,
     aiAction: meta?.signal ? SIGNAL_TO_ACTION[meta.signal] || "Hold" : "Hold",
     artColor: meta?.color || "#c9805a",
     dateAdded: h.date_added,

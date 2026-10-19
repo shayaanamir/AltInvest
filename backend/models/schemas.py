@@ -128,6 +128,7 @@ class MarketInsightItem(BaseModel):
     title: str
     summary: str
     impact: str
+    url: Optional[str] = None            # link to the original article, when the insight has one
     related_asset_symbol: Optional[str] = None
     related_nft_slug: Optional[str] = None
     published_at: str
