@@ -91,7 +91,8 @@ def _detect_trend(current_score: float, history: list[dict]) -> str:
 def _extract_top_headlines(articles: list[dict], n: int = 5) -> list[dict]:
     """
     Returns the top N most impactful headlines (highest absolute nlp_score),
-    sorted by absolute score descending.
+    sorted by absolute score descending. Each carries the blended score plus
+    the VADER and FinBERT scores it was blended from.
     """
     sorted_articles = sorted(
         articles,
@@ -103,12 +104,18 @@ def _extract_top_headlines(articles: list[dict], n: int = 5) -> list[dict]:
         {
             "title":  a.get("title", ""),
             "score":  round(a.get("nlp_score", 0.0), 4),
+            "vader_score":   _round_or_none(a.get("vader_score")),
+            "finbert_score": _round_or_none(a.get("finbert_score")),
             "source": a.get("source", ""),
             "age_hours": a.get("age_hours", 0.0),
             "link":   a.get("link", ""),
         }
         for a in sorted_articles[:n]
     ]
+
+
+def _round_or_none(value: Optional[float]) -> Optional[float]:
+    return round(value, 4) if value is not None else None
 
 
 def _source_breakdown(articles: list[dict]) -> dict[str, int]:
@@ -170,11 +177,14 @@ def run_pipeline(
     volume_metrics = compute_volume_metrics(scored_articles)
 
     # ── Step 6: Compute weighted NLP score ───────────────────────────────────
-    # Use recency_adjusted_score as the weight for each article's contribution
-    recency_scores  = [a["recency_adjusted_score"] for a in weighted_articles]
-    recency_weights = [a["recency_weight"] * a.get("trust_weight", 1.0) for a in weighted_articles]
+    # Weighted mean of raw nlp_score, with recency * trust as the weights.
+    # recency_adjusted_score must NOT be used here — it already has recency and
+    # trust multiplied in, so weighting it again would double-apply them and
+    # shrink the result toward neutral.
+    nlp_scores  = [a.get("nlp_score", 0.0) for a in weighted_articles]
+    nlp_weights = [a["recency_weight"] * a.get("trust_weight", 1.0) for a in weighted_articles]
 
-    raw_nlp_score = _weighted_mean(recency_scores, recency_weights)
+    raw_nlp_score = _weighted_mean(nlp_scores, nlp_weights)
     nlp_score_01  = _normalise_nlp_to_0_1(raw_nlp_score)
 
     # ── Step 7: Blend NLP + CMC ───────────────────────────────────────────────
@@ -185,6 +195,9 @@ def run_pipeline(
     trend = _detect_trend(final_score, history or [])
 
     # ── Assemble output ───────────────────────────────────────────────────────
+    quote_fallback  = bool(cmc_data.get("quote", {}).get("is_fallback", False))
+    global_fallback = bool(cmc_data.get("global", {}).get("is_fallback", False))
+
     output = {
         # Core contract fields (what Person B needs)
         "asset_id":        asset_id,
@@ -213,20 +226,23 @@ def run_pipeline(
         # Top headlines
         "top_headlines": _extract_top_headlines(weighted_articles),
 
-        # CMC detail
+        # CMC detail — fallback values are placeholders, not readings, so they go out as None
         "market_signals": {
-            "price_change_24h":  cmc_data["quote"]["price_change_24h"],
-            "volume_change_24h": cmc_data["quote"]["volume_change_24h"],
+            "price_change_24h":  None if quote_fallback else cmc_data["quote"]["price_change_24h"],
+            "volume_change_24h": None if quote_fallback else cmc_data["quote"]["volume_change_24h"],
             "is_trending":       cmc_data["is_trending"],
-            "btc_dominance":     cmc_data["global"]["btc_dominance"],
+            "btc_dominance":     None if global_fallback else cmc_data["global"]["btc_dominance"],
         },
 
         # Per-source article counts
         "articles_by_source": _source_breakdown(scored_articles),
         "data_quality": {
-            "degraded": cmc_data.get("degraded", False),
-            "cmc_fallback": cmc_data.get("quote", {}).get("is_fallback", False)
-                            or cmc_data.get("global", {}).get("is_fallback", False),
+            "degraded":          cmc_data.get("degraded", False),
+            "cmc_fallback":      quote_fallback or global_fallback,
+            "quote_fallback":    quote_fallback,
+            "global_fallback":   global_fallback,
+            "trending_fallback": cmc_data.get("trending_fallback", False),
+            "cmc_key_missing":   cmc_data.get("key_missing", False),
         },
     }
 

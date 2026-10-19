@@ -37,7 +37,7 @@ HEADERS = {
 _CACHE_TTL_SECONDS = 90
 
 _global_cache: dict = {"data": None, "fetched_at": 0.0}
-_trending_cache: dict = {"data": None, "fetched_at": 0.0}
+_trending_cache: dict = {"data": None, "fetched_at": 0.0, "fetched": False}
 
 
 def _get(endpoint: str, params: dict = {}) -> Optional[dict]:
@@ -158,10 +158,15 @@ def fetch_global_metrics(force_refresh: bool = False) -> Optional[dict]:
     return result
 
 
-def fetch_trending_assets(force_refresh: bool = False) -> list[str]:
-    """Asset-independent — cached the same way as global metrics."""
+def fetch_trending_assets(force_refresh: bool = False) -> Optional[list[str]]:
+    """
+    Asset-independent — cached the same way as global metrics.
+    Returns None when CMC couldn't be reached, so callers can tell
+    "not trending" apart from "unknown".
+    """
     now = time.monotonic()
-    if not force_refresh and _trending_cache["data"] is not None:
+    # "data" may legitimately be None (CMC unreachable), so track fetches separately.
+    if not force_refresh and _trending_cache["fetched"]:
         if now - _trending_cache["fetched_at"] < _CACHE_TTL_SECONDS:
             return _trending_cache["data"]
 
@@ -169,7 +174,7 @@ def fetch_trending_assets(force_refresh: bool = False) -> list[str]:
 
     if not data or "data" not in data:
         logger.warning("Could not fetch CMC trending assets.")
-        result = []
+        result = None
     else:
         raw_list = []
         d_data = data["data"]
@@ -189,6 +194,7 @@ def fetch_trending_assets(force_refresh: bool = False) -> list[str]:
 
     _trending_cache["data"] = result
     _trending_cache["fetched_at"] = now
+    _trending_cache["fetched"] = True
     return result
 
 
@@ -208,7 +214,7 @@ def fetch_all_signals(asset_id: str) -> dict:
         trending = trending_future.result()
 
     symbol      = ASSETS[asset_id]["cmc_symbol"]
-    is_trending = symbol in trending
+    is_trending = (symbol in trending) if trending is not None else None
     trend_bonus = 0.05 if is_trending else 0.0
 
     cmc_score = round(
@@ -220,7 +226,9 @@ def fetch_all_signals(asset_id: str) -> dict:
         4
     )
 
-    degraded = bool(quote.get("is_fallback")) or bool(global_m.get("is_fallback"))
+    quote_fallback  = bool(quote.get("is_fallback"))
+    global_fallback = bool(global_m.get("is_fallback"))
+    degraded = quote_fallback or global_fallback
     if degraded:
         logger.warning(f"CMC data degraded for {asset_id.upper()} — using fallback component(s)")
 
@@ -232,6 +240,10 @@ def fetch_all_signals(asset_id: str) -> dict:
         "is_trending":     is_trending,
         "final_cmc_score": cmc_score,
         "degraded":        degraded,
+        "quote_fallback":  quote_fallback,
+        "global_fallback": global_fallback,
+        "trending_fallback": trending is None,
+        "key_missing":     not CMC_API_KEY,
     }
 
 

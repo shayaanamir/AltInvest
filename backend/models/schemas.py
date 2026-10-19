@@ -28,7 +28,9 @@ class HeadlineItem(BaseModel):
     # Only the title is guaranteed: feeds omit links and timestamps, and a pipeline
     # that found nothing returns no headlines at all.
     title: str
-    score: Optional[float] = None
+    score: Optional[float] = None                   # blended VADER + FinBERT score
+    vader_score: Optional[float] = None
+    finbert_score: Optional[float] = None
     source: Optional[str] = None
     age_hours: Optional[float] = None
     link: Optional[str] = None
@@ -49,6 +51,18 @@ class MarketSignals(BaseModel):
     btc_dominance: Optional[float] = None
 
 
+class DataQuality(BaseModel):
+    # Which inputs fell back to placeholders. Older stored records carry only
+    # degraded / cmc_fallback, so everything is optional.
+    degraded: Optional[bool] = None
+    cmc_fallback: Optional[bool] = None
+    quote_fallback: Optional[bool] = None
+    global_fallback: Optional[bool] = None
+    trending_fallback: Optional[bool] = None
+    cmc_key_missing: Optional[bool] = None
+    reason: Optional[str] = None
+
+
 class SentimentResponse(BaseModel):
     asset: str
     sentiment_score: float                          # maps to their sentiment_score
@@ -66,6 +80,8 @@ class SentimentResponse(BaseModel):
     top_headlines: Optional[List[HeadlineItem]] = None
     market_signals: Optional[MarketSignals] = None
     articles_by_source: Optional[Dict[str, int]] = None
+    data_quality: Optional[DataQuality] = None
+    error: Optional[str] = None
     note: Optional[str] = None
 
 class RiskResponse(BaseModel):

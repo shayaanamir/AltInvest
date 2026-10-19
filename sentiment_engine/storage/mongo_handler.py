@@ -90,10 +90,19 @@ def _get_db():
 
 # ── Write operations ───────────────────────────────────────────────────────────
 
+def is_no_articles_result(result: dict) -> bool:
+    """True for the neutral placeholder run_pipeline returns when no articles were found."""
+    return (result.get("data_quality") or {}).get("reason") == "no_articles"
+
+
 def save_sentiment(result: dict) -> bool:
     """
     Upserts the latest sentiment result for an asset.
     Also appends to the history collection.
+
+    A neutral "no articles" placeholder is not real data: it never goes into
+    history, and it only fills the latest slot when the asset has no record
+    yet — it must not overwrite the last good score.
 
     Args:
         result: The output dict from sentiment_aggregator.run_pipeline()
@@ -110,6 +119,16 @@ def save_sentiment(result: dict) -> bool:
     timestamp = result.get("last_updated", datetime.now(tz=timezone.utc).isoformat())
 
     try:
+        if is_no_articles_result(result):
+            # Insert-only: a no-op if a record for this asset already exists.
+            db[COLLECTION_SENTIMENT].update_one(
+                {"asset_id": asset_id},
+                {"$setOnInsert": {**result, "updated_at": timestamp}},
+                upsert=True,
+            )
+            logger.info(f"No articles for {asset_id.upper()} — kept last good score, no history point written")
+            return True
+
         # Upsert latest
         db[COLLECTION_SENTIMENT].update_one(
             {"asset_id": asset_id},

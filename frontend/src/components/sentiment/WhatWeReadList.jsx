@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { IconExternal, IconChevronDown } from "../icons";
 
+const fmtScore = (n) => `${n >= 0 ? "+" : ""}${Number(n).toFixed(2)}`;
+
 export default function WhatWeReadList({ detail, colors }) {
   const [showAll, setShowAll] = useState(false);
   const [showSources, setShowSources] = useState(false);
@@ -21,6 +23,9 @@ export default function WhatWeReadList({ detail, colors }) {
             <a href={h.link} target="_blank" rel="noreferrer" className="sv2-news-title">{h.title} <IconExternal /></a>
             <div className="sv2-meta-line">
               <span>{h.source}</span><span>·</span><span>{Math.round(h.age_hours)}h ago</span>
+              {h.vader_score != null && h.finbert_score != null && (
+                <><span>·</span><span>VADER {fmtScore(h.vader_score)} / FinBERT {fmtScore(h.finbert_score)}</span></>
+              )}
             </div>
           </div>
         </div>

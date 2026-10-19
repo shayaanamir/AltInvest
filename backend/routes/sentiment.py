@@ -86,6 +86,11 @@ def _is_stale(result: dict) -> bool:
         return True
 
 
+def _is_no_articles(result: dict) -> bool:
+    """True for the neutral placeholder run_pipeline returns when no articles were found."""
+    return (result.get("data_quality") or {}).get("reason") == "no_articles"
+
+
 def _neutral(asset_id: str, error: str = "") -> dict:
     return {
         "asset_id":               asset_id,
@@ -142,6 +147,8 @@ def _map_sentiment(result: dict) -> dict:
         "top_headlines": headlines,
         "market_signals": market_signals,
         "articles_by_source": result.get("articles_by_source"),
+        "data_quality": result.get("data_quality") or None,
+        "error": result.get("error"),
         "note": result.get("note") or result.get("error"),
     }
 
@@ -282,8 +289,12 @@ def get_sentiment(asset: str):
         return _map_sentiment(cached)
 
     history = get_sentiment_history(asset_id, days=1)
-    result  = run_pipeline(asset_id, history=history)
+    raw     = run_pipeline(asset_id, history=history)
+    result: dict = raw[0] if isinstance(raw, tuple) else raw
     save_sentiment(result)
+    # No articles this run: the last good (if stale) score beats a neutral 0.0.
+    if cached and _is_no_articles(result):
+        return _map_sentiment(cached)
     return _map_sentiment(result)
 
 
@@ -328,8 +339,13 @@ def refresh_sentiment(asset: str):
         )
 
     history = get_sentiment_history(asset_id, days=1)
-    result  = run_pipeline(asset_id, history=history)
+    raw     = run_pipeline(asset_id, history=history)
+    result: dict = raw[0] if isinstance(raw, tuple) else raw
     save_sentiment(result)
+    if _is_no_articles(result):
+        cached = get_latest_sentiment(asset_id)
+        if cached and not _is_no_articles(cached):
+            return JSONResponse(content={"status": "no_new_articles", "result": _map_sentiment(cached)})
     return JSONResponse(content={"status": "refreshed", "result": _map_sentiment(result)})
 
 

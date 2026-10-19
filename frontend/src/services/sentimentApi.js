@@ -131,6 +131,7 @@ function normaliseRecord(raw) {
     topHeadlines: raw.top_headlines ?? [],
     marketSignals: raw.market_signals ?? {},
     articlesBySource: raw.articles_by_source ?? {},
+    dataQuality: raw.data_quality ?? {},
     lastUpdated: raw.last_updated ?? raw.timestamp ?? null,
   };
 }
@@ -329,6 +330,11 @@ export const sentimentApi = {
         volumeChange24h: record.marketSignals?.volume_change_24h ?? null,
         isTrending: record.marketSignals?.is_trending ?? null,
         btcDominance: record.marketSignals?.btc_dominance ?? null,
+      },
+      // Which inputs fell back to placeholders, so the UI can say so instead of passing them off as readings.
+      dataQuality: {
+        cmcKeyMissing: !!record.dataQuality.cmc_key_missing,
+        cmcFallback: !!record.dataQuality.cmc_fallback,
       },
       lastUpdated: record.lastUpdated,
     };
