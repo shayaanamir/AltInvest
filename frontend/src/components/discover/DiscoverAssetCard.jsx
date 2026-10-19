@@ -16,8 +16,8 @@ export default function DiscoverAssetCard({ item, isWatching, onToggleWatch, isC
   return (
     <div
       className={`disc-card ${isComparing ? "in-compare" : ""}`}
-      onClick={() => navigate(`/asset-detail?symbol=${item.symbol}`)}
-      style={{ cursor: "pointer" }}
+      onClick={item.type === "nft" ? undefined : () => navigate(`/asset-detail?symbol=${item.symbol}`)}
+      style={{ cursor: item.type === "nft" ? "default" : "pointer" }}
     >
       <div className="disc-card-top">
         <div className="disc-avatar-row">

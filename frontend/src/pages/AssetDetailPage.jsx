@@ -14,9 +14,12 @@ import SimilarAssetsSection from "../components/assetDetail/SimilarAssetsSection
 export default function AssetDetailPage({ onNavigate }) {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const symbol = searchParams.get("symbol") || "BTC";
+  const symbol = searchParams.get("symbol");
 
-  const { data: detail, loading, error } = useAsync(() => assetDetailApi.getAssetDetail(symbol), [symbol]);
+  const { data: detail, loading, error } = useAsync(
+    () => (symbol ? assetDetailApi.getAssetDetail(symbol) : Promise.resolve(null)),
+    [symbol]
+  );
 
   const handleBack = () => {
     if (onNavigate) onNavigate("Dashboard");
@@ -37,7 +40,7 @@ export default function AssetDetailPage({ onNavigate }) {
           <>
             <button className="adt-back-btn" onClick={handleBack}>Back</button>
             <div className="sv2-muted sv2-small">
-              No asset "{symbol}" in the database. Crypto assets only for now — NFT collections don't have a detail page yet.
+              {symbol ? `No asset "${symbol}" in the database.` : "No asset selected."} Crypto assets only for now — NFT collections don't have a detail page yet.
             </div>
           </>
         ) : (

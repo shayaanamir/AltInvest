@@ -1,11 +1,9 @@
-import { useNavigate } from "react-router-dom";
 import { useAsync } from "../../hooks/useAsync";
 import { portfolioApi } from "../../services/portfolioApi";
 import { formatPct } from "../../utils/formatters";
 import NftArtPlaceholder from "./NftArtPlaceholder";
 
 export default function NftHoldingsGrid() {
-  const navigate = useNavigate();
   const { data: holdings } = useAsync(() => portfolioApi.getNftHoldings(), []);
 
   return (
@@ -25,7 +23,7 @@ export default function NftHoldingsGrid() {
               <div
                 key={`${n.collectionSlug}-${n.tokenId}`}
                 className="sv2-card pv2-nft-card"
-                onClick={() => navigate("/asset-detail")}
+                style={{ cursor: "default" }}
               >
                 <div className="pv2-nft-art">
                   <NftArtPlaceholder color={n.artColor} seed={Number(n.tokenId) || 1} />

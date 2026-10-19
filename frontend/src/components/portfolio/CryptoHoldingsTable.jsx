@@ -66,7 +66,7 @@ export default function CryptoHoldingsTable() {
           holdings.map((h) => {
             const positive = h.change24hPct >= 0;
             return (
-              <div key={h.symbol} className="pv2-holdings-row" onClick={() => navigate("/asset-detail")}>
+              <div key={h.symbol} className="pv2-holdings-row" onClick={() => navigate(`/asset-detail?symbol=${h.symbol}`)}>
                 <div className="pv2-asset-cell">
                   <AssetAvatar symbol={h.symbol} color={h.logoColor} size={36} />
                   <div>
