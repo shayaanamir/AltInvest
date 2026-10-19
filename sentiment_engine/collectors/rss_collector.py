@@ -119,19 +119,26 @@ def _cluster_near_duplicates(articles: list[dict]) -> list[dict]:
     return deduped
 
 
-def _entry_matches_asset(entry, keywords: list[str]) -> tuple[bool, float]:
+def _count(pattern: str, text: str, flags: int = 0) -> int:
+    return len(re.findall(pattern, text, flags))
+
+
+def _entry_matches_asset(entry, asset: dict) -> tuple[bool, float]:
     """
     Determines whether an RSS entry is actually about the target asset.
 
-    Improvements over plain substring matching:
-      - Word-boundary matching, so short ambiguous keywords ("sol") don't
-        match inside unrelated words ("solar", "console", "solution").
-      - Title matches are weighted 3x over summary/tag matches — a keyword
-        in the headline is a much stronger relevance signal than an
-        incidental mention in the body.
-      - Keywords <=3 chars (the collision-prone ones) require at least one
-        TITLE match to count; a body-only mention is discounted rather than
-        treated as a full match.
+    `asset` is the asset's config block (see ASSETS in utils/config.py):
+      - names:   unambiguous full names, matched case-insensitively on word
+                 boundaries anywhere in the entry.
+      - tickers: a "$TICKER" cashtag always matches. A bare ticker matches
+                 case-insensitively, unless the asset is marked
+                 ambiguous_ticker (the ticker is also an everyday word:
+                 link, near, uni, atom, dot, ...). Those only match when
+                 written in UPPERCASE in the TITLE ("LINK jumps 10%", not
+                 "click the link").
+
+    Title hits are weighted 3x over summary/tag hits — a name in the headline
+    is a much stronger relevance signal than an incidental body mention.
 
     Returns:
         (is_match, relevance_score)
@@ -140,25 +147,29 @@ def _entry_matches_asset(entry, keywords: list[str]) -> tuple[bool, float]:
     summary = (getattr(entry, "summary", "") or "")
     tags = " ".join(t.term for t in getattr(entry, "tags", []) if hasattr(t, "term"))
 
-    title_lower = title.lower()
-    body_lower = f"{summary} {tags}".lower()
-
+    body = f"{summary} {tags}"
     title_hits = 0
     body_hits = 0
-    shortest_kw_len = min((len(kw) for kw in keywords), default=0)
 
-    for kw in keywords:
-        pattern = r"\b" + re.escape(kw.lower()) + r"\b"
-        title_hits += len(re.findall(pattern, title_lower))
-        body_hits += len(re.findall(pattern, body_lower))
+    for name in asset["names"]:
+        pattern = r"\b" + re.escape(name) + r"\b"
+        title_hits += _count(pattern, title, re.IGNORECASE)
+        body_hits += _count(pattern, body, re.IGNORECASE)
+
+    ambiguous = asset.get("ambiguous_ticker", False)
+    for ticker in asset["tickers"]:
+        cashtag = r"(?<![A-Za-z0-9$])\$" + re.escape(ticker) + r"\b"
+        title_hits += _count(cashtag, title, re.IGNORECASE)
+        body_hits += _count(cashtag, body, re.IGNORECASE)
+
+        bare = r"(?<![$A-Za-z0-9])" + re.escape(ticker) + r"\b"
+        if ambiguous:
+            title_hits += _count(r"(?<![$A-Za-z0-9])" + re.escape(ticker.upper()) + r"\b", title)
+        else:
+            title_hits += _count(bare, title, re.IGNORECASE)
+            body_hits += _count(bare, body, re.IGNORECASE)
 
     relevance = title_hits * 3 + body_hits
-
-    if shortest_kw_len <= 3 and title_hits == 0 and body_hits > 0:
-        # Ambiguous short keyword with only a body mention — discount hard
-        # rather than admit it as a confident match.
-        return False, relevance * 0.3
-
     return relevance > 0, float(relevance)
 
 
@@ -197,7 +208,7 @@ def fetch_articles_for_asset(asset_id: str) -> list[dict]:
     if asset_id not in ASSETS:
         raise ValueError(f"Unknown asset: {asset_id}. Must be one of {list(ASSETS.keys())}")
 
-    keywords    = ASSETS[asset_id]["keywords"]
+    asset       = ASSETS[asset_id]
     articles    = []
     seen_titles = set()
 
@@ -218,7 +229,7 @@ def fetch_articles_for_asset(asset_id: str) -> list[dict]:
                 logger.warning(f"{feed_name} returned a malformed feed: {feed.bozo_exception}")
 
             for entry in feed.entries:
-                is_match, relevance = _entry_matches_asset(entry, keywords)
+                is_match, relevance = _entry_matches_asset(entry, asset)
                 if not is_match:
                     continue
 

@@ -68,13 +68,17 @@ def fetch_quote_signals(asset_id: str) -> Optional[dict]:
         raise ValueError(f"Unknown asset: {asset_id}")
 
     symbol = ASSETS[asset_id]["cmc_symbol"]
-    data   = _get("/cryptocurrency/quotes/latest", {"symbol": symbol, "convert": "USD"})
+    cmc_id = ASSETS[asset_id]["cmc_id"]
 
-    if not data or "data" not in data or symbol not in data["data"]:
-        logger.warning(f"No CMC quote data for {symbol}. Returning neutral signals.")
+    # Look up by id, not symbol: symbols aren't unique on CMC (many tokens share a ticker)
+    # and they change — MATIC became POL — while the id stays put. The response is keyed by id.
+    data = _get("/cryptocurrency/quotes/latest", {"id": cmc_id, "convert": "USD"})
+
+    if not data or "data" not in data or str(cmc_id) not in data["data"]:
+        logger.warning(f"No CMC quote data for {symbol} (id {cmc_id}). Returning neutral signals.")
         return _neutral_quote_signals(asset_id)
 
-    asset_data = data["data"][symbol]
+    asset_data = data["data"][str(cmc_id)]
     quote      = asset_data["quote"]["USD"]
 
     p1h  = quote.get("percent_change_1h", 0)  or 0
@@ -163,11 +167,11 @@ def fetch_global_metrics(force_refresh: bool = False) -> Optional[dict]:
     return result
 
 
-def fetch_trending_assets(force_refresh: bool = False) -> Optional[list[str]]:
+def fetch_trending_assets(force_refresh: bool = False) -> Optional[list[int]]:
     """
     Asset-independent — cached the same way as global metrics.
-    Returns None when CMC couldn't be reached, so callers can tell
-    "not trending" apart from "unknown".
+    Returns the CMC ids of the trending assets, or None when CMC couldn't be
+    reached, so callers can tell "not trending" apart from "unknown".
     """
     now = time.monotonic()
     # "data" may legitimately be None (CMC unreachable), so track fetches separately.
@@ -191,10 +195,12 @@ def fetch_trending_assets(force_refresh: bool = False) -> Optional[list[str]]:
             else:
                 raw_list = list(d_data.values())
 
+        # CMC ids, not symbols: a trending token that merely shares a ticker with one of our
+        # assets must not count as that asset trending.
         result = [
-            item["symbol"].upper()
+            int(item["id"])
             for item in raw_list
-            if isinstance(item, dict) and "symbol" in item
+            if isinstance(item, dict) and item.get("id") is not None
         ]
 
     _trending_cache["data"] = result
@@ -218,8 +224,7 @@ def fetch_all_signals(asset_id: str) -> dict:
         global_m = global_future.result()
         trending = trending_future.result()
 
-    symbol      = ASSETS[asset_id]["cmc_symbol"]
-    is_trending = (symbol in trending) if trending is not None else None
+    is_trending = (ASSETS[asset_id]["cmc_id"] in trending) if trending is not None else None
     trend_bonus = 0.05 if is_trending else 0.0
 
     cmc_score = round(
