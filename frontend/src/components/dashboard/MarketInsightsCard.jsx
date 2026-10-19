@@ -15,7 +15,7 @@ export default function MarketInsightsCard() {
         <div className="sv2-card-sub">What's moving the numbers</div>
       </div>
 
-      <div style={{ marginTop: 10, overflowY: "auto", maxHeight: 300 }}>
+      <div style={{ marginTop: 10, overflowY: "auto", maxHeight: "var(--dv2-insights-h, 300px)" }}>
         {error ? (
           <ErrorState error={error} onRetry={refetch} title="Couldn't load insights" />
         ) : !insights ? (

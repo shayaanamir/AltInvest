@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAppPreferences } from "../../services/appPreferences";
 import { useTheme } from "../../context/ThemeContext";
 import { clearSession } from "../../hooks/useAuth";
 import { NAV_ITEMS, BOTTOM_NAV } from "../../routes";
@@ -38,7 +39,9 @@ function MenuIcon({ icon, label, color = "currentColor", size = 16, style }) {
 export default function Sidebar({ activePage, onNavigate }) {
   const { tokens: t } = useTheme();
 
-  const [collapsed, setCollapsed] = useState(false);
+  const { density } = useAppPreferences();
+  const [collapsedChoice, setCollapsed] = useState(null); // null until the user toggles it
+  const collapsed = collapsedChoice ?? density === "compact";
 
   const sidebarStyle = {
     width: collapsed ? 72 : 230,

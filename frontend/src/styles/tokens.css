@@ -587,12 +587,41 @@
   color: var(--sv2-accent);
   font-weight: 700;
 }
-/* ---------- density (Settings > Appearance) ---------- */
-[data-density="compact"] .sv2-card-pad { padding: 14px 16px; }
-[data-density="compact"] .sv2-card-pad-sm { padding: 10px 12px; }
+/* ---------- page scroll area ---------- */
+.app-content { flex: 1; overflow: auto; padding: 40px 40px 20px; }
+
+/* ---------- density: compact (Settings > Appearance) ----------
+   Comfortable is the default and has no rules here. Compact zooms the page content out, drops the
+   page gutters, tightens headers/cards/grids, and starts the sidebar collapsed (Sidebar.jsx), so more
+   fits on one screen; the dashboard is rearranged to fit without scrolling (dashboard.css). */
+[data-density="compact"] .app-content { padding: 0; zoom: 0.86; }
+[data-density="compact"] .sv2-page { margin: 0; padding: 14px 20px 16px; min-height: 0; }
+
+[data-density="compact"] .sv2-page-header,
+[data-density="compact"] .dv2-hero,
+[data-density="compact"] .disc-header,
+[data-density="compact"] .wl-header,
+[data-density="compact"] .alr-page-head,
+[data-density="compact"] .cmp-page-head,
+[data-density="compact"] .set-header { margin-bottom: 12px; gap: 10px; align-items: center; }
+[data-density="compact"] .sv2-page-title,
+[data-density="compact"] .sv2-h1,
+[data-density="compact"] .dv2-hero-title,
+[data-density="compact"] .disc-title,
+[data-density="compact"] .wl-title { font-size: 20px !important; margin: 0 !important; }
+[data-density="compact"] .sv2-page-sub,
+[data-density="compact"] .sv2-lead,
+[data-density="compact"] .dv2-hero-sub,
+[data-density="compact"] .disc-sub,
+[data-density="compact"] .wl-sub { font-size: 12px !important; }
+
+[data-density="compact"] .sv2-card { border-radius: 12px; }
+[data-density="compact"] .sv2-card-pad { padding: 12px 14px; }
+[data-density="compact"] .sv2-card-pad-sm { padding: 9px 11px; }
+[data-density="compact"] .sv2-card-title { font-size: 14px; }
+[data-density="compact"] .sv2-card-sub { font-size: 11px; }
 [data-density="compact"] .sv2-3col,
 [data-density="compact"] .sv2-hub-bottom,
 [data-density="compact"] .sv2-detail-grid,
-[data-density="compact"] .sv2-subgrid-2 { gap: 8px; }
-[data-density="compact"] .sv2-page { padding-top: 12px; }
-[data-density="compact"] .sv2-card { border-radius: 14px; }
+[data-density="compact"] .sv2-subgrid-2,
+[data-density="compact"] .sv2-list-row-grid { gap: 8px; }

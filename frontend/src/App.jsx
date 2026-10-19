@@ -97,7 +97,7 @@ function ShellRoutes() {
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--sv2-bg)", transition: "background 0.25s" }}>
         <Topbar />
         <ConnectionBanner />
-        <div style={{ flex: 1, overflow: "auto", padding: "40px 40px 20px" }}>{wrappedPageContent}</div>
+        <div className="app-content">{wrappedPageContent}</div>
       </div>
     </div>
   );

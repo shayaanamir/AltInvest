@@ -39,7 +39,7 @@ export default function PortfolioPerformanceCard() {
         </div>
       </div>
 
-      <div style={{ height: 260, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+      <div style={{ height: "var(--dv2-perf-h, 260px)", display: "flex", flexDirection: "column", justifyContent: "center" }}>
         {statsError ? (
           <ErrorState error={statsError} onRetry={refetchStats} variant="panel" title="Couldn't check your holdings" />
         ) : !hasHoldings ? (

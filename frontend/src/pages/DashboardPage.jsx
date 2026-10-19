@@ -21,8 +21,10 @@ export default function DashboardPage() {
           <ErrorBoundary variant="section" label="Market insights"><MarketInsightsCard /></ErrorBoundary>
         </div>
 
-        <ErrorBoundary variant="section" label="Trending assets"><TrendingAssetsSection /></ErrorBoundary>
-        <ErrorBoundary variant="section" label="Trending collections"><TrendingCollectionsSection /></ErrorBoundary>
+        <div className="dv2-bottom-grid">
+          <ErrorBoundary variant="section" label="Trending assets"><TrendingAssetsSection /></ErrorBoundary>
+          <ErrorBoundary variant="section" label="Trending collections"><TrendingCollectionsSection /></ErrorBoundary>
+        </div>
       </div>
     </div>
   );
