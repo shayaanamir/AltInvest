@@ -49,3 +49,12 @@ export async function fetchUniverse(params = {}) {
   const rows = await apiFetch(`/discover${qs.toString() ? `?${qs}` : ""}`);
   return rows.map(mapUniverseItem);
 }
+
+/**
+ * The covered-universe row for one crypto symbol, including whether the signed-in user holds it
+ * and watches it. Resolves to null when the symbol isn't in the covered universe.
+ */
+export async function fetchAssetStatus(symbol) {
+  const rows = await fetchUniverse({ category: "crypto", q: symbol });
+  return rows.find((r) => r.symbol?.toUpperCase() === symbol.toUpperCase()) || null;
+}

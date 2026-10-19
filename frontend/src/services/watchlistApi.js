@@ -1,5 +1,6 @@
 import { apiFetch } from "./apiClient";
 import { fetchUniverse } from "./assetRepository";
+import { notifyWatchlistsChanged } from "./holdingsEvents";
 
 // ── real-data mapping ────────────────────────────────────────────────────
 // /watchlists returns each item with its stored price / 24h change / AAI. Colour, symbol,
@@ -54,16 +55,30 @@ export const watchlistApi = {
 
   // ── mutations ──────────────────────────────────────────────────────────
 
-  createList: (name) => apiFetch("/watchlists", { method: "POST", body: JSON.stringify({ name }) }),
+  createList: (name) =>
+    apiFetch("/watchlists", { method: "POST", body: JSON.stringify({ name }) }).then((res) => {
+      notifyWatchlistsChanged();
+      return res;
+    }),
 
-  deleteList: (watchlistId) => apiFetch(`/watchlists/${watchlistId}`, { method: "DELETE" }),
+  deleteList: (watchlistId) =>
+    apiFetch(`/watchlists/${watchlistId}`, { method: "DELETE" }).then((res) => {
+      notifyWatchlistsChanged();
+      return res;
+    }),
 
   addItem: (watchlistId, type, symbolOrSlug) =>
     apiFetch(`/watchlists/${watchlistId}/items`, {
       method: "POST",
       body: JSON.stringify({ type, symbol_or_slug: symbolOrSlug }),
+    }).then((res) => {
+      notifyWatchlistsChanged();
+      return res;
     }),
 
   removeItem: (watchlistId, symbolOrSlug) =>
-    apiFetch(`/watchlists/${watchlistId}/items/${symbolOrSlug}`, { method: "DELETE" }),
+    apiFetch(`/watchlists/${watchlistId}/items/${symbolOrSlug}`, { method: "DELETE" }).then((res) => {
+      notifyWatchlistsChanged();
+      return res;
+    }),
 };

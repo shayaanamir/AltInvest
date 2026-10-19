@@ -1,7 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { ErrorState, useToast } from "../../errors";
 import { useAsync } from "../../hooks/useAsync";
-import { sentimentApi, WATCHLIST } from "../../services/sentimentApi";
+import { sentimentApi } from "../../services/sentimentApi";
+import { fetchAssetStatus } from "../../services/assetRepository";
+import { onHoldingsChanged, onWatchlistsChanged } from "../../services/holdingsEvents";
+import CreateAlertModal from "../alerts/CreateAlertModal";
+import AddHoldingModal from "../portfolio/AddHoldingModal";
+import WatchlistPickerModal from "../watchlists/WatchlistPickerModal";
 import AssetDetailHeader from "./AssetDetailHeader";
 import AssetReadCard from "./AssetReadCard";
 import AssetOverTimeChart from "./AssetOverTimeChart";
@@ -17,9 +22,20 @@ export default function AssetSentimentDetail({ assetId, colors, onBack, onSwitch
   const { data: switchableRaw } = useAsync(() => sentimentApi.getSwitchableAssets(), []);
   const switchable = switchableRaw || [];
   const [refreshing, setRefreshing] = useState(false);
-  const [watching, setWatching] = useState(WATCHLIST.includes(assetId));
-
-  useEffect(() => { setWatching(WATCHLIST.includes(assetId)); }, [assetId]);
+  // Whether the signed-in user holds / watches this asset (null: not in the covered universe).
+  const subscribeStatus = useCallback((handler) => {
+    const offHoldings = onHoldingsChanged(handler);
+    const offLists = onWatchlistsChanged(handler);
+    return () => { offHoldings(); offLists(); };
+  }, []);
+  const { data: status } = useAsync(
+    () => (detail?.category === "nft" ? Promise.resolve(null) : fetchAssetStatus(assetId.toUpperCase())),
+    [assetId, detail?.category],
+    { subscribe: subscribeStatus }
+  );
+  const [dialog, setDialog] = useState(null); // "alert" | "watch" | "hold"
+  const [alertsVersion, setAlertsVersion] = useState(0);
+  const covered = !!status;
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -57,8 +73,9 @@ export default function AssetSentimentDetail({ assetId, colors, onBack, onSwitch
         onSwitchAsset={onSwitchAsset}
         onRefresh={handleRefresh}
         refreshing={refreshing}
-        watching={watching}
-        onToggleWatching={() => setWatching((w) => !w)}
+        watching={!!status?.watching}
+        onToggleWatching={() => setDialog("watch")}
+        watchDisabled={!covered}
       />
 
       <div className="sv2-detail-grid">
@@ -70,10 +87,36 @@ export default function AssetSentimentDetail({ assetId, colors, onBack, onSwitch
           </div>
         </div>
         <div className="sv2-flex-col sv2-gap-16">
-          <AssetActionsPanel watching={watching} onToggleWatching={() => setWatching((w) => !w)} held={detail.held} />
-          <AssetAlertsPanel />
+          <AssetActionsPanel
+            symbol={assetId.toUpperCase()}
+            status={status}
+            onAlert={() => setDialog("alert")}
+            onWatch={() => setDialog("watch")}
+            onHold={() => setDialog("hold")}
+          />
+          <AssetAlertsPanel
+            symbol={assetId.toUpperCase()}
+            covered={covered}
+            version={alertsVersion}
+            onNewAlert={() => setDialog("alert")}
+          />
         </div>
       </div>
+
+      {dialog === "alert" && covered && (
+        <CreateAlertModal
+          target={{ type: "crypto", symbol: status.symbol, name: status.name }}
+          defaults={{ metric: "sentiment", condition: "shifts_bearish" }}
+          onClose={() => setDialog(null)}
+          onCreated={() => setAlertsVersion((v) => v + 1)}
+        />
+      )}
+      {dialog === "watch" && covered && (
+        <WatchlistPickerModal item={{ type: "crypto", id: status.id, name: status.name }} onClose={() => setDialog(null)} />
+      )}
+      {dialog === "hold" && covered && (
+        <AddHoldingModal initialKind="crypto" initialAssetId={status.id} onClose={() => setDialog(null)} />
+      )}
 
       <WhatWeReadList detail={detail} colors={colors} />
       <MarketContextPanel detail={detail} />

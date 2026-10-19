@@ -17,11 +17,12 @@ const CHANNELS = [
  * Create or edit an alert rule.
  *   Create, target known:   <CreateAlertModal target={{ type, symbol|slug, name }} hint? />
  *   Create, pick a target:  <CreateAlertModal />               (shows a search over the covered universe)
+ *   defaults={{ metric, condition }} opens a create dialog pre-set to that rule.
  *   Edit:                   <CreateAlertModal alert={alert} />  (target and metric are fixed; condition,
  *                                                                threshold and delivery channel can change)
  * Calls onCreated() after a successful save, then closes. Failures stay in the dialog as a toast.
  */
-export default function CreateAlertModal({ target: fixedTarget, alert, hint, onClose, onCreated }) {
+export default function CreateAlertModal({ target: fixedTarget, alert, hint, defaults, onClose, onCreated }) {
   const toast = useToast();
   const editing = !!alert;
 
@@ -33,8 +34,8 @@ export default function CreateAlertModal({ target: fixedTarget, alert, hint, onC
     [needsPicker]
   );
 
-  const [metric, setMetric] = useState(alert?.metricType ?? "price");
-  const [condition, setCondition] = useState(alert?.condition ?? "above");
+  const [metric, setMetric] = useState(alert?.metricType ?? defaults?.metric ?? "price");
+  const [condition, setCondition] = useState(alert?.condition ?? defaults?.condition ?? "above");
   const [threshold, setThreshold] = useState(alert?.thresholdValue != null ? String(alert.thresholdValue) : "");
   const [channel, setChannel] = useState(alert?.deliveryChannel ?? "in-app");
   const [error, setError] = useState(null);
