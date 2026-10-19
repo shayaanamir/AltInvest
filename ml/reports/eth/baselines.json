@@ -1044,9 +1044,9 @@
   },
   "metadata": {
     "asset": "eth",
-    "generated_at": "2026-10-19T11:01:33Z",
-    "git_commit": "a78f98f1da400efc79e47898968708fa513701f3",
-    "git_dirty": true,
+    "generated_at": "2026-10-19T11:42:20Z",
+    "git_commit": "87630869d3e90c50d07ebc461150741a6c0660be",
+    "git_dirty": false,
     "data_first_date": "2017-08-17",
     "data_last_date": "2026-10-17",
     "n_feature_rows": 3319,

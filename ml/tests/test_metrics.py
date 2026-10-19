@@ -149,6 +149,40 @@ def test_bootstrap_reproducible_and_sane():
     assert m.bootstrap_ci(v[:10], np.mean, block_size=30) is None
 
 
+# ---------- paired bootstrap (hand-made fixtures, not market data) ----------
+
+def _spearman_rows(x):
+    return m.spearman(x[:, 0], x[:, 1])
+
+
+def test_paired_bootstrap_identical_inputs_contains_zero():
+    t = np.arange(150, dtype=float)
+    actual = np.sin(t / 7) + 0.01 * t
+    pred = np.c_[actual + np.cos(t / 3), actual]
+    ci = m.paired_bootstrap_ci(pred, pred.copy(), _spearman_rows, block_size=30, n_boot=200)
+    assert ci["estimate"] == 0.0 and ci["low"] <= 0.0 <= ci["high"]
+
+
+def test_paired_bootstrap_better_predictor_above_zero():
+    t = np.arange(150, dtype=float)
+    actual = np.sin(t / 7) + 0.01 * t
+    good = np.c_[actual + 0.05 * np.cos(t * 1.3), actual]      # nearly perfect ranking
+    bad = np.c_[np.cos(t * 2.1), actual]                        # unrelated to the actual values
+    ci = m.paired_bootstrap_ci(good, bad, _spearman_rows, block_size=30, n_boot=200)
+    assert ci["estimate"] > 0 and ci["low"] > 0
+
+
+def test_paired_bootstrap_reproducible_and_validates():
+    t = np.arange(120, dtype=float)
+    a, b = np.c_[np.sin(t / 5), t], np.c_[np.cos(t / 5), t]
+    one = m.paired_bootstrap_ci(a, b, _spearman_rows, n_boot=100, seed=3)
+    assert one == m.paired_bootstrap_ci(a, b, _spearman_rows, n_boot=100, seed=3)
+    assert one != m.paired_bootstrap_ci(a, b, _spearman_rows, n_boot=100, seed=4)
+    assert m.paired_bootstrap_ci(a[:10], b[:10], _spearman_rows) is None
+    with pytest.raises(ValueError):
+        m.paired_bootstrap_ci(a, b[:-1], _spearman_rows)
+
+
 # ---------- baseline rules ----------
 
 def test_majority_class_and_tie_break():

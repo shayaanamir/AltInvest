@@ -240,3 +240,31 @@ def bootstrap_ci(values, stat_fn, block_size: int = 30, n_boot: int = 1000, seed
     alpha = (1 - level) / 2
     return {"low": float(np.quantile(stats, alpha)), "high": float(np.quantile(stats, 1 - alpha)),
             "level": level, "block_size": block_size, "n_boot": n_boot, "seed": seed}
+
+
+def paired_bootstrap_ci(a, b, stat_fn, block_size: int = 30, n_boot: int = 1000, seed: int = 0,
+                        level: float = 0.95) -> dict | None:
+    """Moving-block bootstrap CI of stat_fn(a) - stat_fn(b) on PAIRED rows.
+
+    a and b have the same number of rows (first axis) and each resample uses the same row indices for
+    both, so the noise they share cancels. Rows may be 2-D, e.g. [prediction, actual]. None if there
+    are fewer rows than one block.
+    """
+    a, b = np.asarray(a, dtype=float), np.asarray(b, dtype=float)
+    if len(a) != len(b):
+        raise ValueError("a and b must have the same number of rows")
+    n = len(a)
+    if n < block_size or block_size < 1:
+        return None
+    rng = np.random.default_rng(seed)
+    n_blocks = math.ceil(n / block_size)
+    starts = rng.integers(0, n - block_size + 1, size=(n_boot, n_blocks))
+    offsets = np.arange(block_size)
+    diffs = np.empty(n_boot)
+    for i in range(n_boot):
+        idx = (starts[i][:, None] + offsets).ravel()[:n]
+        diffs[i] = stat_fn(a[idx]) - stat_fn(b[idx])
+    alpha = (1 - level) / 2
+    return {"estimate": float(stat_fn(a) - stat_fn(b)),
+            "low": float(np.quantile(diffs, alpha)), "high": float(np.quantile(diffs, 1 - alpha)),
+            "level": level, "block_size": block_size, "n_boot": n_boot, "seed": seed}

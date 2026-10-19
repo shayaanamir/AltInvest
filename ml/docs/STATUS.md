@@ -1,6 +1,15 @@
 # STATUS
 Current phase: 4.0 (walk-forward harness) DONE for BTC, ETH, SOL (2026-10-19). No trained models.
-Next: Phase 4a (price model). Not started; waiting on the user's go-ahead.
+Next: Phase 4a (risk model). STOPPED after pre-flight review; waiting on the user (see below).
+
+## Phase 4a (risk model): stopped at pre-flight (2026-10-19)
+- Done before the stop:
+  - Step 0a: re-ran run_baselines and run_walkforward once each from clean HEAD 8763086. All 6 reports changed only in generated_at, git_commit and git_dirty (true -> false); `git_dirty` False.
+  - Step 0b: D23, D24, D25 added to DECISIONS.md.
+  - Step 1: `paired_bootstrap_ci` in metrics.py plus 3 tests (`test_metrics.py`: 22 passed).
+- Blocking problem: the required test "predictions for a fold do not change when rows at or after the origin are altered" cannot pass for a correct model. The fold predicts rows [t, t+30), and each row's features are trailing windows ending at that row's own price. So altering prices at or after t changes the predicted rows' inputs, and their predictions must change.
+- Proposed replacement (needs approval): (i) the model fitted for fold k is unchanged when raw rows at or after origin_k are altered (compare its predictions on the original inputs); (ii) the prediction at any row r is unchanged when only rows after r are altered.
+- Not started: ml/models/risk.py, run_walkforward_risk.py, test_risk_model.py, runs, phase doc.
 Done: branch ml-v2, v1 archived at tag archive/ml-v1, docs, Phase 0 scaffold, Phase 1 (BTC), Phase 1b (ETH, SOL), Phase 2, Phase 3, Phase 4.0.
 Blocked: nothing.
 
