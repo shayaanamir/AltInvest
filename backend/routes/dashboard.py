@@ -50,19 +50,15 @@ def get_dashboard_stats(user_id: ObjectId = Depends(get_current_user_id)):
     portfolio_value = sum(h.get("current_value_usd") or 0.0 for h in valued_holdings)
     volume_24h = sum(m.get("volume_24h") or 0.0 for m in market_latest)
 
-    # Sentiment engine output. Neutral placeholders (confidence 0, written when no
-    # articles were found) are ignored so they don't drag the average to zero.
+    # Sentiment engine output, restricted to usable readings: covered assets only, recent,
+    # and real (no neutral no-articles placeholders or error rows, which would drag the
+    # average toward zero).
     sentiment_scores, confidences = [], []
     try:
-        try:
-            from sentiment_engine.storage.mongo_handler import get_all_latest
-        except ImportError:
-            from storage.mongo_handler import get_all_latest
-        for doc in get_all_latest():
-            score, conf = doc.get("sentiment_score"), doc.get("confidence") or 0.0
-            if score is not None and conf > 0:
-                sentiment_scores.append(score)
-                confidences.append(conf)
+        from routes.sentiment import usable_sentiment_records
+        for doc in usable_sentiment_records():
+            sentiment_scores.append(doc["sentiment_score"])
+            confidences.append(doc["confidence"])
     except Exception as exc:
         print(f"[dashboard] sentiment engine unavailable ({exc})")
 
@@ -85,6 +81,7 @@ def get_dashboard_stats(user_id: ObjectId = Depends(get_current_user_id)):
         crypto_score_count=len(crypto_aai),
         nft_score_count=len(nft_aai),
         market_mood_confidence=round(sum(confidences) / len(confidences) * 100, 1) if confidences else None,
+        sentiment_asset_count=len(sentiment_scores),
     )
 
 

@@ -41,27 +41,23 @@ def sentiment_confidence_label(conf: float | None) -> str | None:
 
 def live_sentiment_by_symbol() -> dict:
     """
-    {SYMBOL: {score, confidence, trend}} from the sentiment engine's own collection,
-    which its scheduler refreshes continuously. Neutral placeholders (confidence 0 —
-    written when no articles were found) are skipped. Returns {} if the engine or its
-    database is unavailable, so callers fall back to the stored aai_scores values.
+    {SYMBOL: {score, confidence, trend}} from the sentiment engine's own collection, which
+    its scheduler refreshes continuously. Only usable readings are included: covered assets,
+    recent, and real (no no-articles placeholders or error rows). Returns {} if the engine
+    or its database is unavailable, so callers fall back to the stored aai_scores values.
     """
     try:
-        try:
-            from sentiment_engine.storage.mongo_handler import get_all_latest
-        except ImportError:
-            from storage.mongo_handler import get_all_latest
-        docs = get_all_latest()
+        from routes.sentiment import usable_sentiment_records
+        docs = usable_sentiment_records()
     except Exception as exc:
         print(f"[market_controller] live sentiment unavailable ({exc})")
         return {}
 
-    out = {}
-    for d in docs:
-        asset_id, score, conf = d.get("asset_id"), d.get("sentiment_score"), d.get("confidence") or 0.0
-        if asset_id and score is not None and conf > 0:
-            out[asset_id.upper()] = {"score": score, "confidence": conf, "trend": d.get("trend")}
-    return out
+    return {
+        d["asset_id"].upper(): {"score": d["sentiment_score"], "confidence": d["confidence"], "trend": d.get("trend")}
+        for d in docs
+        if d.get("asset_id")
+    }
 
 
 def _aai_fields(aai: dict | None, live: dict | None = None) -> dict:

@@ -100,6 +100,8 @@ class AAIResponse(BaseModel):
     pred_score: float
     sentiment_score: float
     sentiment_confidence: Optional[float] = None
+    sentiment_available: Optional[bool] = None      # False: no recent sentiment, neutral 50 was used
+    sentiment_note: Optional[str] = None
     risk_score: float
     model_version: str
     timestamp: str
@@ -162,6 +164,7 @@ class DashboardStats(BaseModel):
     crypto_score_count: int = 0
     nft_score_count: int = 0
     market_mood_confidence: Optional[float] = None   # avg sentiment confidence, 0-100
+    sentiment_asset_count: int = 0                   # assets behind global_sentiment
 
 
 class PortfolioHoldingIn(BaseModel):

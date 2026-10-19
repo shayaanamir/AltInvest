@@ -286,6 +286,10 @@ def get_asset_intelligence(symbol: str):
         }
 
     result = compute_aai_response(symbol)
+    if result.get("sentiment_available") is False:
+        # Built with a neutral stand-in for sentiment: serve it, but don't cache it, so the
+        # next request tries for real sentiment again.
+        return result
     try:
         upsert_aai_score_generalized(
             "crypto", symbol,

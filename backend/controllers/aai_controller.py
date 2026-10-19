@@ -3,7 +3,7 @@ AAI controller — orchestrates calls to all three modules and assembles the res
 """
 
 from datetime import datetime, timezone
-from shared.mock_data import mock_prediction, mock_sentiment, mock_risk
+from shared.mock_data import mock_prediction, mock_risk
 from aai_engine.aai import compute_aai, normalise_sentiment
 
 
@@ -39,38 +39,27 @@ def _get_real_risk(asset: str) -> dict:
 
 def _get_real_sentiment(asset: str) -> dict:
     """
-    Fetches live sentiment from the engine (MongoDB cache → fresh pipeline).
-    Falls back to mock data if the engine is unavailable.
+    A fresh sentiment reading from the engine: the stored one if it is recent, otherwise a
+    refreshed one (same cache, locking and time budget as GET /sentiment/{asset}).
+
+    Never substitutes made-up data. If there is no usable reading — engine missing, pipeline
+    failed, nothing to read — it returns confidence 0.0, which makes compute_aai_response use
+    a neutral 50 for the sentiment component, and available=False so the response says so.
     """
     try:
-        from sentiment_engine.storage.mongo_handler import get_latest_sentiment, save_sentiment
-        from sentiment_engine.aggregator.sentiment_aggregator import run_pipeline
-
-        asset_id = asset.lower()
-        cached = get_latest_sentiment(asset_id)
-        if cached:
-            return {
-                "sentiment_score": cached.get("sentiment_score", 0.0),
-                "confidence": cached.get("confidence", 0.5),
-            }
-
-        raw = run_pipeline(asset_id)
-        # run_pipeline returns dict | tuple[dict, list[dict]] depending on
-        # return_raw_articles. Since we don't set that flag, raw is always a dict.
-        result: dict = raw[0] if isinstance(raw, tuple) else raw
-        save_sentiment(result)
-        return {
-            "sentiment_score": result.get("sentiment_score", 0.0),
-            "confidence": result.get("confidence", 0.5),
-        }
-
+        from routes.sentiment import current_sentiment
+        record = current_sentiment(asset.lower())
     except Exception as exc:
-        print(f"[aai_controller] Sentiment engine unavailable ({exc}), using mock")
-        mock = mock_sentiment(asset)
-        return {
-            "sentiment_score": mock.get("sentiment_score", 0.0),
-            "confidence": mock.get("confidence", 0.5),
-        }
+        print(f"[aai_controller] Sentiment engine unavailable ({exc})")
+        record = None
+
+    if record is None:
+        return {"sentiment_score": 0.0, "confidence": 0.0, "available": False}
+    return {
+        "sentiment_score": record["sentiment_score"],
+        "confidence": record["confidence"],
+        "available": True,
+    }
 
 
 def compute_aai_response(asset: str) -> dict:
@@ -87,6 +76,7 @@ def compute_aai_response(asset: str) -> dict:
     risk_score = float(risk.get("risk_score", 50.0))
 
     aai_score = compute_aai(pred_score, sent_score, risk_score)
+    sentiment_available = bool(sent.get("available", True))
 
     return {
         "asset": asset,
@@ -94,6 +84,10 @@ def compute_aai_response(asset: str) -> dict:
         "pred_score": round(pred_score, 2),
         "sentiment_score": round(sent_score, 2),
         "sentiment_confidence": round(confidence, 2),
+        "sentiment_available": sentiment_available,
+        "sentiment_note": None if sentiment_available else (
+            "No recent sentiment reading was available, so a neutral value was used for the sentiment component."
+        ),
         "risk_score": round(risk_score, 2),
         "model_version": pred.get("model_version", "mock-v1"),
         "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
