@@ -18,7 +18,10 @@ from datetime import datetime, timezone, timedelta
 from typing import List
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+import logging
+
 from fastapi import APIRouter, HTTPException, Query
+from pydantic import ValidationError
 from fastapi.responses import JSONResponse
 
 from models.schemas import SentimentResponse
@@ -112,6 +115,10 @@ def _map_sentiment(result: dict) -> dict:
     if not result:
         return {}
 
+    # Normalise optional blocks so a partial engine result can't fail response validation.
+    market_signals = result.get("market_signals") or None          # {} -> None
+    headlines = [h for h in (result.get("top_headlines") or []) if isinstance(h, dict) and h.get("title")]
+
     dist = result.get("sentiment_distribution") or {}
     mapped_dist = {
         "positive": dist.get("positive") or dist.get("Positive") or 0,
@@ -121,8 +128,8 @@ def _map_sentiment(result: dict) -> dict:
 
     return {
         "asset": (result.get("asset_id") or result.get("asset") or "").upper(),
-        "sentiment_score": result.get("sentiment_score", 0.0),
-        "source": result.get("source", "Ensemble (VADER + FinBERT)"),
+        "sentiment_score": result.get("sentiment_score") or 0.0,
+        "source": result.get("source") or "Ensemble (VADER + FinBERT)",
         "post_count": result.get("article_count") or result.get("post_count") or 0,
         "timestamp": result.get("last_updated") or result.get("timestamp") or "",
         "confidence": result.get("confidence"),
@@ -132,8 +139,8 @@ def _map_sentiment(result: dict) -> dict:
         "source_count": result.get("source_count"),
         "source_breakdown": result.get("source_breakdown"),
         "sentiment_distribution": mapped_dist,
-        "top_headlines": result.get("top_headlines"),
-        "market_signals": result.get("market_signals"),
+        "top_headlines": headlines,
+        "market_signals": market_signals,
         "articles_by_source": result.get("articles_by_source"),
         "note": result.get("note") or result.get("error"),
     }
@@ -186,9 +193,22 @@ def get_all_sentiment():
                 aid, result = future.result()
                 cached_map[aid] = result
 
-    # Return in _ACTIVE_ASSETS order for a stable response shape
-    results = [cached_map[a] for a in _ACTIVE_ASSETS if a in cached_map]
-    return [_map_sentiment(r) for r in results]
+    # Return in _ACTIVE_ASSETS order for a stable response shape. Each record is checked on its
+    # own: FastAPI validates the whole list after we return, so one unreadable record would
+    # otherwise turn the entire response into a 500 for every asset.
+    mapped = []
+    for asset_id in _ACTIVE_ASSETS:
+        record = cached_map.get(asset_id)
+        if record is None:
+            continue
+        try:
+            item = _map_sentiment(record)
+            SentimentResponse.model_validate(item)
+        except (ValidationError, AttributeError, TypeError, ValueError) as exc:
+            logging.getLogger("sentiment_api").error("unreadable sentiment record for %s: %s", asset_id, exc)
+            item = _map_sentiment(_neutral(asset_id, "Stored sentiment for this asset could not be read."))
+        mapped.append(item)
+    return mapped
 
 
 # ── GET /sentiment/{asset} ─────────────────────────────────────────────────────

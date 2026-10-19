@@ -1,32 +1,34 @@
-import { USE_MOCK } from "../config";
 import { apiFetch } from "./apiClient";
-import settingsData from "../data/sample_data/settings.json";
-
-const SIM_DELAY = 300;
-const delay = (fn) => new Promise((resolve) => setTimeout(() => resolve(fn()), SIM_DELAY));
-
-const DASHBOARD_LAYOUT_OPTIONS = ["minimal", "analyst", "trader", "ai-first"];
+import {
+  CURRENCY_OPTIONS,
+  DATE_FORMAT_OPTIONS,
+  LANDING_PAGE_OPTIONS,
+  DASHBOARD_LAYOUT_OPTIONS,
+  DENSITY_OPTIONS,
+  NOTIFICATION_DEFAULTS,
+  ACCOUNT_DELETION,
+} from "../content/uiOptions";
 
 function mapBackendSettings(s) {
   return {
     preferences: {
       displayCurrency: s.preferences?.display_currency ?? "USD",
-      currencyOptions: settingsData.preferences.currencyOptions,
+      currencyOptions: CURRENCY_OPTIONS,
       dateFormat: s.preferences?.date_format ?? "MM/DD/YYYY",
-      dateFormatOptions: settingsData.preferences.dateFormatOptions,
+      dateFormatOptions: DATE_FORMAT_OPTIONS,
       defaultLandingPage: s.preferences?.default_landing_page ?? "Dashboard",
-      landingPageOptions: settingsData.preferences.landingPageOptions,
+      landingPageOptions: LANDING_PAGE_OPTIONS,
       defaultDashboardLayout: s.preferences?.default_dashboard_layout ?? "ai-first",
       dashboardLayoutOptions: DASHBOARD_LAYOUT_OPTIONS,
     },
     appearance: {
       theme: s.appearance?.theme ?? "dark",
       density: s.appearance?.density ?? "comfortable",
-      densityOptions: settingsData.appearance.densityOptions,
+      densityOptions: DENSITY_OPTIONS,
     },
     notifications: {
-      channels: s.notifications?.channels ?? settingsData.notifications.channels,
-      alertTypes: s.notifications?.alert_types ?? settingsData.notifications.alertTypes,
+      channels: s.notifications?.channels ?? NOTIFICATION_DEFAULTS.channels,
+      alertTypes: s.notifications?.alert_types ?? NOTIFICATION_DEFAULTS.alertTypes,
       quietHours: s.notifications?.quiet_hours
         ? {
             enabled: s.notifications.quiet_hours.enabled,
@@ -34,14 +36,13 @@ function mapBackendSettings(s) {
             end: s.notifications.quiet_hours.end,
             timezone: s.notifications.quiet_hours.timezone,
           }
-        : settingsData.notifications.quietHours,
+        : NOTIFICATION_DEFAULTS.quietHours,
     },
     security: {
       twoFactorEnabled: s.security?.two_factor_enabled ?? false,
       twoFactorStatus: "coming_soon",
-      // Active sessions aren't backed by a real route yet
-      // (GET /settings/sessions is on the "missing routes" list).
-      activeSessions: settingsData.security.activeSessions,
+      // Active sessions aren't backed by a route yet (no GET /settings/sessions), so none are listed.
+      activeSessions: [],
     },
     connectedAccounts: {
       google: { connected: !!s.connected_accounts?.google, status: "coming_soon" },
@@ -54,7 +55,7 @@ function mapBackendSettings(s) {
       // watchlist/alert data once those services are wired.
       exportFormats: ["CSV", "JSON"],
       lastExportAt: null,
-      accountDeletion: settingsData.dataControls.accountDeletion,
+      accountDeletion: ACCOUNT_DELETION,
     },
   };
 }
@@ -108,22 +109,9 @@ const SECTION_BACKEND_KEY = {
 };
 
 export const settingsApi = {
-  getSettings: () => {
-    if (USE_MOCK) {
-      return delay(() => ({
-        preferences: { ...settingsData.preferences, dashboardLayoutOptions: DASHBOARD_LAYOUT_OPTIONS },
-        appearance: settingsData.appearance,
-        notifications: settingsData.notifications,
-        security: settingsData.security,
-        connectedAccounts: settingsData.connectedAccounts,
-        dataControls: settingsData.dataControls,
-      }));
-    }
-    return apiFetch("/settings").then(mapBackendSettings);
-  },
+  getSettings: () => apiFetch("/settings").then(mapBackendSettings),
 
   updateSection: (section, patch) => {
-    if (USE_MOCK) return delay(() => ({ status: "updated" }));
     const backendSection = SECTION_BACKEND_KEY[section];
     if (!backendSection) {
       console.warn(`settingsApi.updateSection: unknown section "${section}", skipping backend call`);

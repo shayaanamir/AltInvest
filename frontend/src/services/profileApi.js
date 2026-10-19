@@ -1,14 +1,4 @@
-import { USE_MOCK } from "../config";
 import { apiFetch } from "./apiClient";
-import profileData from "../data/sample_data/profile.json";
-import userData from "../data/sample_data/user.json";
-
-const SIM_DELAY = 300;
-const delay = (fn) => new Promise((resolve) => setTimeout(() => resolve(fn()), SIM_DELAY));
-
-function capitalize(s) {
-  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
-}
 
 function mapBackendProfile(p) {
   return {
@@ -37,25 +27,12 @@ function mapBackendProfile(p) {
 }
 
 export const profileApi = {
-  getProfile: () => {
-    if (USE_MOCK) {
-      return delay(() => {
-        const markets = userData.onboarding?.answers?.markets || [];
-        return {
-          ...profileData,
-          emailVerified: userData.accountSummary?.emailVerified ?? false,
-          marketsFollowed: markets.map(capitalize).join(", "),
-        };
-      });
-    }
-    return (async () => {
-      const p = await apiFetch("/profile");
-      return { ...mapBackendProfile(p), emailVerified: !!p.email_verified };
-    })();
+  getProfile: async () => {
+    const p = await apiFetch("/profile");
+    return { ...mapBackendProfile(p), emailVerified: !!p.email_verified };
   },
 
   updateProfile: (patch) => {
-    if (USE_MOCK) return delay(() => ({ ...profileData, ...patch }));
     // Only forward fields the backend actually accepts
     // (see backend/models/schemas.py::ProfileUpdate)
     const allowed = ["name", "bio", "avatar_initials", "avatar_color", "risk_profile", "layout_preference", "display_currency"];

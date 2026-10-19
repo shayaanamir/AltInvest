@@ -25,11 +25,13 @@ class PredictionResponse(BaseModel):
     note: Optional[str] = None
 
 class HeadlineItem(BaseModel):
+    # Only the title is guaranteed: feeds omit links and timestamps, and a pipeline
+    # that found nothing returns no headlines at all.
     title: str
-    score: float
-    source: str
-    age_hours: float
-    link: str
+    score: Optional[float] = None
+    source: Optional[str] = None
+    age_hours: Optional[float] = None
+    link: Optional[str] = None
 
 
 class SentimentDistribution(BaseModel):
@@ -39,10 +41,12 @@ class SentimentDistribution(BaseModel):
 
 
 class MarketSignals(BaseModel):
-    price_change_24h: float
-    volume_change_24h: float
-    is_trending: bool
-    btc_dominance: float
+    # Every field is optional: the market-data source can be down or rate-limited, in which
+    # case the engine returns none of them (and a neutral result has none to give).
+    price_change_24h: Optional[float] = None
+    volume_change_24h: Optional[float] = None
+    is_trending: Optional[bool] = None
+    btc_dominance: Optional[float] = None
 
 
 class SentimentResponse(BaseModel):

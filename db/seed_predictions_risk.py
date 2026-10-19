@@ -1,7 +1,7 @@
 """
 db/seed_predictions_risk.py
 Seeds: predictions, risk_scores, risk_breakdown
-Source: frontend/src/data/sample_data/assetDetail.json (aaiPanel/riskOverview/signalCard)
+Source: db/seed_data/assetDetail.json and assets.json (seed input only)
 NOTE: once ml/api/prediction_service.py writes here directly on each run,
 this seed only matters for assets the ML service hasn't produced yet.
 """
@@ -59,8 +59,7 @@ def _trend(pct: float) -> str:
 
 def _add_remaining_from_sample():
     import json
-    path = os.path.join(os.path.dirname(__file__), "..", "frontend", "src", "data",
-                        "sample_data", "assets.json")
+    path = os.path.join(os.path.dirname(__file__), "seed_data", "assets.json")
     with open(path, encoding="utf-8") as f:
         sample = json.load(f)["assets"]
 

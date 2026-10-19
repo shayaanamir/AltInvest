@@ -1,8 +1,6 @@
-import { useState } from "react";
 import "../styles/alerts.css";
 import { useAsync } from "../hooks/useAsync";
 import { alertsApi } from "../services/alertsApi";
-import { USE_MOCK } from "../config";
 import AlertSection from "../components/alerts/AlertSection";
 import AlertRow from "../components/alerts/AlertRow";
 import HowAlertsWorkCard from "../components/alerts/HowAlertsWorkCard";
@@ -22,13 +20,11 @@ export default function AlertsPage() {
     // Optimistic update
     setAlerts((prev) => prev.map((a) => (a.id === id ? { ...a, status: nextStatus } : a)));
 
-    if (!USE_MOCK) {
-      try {
-        await alertsApi.toggleAlert(id, nextStatus);
-      } catch (e) {
-        toast.error(e, { title: "Couldn't update the alert" });
-        refetch(); // revert the optimistic change
-      }
+    try {
+      await alertsApi.toggleAlert(id, nextStatus);
+    } catch (e) {
+      toast.error(e, { title: "Couldn't update the alert" });
+      refetch(); // revert the optimistic change
     }
   };
 
@@ -36,13 +32,11 @@ export default function AlertsPage() {
     // Optimistic update
     setAlerts((prev) => prev.filter((a) => a.id !== id));
 
-    if (!USE_MOCK) {
-      try {
-        await alertsApi.deleteAlert(id);
-      } catch (e) {
-        toast.error(e, { title: "Couldn't delete the alert" });
-        refetch(); // bring the alert back
-      }
+    try {
+      await alertsApi.deleteAlert(id);
+    } catch (e) {
+      toast.error(e, { title: "Couldn't delete the alert" });
+      refetch(); // bring the alert back
     }
   };
 

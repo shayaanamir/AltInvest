@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { watchlistApi } from "../services/watchlistApi";
-import { USE_MOCK } from "../config";
 import { IconTrash, IconPlus } from "../components/icons";
 import WatchlistSidebar from "../components/watchlists/WatchlistSidebar.jsx";
 import WatchlistRow from "../components/watchlists/WatchlistRow.jsx";
@@ -17,12 +16,12 @@ export default function WatchlistsPage() {
   const [lists, setLists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
+  const [searchableItems, setSearchableItems] = useState([]);
   const toast = useToast();
   const [activeId, setActiveId] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
   const emptyState = watchlistApi.getEmptyState();
-  const searchableItems = watchlistApi.getSearchableItems();
   const activeList = lists.find((l) => l.id === activeId) || null;
 
   const refetch = async () => {
@@ -40,24 +39,13 @@ export default function WatchlistsPage() {
   };
 
   useEffect(() => {
+    // Starter assets offered when creating a list (a failure just leaves the picker empty).
+    watchlistApi.getSearchableItems().then(setSearchableItems).catch(() => setSearchableItems([]));
     refetch();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleCreate = async (name, chosenDiscoverItems) => {
-    if (USE_MOCK) {
-      const newList = {
-        id: `wl_${Date.now()}`,
-        name,
-        createdAt: new Date().toISOString(),
-        items: chosenDiscoverItems.map((di) => watchlistApi.buildListItemFromDiscoverItem(di)),
-      };
-      setLists((prev) => [...prev, newList]);
-      setActiveId(newList.id);
-      setShowModal(false);
-      return;
-    }
-
     let id;
     try {
       ({ id } = await watchlistApi.createList(name));
@@ -90,12 +78,6 @@ export default function WatchlistsPage() {
 
   const handleDeleteList = async () => {
     if (!activeList) return;
-    if (USE_MOCK) {
-      const remaining = lists.filter((l) => l.id !== activeList.id);
-      setLists(remaining);
-      setActiveId(remaining[0]?.id ?? null);
-      return;
-    }
     try {
       await watchlistApi.deleteList(activeList.id);
     } catch (e) {
@@ -106,14 +88,6 @@ export default function WatchlistsPage() {
   };
 
   const handleRemoveItem = async (item) => {
-    if (USE_MOCK) {
-      setLists((prev) =>
-        prev.map((l) =>
-          l.id === activeId ? { ...l, items: l.items.filter((i) => i.id !== item.id) } : l
-        )
-      );
-      return;
-    }
     try {
       await watchlistApi.removeItem(activeId, item.id);
     } catch (e) {

@@ -5,7 +5,6 @@ import SentimentHub from "../components/sentiment/SentimentHub";
 import AssetSentimentDetail from "../components/sentiment/AssetSentimentDetail";
 import { sentimentApi } from "../services/sentimentApi";
 import { useSentimentPoller } from "../hooks/useSentimentPoller";
-import { USE_MOCK } from "../config";
 import { ErrorBoundary, useToast } from "../errors";
 
 export default function SentimentPage() {
@@ -26,10 +25,10 @@ export default function SentimentPage() {
     setLastUpdated(new Date());
   }, []);
 
-  // Live poll: every 5 min, only when not in mock mode
+  // Live poll: every 5 min
   useSentimentPoller({
     onUpdate: handlePollUpdate,
-    enabled: !USE_MOCK && !selectedAsset, // pause when drilling into an asset
+    enabled: !selectedAsset, // pause when drilling into an asset
   });
 
   const handleRefresh = async () => {
@@ -52,7 +51,7 @@ export default function SentimentPage() {
   return (
     <div className="sv2">
       <div className="sv2-page">
-        {!USE_MOCK && liveLabel && !selectedAsset && (
+        {liveLabel && !selectedAsset && (
           <div style={{
             display: "flex", alignItems: "center", gap: 6,
             fontSize: 11, color: isDark ? "#3fcf8e" : "#2f8f5b",

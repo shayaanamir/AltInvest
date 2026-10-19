@@ -1,4 +1,5 @@
-import assetsData from "../../data/sample_data/assets.json";
+import { useAsync } from "../../hooks/useAsync";
+import { assetDetailApi } from "../../services/assetDetailApi";
 import { getAaiSignal, getRiskTone } from "../../utils/scoring";
 
 const TONE_VAR = {
@@ -14,16 +15,20 @@ const BULLETS = [
   "Your holdings and watchlists shown as context everywhere",
 ];
 
-export default function ScoreShowcase() {
-  const asset = assetsData.assets[0]; // Bitcoin
-  const { label, tone } = getAaiSignal(asset.aai.score);
+// The card is a live example: it shows Bitcoin's current score and risk breakdown from the API.
+// If the API isn't reachable or has no score for it, the card says so instead of showing numbers.
+const EXAMPLE_SYMBOL = "BTC";
 
-  const metrics = [
-    { label: "Volatility Index", value: asset.risk.volatilityIndex, tone: getRiskTone(asset.risk.volatilityIndex) },
-    { label: "Liquidity Score", value: asset.risk.liquidityScore, tone: getRiskTone(asset.risk.liquidityScore, { higherIsBetter: true }) },
-    { label: "Regulatory Risk", value: asset.risk.regulatoryRisk, tone: getRiskTone(asset.risk.regulatoryRisk) },
-    { label: "Market Risk", value: asset.risk.marketRisk, tone: getRiskTone(asset.risk.marketRisk) },
-  ];
+export default function ScoreShowcase() {
+  const { data: asset, loading } = useAsync(() => assetDetailApi.getAssetDetail(EXAMPLE_SYMBOL), []);
+  const score = asset?.aaiPanel?.score;
+  const { label, tone } = score != null ? getAaiSignal(score) : { label: "", tone: "neutral" };
+
+  const metrics = (asset?.riskOverview || []).map((r) => ({
+    label: r.label,
+    value: r.value,
+    tone: getRiskTone(r.value, { higherIsBetter: r.label === "Liquidity Score" }),
+  }));
 
   return (
     <section className="lp2-section">
@@ -46,15 +51,23 @@ export default function ScoreShowcase() {
         </div>
 
         <div className="lp2-score-card">
-          <div className="lp2-score-eyebrow">Alternative Asset Index — {asset.name}</div>
+          <div className="lp2-score-eyebrow">Alternative Asset Index — {asset?.header?.name || EXAMPLE_SYMBOL}</div>
 
-          <div className="lp2-score-signal-row">
-            <span className="lp2-score-big">{Math.round(asset.aai.score)}</span>
-            <span>
-              <span className={`lp2-signal-tag ${tone}`}>{label.toUpperCase()}</span>
-              <div className="lp2-score-confidence">{Math.round(asset.aai.confidence * 100)}% confidence</div>
-            </span>
-          </div>
+          {score == null ? (
+            <div className="lp2-score-confidence">
+              {loading ? "Loading a live example…" : "A live example isn't available right now."}
+            </div>
+          ) : (
+            <div className="lp2-score-signal-row">
+              <span className="lp2-score-big">{Math.round(score)}</span>
+              <span>
+                <span className={`lp2-signal-tag ${tone}`}>{label.toUpperCase()}</span>
+                {asset.aaiPanel.confidence != null && (
+                  <div className="lp2-score-confidence">{Math.round(asset.aaiPanel.confidence * 100)}% confidence</div>
+                )}
+              </span>
+            </div>
+          )}
 
           <div className="lp2-metrics">
             {metrics.map((m) => (

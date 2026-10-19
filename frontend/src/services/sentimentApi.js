@@ -1,5 +1,4 @@
-import { asset_sentiment, newsArticles } from "../data/sample_data";
-import { USE_MOCK, API_BASE_URL } from "../config";
+import { API_BASE_URL } from "../config";
 import { ApiError, kindFromStatus } from "../errors/errorCatalog";
 import { reportApiReachable } from "../errors/connectionStatus";
 import { confidenceLabelFromValue, getEvidencePhrase as evidencePhrase, bandByThreshold } from "../utils/scoring";
@@ -134,41 +133,45 @@ function normaliseRecord(raw) {
 }
 
 async function fetchAllSentimentRaw() {
-  if (USE_MOCK) return asset_sentiment;
+  // Never substitutes sample data: if the backend can't answer, the caller gets an
+  // error (rendered with a Retry button) rather than numbers that look live but aren't.
+  let res;
   try {
-    const res = await fetchWithTimeout(`${API_BASE_URL}/sentiment`);
-    if (!res.ok) throw new Error(`status ${res.status}`);
-    const data = await res.json();
-    if (Array.isArray(data) && data.length) {
-      const seen = new Set();
-      const unique = [];
-      for (const item of data) {
-        const id = (item.asset_id || item.asset || "").toLowerCase();
-        if (id && !seen.has(id)) {
-          seen.add(id);
-          unique.push(item);
-        }
-      }
-      return unique;
-    }
-    return asset_sentiment;
+    res = await fetchWithTimeout(`${API_BASE_URL}/sentiment`);
   } catch (e) {
-    console.warn(`sentimentApi: backend unavailable, using sample data (${describeFetchError(e)})`);
-    return asset_sentiment;
+    throw new ApiError(describeFetchError(e), { kind: e.name === "AbortError" ? "timeout" : "network" });
   }
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new ApiError(`Sentiment request failed: ${res.status}`, {
+      status: res.status,
+      kind: kindFromStatus(res.status),
+      detail: typeof body.detail === "string" ? body.detail : null,
+    });
+  }
+
+  const data = await res.json();
+  const seen = new Set();
+  const unique = [];
+  for (const item of Array.isArray(data) ? data : []) {
+    const id = (item.asset_id || item.asset || "").toLowerCase();
+    if (id && !seen.has(id)) {
+      seen.add(id);
+      unique.push(item);
+    }
+  }
+  return unique;
 }
 
 async function fetchHistoryRaw(assetId, days) {
-  if (!USE_MOCK) {
-    try {
-      const res = await fetchWithTimeout(`${API_BASE_URL}/sentiment/${assetId}/history?days=${days}`);
-      if (res.ok) {
-        const json = await res.json();
-        if (json.history?.length >= 2) return json.history;
-      }
-    } catch (e) {
-      console.warn(`sentimentApi: history fetch failed, using synthetic series (${describeFetchError(e)})`);
+  try {
+    const res = await fetchWithTimeout(`${API_BASE_URL}/sentiment/${assetId}/history?days=${days}`);
+    if (res.ok) {
+      const json = await res.json();
+      if (json.history?.length >= 2) return json.history;
     }
+  } catch (e) {
+    console.warn(`sentimentApi: history fetch failed, using synthetic series (${describeFetchError(e)})`);
   }
   return null;
 }
@@ -374,12 +377,7 @@ export const sentimentApi = {
     if (tab === "nft") return NFT_CHATTER_FILLER;
     const raw = await fetchAllSentimentRaw();
     const records = raw.map(normaliseRecord).filter((r) => ASSET_META[r.assetId]?.category === "crypto");
-    let headlines = records.flatMap((r) => r.topHeadlines.map((h) => ({ ...h, assetId: r.assetId })));
-    if (!headlines.length) {
-      headlines = newsArticles.map((a) => ({
-        title: a.title, score: 0.2, source: a.source, age_hours: 3, link: a.url, assetId: "eth",
-      }));
-    }
+    const headlines = records.flatMap((r) => r.topHeadlines.map((h) => ({ ...h, assetId: r.assetId })));
     return headlines.sort((a, b) => (a.age_hours ?? 0) - (b.age_hours ?? 0));
   },
 
@@ -472,14 +470,12 @@ export const sentimentApi = {
 
   /** Throws an ApiError if the refresh itself failed, so the UI can say so instead of re-showing old data. */
   refreshAsset: async (assetId) => {
-    if (USE_MOCK) return sentimentApi.getAssetDetail(assetId);
     await postRefresh(assetId);
     return sentimentApi.getAssetDetail(assetId);
   },
 
   /** Refreshes every actively-covered asset — used by the Hub's "Refresh Pipeline" button. */
   refreshAllActive: async () => {
-    if (USE_MOCK) return;
     const results = await Promise.allSettled(ACTIVE_ASSETS.map((assetId) => postRefresh(assetId)));
     const failed = results.filter((r) => r.status === "rejected");
     if (failed.length === ACTIVE_ASSETS.length) throw failed[0].reason; // everything failed: surface the real cause

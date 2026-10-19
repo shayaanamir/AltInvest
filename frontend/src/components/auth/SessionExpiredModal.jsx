@@ -1,4 +1,4 @@
-import systemStates from "../../data/sample_data/systemStates.json";
+import systemStates from "../../content/systemStates.json";
 
 export default function SessionExpiredModal({ onConfirm }) {
     const { title, subtitle, cta } = systemStates.sessionExpired;

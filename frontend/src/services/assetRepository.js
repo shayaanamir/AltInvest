@@ -17,6 +17,7 @@ export function mapUniverseItem(r) {
     avatarColor: r.logo_color,
     price: r.price,
     priceLabel: nft && r.floor_eth != null ? `${r.floor_eth.toFixed(2)} ETH` : null,
+    floorEth: r.floor_eth ?? null,
     changePct: r.change_24h,
     change24h: r.change_24h,
     change7d: r.change_7d,

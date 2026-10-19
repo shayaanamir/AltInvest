@@ -1,7 +1,7 @@
 """
 db/seed_assets.py
 Seeds: assets, asset_market_data
-Source: values transcribed from frontend/src/data/sample_data/assets.json
+Source: db/seed_data/assets.json (seed input only; the frontend ships no data files)
 """
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -88,8 +88,7 @@ MARKET_DATA = [
 
 def _add_remaining_from_sample():
     import json
-    path = os.path.join(os.path.dirname(__file__), "..", "frontend", "src", "data",
-                        "sample_data", "assets.json")
+    path = os.path.join(os.path.dirname(__file__), "seed_data", "assets.json")
     with open(path, encoding="utf-8") as f:
         sample = json.load(f)["assets"]
 

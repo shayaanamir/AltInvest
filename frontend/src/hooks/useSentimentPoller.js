@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from "react";
-import { USE_MOCK, API_BASE_URL } from "../config";
+import { API_BASE_URL } from "../config";
 
 /**
  * useSentimentPoller
@@ -15,7 +15,6 @@ import { USE_MOCK, API_BASE_URL } from "../config";
  *    polls immediately when the tab becomes visible again.
  *  - Startup jitter: first poll is offset by a random 0-10 s so multiple
  *    open tabs don't all hit the server at the same second.
- *  - No-op in mock mode: nothing changes server-side, so polling would be pointless.
  */
 
 const POLL_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
@@ -44,7 +43,7 @@ export function useSentimentPoller({ onUpdate, enabled = true } = {}) {
   onUpdateRef.current = onUpdate;
 
   const poll = useCallback(async () => {
-    if (USE_MOCK || !enabled) return;
+    if (!enabled) return;
     try {
       const res = await fetch(`${API_BASE_URL}/sentiment`, {
         signal: AbortSignal.timeout(10_000),
@@ -64,7 +63,7 @@ export function useSentimentPoller({ onUpdate, enabled = true } = {}) {
   }, [enabled]);
 
   useEffect(() => {
-    if (USE_MOCK || !enabled) return;
+    if (!enabled) return;
 
     // Random 0-10 s jitter on first poll so tabs don't sync up
     const jitter = Math.random() * 10_000;

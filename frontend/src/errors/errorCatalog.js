@@ -1,7 +1,7 @@
 // frontend/src/errors/errorCatalog.js
 // One place that turns any thrown value into something a person can read.
 // Everything that shows an error (ErrorState, toasts, the boundary) goes through describeError().
-import systemStates from "../data/sample_data/systemStates.json";
+import systemStates from "../content/systemStates.json";
 
 export class ApiError extends Error {
   constructor(message, { status, kind, detail } = {}) {

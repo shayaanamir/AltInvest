@@ -4,7 +4,6 @@ import "../styles/settingsProfile.css";
 import { clearSession } from "../hooks/useAuth";
 import { useAsync } from "../hooks/useAsync";
 import { settingsApi } from "../services/settingsApi";
-import { USE_MOCK } from "../config";
 import SettingsSidebar from "../components/settings/SettingsSidebar";
 import PreferencesSection from "../components/settings/PreferencesSection";
 import AppearanceSection from "../components/settings/AppearanceSection";
@@ -48,8 +47,6 @@ export default function SettingsPage() {
     const previous = settings?.[sectionKey];
     // Optimistic local update first
     setSettings((prev) => ({ ...prev, [sectionKey]: { ...prev[sectionKey], ...patch } }));
-
-    if (USE_MOCK) return;
 
     settingsApi.updateSection(sectionKey, patch).catch((e) => {
       setSettings((prev) => ({ ...prev, [sectionKey]: previous })); // put the old value back

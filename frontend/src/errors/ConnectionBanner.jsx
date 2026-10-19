@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import systemStates from "../data/sample_data/systemStates.json";
+import systemStates from "../content/systemStates.json";
 import { isApiReachable, subscribeConnection } from "./connectionStatus";
 import "./errors.css";
 

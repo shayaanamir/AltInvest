@@ -1,4 +1,4 @@
-import discoverConfig from "../data/sample_data/discover.json";
+import discoverConfig from "../content/discover.json";
 import { fetchUniverse } from "./assetRepository";
 
 // UI-sort key -> backend sort / order

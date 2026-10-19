@@ -1,7 +1,7 @@
 """
 db/seed_aai_scores.py
 Seeds: aai_scores
-Source: frontend/src/data/sample_data/{assets,nftCollections,assetDetail}.json
+Source: db/seed_data/{assets,nftCollections,assetDetail}.json (seed input only)
 
 Only targets that already exist in `assets` / `nft_collections` get a row, so
 run this after seed_assets and seed_nft (seed_all.py does). Once the AAI
@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from db.mongo_connection import get_db
 from db.queries import upsert_aai_score_generalized
 
-SAMPLE_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend", "src", "data", "sample_data")
+SAMPLE_DIR = os.path.join(os.path.dirname(__file__), "seed_data")
 
 
 def _load(name: str) -> dict:
