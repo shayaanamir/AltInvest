@@ -5,6 +5,26 @@ Next: Phase 6 (API). Not started; waiting on the user's go-ahead.
 
 Price fields blocked on Person B (D28); Phase 6 cannot finish /predict until that is answered.
 
+## Merge of origin/main into ml-v2 (2026-10-20, local only, not pushed)
+
+- `git fetch`: origin/main at a3a4a59. Fork point a584518; main was 94 commits ahead.
+- Merge commit 341b6f3 (no rebase, since ml-v2 is already pushed).
+  - Under ml/, the only change is the new `ml/Dockerfile`; every other change is in backend, frontend, db, sentiment_engine, aai_engine and the root Docker files.
+  - `python -m pytest ml` -> `136 passed`; `python -c "import ml.config"` OK; `git_dirty` False after the merge.
+- One conflict, `.gitignore`, resolved by keeping both sides:
+  - main's sections plus ml-v2's `ml/data/raw/` (D13) and artifact rules;
+  - `!ml/docs/` added after main's bare `docs/` rule, which would otherwise ignore any new file under ml/docs/.
+  - Checked with `git check-ignore`: ml/docs, ml/data/*.py, ml/reports, ml/api and artifact metadata.json are tracked; raw CSVs, .pkl and PLANNER.md are ignored.
+- Known issue for Phase 6 (VERIFIED): main's `ml/Dockerfile` and the compose `ml` service still start the v1 service (`uvicorn api.prediction_service:app`), copy data into the image, and assume Prophet/TensorFlow. v2 has no `ml/api/` yet, so that container would not start. Phase 6 replaces both; docker-compose.yml is shared, so Person B must be told.
+- Not ML's to fix (for Person B): tracked files that match main's own ignore rules (`.env.example` via `.env.*`, two `db/__pycache__/*.pyc`). ml-v2 also carries an empty root `package-lock.json` from earlier history.
+- Integration blanks, chosen by the user on 2026-10-20 (D-numbers to be written in Phase 6 Step 0; items 1, 2 and 6 also need Person B's confirmation):
+  1. Price fallback: (c) `prediction_30d: 0`, `predicted_price` and bounds null, `model_version: "baseline-last-value"`, signal UNCERTAIN, confidence null, with a note.
+  2. Integration: a daily backend pull of `/predict/{asset}` and `/risk/{asset}` at about 00:15 UTC, 10 s timeout, 3 retries. If ML is down, keep the last good row; add a stale note after 36 h.
+  3. `risk_score` is always a number (agreed; D27's persistence fallback always gives one).
+  4. Risk mapping: pooled percentile of today's `vol_30d` against the combined BTC+ETH+SOL history up to today; leakage-tested in Phase 6.
+  5. SOL: agreed, no change.
+  6. note/UNCERTAIN: pass `note` and `signal` through (fix `_map_prediction`), show the note, and rename or hide the AAI-derived "Signal" badge while ML says UNCERTAIN.
+
 ## Phase 5b: what ran (from repo root, 2026-10-20)
 
 - Started from a clean tree: HEAD 0a80f92, `git_dirty` False. `python -c "import signal; print(signal.__file__)"` shows the stdlib module before and after creating `ml/signal/`. `test_stdlib_signal_not_shadowed` checks it inside pytest.
