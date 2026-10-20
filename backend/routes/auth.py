@@ -10,6 +10,7 @@ issue a JWT.
 
 AUTH-03/04 — Forgot / reset password.
 AUTH-05 — Email verification: a link is emailed at signup and on request from the profile page.
+AUTH-06 — Change password from Settings (requires the current password).
 
 Emails go out through utils/mailer.py (SMTP when configured, otherwise the link is logged).
 """
@@ -24,6 +25,7 @@ from bson import ObjectId
 from models.schemas import (
     LoginRequest, AuthResponse, AuthUser, SignupRequest,
     ForgotPasswordRequest, ResetPasswordRequest, VerifyEmailRequest,
+    ChangePasswordRequest,
 )
 from auth.security import (
     verify_password, create_access_token, hash_password,
@@ -165,6 +167,39 @@ def reset_password(payload: ResetPasswordRequest):
         raise HTTPException(status_code=404, detail="Account not found.")
 
     return {"message": "Password updated. You can now sign in with your new password."}
+
+
+# ── AUTH-06 — Change password (signed in) ────────────────────────────────────
+
+@router.post("/auth/change-password")
+def change_password(payload: ChangePasswordRequest, user_id: ObjectId = Depends(get_current_user_id)):
+    new_password = payload.new_password or ""
+    if len(new_password) < 8:
+        raise HTTPException(status_code=422, detail="New password must be at least 8 characters.")
+    if new_password == payload.current_password:
+        raise HTTPException(status_code=422, detail="New password must be different from your current one.")
+
+    from db.queries import get_user_by_id, update_user
+    try:
+        user = get_user_by_id(str(user_id))
+    except Exception as exc:
+        raise db_unavailable(exc)
+    if not user:
+        raise HTTPException(status_code=404, detail="Account not found.")
+
+    # 400, not 401: a wrong current password must not look like an expired session to the client.
+    if not verify_password(payload.current_password or "", user.get("password_hash", "")):
+        raise HTTPException(status_code=400, detail="Current password is incorrect.")
+
+    try:
+        update_user(user_id, {
+            "password_hash": hash_password(new_password),
+            "password_changed_at": datetime.now(timezone.utc),
+        })
+    except Exception as exc:
+        raise db_unavailable(exc)
+
+    return {"message": "Password updated."}
 
 
 # ── AUTH-05 — Email verification ─────────────────────────────────────────────

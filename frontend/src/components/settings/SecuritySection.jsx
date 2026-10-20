@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { authApi } from "../../services/authApi";
+import { describeError } from "../../errors/errorCatalog";
 
 function formatLastActive(iso) {
   if (!iso) return "";
@@ -15,22 +17,41 @@ export default function SecuritySection({ data }) {
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
   const [status, setStatus] = useState(null);
+  const [saving, setSaving] = useState(false);
   const [sessions, setSessions] = useState(data?.activeSessions || []);
 
   if (!data) return null;
 
-  const handleUpdatePassword = (e) => {
+  const handleUpdatePassword = async (e) => {
     e.preventDefault();
+    if (saving) return;
     if (!current || !next || !confirm) {
       setStatus({ type: "error", message: "Fill in all three fields." });
+      return;
+    }
+    if (next.length < 8) {
+      setStatus({ type: "error", message: "New password must be at least 8 characters." });
       return;
     }
     if (next !== confirm) {
       setStatus({ type: "error", message: "New password and confirmation don't match." });
       return;
     }
-    setStatus({ type: "success", message: "Password updated." });
-    setCurrent(""); setNext(""); setConfirm("");
+    if (next === current) {
+      setStatus({ type: "error", message: "New password must be different from your current one." });
+      return;
+    }
+    setSaving(true);
+    setStatus(null);
+    try {
+      await authApi.changePassword(current, next);
+      setStatus({ type: "success", message: "Password updated." });
+      setCurrent(""); setNext(""); setConfirm("");
+    } catch (err) {
+      setStatus({ type: "error", message: describeError(err).message });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const logOutOthers = () => setSessions((s) => s.filter((sess) => sess.current));
@@ -43,19 +64,21 @@ export default function SecuritySection({ data }) {
           <div className="set-password-grid">
             <label className="set-field">
               <span>Current</span>
-              <input className="set-input" type="password" value={current} onChange={(e) => setCurrent(e.target.value)} />
+              <input className="set-input" type="password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} />
             </label>
             <label className="set-field">
               <span>New</span>
-              <input className="set-input" type="password" value={next} onChange={(e) => setNext(e.target.value)} />
+              <input className="set-input" type="password" autoComplete="new-password" value={next} onChange={(e) => setNext(e.target.value)} />
             </label>
             <label className="set-field">
               <span>Confirm</span>
-              <input className="set-input" type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+              <input className="set-input" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
             </label>
           </div>
           {status && <div className={`set-form-status ${status.type}`}>{status.message}</div>}
-          <button type="submit" className="set-btn-accent">Update password</button>
+          <button type="submit" className="set-btn-accent" disabled={saving}>
+            {saving ? "Updating…" : "Update password"}
+          </button>
         </form>
       </div>
 

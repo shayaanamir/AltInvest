@@ -77,4 +77,11 @@ export const authApi = {
 
     /** Email the signed-in user a new verification link. Resolves with { message, sent }. */
     resendVerification: () => apiFetch("/auth/resend-verification", { method: "POST" }),
+
+    /** Change the signed-in user's password. A wrong current password comes back as a 400. */
+    changePassword: (currentPassword, newPassword) =>
+        apiFetch("/auth/change-password", {
+            method: "POST",
+            body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+        }),
 };
