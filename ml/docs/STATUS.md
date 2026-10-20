@@ -1,9 +1,132 @@
 # STATUS
 
-Current phase: 5b (generate_signal + backtest) DONE for BTC, ETH, SOL (2026-10-20). Served direction signal is UNCERTAIN for all three (D33); the backtest is evidence only (D32, D34).
-Next: Phase 6 (API). Not started; waiting on the user's go-ahead.
+Current phase: 6a (FastAPI service on :8001, baselines only) DONE for BTC, ETH, SOL (2026-10-21). Nothing is approved: /predict serves the last-value baseline (D35), /risk the persistence vol_30d mapped by D36, signal UNCERTAIN (D33).
+Next: Phase 6b. Not started; waiting on the user's go-ahead.
 
-Price fields blocked on Person B (D28); Phase 6 cannot finish /predict until that is answered.
+Docker/compose and daily refresh: Phase 6b.
+
+Waiting on Person B: the CONTRACT.md `note` wording (6a Step 0e, would be D38). Not applied.
+
+## Phase 6a: what ran (from repo root, 2026-10-21)
+
+- Started from a clean tree: HEAD 62ec3bc, `git status --porcelain` empty, `python -m pytest ml` -> `136 passed`.
+- Step 0a: `random_baseline` (ml/evaluation/backtest.py) now also reports `max_drawdown_median` and `hit_rate_median`.
+  - The hit-rate median is taken over runs that were in the market at least once; it is null if there were none.
+  - Re-ran run_backtest once per asset: exit 0, `git_dirty: true` (code uncommitted; expected).
+  - JSON diff vs the committed backtest.json: only generated_at, git_commit and the two new fields differ. git_dirty was already true in the committed reports.
+
+| backtest.json, random baseline medians | BTC | ETH | SOL |
+|---|---|---|---|
+| trades / max drawdown / in-market hit rate | 34 / -0.591118 / 0.645161 | 34 / -0.645638 / 0.558824 | 19 / -0.56033 / 0.65 |
+
+- Steps 0b-0d: D35, D36, D37 appended after D34, in order (DECISIONS.md diff: 3 added rows).
+- Step 0e skipped: there was no confirmation in the chat that Person B agreed to the CONTRACT note wording.
+- Step 1: config.py `STALE_DATA_HOURS` 48, `SHARPE_WINDOW_DAYS` 365 (D37), `MODEL_VERSION_PRICE` "baseline-last-value" (D35), `MODEL_VERSION_RISK` "persistence-pooled-pct" (D36).
+  - `STALE_DATA_HOURS` has no D-number; it cites the CONTRACT.md note rule.
+  - requirements.txt: `httpx==0.28.1`.
+- New modules:
+  - `ml/serving/responses.py`: pure response builders (no FastAPI, no models). Reads features only (vol_30d, ret_1d).
+  - `ml/api/contract.py`: parses both schemas from CONTRACT.md; Draft-07 validator with date-time format checking.
+  - `ml/api/service.py`: the FastAPI app. /predict and /risk bodies are validated before they are returned.
+  - `ml/evaluation/risk_mapping_check.py`: the read-only D36 check. It reads labels, so it lives in evaluation, not serving.
+  - No earlier module changed except backtest.py (Step 0a), config.py and requirements.txt.
+- Interpretations (no D-number):
+  - Staleness is measured from the latest bar's close (open time + 1 day). Measured from the open, a normal daily refresh would show the note for part of each day.
+  - The D36 pool needs every asset in config.ASSETS. If any one fails validation, all three return 503 (AGENTS rule 4). Dropping it from the pool would change every score, and D36 says that needs a new D-number.
+  - sharpe_ratio uses the trailing 365 values of the `ret_1d` feature.
+  - `require_validated` calls `sys.exit` (written for CLIs). Serving catches that and raises `NotServable`, which the API maps to 503.
+  - The check cuts every asset at its own b2. SOL rows dated after 2025-06-06 (133 of 1104) therefore see a pool without BTC/ETH's later values. Served scores use the full pool.
+- Tests: `test_serving.py` (10), `test_contract.py` (12 with parametrised cases), `test_backtest_random_medians.py` (2). `python -m pytest ml` -> `160 passed`; all passed on the first run.
+  - `test_contract.py` skips if ml/data/raw/*.csv is missing (git-ignored).
+- Step 6: `python -m ml.evaluation.risk_mapping_check --asset btc|eth|sol` -> exit 0, `git_dirty: true` (expected; not re-run). uvicorn was started once and each route called (outputs below).
+
+| risk_mapping_check.json (walk-forward rows) [95% CI, block 30] | BTC | ETH | SOL |
+|---|---|---|---|
+| rows / n_effective | [760, 2791) / 67.7 | [760, 2791) / 67.7 | [760, 1864) / 36.8 |
+| Spearman(D36 risk_score, fwd_vol_30d) | -0.287596 [-0.46301, -0.090986] | -0.506792 [-0.655774, -0.318042] | -0.204127 [-0.452395, -0.01536] |
+| same, sign flipped (100 - risk_score) | 0.287596 [0.090986, 0.46301] | 0.506792 [0.318042, 0.655774] | 0.204127 [0.01536, 0.452395] |
+| persistence Spearman(vol_30d, fwd_vol_30d), walkforward_baselines.json | 0.347215 [0.161079, 0.514323] | 0.515039 [0.332578, 0.659126] | 0.210949 [0.020382, 0.442397] |
+| persistence recomputed on the same rows matches | True | True | True |
+| rows with a cut pool / max_label_row_reached (b2) | 0 / 2820 (2821) | 0 / 2820 (2821) | 133 / 1893 (1894) |
+
+- risk_score is higher = safer, so a good mapping has a negative Spearman. The pooled mapping keeps persistence's sign and most of its size.
+  - BTC is 0.06 lower. The pool grows over time, so the same vol_30d gets a different score on a different date.
+  - Report only. No paired CI was computed, so there is no claim either way that the gap is real.
+
+| Served (uvicorn, 2026-10-20T19:07:50Z) | BTC | ETH | SOL |
+|---|---|---|---|
+| risk_score / volatility / sharpe_ratio | 91.062366 / 0.376012 / -0.606621 | 86.190369 / 0.432201 / -0.764863 | 64.72877 / 0.598477 / -0.882813 |
+| last bar / stale | 2026-10-17 / yes | 2026-10-17 / yes | 2026-10-17 / yes |
+
+- Every response carries the stale note. The CSVs end at 2026-10-17, and that bar closed 67.1 h before the calls (more than 48 h). This is correct behaviour; the Phase 6b daily refresh fixes it.
+- Real responses, one per route (`curl.exe -s`):
+
+```
+GET /health -> 200
+{"status":"ok","model_version":{"price":"baseline-last-value","risk":"persistence-pooled-pct"},"data_last_bar":{"btc":"2026-10-17","eth":"2026-10-17","sol":"2026-10-17"}}
+GET /predict/btc -> 200
+{"asset":"BTC","predicted_price":null,"prediction_30d":0.0,"confidence":null,"model_version":"baseline-last-value","timestamp":"2026-10-20T19:07:42Z","lower_bound":null,"upper_bound":null,"risk_score":91.062366,"trend":null,"agreement":null,"signal":"UNCERTAIN","boosted_confidence":null,"ensemble_price":null,"note":"No model beats the no-change baseline (D35): prediction_30d is the last-value baseline (0%); no predicted price or interval. Direction is not served (D33): no demonstrated up/down skill; signal UNCERTAIN, confidence null. data stale: last bar 2026-10-17"}
+GET /risk/sol -> 200
+{"asset":"SOL","risk_score":64.72877,"volatility":0.598477,"sharpe_ratio":-0.882813,"timestamp":"2026-10-20T19:07:42Z","note":"No risk model beats persistence (D27): risk_score is the percentile of today's 30-day volatility among BTC, ETH, SOL up to today (D36), higher = safer. data stale: last bar 2026-10-17"}
+GET /debug/btc -> 200
+{"asset":"BTC","timestamp":"2026-10-20T19:07:50Z","inputs":{"last_bar":"2026-10-17","last_bar_close":"2026-10-18T00:00:00Z","age_hours":67.13080223888889,"stale":true,"vol_30d":0.0196813476423941,"volatility":0.37601161874679045,"sharpe_ratio":-0.6066207921806744,"returns_available":3319,"pool_assets":["btc","eth","sol"],"pool_size":8867,"p":0.0893763392353671,"risk_score":91.06236607646329},"stale_after_hours":48,"sharpe_window_days":365,"served":{"price_model":false,"risk_model":false,"direction":false},"model_version":{"price":"baseline-last-value","risk":"persistence-pooled-pct"},"decisions_in_force":["D6","D27","D33","D35","D36","D37"]}
+GET /predict/doge -> 404
+{"detail":"asset 'doge' is not covered; covered: ['BTC', 'ETH', 'SOL']"}
+```
+
+## How to verify Phase 6a yourself (PowerShell, from the repo root)
+
+```powershell
+Set-Location C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest
+
+# 1. All tests, then only the new ones (test_contract.py reads the real CSVs; the others use hand-made fixtures)
+python -m pytest ml -q
+python -m pytest ml/tests/test_serving.py ml/tests/test_contract.py ml/tests/test_backtest_random_medians.py -q
+
+# 2. The decisions written in this phase (appended after D34, in order)
+Select-String -Path ml\docs\DECISIONS.md -Pattern '^\| D3[3-9] ' | ForEach-Object { $_.Line.Substring(0, 50) }
+
+# 3. Step 0a: the two new random-baseline medians (trades median shown for comparison)
+python -c "import json; [print(a, (r:=json.load(open(f'ml/reports/{a}/backtest.json'))['baselines']['random'])['trades_median'], r['max_drawdown_median'], r['hit_rate_median']) for a in ('btc','eth','sol')]"
+
+# 4. The D36 check: re-run (about 10 s per asset), then n_effective, sign-flipped Spearman [CI], persistence [CI], match, cut rows, sealing
+foreach ($a in 'btc','eth','sol') { python -m ml.evaluation.risk_mapping_check --asset $a; "$a exit: $LASTEXITCODE" }
+python -c "import json; [print(a, (d:=json.load(open(f'ml/reports/{a}/risk_mapping_check.json')))['n_effective'], (s:=d['d36_sign_flipped'])['spearman'], s['spearman_ci95']['low'], s['spearman_ci95']['high'], (p:=d['persistence'])['spearman'], p['spearman_ci95']['low'], p['spearman_ci95']['high'], d['persistence_recomputed_matches'], d['pool']['rows_with_cut_pool'], d['metadata']['max_label_row_reached']) for a in ('btc','eth','sol')]"
+
+# 5. The D36 rule by hand: 0.02 in [0.01, 0.03, 0.02, 0.02, 0.05, 0.04] -> 1 below, 2 tied -> p = 2/6
+python -c "from ml.serving.responses import pooled_risk_score as f; print(f(0.02, [0.01, 0.03, 0.02, 0.02, 0.05, 0.04]))"
+
+# 6. Start the service in the background, call every route, then stop it
+$srv = Start-Process python -ArgumentList '-m','uvicorn','ml.api.service:app','--port','8001' -PassThru -WindowStyle Hidden
+curl.exe -s --retry 20 --retry-connrefused --retry-delay 1 http://127.0.0.1:8001/health; ""
+curl.exe -s http://127.0.0.1:8001/predict/btc; ""
+curl.exe -s http://127.0.0.1:8001/risk/ETH; ""
+curl.exe -s http://127.0.0.1:8001/debug/sol; ""
+curl.exe -s -o NUL -w "doge: HTTP %{http_code}`n" http://127.0.0.1:8001/predict/doge
+Stop-Process -Id $srv.Id
+```
+
+Expected (observed 2026-10-21; the service calls were stamped 2026-10-20T19:08Z UTC):
+
+1. `160 passed`; the three new files show `24 passed`. If the raw CSVs are missing, test_contract.py shows as skipped.
+2. Five lines starting `| D33 |`, `| D34 |`, `| D35 | Refines D28. Price fallback`, `| D36 | risk_score mapping`, `| D37 | sharpe_ratio on /risk`.
+3. Output:
+   - `btc 34.0 -0.591118 0.645161`
+   - `eth 34.0 -0.645638 0.558824`
+   - `sol 19.0 -0.56033 0.65`
+4. `wrote ...risk_mapping_check.json` and `exit: 0` for each asset (plus a WARNING line if code is uncommitted), then:
+   - `btc 67.7 0.287596 0.090986 0.46301 0.347215 0.161079 0.514323 True 0 2820`
+   - `eth 67.7 0.506792 0.318042 0.655774 0.515039 0.332578 0.659126 True 0 2820`
+   - `sol 36.8 0.204127 0.01536 0.452395 0.210949 0.020382 0.442397 True 133 1893`
+5. `(66.66666666666667, 0.33333333333333326)`: risk_score 66.67 and p = 1/3.
+6. Output:
+   - `/health`: `{"status":"ok","model_version":{"price":"baseline-last-value","risk":"persistence-pooled-pct"},"data_last_bar":{"btc":"2026-10-17","eth":"2026-10-17","sol":"2026-10-17"}}`
+   - `/predict/btc`: `"prediction_30d":0.0`, `"predicted_price":null`, `"signal":"UNCERTAIN"`, `"confidence":null`, `"risk_score":91.062366`, and a note ending `data stale: last bar 2026-10-17`.
+   - `/risk/ETH`: `{"asset":"ETH","risk_score":86.190369,"volatility":0.432201,"sharpe_ratio":-0.764863,...}`, with the stale note.
+   - `/debug/sol`: `"pool_size":8867`, `"p":0.35271230404872`, `"risk_score":64.728769595128`, `"stale":true`.
+   - `doge: HTTP 404`.
+
+- `timestamp` and `age_hours` change on every call. risk_score, volatility and sharpe_ratio change only when the CSVs are re-fetched. The stale note disappears once the latest bar closed less than 48 h ago.
 
 ## Merge of origin/main into ml-v2 (2026-10-20, local only, not pushed)
 

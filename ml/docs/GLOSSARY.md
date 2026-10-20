@@ -19,7 +19,8 @@ Terms marked *(not used yet)* appear in the plan docs but no code uses them so f
 - **Return**: how much the price changed, as a fraction. 100 to 110 is +10%.
 - **Log return**: ln(today's close / yesterday's close). Close to the ordinary return for small moves, and daily log returns can be added up over time.
 - **Volatility**: how violently returns swing, usually the standard deviation of returns.
-- **Annualised volatility**: daily volatility scaled to a year: daily std x sqrt(365) for crypto, which trades every day (docs/EVALUATION.md rule 5). *(not used yet)*
+- **Annualised volatility**: daily volatility scaled to a year: daily std x sqrt(365) for crypto, which trades every day (docs/EVALUATION.md rule 5). Served as `volatility` on /risk.
+- **Pooled percentile**: where today's value ranks among the values of ALL served assets on all dates up to today (ties count half). risk_score = 100 x (1 - that rank), so calmer = higher = safer, and scores compare across assets (D36).
 - **Sharpe ratio**: average return divided by volatility, a "return per unit of risk" score. Annualised with sqrt(365) for daily returns, sqrt(365/30) for 30-day windows.
 - **Kurtosis**: a number describing how fat the extreme ends of a distribution are.
 - **Excess kurtosis**: kurtosis minus 3, so a normal (bell-curve) distribution scores 0. Positive means more extreme days than a bell curve predicts.
@@ -107,6 +108,7 @@ Terms marked *(not used yet)* appear in the plan docs but no code uses them so f
 - **Statistical power**: the chance a test detects a real effect. Small samples have low power, so "not approved" may mean "not proven" rather than "no skill".
 - **Non-overlapping windows**: evaluating 30-day periods that do not share days, because daily steps with a 30-day horizon overlap 29/30 (docs/LEARNINGS.md). Used by the Phase 3 strategy baselines.
 - **Backtest**: replaying a strategy on past data to see how it would have done. *(not used yet)*
+- **Baseline serving**: the API returns a baseline's answer (no change for price, today's volatility for risk), plus a note, because no model beat it (D27, D35).
 
 ## Engineering
 - **Unit test**: a tiny automatic check of one function using small made-up inputs (here, hand-made fixtures, not market data).
@@ -115,3 +117,7 @@ Terms marked *(not used yet)* appear in the plan docs but no code uses them so f
 - **Artifact**: a saved model file. Each gets a `metadata.json` (AGENTS rule 10). *(not used yet)*
 - **Pickle**: Python's way of saving objects to a file; it breaks if saved from a script run as `python file.py` (AGENTS rule 9). *(not used yet)*
 - **Exit code**: the number a command returns: 0 means success, 1 means failure. `validate` returns 1 if any check fails.
+- **JSON schema**: a machine-readable description of what a JSON response may contain: field names, types, allowed values. Ours are in docs/CONTRACT.md and allow no extra fields (`additionalProperties: false`).
+- **Contract test**: a test that calls the real service and checks every response against the agreed JSON schemas, so the backend gets exactly the fields it expects (ml/tests/test_contract.py).
+- **Stale data**: the latest daily bar closed too long ago (more than 48 h, config.STALE_DATA_HOURS). The API still answers, with "data stale: last bar <date>" in the note.
+- **404 vs 503**: HTTP status codes. 404 "not found": we do not cover this asset (for example DOGE). 503 "service unavailable": we cover it, but its data failed validation, so we refuse to serve it.

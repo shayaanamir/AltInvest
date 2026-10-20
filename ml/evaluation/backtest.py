@@ -74,11 +74,14 @@ def percentile_rank(values, x: float | None) -> float | None:
 
 def random_baseline(asset_returns, fee: float, runs: int, p_buy: float, seed: int,
                     reference: dict | None = None) -> dict:
-    """Random-signal baseline: percentiles of cumulative return and Sharpe over `runs` seeded runs."""
+    """Random-signal baseline over `runs` seeded runs: percentiles of cumulative return and Sharpe, and
+    medians of trades, max drawdown and in-market hit rate (runs never in the market have no hit rate and
+    are left out of its median; null if no run was ever in the market)."""
     pos = random_positions(len(asset_returns), runs, p_buy, seed)
     nets = [net_window_returns(asset_returns, p, fee) for p in pos]
     cum = np.array([m.cumulative_return(r) for r in nets])
     sh = np.array([np.nan if (s := m.sharpe(r, WINDOWS_PER_YEAR)) is None else s for r in nets])
+    hits = [h for p in pos if (h := hit_rate(asset_returns, p)) is not None]
     pct = (5, 50, 95)
     out = {
         "runs": runs, "p_buy": p_buy, "seed": seed,
@@ -86,6 +89,8 @@ def random_baseline(asset_returns, fee: float, runs: int, p_buy: float, seed: in
         "sharpe_percentiles": {f"p{q}": float(np.nanpercentile(sh, q)) for q in pct},
         "runs_with_null_sharpe": int(np.isnan(sh).sum()),
         "trades_median": float(np.median([trades(p) for p in pos])),
+        "max_drawdown_median": float(np.median([m.max_drawdown(r) for r in nets])),
+        "hit_rate_median": float(np.median(hits)) if hits else None,
     }
     if reference is not None:
         out["reference_percentile_rank"] = {

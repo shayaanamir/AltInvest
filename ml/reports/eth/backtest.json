@@ -752,6 +752,8 @@
       },
       "runs_with_null_sharpe": 0,
       "trades_median": 34.0,
+      "max_drawdown_median": -0.645638,
+      "hit_rate_median": 0.558824,
       "reference_percentile_rank": {
         "cumulative_return": 9.0,
         "sharpe": 5.6
@@ -791,8 +793,8 @@
   },
   "metadata": {
     "asset": "eth",
-    "generated_at": "2026-10-20T08:57:21Z",
-    "git_commit": "0a80f92b7acc79568cd66e716f055f4e954819e6",
+    "generated_at": "2026-10-20T19:00:33Z",
+    "git_commit": "62ec3bc99f134ce5c98557d286ffbf5895de8bb3",
     "git_dirty": true,
     "n_feature_rows": 3319,
     "b2_test_start_row": 2821,

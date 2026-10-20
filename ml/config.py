@@ -40,3 +40,9 @@ BACKTEST_FEE_PER_SIDE = 0.001  # D34
 RANDOM_BASELINE_RUNS = 1000  # D34
 RANDOM_BASELINE_P_BUY = 0.5  # D34
 RANDOM_BASELINE_SEED = 0  # D34
+
+# Serving (Phase 6a). A response gets a staleness note when the latest bar closed more than this many hours ago.
+STALE_DATA_HOURS = 48  # CONTRACT.md 'note' rule (no D-number yet)
+SHARPE_WINDOW_DAYS = 365  # D37: trailing daily log returns used for sharpe_ratio on /risk
+MODEL_VERSION_PRICE = "baseline-last-value"  # D35: no price model approved
+MODEL_VERSION_RISK = "persistence-pooled-pct"  # D36 (persistence vol_30d, D27; pooled percentile mapping)
