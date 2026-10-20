@@ -19,7 +19,7 @@ export default function TrendingAssetsSection() {
       <div className="dv2-section-head">
         <div>
           <h2 className="dv2-section-title">Trending assets</h2>
-          <p className="dv2-section-sub">Weighted toward the markets you chose and what you already follow</p>
+          <p className="dv2-section-sub">Moving unusually for each asset: its 24h move and volume against its own normal</p>
         </div>
         <a href="#" className="dv2-section-link" onClick={(e) => { e.preventDefault(); navigate("/discover"); }}>
           See all →
@@ -64,6 +64,8 @@ export default function TrendingAssetsSection() {
                     {positive ? "↗" : "↘"} {formatPct(a.change24h, { withSign: true })}
                   </span>
                 </div>
+
+                {a.reasons.length > 0 && <div className="dv2-trend-reason">{a.reasons.join(" · ")}</div>}
 
                 <div className="dv2-asset-chart">
                   <Sparkline color={positive ? "var(--sv2-green)" : "var(--sv2-red)"} data={a.sparkline} width={220} height={44} />

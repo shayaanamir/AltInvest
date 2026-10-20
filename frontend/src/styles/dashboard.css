@@ -171,6 +171,9 @@
 .dv2-collection-price-row { display: flex; align-items: baseline; justify-content: space-between; }
 .dv2-collection-price { font-size: 16px; font-weight: 800; color: var(--sv2-text); }
 .dv2-collection-price-label { font-size: 10.5px; color: var(--sv2-text-mute); margin-top: 2px; }
+.dv2-trend-reason { font-size: 11px; font-weight: 600; color: var(--sv2-accent); margin: -4px 0 6px; }
+[data-density="compact"] .dv2-trend-reason { margin: 0 0 4px; }
+
 /* Wrapper around trending assets + collections: no box of its own unless compact. */
 .dv2-bottom-grid { display: contents; }
 

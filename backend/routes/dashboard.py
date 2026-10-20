@@ -159,15 +159,16 @@ def get_dashboard_trending(
     user_id: Optional[ObjectId] = Depends(get_optional_user_id),
 ):
     """
-    Trending = biggest absolute 24h movers across asset_market_data, joined with
-    the latest AAI score and a 7-day price sparkline from `prices`.
+    Trending = moving unusually for that asset: its 24h move against its own typical daily move,
+    plus its 24h volume against its own 7-day average (controllers/trending_controller.py).
+    Each row says why it's there (`reasons`), with the latest AAI score and a 7-day sparkline.
     """
+    from controllers.trending_controller import score_assets
     try:
         market_latest = get_asset_market_data_all_latest()
         assets = {a["asset_id"]: a for a in get_supported_assets()}
         aai_scores = get_all_latest_aai_scores("crypto")
-        market_latest.sort(key=lambda m: abs(m.get("change_24h") or 0.0), reverse=True)
-        top = market_latest[:limit]
+        top = score_assets(market_latest)[:limit]
         sparks = get_price_sparklines([m["asset_id"] for m in top])
         watching = get_user_flags(user_id)["watching"]
     except Exception as exc:
@@ -190,6 +191,10 @@ def get_dashboard_trending(
             "signal": aai_signal(score),
             "sparkline": sparks.get(asset_id, []),
             "watching": asset_id in watching,
+            "trend_score": m.get("trend_score"),
+            "move_vs_usual": m.get("move_vs_usual"),
+            "volume_vs_usual": m.get("volume_vs_usual"),
+            "reasons": m.get("reasons", []),
         })
     return results
 
@@ -199,8 +204,9 @@ def get_dashboard_trending(
 @router.get("/dashboard/trending-collections")
 def get_dashboard_trending_collections(limit: int = Query(4, ge=1, le=20)):
     """
-    Trending collections = biggest absolute 24h floor movers across nft_market_data.
-    No per-collection floor history is stored, so there is no sparkline.
+    Trending collections = biggest 24h floor moves, with 24h trading volume breaking ties.
+    No per-collection floor history is stored, so unlike assets these can't be measured against
+    their own normal range, and there is no sparkline.
     """
     try:
         market_latest = get_nft_market_data_all_latest()
@@ -209,7 +215,7 @@ def get_dashboard_trending_collections(limit: int = Query(4, ge=1, le=20)):
     except Exception as exc:
         raise db_unavailable(exc)
 
-    market_latest.sort(key=lambda m: abs(m.get("change_24h") or 0.0), reverse=True)
+    market_latest.sort(key=lambda m: (abs(m.get("change_24h") or 0.0), m.get("volume_24h_eth") or 0.0), reverse=True)
     results = []
     for m in market_latest[:limit]:
         slug = m["slug"]
@@ -223,6 +229,7 @@ def get_dashboard_trending_collections(limit: int = Query(4, ge=1, le=20)):
             "floor_eth": m.get("floor_eth"),
             "floor_usd": m.get("floor_usd"),
             "change_24h": m.get("change_24h"),
+            "volume_24h_eth": m.get("volume_24h_eth"),
             "aai_score": aai.get("aai_score"),
         })
     return results
