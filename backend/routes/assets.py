@@ -16,16 +16,9 @@ _AAI_CACHE_TTL_MINUTES = 60
 
 @router.get("/assets", response_model=List[AssetItem])
 def get_assets():
-    try:
-        from db.queries import get_supported_assets
-        results = get_supported_assets()
-        if results:
-            return [{"asset": r["asset_id"], "name": r["name"]} for r in results]
-    except Exception:
-        pass
-    # Fallback if MongoDB isn't up yet
-    print("MongoDB not available, returning mock assets")
-    return [{"asset": "BTC", "name": "Bitcoin"}, {"asset": "ETH", "name": "Ethereum"}]
+    # Database errors become a 503 (main.py); an empty collection is an empty list.
+    from db.queries import get_supported_assets
+    return [{"asset": r["asset_id"], "name": r["name"]} for r in get_supported_assets()]
 
 
 # ── GET /assets/{symbol}/detail ─────────────────────────────────────────────
@@ -255,7 +248,7 @@ def get_asset_performance(
 @router.get("/assets/{symbol}/intelligence", response_model=AAIResponse)
 def get_asset_intelligence(symbol: str):
     from db.queries import get_asset, get_latest_aai_score, upsert_aai_score_generalized
-    from controllers.aai_controller import compute_aai_response
+    from controllers.aai_controller import compute_aai_response, is_complete
 
     symbol = symbol.upper()
     try:
@@ -277,19 +270,20 @@ def get_asset_intelligence(symbol: str):
         ts = cached["timestamp"]
         return {
             "asset": symbol,
-            "aai_score": cached["aai_score"],
-            "pred_score": cached["pred_score"],
-            "sentiment_score": cached["sentiment_score"],
+            "aai_score": cached.get("aai_score"),
+            "pred_score": cached.get("pred_score"),
+            "expected_return_30d": cached.get("expected_return_30d"),
+            "sentiment_score": cached.get("sentiment_score"),
             "sentiment_confidence": cached.get("sentiment_confidence"),
-            "risk_score": cached["risk_score"],
-            "model_version": cached["model_version"],
+            "risk_score": cached.get("risk_score"),
+            "model_version": cached.get("model_version"),
             "timestamp": ts.strftime("%Y-%m-%dT%H:%M:%SZ") if hasattr(ts, "strftime") else ts,
         }
 
     result = compute_aai_response(symbol)
-    if result.get("sentiment_available") is False:
-        # Built with a neutral stand-in for sentiment: serve it, but don't cache it, so the
-        # next request tries for real sentiment again.
+    if not is_complete(result):
+        # Missing a prediction or risk score, or built with a neutral stand-in for sentiment:
+        # serve it, but never store it in aai_scores, where it would look like a real score.
         return result
     try:
         upsert_aai_score_generalized(

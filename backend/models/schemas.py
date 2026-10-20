@@ -99,14 +99,17 @@ class RiskResponse(BaseModel):
 
 class AAIResponse(BaseModel):
     asset: str
-    aai_score: float                # always clamped to [0, 100]
-    pred_score: float
+    aai_score: Optional[float] = None       # [0, 100]; null when the prediction or risk score is missing
+    pred_score: Optional[float] = None
+    expected_return_30d: Optional[float] = None
     sentiment_score: float
     sentiment_confidence: Optional[float] = None
     sentiment_available: Optional[bool] = None      # False: no recent sentiment, neutral 50 was used
     sentiment_note: Optional[str] = None
-    risk_score: float
-    model_version: str
+    risk_score: Optional[float] = None
+    missing_inputs: List[str] = []
+    note: Optional[str] = None
+    model_version: Optional[str] = None
     timestamp: str
 
 

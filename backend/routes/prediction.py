@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException
 from models.schemas import PredictionResponse
-from shared.mock_data import mock_prediction
 from utils.asset_gate import require_known_asset
 
 router = APIRouter(tags=["Prediction"])
@@ -35,19 +34,12 @@ def get_prediction(asset: str):
 
     Reads the latest doc from MongoDB `predictions` (written by
     ml/api/prediction_service.py or db/seed_predictions_risk.py).
-    Falls back to mock data if nothing's in the DB yet, or Mongo is down.
+    404 if none is stored yet; nothing is substituted.
     """
     asset = require_known_asset(asset)
 
-    try:
-        from db.queries import get_latest_prediction
-        doc = get_latest_prediction(asset)
-        if doc:
-            return _map_prediction(doc, asset)
-    except Exception as exc:
-        print(f"[prediction] MongoDB unavailable ({exc}), falling back to mock")
-
-    result = mock_prediction(asset)
-    if isinstance(result, dict) and not result.get("note"):
-        result["note"] = "mock data — no prediction found in DB yet"
-    return result
+    from db.queries import get_latest_prediction
+    doc = get_latest_prediction(asset)  # database errors become a 503 (main.py)
+    if not doc:
+        raise HTTPException(status_code=404, detail=f"No prediction has been stored for {asset} yet.")
+    return _map_prediction(doc, asset)

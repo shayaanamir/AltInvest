@@ -1,40 +1,26 @@
 """
 AAI controller — orchestrates calls to all three modules and assembles the response.
+
+Inputs come only from the database (`predictions`, `risk_scores`) and the sentiment engine;
+nothing is made up. A missing prediction or risk score leaves that component null and the AAI
+score null (with `missing_inputs` / `note` saying why). Sentiment is the one component with a
+stand-in (a neutral 50 at zero confidence), and the response flags when that happened.
 """
 
 from datetime import datetime, timezone
-from shared.mock_data import mock_prediction, mock_risk
-from aai_engine.aai import compute_aai, normalise_sentiment
+from aai_engine.aai import compute_aai, normalise_sentiment, normalise_expected_return
 
 
-def _get_real_prediction(asset: str) -> dict:
-    """
-    Fetches the latest prediction from MongoDB `predictions`.
-    Falls back to mock data if nothing's in the DB yet or Mongo is down.
-    """
-    try:
-        from db.queries import get_latest_prediction
-        doc = get_latest_prediction(asset)
-        if doc:
-            return doc
-    except Exception as exc:
-        print(f"[aai_controller] Prediction DB unavailable ({exc}), using mock")
-    return mock_prediction(asset)
+def _get_real_prediction(asset: str) -> dict | None:
+    """Latest row in `predictions`, or None. Database errors propagate (503 via main.py)."""
+    from db.queries import get_latest_prediction
+    return get_latest_prediction(asset)
 
 
-def _get_real_risk(asset: str) -> dict:
-    """
-    Fetches the latest risk score from MongoDB `risk_scores`.
-    Falls back to mock data if nothing's in the DB yet or Mongo is down.
-    """
-    try:
-        from db.queries import get_latest_risk
-        doc = get_latest_risk(asset)
-        if doc:
-            return doc
-    except Exception as exc:
-        print(f"[aai_controller] Risk DB unavailable ({exc}), using mock")
-    return mock_risk(asset)
+def _get_real_risk(asset: str) -> dict | None:
+    """Latest row in `risk_scores`, or None. Database errors propagate (503 via main.py)."""
+    from db.queries import get_latest_risk
+    return get_latest_risk(asset)
 
 
 def _get_real_sentiment(asset: str) -> dict:
@@ -62,46 +48,67 @@ def _get_real_sentiment(asset: str) -> dict:
     }
 
 
+def _expected_return_pct(pred: dict, asset: str) -> float | None:
+    """
+    The prediction's expected 30-day move in percent: the stored `prediction_30d`, or worked out
+    from `predicted_price` against the latest stored price. None if neither is possible.
+    """
+    pct = pred.get("prediction_30d")
+    if isinstance(pct, (int, float)):
+        return float(pct)
+    target = pred.get("predicted_price")
+    if not isinstance(target, (int, float)):
+        return None
+    from db.queries import get_latest_price
+    price = (get_latest_price(asset) or {}).get("price")
+    if not isinstance(price, (int, float)) or price <= 0:
+        return None
+    return (target / price - 1.0) * 100.0
+
+
 def compute_aai_response(asset: str) -> dict:
     pred = _get_real_prediction(asset)
     sent = _get_real_sentiment(asset)
     risk = _get_real_risk(asset)
 
-    pred_score = _normalise_prediction(pred.get("predicted_price"), asset)
+    expected = _expected_return_pct(pred, asset) if pred else None
+    pred_score = normalise_expected_return(expected) if expected is not None else None
 
     raw_sent_score = normalise_sentiment(sent.get("sentiment_score", 0.0))
     confidence = float(sent.get("confidence", 0.0))
     sent_score = round(confidence * raw_sent_score + (1 - confidence) * 50.0, 2)
 
-    risk_score = float(risk.get("risk_score", 50.0))
+    risk_value = (risk or {}).get("risk_score")
+    risk_score = float(risk_value) if isinstance(risk_value, (int, float)) else None
 
-    aai_score = compute_aai(pred_score, sent_score, risk_score)
+    aai_score = (
+        compute_aai(pred_score, sent_score, risk_score)
+        if pred_score is not None and risk_score is not None else None
+    )
     sentiment_available = bool(sent.get("available", True))
+    missing = [name for name, v in (("prediction", pred_score), ("risk score", risk_score)) if v is None]
 
     return {
         "asset": asset,
         "aai_score": aai_score,
-        "pred_score": round(pred_score, 2),
+        "pred_score": pred_score,
+        "expected_return_30d": round(expected, 2) if expected is not None else None,
         "sentiment_score": round(sent_score, 2),
         "sentiment_confidence": round(confidence, 2),
         "sentiment_available": sentiment_available,
         "sentiment_note": None if sentiment_available else (
             "No recent sentiment reading was available, so a neutral value was used for the sentiment component."
         ),
-        "risk_score": round(risk_score, 2),
-        "model_version": pred.get("model_version", "mock-v1"),
+        "risk_score": round(risk_score, 2) if risk_score is not None else None,
+        "missing_inputs": missing,
+        "note": None if not missing else (
+            f"No {' or '.join(missing)} is stored for {asset} yet, so the AAI score can't be computed."
+        ),
+        "model_version": (pred or {}).get("model_version"),
         "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
 
 
-def _normalise_prediction(predicted_price: float | None, asset: str) -> float:
-    if predicted_price is None:
-        return 50.0  # neutral fallback
-
-    bounds = {
-        "BTC": 200_000.0,
-        "ETH": 20_000.0,
-    }
-    upper = bounds.get(asset, 100_000.0)
-    score = (predicted_price / upper) * 100.0
-    return round(min(max(score, 0.0), 100.0), 2)
+def is_complete(result: dict) -> bool:
+    """True when every input was real (prediction, risk and sentiment): only then may it be cached."""
+    return result.get("aai_score") is not None and result.get("sentiment_available") is not False
