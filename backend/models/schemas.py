@@ -202,13 +202,18 @@ class PortfolioTradeIn(BaseModel):
     price_usd: float = Field(ge=0, allow_inf_nan=False)
 
 
-class WatchlistCreate(BaseModel):
-    name: str
-
-
 class WatchlistItemIn(BaseModel):
     type: str
     symbol_or_slug: str
+
+
+class WatchlistCreate(BaseModel):
+    name: str
+    items: List[WatchlistItemIn] = []   # optional starter items, added in the same request
+
+
+class WatchlistRename(BaseModel):
+    name: str
 
 
 class AlertCreate(BaseModel):

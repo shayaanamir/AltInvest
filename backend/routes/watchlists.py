@@ -12,7 +12,7 @@ from utils.http_errors import require_object_id
 from fastapi import APIRouter, Depends, HTTPException
 
 from auth.dependencies import get_current_user_id
-from models.schemas import WatchlistOut, WatchlistCreate, WatchlistItemIn
+from models.schemas import WatchlistOut, WatchlistCreate, WatchlistItemIn, WatchlistRename
 from utils.serialization import serialize_dates
 from db.queries import (
     get_watchlists,
@@ -20,6 +20,8 @@ from db.queries import (
     delete_watchlist,
     add_watchlist_item,
     remove_watchlist_item,
+    rename_watchlist,
+    watchlist_name_taken,
     get_asset,
     get_nft_collection,
     get_assets_by_id,
@@ -30,6 +32,32 @@ from db.queries import (
 )
 
 router = APIRouter(tags=["Watchlists"])
+
+_MAX_NAME = 60
+
+
+def _clean_name(name: str) -> str:
+    name = (name or "").strip()
+    if not name:
+        raise HTTPException(status_code=422, detail="Watchlist name cannot be empty.")
+    if len(name) > _MAX_NAME:
+        raise HTTPException(status_code=422, detail=f"Watchlist name must be {_MAX_NAME} characters or fewer.")
+    return name
+
+
+def _normalise_item(item: WatchlistItemIn) -> tuple[str, str]:
+    """(type, key): crypto symbols upper-case, NFT slugs lower-case, and the target must exist."""
+    if item.type == "crypto":
+        key = item.symbol_or_slug.strip().upper()
+        if not get_asset(key):
+            raise HTTPException(status_code=404, detail=f"Asset '{key}' not found.")
+    elif item.type == "nft":
+        key = item.symbol_or_slug.strip().lower()
+        if not get_nft_collection(key):
+            raise HTTPException(status_code=404, detail=f"NFT collection '{key}' not found.")
+    else:
+        raise HTTPException(status_code=422, detail="type must be 'crypto' or 'nft'.")
+    return item.type, key
 
 
 def _enrich_watchlists(watchlists: list) -> list:
@@ -87,10 +115,33 @@ def list_watchlists(user_id: ObjectId = Depends(get_current_user_id)):
 def create_new_watchlist(
     payload: WatchlistCreate, user_id: ObjectId = Depends(get_current_user_id)
 ):
-    if not payload.name.strip():
-        raise HTTPException(status_code=422, detail="Watchlist name cannot be empty.")
-    watchlist_id = create_watchlist(user_id, payload.name.strip())
+    """Creates a list, optionally with starter items, in one write: all of it happens or none does."""
+    name = _clean_name(payload.name)
+    if watchlist_name_taken(user_id, name):
+        raise HTTPException(status_code=409, detail=f"You already have a watchlist called '{name}'.")
+    items, seen = [], set()
+    for item in payload.items:
+        t, key = _normalise_item(item)          # any unknown asset rejects the whole request
+        if key not in seen:
+            seen.add(key)
+            items.append((t, key))
+    watchlist_id = create_watchlist(user_id, name, items)
     return {"id": watchlist_id}
+
+
+# ── PATCH /watchlists/{id} ───────────────────────────────────────────────────
+
+@router.patch("/watchlists/{watchlist_id}")
+def rename_existing_watchlist(
+    watchlist_id: str, payload: WatchlistRename, user_id: ObjectId = Depends(get_current_user_id)
+):
+    require_object_id(watchlist_id, "watchlist")
+    name = _clean_name(payload.name)
+    if watchlist_name_taken(user_id, name, except_id=watchlist_id):
+        raise HTTPException(status_code=409, detail=f"You already have a watchlist called '{name}'.")
+    if not rename_watchlist(user_id, watchlist_id, name):
+        raise HTTPException(status_code=404, detail="Watchlist not found.")
+    return {"status": "renamed", "name": name}
 
 
 # ── DELETE /watchlists/{id} ──────────────────────────────────────────────────
@@ -112,20 +163,13 @@ def add_item_to_watchlist(
     watchlist_id: str, payload: WatchlistItemIn,
     user_id: ObjectId = Depends(get_current_user_id),
 ):
-    if payload.type not in ("crypto", "nft"):
-        raise HTTPException(status_code=422, detail="type must be 'crypto' or 'nft'.")
-
-    # Validate the target actually exists before adding it
-    if payload.type == "crypto" and not get_asset(payload.symbol_or_slug):
-        raise HTTPException(status_code=404, detail=f"Asset '{payload.symbol_or_slug}' not found.")
-    if payload.type == "nft" and not get_nft_collection(payload.symbol_or_slug):
-        raise HTTPException(status_code=404, detail=f"NFT collection '{payload.symbol_or_slug}' not found.")
-
     require_object_id(watchlist_id, "watchlist")
-    added = add_watchlist_item(user_id, watchlist_id, payload.type, payload.symbol_or_slug)
-
-    if not added:
+    item_type, key = _normalise_item(payload)
+    outcome = add_watchlist_item(user_id, watchlist_id, item_type, key)
+    if outcome == "no_list":
         raise HTTPException(status_code=404, detail="Watchlist not found.")
+    if outcome == "duplicate":
+        raise HTTPException(status_code=409, detail=f"{key} is already on this watchlist.")
     return {"status": "added"}
 
 
@@ -137,8 +181,9 @@ def remove_item_from_watchlist(
     user_id: ObjectId = Depends(get_current_user_id),
 ):
     require_object_id(watchlist_id, "watchlist")
-    removed = remove_watchlist_item(user_id, watchlist_id, symbol_or_slug)
-
-    if not removed:
-        raise HTTPException(status_code=404, detail="Watchlist or item not found.")
+    outcome = remove_watchlist_item(user_id, watchlist_id, symbol_or_slug)
+    if outcome == "no_list":
+        raise HTTPException(status_code=404, detail="Watchlist not found.")
+    if outcome == "no_item":
+        raise HTTPException(status_code=404, detail=f"{symbol_or_slug} isn't on this watchlist.")
     return None

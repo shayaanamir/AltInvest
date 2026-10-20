@@ -5,6 +5,8 @@ export default function CreateWatchlistModal({ searchableItems, onCancel, onCrea
   const [name, setName] = useState("");
   const [query, setQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -18,10 +20,19 @@ export default function CreateWatchlistModal({ searchableItems, onCancel, onCrea
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
-  const handleCreate = () => {
-    if (!name.trim()) return;
+  // onCreate resolves when the list exists (the page then closes this) and rejects with a message
+  // to show here, so nothing typed or picked is lost.
+  const handleCreate = async () => {
+    if (!name.trim() || saving) return;
     const chosen = searchableItems.filter((i) => selectedIds.includes(i.id));
-    onCreate(name.trim(), chosen);
+    setSaving(true);
+    setError(null);
+    try {
+      await onCreate(name.trim(), chosen);
+    } catch (e) {
+      setError(e?.message || "Couldn't create the watchlist.");
+      setSaving(false);
+    }
   };
 
   return (
@@ -78,8 +89,11 @@ export default function CreateWatchlistModal({ searchableItems, onCancel, onCrea
         </div>
 
         <div className="wl-modal-footer">
-          <button className="wl-modal-cancel" onClick={onCancel}>Cancel</button>
-          <button className="wl-modal-create" disabled={!name.trim()} onClick={handleCreate}>Create watchlist</button>
+          {error && <span className="wl-modal-error" role="alert">{error}</span>}
+          <button className="wl-modal-cancel" onClick={onCancel} disabled={saving}>Cancel</button>
+          <button className="wl-modal-create" disabled={!name.trim() || saving} onClick={handleCreate}>
+            {saving ? "Creating…" : "Create watchlist"}
+          </button>
         </div>
       </div>
     </div>

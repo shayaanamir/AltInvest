@@ -280,11 +280,30 @@ def get_watchlists(user_id: ObjectId) -> list:
     return out
 
 
-def create_watchlist(user_id: ObjectId, name: str) -> str:
+def create_watchlist(user_id: ObjectId, name: str, items: list | None = None) -> str:
+    """Creates the list with its starter items in one write, so it can't half-succeed."""
     db = get_db()
-    doc = {"user_id": user_id, "name": name, "created_at": datetime.now(timezone.utc), "items": []}
+    now = datetime.now(timezone.utc)
+    doc = {
+        "user_id": user_id, "name": name, "created_at": now,
+        "items": [{"type": t, "symbol_or_slug": k, "added_at": now} for t, k in (items or [])],
+    }
     result = db.watchlists.insert_one(doc)
     return str(result.inserted_id)
+
+
+def rename_watchlist(user_id: ObjectId, watchlist_id: str, name: str) -> bool:
+    db = get_db()
+    result = db.watchlists.update_one({"_id": ObjectId(watchlist_id), "user_id": user_id}, {"$set": {"name": name}})
+    return result.matched_count > 0
+
+
+def watchlist_name_taken(user_id: ObjectId, name: str, except_id: str | None = None) -> bool:
+    db = get_db()
+    query = {"user_id": user_id, "name": {"$regex": f"^{re.escape(name)}$", "$options": "i"}}
+    if except_id:
+        query["_id"] = {"$ne": ObjectId(except_id)}
+    return db.watchlists.find_one(query, {"_id": 1}) is not None
 
 
 def delete_watchlist(user_id: ObjectId, watchlist_id: str) -> bool:
@@ -293,23 +312,35 @@ def delete_watchlist(user_id: ObjectId, watchlist_id: str) -> bool:
     return result.deleted_count > 0
 
 
-def add_watchlist_item(user_id: ObjectId, watchlist_id: str, item_type: str, symbol_or_slug: str) -> bool:
+def add_watchlist_item(user_id: ObjectId, watchlist_id: str, item_type: str, symbol_or_slug: str) -> str:
+    """
+    Adds an item unless it's already on the list. Returns "added", "duplicate" or "no_list".
+    The duplicate check is part of the update's filter, so two quick clicks can't add it twice.
+    """
     db = get_db()
+    oid = ObjectId(watchlist_id)
     item = {"type": item_type, "symbol_or_slug": symbol_or_slug, "added_at": datetime.now(timezone.utc)}
     result = db.watchlists.update_one(
-        {"_id": ObjectId(watchlist_id), "user_id": user_id},
+        {"_id": oid, "user_id": user_id, "items.symbol_or_slug": {"$ne": symbol_or_slug}},
         {"$push": {"items": item}},
     )
-    return result.matched_count > 0
+    if result.matched_count:
+        return "added"
+    return "duplicate" if db.watchlists.find_one({"_id": oid, "user_id": user_id}, {"_id": 1}) else "no_list"
 
 
-def remove_watchlist_item(user_id: ObjectId, watchlist_id: str, symbol_or_slug: str) -> bool:
+def remove_watchlist_item(user_id: ObjectId, watchlist_id: str, symbol_or_slug: str) -> str:
+    """Returns "removed", "no_item" or "no_list". Matches the item whatever case it was stored in."""
     db = get_db()
+    oid = ObjectId(watchlist_id)
+    variants = sorted({symbol_or_slug, symbol_or_slug.upper(), symbol_or_slug.lower()})
     result = db.watchlists.update_one(
-        {"_id": ObjectId(watchlist_id), "user_id": user_id},
-        {"$pull": {"items": {"symbol_or_slug": symbol_or_slug}}},
+        {"_id": oid, "user_id": user_id},
+        {"$pull": {"items": {"symbol_or_slug": {"$in": variants}}}},
     )
-    return result.matched_count > 0
+    if not result.matched_count:
+        return "no_list"
+    return "removed" if result.modified_count else "no_item"
 
 
 # ── Alerts ────────────────────────────────────────────────────────────────────
