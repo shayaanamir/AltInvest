@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from collections import defaultdict
 
 from bson import ObjectId
+from utils.http_errors import require_object_id
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from auth.dependencies import get_current_user_id
@@ -157,10 +158,8 @@ def patch_portfolio_holding(
     if not update:
         raise HTTPException(status_code=422, detail="No updatable fields provided.")
 
-    try:
-        updated = update_portfolio_holding(user_id, holding_id, update)
-    except Exception:
-        raise HTTPException(status_code=422, detail="Invalid holding id.")
+    require_object_id(holding_id, "holding")
+    updated = update_portfolio_holding(user_id, holding_id, update)
 
     if not updated:
         raise HTTPException(status_code=404, detail="Holding not found.")
@@ -173,10 +172,8 @@ def patch_portfolio_holding(
 def remove_portfolio_holding(
     holding_id: str, user_id: ObjectId = Depends(get_current_user_id)
 ):
-    try:
-        deleted = delete_portfolio_holding(user_id, holding_id)
-    except Exception:
-        raise HTTPException(status_code=422, detail="Invalid holding id.")
+    require_object_id(holding_id, "holding")
+    deleted = delete_portfolio_holding(user_id, holding_id)
 
     if not deleted:
         raise HTTPException(status_code=404, detail="Holding not found.")

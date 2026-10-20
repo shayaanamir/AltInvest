@@ -8,6 +8,7 @@ system events — no POST/create route here on purpose.
 import path_setup  # noqa: F401
 
 from bson import ObjectId
+from utils.http_errors import require_object_id
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from auth.dependencies import get_current_user_id
@@ -34,10 +35,8 @@ def list_notifications(
 
 @router.patch("/notifications/{notification_id}/read")
 def mark_read(notification_id: str, user_id: ObjectId = Depends(get_current_user_id)):
-    try:
-        updated = mark_notification_read(user_id, notification_id)
-    except Exception:
-        raise HTTPException(status_code=422, detail="Invalid notification id.")
+    require_object_id(notification_id, "notification")
+    updated = mark_notification_read(user_id, notification_id)
 
     if not updated:
         raise HTTPException(status_code=404, detail="Notification not found.")

@@ -1,8 +1,17 @@
 import path_setup  # noqa: F401 — must be first, fixes sys.path before any local imports
 
 import threading
+import traceback
 
-from fastapi import FastAPI
+import logging
+
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from pymongo.errors import PyMongoError
+
+from utils.http_errors import (
+    DB_UNAVAILABLE_MESSAGE, ENGINE_UNAVAILABLE_MESSAGE, INTERNAL_ERROR_MESSAGE, EngineUnavailable, redact,
+)
 from fastapi.middleware.cors import CORSMiddleware
 
 from routes import (
@@ -27,11 +36,44 @@ from routes import (
     fx,
 )
 
+_log = logging.getLogger("api")
+
 app = FastAPI(
     title="AAIP Backend",
     description="Alternative Asset Intelligence Platform API",
     version="1.0.0",
 )
+
+# ── Error handling ───────────────────────────────────────────────────────────
+# One rule for every route: details go to the server log, the client gets a fixed message.
+#   database unreachable / failing (any pymongo error)  -> 503 "Unable to reach the database right now."
+#   sentiment engine not installed                      -> 503
+#   anything else unexpected                            -> 500, generic message
+# The catch-all is registered before CORS so it sits inside it and the 500 still carries CORS
+# headers (otherwise the browser reports it as a network failure).
+
+@app.exception_handler(PyMongoError)
+async def _database_error(request: Request, exc: PyMongoError):
+    _log.error("Database error on %s %s: %s: %s", request.method, request.url.path, type(exc).__name__, redact(exc))
+    return JSONResponse(status_code=503, content={"detail": DB_UNAVAILABLE_MESSAGE})
+
+
+@app.exception_handler(EngineUnavailable)
+async def _engine_unavailable(request: Request, exc: EngineUnavailable):
+    _log.error("Sentiment engine unavailable on %s %s: %s", request.method, request.url.path, redact(exc))
+    return JSONResponse(status_code=503, content={"detail": ENGINE_UNAVAILABLE_MESSAGE})
+
+
+@app.middleware("http")
+async def _unexpected_error(request: Request, call_next):
+    try:
+        return await call_next(request)
+    except Exception as exc:
+        # Full traceback for debugging, with any credentials in the message masked.
+        _log.error("Unhandled error on %s %s\n%s", request.method, request.url.path,
+                   redact("".join(traceback.format_exception(exc))))
+        return JSONResponse(status_code=500, content={"detail": INTERNAL_ERROR_MESSAGE})
+
 
 app.add_middleware(
     CORSMiddleware,

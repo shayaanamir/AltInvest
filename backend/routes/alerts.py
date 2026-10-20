@@ -8,6 +8,7 @@ not implemented here, this route only covers user-facing CRUD.
 import path_setup  # noqa: F401
 
 from bson import ObjectId
+from utils.http_errors import require_object_id
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from auth.dependencies import get_current_user_id
@@ -85,10 +86,8 @@ def patch_alert(
     if "delivery_channel" in update and update["delivery_channel"] not in _VALID_CHANNELS:
         raise HTTPException(status_code=422, detail=f"delivery_channel must be one of {_VALID_CHANNELS}.")
 
-    try:
-        updated = update_alert(user_id, alert_id, update)
-    except Exception:
-        raise HTTPException(status_code=422, detail="Invalid alert id.")
+    require_object_id(alert_id, "alert")
+    updated = update_alert(user_id, alert_id, update)
 
     if not updated:
         raise HTTPException(status_code=404, detail="Alert not found.")
@@ -99,10 +98,8 @@ def patch_alert(
 
 @router.delete("/alerts/{alert_id}", status_code=204)
 def remove_alert(alert_id: str, user_id: ObjectId = Depends(get_current_user_id)):
-    try:
-        deleted = delete_alert(user_id, alert_id)
-    except Exception:
-        raise HTTPException(status_code=422, detail="Invalid alert id.")
+    require_object_id(alert_id, "alert")
+    deleted = delete_alert(user_id, alert_id)
 
     if not deleted:
         raise HTTPException(status_code=404, detail="Alert not found.")

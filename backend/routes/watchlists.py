@@ -8,6 +8,7 @@ note: "resolve live price/AAI at read time by joining assets/nft_collections."
 import path_setup  # noqa: F401
 
 from bson import ObjectId
+from utils.http_errors import require_object_id
 from fastapi import APIRouter, Depends, HTTPException
 
 from auth.dependencies import get_current_user_id
@@ -83,10 +84,8 @@ def create_new_watchlist(
 
 @router.delete("/watchlists/{watchlist_id}", status_code=204)
 def remove_watchlist(watchlist_id: str, user_id: ObjectId = Depends(get_current_user_id)):
-    try:
-        deleted = delete_watchlist(user_id, watchlist_id)
-    except Exception:
-        raise HTTPException(status_code=422, detail="Invalid watchlist id.")
+    require_object_id(watchlist_id, "watchlist")
+    deleted = delete_watchlist(user_id, watchlist_id)
 
     if not deleted:
         raise HTTPException(status_code=404, detail="Watchlist not found.")
@@ -109,10 +108,8 @@ def add_item_to_watchlist(
     if payload.type == "nft" and not get_nft_collection(payload.symbol_or_slug):
         raise HTTPException(status_code=404, detail=f"NFT collection '{payload.symbol_or_slug}' not found.")
 
-    try:
-        added = add_watchlist_item(user_id, watchlist_id, payload.type, payload.symbol_or_slug)
-    except Exception:
-        raise HTTPException(status_code=422, detail="Invalid watchlist id.")
+    require_object_id(watchlist_id, "watchlist")
+    added = add_watchlist_item(user_id, watchlist_id, payload.type, payload.symbol_or_slug)
 
     if not added:
         raise HTTPException(status_code=404, detail="Watchlist not found.")
@@ -126,10 +123,8 @@ def remove_item_from_watchlist(
     watchlist_id: str, symbol_or_slug: str,
     user_id: ObjectId = Depends(get_current_user_id),
 ):
-    try:
-        removed = remove_watchlist_item(user_id, watchlist_id, symbol_or_slug)
-    except Exception:
-        raise HTTPException(status_code=422, detail="Invalid watchlist id.")
+    require_object_id(watchlist_id, "watchlist")
+    removed = remove_watchlist_item(user_id, watchlist_id, symbol_or_slug)
 
     if not removed:
         raise HTTPException(status_code=404, detail="Watchlist or item not found.")
