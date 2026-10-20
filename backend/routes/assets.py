@@ -76,7 +76,8 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
             rows = get_db().portfolio_holdings.find(
                 {"user_id": user_id, "symbol": symbol}, projection={"quantity": 1}
             )
-            quantity_held = sum(r.get("quantity") or 0 for r in rows)
+            from controllers.portfolio_controller import _num
+            quantity_held = sum(_num(r.get("quantity")) or 0 for r in rows)
 
         universe = build_crypto_items(user_id)
     except HTTPException:

@@ -62,7 +62,9 @@ export default function CryptoHoldingsTable() {
                 </div>
 
                 <span className="sv2-small">{h.quantity}</span>
-                <span className="sv2-small sv2-bold">{formatAssetPrice(h.valueUsd)}</span>
+                <span className="sv2-small sv2-bold" title={h.valueUsd == null ? "No current price for this asset" : undefined}>
+                  {h.valueUsd == null ? "—" : formatAssetPrice(h.valueUsd)}
+                </span>
 
                 <span className={`dv2-asset-change ${positive ? "positive" : "negative"}`}>
                   {positive ? "↗" : "↘"} {formatPct(h.change24hPct, { withSign: true })}
@@ -113,7 +115,7 @@ export default function CryptoHoldingsTable() {
       {alertFor && (
         <CreateAlertModal
           target={{ type: "crypto", symbol: alertFor.symbol, name: alertFor.name }}
-          hint={alertFor.quantity ? `Currently ${formatAssetPrice(alertFor.valueUsd / alertFor.quantity)}` : undefined}
+          hint={alertFor.quantity && alertFor.valueUsd != null ? `Currently ${formatAssetPrice(alertFor.valueUsd / alertFor.quantity)}` : undefined}
           onClose={() => setAlertFor(null)}
         />
       )}

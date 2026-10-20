@@ -15,6 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from auth.dependencies import get_current_user_id
 from models.schemas import (
     PortfolioHoldingIn,
+    PortfolioHoldingPatch,
     PortfolioHoldingOut,
     PortfolioSummary,
     AllocationSlice,
@@ -48,8 +49,11 @@ def _serialize(h: dict) -> dict:
 def get_portfolio_summary(user_id: ObjectId = Depends(get_current_user_id)):
     valued = get_valued_holdings(user_id)
 
-    total_value = sum(h["current_value_usd"] or 0.0 for h in valued)
-    total_cost = sum(h.get("cost_basis_usd") or 0.0 for h in valued)
+    # Only holdings that could be valued count toward value, cost and P&L. Including the cost of
+    # a holding with no price but not its value would show a loss that hasn't happened.
+    priced = [h for h in valued if h["valuation_status"] == "ok"]
+    total_value = sum(h["current_value_usd"] for h in priced)
+    total_cost = sum(h.get("cost_basis_usd") or 0.0 for h in priced)
     total_pnl = total_value - total_cost
 
     return PortfolioSummary(
@@ -58,6 +62,7 @@ def get_portfolio_summary(user_id: ObjectId = Depends(get_current_user_id)):
         total_unrealised_pnl_usd=round(total_pnl, 2),
         total_unrealised_pnl_pct=round((total_pnl / total_cost) * 100, 2) if total_cost else None,
         holding_count=len(valued),
+        unpriced_holding_count=len(valued) - len(priced),
     )
 
 
@@ -145,13 +150,10 @@ def create_portfolio_holding(
 
 @router.patch("/portfolio/holdings/{holding_id}")
 def patch_portfolio_holding(
-    holding_id: str, payload: dict, user_id: ObjectId = Depends(get_current_user_id)
+    holding_id: str, payload: PortfolioHoldingPatch, user_id: ObjectId = Depends(get_current_user_id)
 ):
-    allowed_fields = {
-        "quantity", "avg_buy_price_usd", "avg_buy_price_eth",
-        "avg_buy_eth_usd_rate", "cost_basis_usd",
-    }
-    update = {k: v for k, v in payload.items() if k in allowed_fields}
+    # Typed and validated by PortfolioHoldingPatch: numbers only, finite, quantity > 0.
+    update = payload.model_dump(exclude_none=True)
     if not update:
         raise HTTPException(status_code=422, detail="No updatable fields provided.")
 

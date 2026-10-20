@@ -34,6 +34,12 @@ router = APIRouter(tags=["Dashboard"])
 _FILTER_DAYS = {"1D": 1, "1W": 7, "1M": 30, "3M": 90, "1Y": 365}
 
 
+def _as_number(value):
+    """A finite float, or None (missing, null, text, NaN)."""
+    from controllers.portfolio_controller import _num
+    return _num(value)
+
+
 # ── GET /dashboard/stats ────────────────────────────────────────────────────
 
 @router.get("/dashboard/stats", response_model=DashboardStats)
@@ -48,6 +54,7 @@ def get_dashboard_stats(user_id: ObjectId = Depends(get_current_user_id)):
         raise db_unavailable(exc)
 
     portfolio_value = sum(h.get("current_value_usd") or 0.0 for h in valued_holdings)
+    unpriced_holdings = sum(1 for h in valued_holdings if h.get("valuation_status") != "ok")
     volume_24h = sum(m.get("volume_24h") or 0.0 for m in market_latest)
 
     # Sentiment engine output, restricted to usable readings: covered assets only, recent,
@@ -82,6 +89,7 @@ def get_dashboard_stats(user_id: ObjectId = Depends(get_current_user_id)):
         nft_score_count=len(nft_aai),
         market_mood_confidence=round(sum(confidences) / len(confidences) * 100, 1) if confidences else None,
         sentiment_asset_count=len(sentiment_scores),
+        unpriced_holding_count=unpriced_holdings,
     )
 
 
@@ -113,7 +121,10 @@ def get_dashboard_performance(
             for p in cursor:
                 ts = p["timestamp"]
                 key = ts.strftime("%Y-%m-%dT%H:00:00Z") if hasattr(ts, "strftime") else str(ts)
-                points_map[key] = points_map.get(key, 0.0) + p["price"] * h["quantity"]
+                price, quantity = _as_number(p.get("price")), _as_number(h.get("quantity"))
+                if price is None or quantity is None:
+                    continue  # an unreadable row is skipped rather than failing the whole chart
+                points_map[key] = points_map.get(key, 0.0) + price * quantity
 
         points = [{"timestamp": ts, "value": round(v, 2)} for ts, v in sorted(points_map.items())]
         return {"filter": filter, "points": points}

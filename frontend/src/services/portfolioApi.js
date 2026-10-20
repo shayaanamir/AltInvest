@@ -13,9 +13,14 @@ function round2(n) {
 
 const SIGNAL_TO_ACTION = { BUY: "Buy More", HOLD: "Hold", SELL: "Reduce" };
 
+// A holding the server couldn't value (no market price yet) comes back with no value, not 0.
+// Treat it as unpriced everywhere, so it isn't shown as worth nothing or as a total loss.
+const isPriced = (h) => (h.valuation_status ? h.valuation_status === "ok" : h.current_value_usd != null);
+
 function mapCryptoHolding(h, meta) {
   const costBasis = h.cost_basis_usd || 0;
-  const currentValue = h.current_value_usd || 0;
+  const priced = isPriced(h);
+  const currentValue = priced ? h.current_value_usd : null;
   return {
     id: h.id,
     symbol: h.symbol,
@@ -24,6 +29,7 @@ function mapCryptoHolding(h, meta) {
     quantity: h.quantity,
     avgBuyPriceUsd: h.avg_buy_price_usd ?? null,
     valueUsd: currentValue,
+    priced,
     costBasisUsd: costBasis,
     // Per-holding 24h P&L isn't computed server-side; the asset's own market change is the closest stored signal.
     change24hPct: meta?.change24h ?? 0,
@@ -35,7 +41,8 @@ function mapCryptoHolding(h, meta) {
 
 function mapNftHolding(h, meta) {
   const costBasis = h.cost_basis_usd || 0;
-  const currentValueUsd = h.current_value_usd || 0;
+  const priced = isPriced(h);
+  const currentValueUsd = priced ? h.current_value_usd : null;
   const floorEth = meta?.floorEth ?? null;
   return {
     id: h.id,
@@ -47,8 +54,9 @@ function mapNftHolding(h, meta) {
     ethUsdRateAtBuy: h.avg_buy_eth_usd_rate ?? null,
     currentPriceEth: floorEth,
     valueUsd: currentValueUsd,
+    priced,
     costBasisUsd: costBasis,
-    changePct: costBasis > 0 ? round2(((currentValueUsd - costBasis) / costBasis) * 100) : 0,
+    changePct: priced && costBasis > 0 ? round2(((currentValueUsd - costBasis) / costBasis) * 100) : 0,
     aaiScore: meta?.aaiScore ?? null,
     aiAction: meta?.signal ? SIGNAL_TO_ACTION[meta.signal] || "Hold" : "Hold",
     artColor: meta?.color || "#c9805a",
@@ -83,6 +91,7 @@ export const portfolioApi = {
       totalProfitLossPct: s.total_unrealised_pnl_pct ?? 0,
       totalProfitLossPositive: s.total_unrealised_pnl_usd >= 0,
       positionsCount: s.holding_count,
+      unpricedCount: s.unpriced_holding_count ?? 0, // holdings with no price, left out of the totals above
       // Diversification isn't computed server-side yet (no
       // /portfolio/intelligence route) — placeholder until it exists.
       diversificationScore: 50,
