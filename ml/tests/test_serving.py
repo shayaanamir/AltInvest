@@ -1,8 +1,8 @@
 """Tests for the serving layer (Phase 6a; D27, D33, D35, D36, D37).
 
 All fixtures below are small HAND-MADE numbers, NOT market data. No network calls. Feature tables are built
-by hand (only vol_30d and ret_1d are read); the loading tests use hand-made raw bars and temporary
-validation reports.
+by hand (only vol_30d and ret_1d are read); the loading tests write hand-made raw bars and matching
+validation reports into temporary serving directories (config.ML_RAW_DIR, config.ML_VALIDATION_DIR; D40).
 """
 
 import json
@@ -11,9 +11,10 @@ import math
 import numpy as np
 import pandas as pd
 import pytest
+from fastapi.testclient import TestClient
 
 from ml import config
-from ml.data import dataset_summary
+from ml.api.service import app
 from ml.evaluation.risk_mapping_check import historical_scores
 from ml.features.features import build_features
 from ml.labels import labels
@@ -139,16 +140,26 @@ def _raw(asset: str, n: int = 400) -> pd.DataFrame:
     })
 
 
+def write_serving_data(raw_dir, validation_dir, assets=config.ASSETS, n: int = 400) -> None:
+    """Hand-made CSVs and matching passed validation reports (rows and last timestamp, D40)."""
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    validation_dir.mkdir(parents=True, exist_ok=True)
+    for a in assets:
+        df = _raw(a, n)
+        df.assign(timestamp=df["timestamp"].dt.strftime("%Y-%m-%dT%H:%M:%SZ")).to_csv(
+            raw_dir / f"{a}_1d.csv", index=False)
+        last = df["timestamp"].iloc[-1].strftime("%Y-%m-%dT%H:%M:%SZ")
+        report = {"passed": True, "rows": n, "last_timestamp": last}
+        (validation_dir / f"{a}_validation.json").write_text(json.dumps(report), encoding="utf-8")
+
+
 @pytest.fixture
 def reports(monkeypatch, tmp_path):
-    """Temporary validation reports (all passed) and hand-made raw bars instead of ml/data/raw."""
-    report_dir = tmp_path / "ml" / "reports" / "data"
-    report_dir.mkdir(parents=True)
-    monkeypatch.setattr(dataset_summary, "ML_ROOT", tmp_path / "ml")
-    monkeypatch.setattr(dataset_summary, "REPORT_DIR", report_dir)
-    monkeypatch.setattr(rs, "load_raw", _raw)
-    for a in config.ASSETS:
-        (report_dir / f"{a}_validation.json").write_text(json.dumps({"passed": True}), encoding="utf-8")
+    """Temporary serving directories holding hand-made bars and passed reports, instead of the snapshot."""
+    raw_dir, report_dir = tmp_path / "raw", tmp_path / "validation"
+    monkeypatch.setattr(config, "ML_RAW_DIR", raw_dir)
+    monkeypatch.setattr(config, "ML_VALIDATION_DIR", report_dir)
+    write_serving_data(raw_dir, report_dir)
     return report_dir
 
 
@@ -156,10 +167,10 @@ def test_refuses_when_any_pooled_asset_failed_validation(reports):
     now = pd.Timestamp("2026-10-20", tz="UTC")
     assert set(rs.feature_tables()) == set(config.ASSETS)
     (reports / "sol_validation.json").write_text(json.dumps({"passed": False}), encoding="utf-8")
-    with pytest.raises(rs.NotServable, match="sol_validation.json"):
+    with pytest.raises(rs.NotServable, match="sol_validation.json did not pass"):
         rs.risk("btc", now)
     (reports / "sol_validation.json").unlink()
-    with pytest.raises(rs.NotServable, match="missing or not passed"):
+    with pytest.raises(rs.NotServable, match="sol_validation.json is missing"):
         rs.predict("btc", now)
 
 
@@ -184,3 +195,32 @@ def test_check_scores_match_serving_on_that_date():
     for r in (5, 200, len(fb) - 1, len(fa) - 1):
         served = rs.risk_inputs("aaa", _now(fa.iloc[:r + 1]), {"aaa": fa.iloc[:r + 1], "bbb": fb})
         assert historical_scores(fa["vol_30d"], pool, range(r, r + 1))[0] == pytest.approx(served["risk_score"])
+
+
+def _set_report(path, **changes):
+    path.write_text(json.dumps({**json.loads(path.read_text(encoding="utf-8")), **changes}), encoding="utf-8")
+
+
+GATE_BREAKS = {     # (how the btc data is broken, the asset the 503 must name)
+    "missing_csv": (lambda raw, rep: (raw / "btc_1d.csv").unlink(), "btc"),
+    "missing_report": (lambda raw, rep: (rep / "btc_validation.json").unlink(), "btc"),
+    "row_mismatch": (lambda raw, rep: _set_report(rep / "btc_validation.json", rows=401), "btc"),
+    "last_timestamp_mismatch": (lambda raw, rep: _set_report(rep / "btc_validation.json",
+                                                             last_timestamp="2026-10-16T00:00:00Z"), "btc"),
+    "unreadable_report": (lambda raw, rep: (rep / "btc_validation.json").write_text("{not json"), "btc"),
+    "report_not_passed": (lambda raw, rep: _set_report(rep / "btc_validation.json", passed=False), "btc"),
+    "other_asset_missing_csv": (lambda raw, rep: (raw / "sol_1d.csv").unlink(), "sol"),
+}
+
+
+@pytest.mark.parametrize("broken", list(GATE_BREAKS))
+def test_serving_gate_failures_are_503_through_the_api(reports, broken):
+    """D40: every data problem is a 503 naming the asset, never a 500 (TestClient re-raises server errors)."""
+    client = TestClient(app)
+    assert client.get("/risk/btc").status_code == 200          # control: the hand-made data is servable
+    breaker, named = GATE_BREAKS[broken]
+    breaker(config.ML_RAW_DIR, reports)
+    for route in ("predict", "risk", "debug"):
+        r = client.get(f"/{route}/btc")
+        assert r.status_code == 503, (route, r.text)
+        assert r.json()["detail"].startswith(f"{named}: ")

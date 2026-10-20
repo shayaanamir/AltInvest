@@ -2,7 +2,8 @@
 
     python -m ml.data.validate --asset btc
 
-Writes ml/reports/data/{asset}_validation.json. Exit code 1 if any check fails.
+Writes {asset}_validation.json to config.ML_VALIDATION_DIR (D40; the evaluation snapshot ml/reports/data unless
+the ML_VALIDATION_DIR env var is set). Exit code 1 if any check fails.
 Real crypto shows heavy tails (excess kurtosis > 1) and volatility clustering (|r| lag-1 autocorr > 0).
 """
 
@@ -19,9 +20,20 @@ from ml import config
 from ml.data.loader import fetch_meta_path, load_raw, raw_csv_path
 
 ML_ROOT = Path(__file__).resolve().parent.parent
-REPORT_DIR = ML_ROOT / "reports" / "data"
 DAY = pd.Timedelta(days=1)
 PRICE_COLS = ["open", "high", "low", "close"]
+
+
+def report_path(asset: str, validation_dir: Path | None = None) -> Path:
+    return Path(validation_dir or config.ML_VALIDATION_DIR) / f"{asset}_validation.json"
+
+
+def repo_relative(path: Path) -> Path:
+    """path relative to the repo root when it is inside the repo (as in the tracked reports), else unchanged."""
+    try:
+        return Path(path).resolve().relative_to(ML_ROOT.parent)
+    except ValueError:
+        return Path(path)
 
 
 def _iso(ts: pd.Timestamp) -> str:
@@ -114,25 +126,30 @@ def validate(df: pd.DataFrame) -> dict:
     return report
 
 
+def build_report(asset: str, raw_dir: Path | None = None) -> dict:
+    """The validation report for the CSV and .fetch.json in raw_dir (default config.ML_RAW_DIR)."""
+    meta_path = fetch_meta_path(asset, raw_dir)
+    meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
+    return {
+        "asset": asset,
+        "symbol": config.ASSET_SYMBOLS[asset],
+        "source": meta.get("source"),
+        "fetched_at": meta.get("fetched_at"),
+        "validated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "raw_file": repo_relative(raw_csv_path(asset, raw_dir)).as_posix(),
+        **validate(load_raw(asset, raw_dir)),
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Validate raw daily bars")
     parser.add_argument("--asset", required=True, choices=config.ASSETS)
     args = parser.parse_args()
     asset = args.asset
 
-    meta_path = fetch_meta_path(asset)
-    meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
-    report = {
-        "asset": asset,
-        "symbol": config.ASSET_SYMBOLS[asset],
-        "source": meta.get("source"),
-        "fetched_at": meta.get("fetched_at"),
-        "validated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "raw_file": raw_csv_path(asset).relative_to(ML_ROOT.parent).as_posix(),
-        **validate(load_raw(asset)),
-    }
-    REPORT_DIR.mkdir(parents=True, exist_ok=True)
-    out = REPORT_DIR / f"{asset}_validation.json"
+    report = build_report(asset)
+    out = report_path(asset)
+    out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(json.dumps(report, indent=2))
     print(f"wrote {out}")

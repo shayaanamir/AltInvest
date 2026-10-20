@@ -1,5 +1,8 @@
 """Project constants. The ONLY place for constants (docs/ARCHITECTURE.md, AGENTS rule 6)."""
 
+import os
+from pathlib import Path
+
 # Asset id -> Binance spot symbol (docs/DATA.md). The single source of truth for the asset list.
 ASSET_SYMBOLS = {"btc": "BTCUSDT", "eth": "ETHUSDT", "sol": "SOLUSDT"}
 
@@ -46,3 +49,14 @@ STALE_DATA_HOURS = 48  # CONTRACT.md 'note' rule (no D-number yet)
 SHARPE_WINDOW_DAYS = 365  # D37: trailing daily log returns used for sharpe_ratio on /risk
 MODEL_VERSION_PRICE = "baseline-last-value"  # D35: no price model approved
 MODEL_VERSION_RISK = "persistence-pooled-pct"  # D36 (persistence vol_30d, D27; pooled percentile mapping)
+
+# Data directories (D40). The evaluation snapshot is ml/data/raw + ml/reports/data as of 2026-10-17; splits are
+# derived from n (D16, D18), so these files must not grow. Loader, validate, the serving gate and the refresh read
+# ML_RAW_DIR / ML_VALIDATION_DIR, taken once from the environment. Unset, they are the snapshot directories.
+EVALUATION_RAW_DIR = Path(__file__).resolve().parent / "data" / "raw"
+EVALUATION_VALIDATION_DIR = Path(__file__).resolve().parent / "reports" / "data"
+ML_RAW_DIR = Path(os.environ.get("ML_RAW_DIR") or EVALUATION_RAW_DIR)
+ML_VALIDATION_DIR = Path(os.environ.get("ML_VALIDATION_DIR") or EVALUATION_VALIDATION_DIR)
+
+# Daily refresh of the serving data, UTC "HH:MM" (D40).
+REFRESH_UTC = "00:05"  # D40

@@ -2,7 +2,8 @@
 
     python -m ml.data.dataset_summary --asset btc
 
-Writes ml/reports/data/{asset}_dataset_summary.json. Refuses data whose validation report did not pass
+Writes {asset}_dataset_summary.json next to the validation reports (config.ML_VALIDATION_DIR; ml/reports/data
+unless the env var is set, D40). Refuses data whose validation report did not pass
 (AGENTS rule 4). Thresholds are fitted on train only (D19).
 """
 
@@ -13,7 +14,7 @@ from datetime import datetime, timezone
 
 from ml import config
 from ml.data.loader import load_raw
-from ml.data.validate import ML_ROOT, REPORT_DIR
+from ml.data.validate import report_path, repo_relative
 from ml.evaluation.splits import make_splits, split_dates
 from ml.features.features import FEATURE_COLUMNS, build_features
 from ml.labels.labels import DIRECTION_CLASSES, RISK_CLASSES, apply_thresholds, build_labels, fit_thresholds
@@ -27,9 +28,9 @@ def class_balance(classes, names) -> dict[str, float]:
 
 def require_validated(asset: str) -> None:
     """AGENTS rule 4: never use data whose validation report did not pass."""
-    validation = REPORT_DIR / f"{asset}_validation.json"
+    validation = report_path(asset)
     if not validation.exists() or not json.loads(validation.read_text(encoding="utf-8"))["passed"]:
-        sys.exit(f"{validation.relative_to(ML_ROOT.parent)} missing or not passed; run ml.data.validate first")
+        sys.exit(f"{repo_relative(validation)} missing or not passed; run ml.data.validate first")
 
 
 def prepare(asset: str) -> dict:
@@ -89,7 +90,7 @@ def main() -> None:
     asset = parser.parse_args().asset
     require_validated(asset)
     report = summarise(asset)
-    out = REPORT_DIR / f"{asset}_dataset_summary.json"
+    out = config.ML_VALIDATION_DIR / f"{asset}_dataset_summary.json"
     out.write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(json.dumps(report, indent=2))
     print(f"wrote {out}")

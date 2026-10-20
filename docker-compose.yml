@@ -60,21 +60,40 @@ services:
     networks:
       - altinvest
 
-  # Standalone ML prediction service (Prophet + RandomForest + LSTM), port 8001.
-  # Not wired into the backend by default (see ml/README.md "Backend
-  # Integration Guide" for how Person B's code would call it over HTTP).
+  # ML service v2, port 8001: /predict/{asset}, /risk/{asset}, /health
+  # (ml/README.md; contract in ml/docs/CONTRACT.md). Serves baselines only
+  # (D33, D35, D36). Built from the repo root like backend; the source is
+  # copied into the image (no bind mount, no --reload). At startup it fetches
+  # and validates its own data into the ml-data volume, then serves it; the
+  # ml-refresh sidecar below refreshes that data daily at 00:05 UTC (D40).
+  # Inside the compose network the backend reaches it at http://ml:8001.
   ml:
     build:
-      context: ./ml
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ml/Dockerfile
+    image: altinvest-ml
     container_name: altinvest-ml
     restart: unless-stopped
     ports:
       - "8001:8001"
     volumes:
-      - ./ml:/app/ml
-    command: >
-      uvicorn api.prediction_service:app --host 0.0.0.0 --port 8001 --reload
+      - ml-data:/data
+    networks:
+      - altinvest
+
+  # Daily data refresh for ml (same image, same volume): fetch, then validate;
+  # on failure the previous data is kept (D40).
+  ml-refresh:
+    image: altinvest-ml
+    container_name: altinvest-ml-refresh
+    restart: unless-stopped
+    command: python -m ml.data.refresh --loop
+    volumes:
+      - ml-data:/data
+    healthcheck:
+      disable: true
+    depends_on:
+      - ml
     networks:
       - altinvest
 
@@ -105,6 +124,7 @@ services:
 volumes:
   mongo_data:
   frontend_node_modules:
+  ml-data:
 
 networks:
   altinvest:

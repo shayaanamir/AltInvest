@@ -25,7 +25,7 @@ AltInvest/
 |------------|------|------------|
 | `mongodb`  | 27017 | Database used by backend + sentiment engine |
 | `backend`  | 8000  | FastAPI app (`backend/main.py`) — assets, prediction, sentiment, risk, aai, health routes |
-| `ml`       | 8001  | Standalone FastAPI ML service (`ml/api/prediction_service.py`) — Prophet/RandomForest/LSTM. Not called by `backend` automatically; it's a separate service per `ml/README.md` |
+| `ml`       | 8001  | ML service v2 (`ml/api/service.py`): `/predict/{asset}`, `/risk/{asset}`, `/health` for BTC, ETH, SOL, serving baselines only (see `ml/README.md`). Fetches its own data into the `ml-data` volume at startup; the `ml-refresh` sidecar refreshes it daily at 00:05 UTC. Not called by `backend` automatically yet |
 | `frontend` | 5173  | Vite dev server |
 
 ## Quick start
@@ -103,7 +103,8 @@ This serves the built static assets via nginx, with an SPA fallback to
 
 - `backend` runs with `uvicorn --reload`, watching the bind-mounted
   `backend/`, `shared/`, `aai_engine/`, and `db/` folders.
-- `ml` runs with `uvicorn --reload` on the bind-mounted `ml/` folder.
+- `ml` has no hot reload: its source is copied into the image (no bind
+  mount). After editing `ml/`, run `docker compose up -d --build ml ml-refresh`.
 - `frontend` runs the Vite dev server, which already has HMR.
 
 `sentiment_engine/` is bind-mounted into the backend container too, but

@@ -1,11 +1,89 @@
 # STATUS
 
-Current phase: 6a (FastAPI service on :8001, baselines only) DONE for BTC, ETH, SOL (2026-10-21). Nothing is approved: /predict serves the last-value baseline (D35), /risk the persistence vol_30d mapped by D36, signal UNCERTAIN (D33).
-Next: Phase 6b. Not started; waiting on the user's go-ahead.
+Current phase: 6b (daily refresh, serving gate, v2 Docker image and compose services) DONE (2026-10-21). The service runs from a fresh clone with `docker compose up -d --build ml ml-refresh`.
+Next: the PR from ml-v2 into main (not pushed, not opened), then Phase 7 (backend integration, Person B).
 
-Docker/compose and daily refresh: Phase 6b.
+## Phase 6b: what ran (from repo root, 2026-10-21)
 
-Waiting on Person B: the CONTRACT.md `note` wording (6a Step 0e, would be D38). Not applied.
+- Started from a clean tree: HEAD 7aaa1db. Docker 29.1.3 (Docker Desktop), Compose v5.0.1.
+- Step 0a: re-ran run_backtest and risk_mapping_check once per asset. Only generated_at, git_commit and git_dirty (true -> false) changed (JSON diff).
+- Step 0b: `rfc3339-validator==0.1.4` pinned. Steps 0c-0e: D38, D39, D40 appended in order. CONTRACT.md: only the two `note` descriptions changed (D39).
+- Data paths (D40): config.py reads `ML_RAW_DIR` and `ML_VALIDATION_DIR` once; unset, they are ml/data/raw and ml/reports/data. Loader, fetch, validate, require_validated, the gate and the refresh read them.
+  - Proof nothing changed on the host: SHA-256 of all 12 snapshot files and all 27 other report files identical before and after the phase; `validate.build_report` reproduces the committed validation reports (except validated_at). No report writer ran except Step 0a.
+  - `git status` cannot show this for ml/data/raw (git-ignored), hence the hashes.
+- New modules: `ml/data/serving_gate.py` (passed report + same rows + same last timestamp, else NotServable -> 503) and `ml/data/refresh.py` (back up, fetch into staging, validate, os.replace; restore on any failure; lock file; refresh_status.json).
+  - Changed only for paths: fetch.fetch and loader take an optional `raw_dir`; validate.main's report building moved into `build_report` (same output). require_validated keeps its CLI behaviour and message.
+  - Added beyond the task text, needed for correctness: a lock file (the ml startup refresh and ml-refresh's at-start run share one volume) and `healthcheck: disable` for ml-refresh (it inherits the image's /health check).
+- On the host, `python -m ml.data.refresh` refuses: exit 1, "refusing to write to the evaluation snapshot", nothing written.
+- Tests: `test_refresh.py` (16) and 7 gate cases in `test_serving.py`. `python -m pytest ml` -> `183 passed` on the host and in the container (contract test ran, 12 passed, not skipped).
+- Docker: image `altinvest-ml` 846 MB, python:3.12-slim, no raw CSVs inside. `docker compose up -d ml ml-refresh` -> /health 200, container healthy. Both startup refreshes ran one after the other (lock). /predict/btc, /risk/sol, /risk/btc, /risk/eth validate against CONTRACT.md; /predict/doge 404. `docker compose down` kept volume `altinvest_ml-data`.
+
+refresh_status.json from the container (2026-10-20T20:15:33Z): btc ok, 3351 rows, last bar 2026-10-19; eth ok, 3351, 2026-10-19; sol ok, 2261, 2026-10-19; all_servable true.
+
+```
+GET /predict/btc -> 200
+{"asset":"BTC","predicted_price":null,"prediction_30d":0.0,"confidence":null,"model_version":"baseline-last-value","timestamp":"2026-10-20T20:15:48Z","lower_bound":null,"upper_bound":null,"risk_score":95.70044,"trend":null,"agreement":null,"signal":"UNCERTAIN","boosted_confidence":null,"ensemble_price":null,"note":"No model beats the no-change baseline (D35): prediction_30d is the last-value baseline (0%); no predicted price or interval. Direction is not served (D33): no demonstrated up/down skill; signal UNCERTAIN, confidence null."}
+GET /risk/sol -> 200
+{"asset":"SOL","risk_score":81.601488,"volatility":0.470177,"sharpe_ratio":-0.909517,"timestamp":"2026-10-20T20:15:48Z","note":"No risk model beats persistence (D27): risk_score is the percentile of today's 30-day volatility among BTC, ETH, SOL up to today (D36), higher = safer."}
+GET /predict/doge -> 404
+```
+
+- No stale note: the container's last bar closed 20.3 h before the calls. Scores differ from 6a because Docker serves two more days.
+
+## For the PR (ml-v2 into main)
+
+- Files changed outside ml/: `docker-compose.yml` (ml service replaced; `ml-refresh` and volume `ml-data` added), `.dockerignore` (v1 ML block replaced), `DOCKER.md` (ml row, hot-reload line), `package-lock.json` (deleted: empty, from v1 commit 7eb67c2, referenced nowhere).
+- v1 mentions left in other teams' files (not edited):
+  - backend/routes/prediction.py:36 (predictions "written by ml/api/prediction_service.py").
+  - db/seed_predictions_risk.py:5, :54 (Prophet + LSTM), :57 (trend rule), :73 (`prophetPrice30d`).
+  - db/seed_all.py:24 label "prices (from ml/data/raw CSVs)"; db/seed_prices.py:5 says there is no such dependency.
+  - db/seed_data/assetDetail.json (`modelComparison.prophet/lstm`), assets.json (`prophetPrice30d`), nftCollections.json (`prophetFloor30dEth`).
+  - DOCKER.md:56-60 (ml image installs prophet/tensorflow) and :43 (`down -v` now also wipes ml-data).
+  - CONTRACT.md `agreement` and `ensemble_price` descriptions name Prophet/LSTM/RandomForest (contract text, unchanged).
+- What changes for the team: a small ml image built from the repo root, no bind mount or hot reload; a new sidecar and volume; ML needs outbound HTTPS to api.binance.com at startup and daily at 00:05 UTC; a covered asset with bad data returns 503 (keep the last good row); `prediction_30d` 0, `predicted_price` null, signal UNCERTAIN.
+
+## How to verify Phase 6b yourself (PowerShell, from the repo root)
+
+```powershell
+Set-Location C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest
+
+# 1. Host tests (hand-made fixtures, no network), then the refresh refusing the evaluation snapshot
+python -m pytest ml -q
+python -m ml.data.refresh; "exit: $LASTEXITCODE"
+
+# 2. The decisions and the CONTRACT wording
+Select-String -Path ml\docs\DECISIONS.md -Pattern '^\| D3[8-9] |^\| D40 ' | ForEach-Object { $_.Line.Substring(0, 60) }
+Select-String -Path ml\docs\CONTRACT.md -Pattern '"note": \{' | ForEach-Object { $_.Line.Trim() }
+
+# 3. Build, start, wait for /health and for the sidecar's first run
+docker compose build ml
+docker compose up -d ml ml-refresh
+curl.exe -s --retry 60 --retry-all-errors --retry-delay 2 http://127.0.0.1:8001/health; ""
+while (-not ((docker logs altinvest-ml-refresh 2>&1 | Out-String) -match 'next refresh at')) { Start-Sleep -Seconds 2 }
+
+# 4. Routes from the host
+curl.exe -s http://127.0.0.1:8001/predict/btc; ""
+curl.exe -s http://127.0.0.1:8001/risk/sol; ""
+curl.exe -s -o NUL -w "doge: HTTP %{http_code}`n" http://127.0.0.1:8001/predict/doge
+
+# 5. Refresh status and the test suite inside the container (contract test not skipped)
+docker compose exec ml cat /data/validation/refresh_status.json
+docker compose exec ml python -m pytest ml -q -rs
+
+# 6. Host snapshot untouched (dates stay 18-19 Oct 2026), then stop; the ml-data volume is kept
+git status --porcelain -- ml/data/raw ml/reports/data
+Get-ChildItem ml\data\raw, ml\reports\data | Format-Table Name, Length, LastWriteTime
+docker compose down
+```
+
+Expected (observed 2026-10-21; container clock 2026-10-20 ~20:17 UTC):
+
+1. `183 passed`; then the "refusing to write to the evaluation snapshot ... (D40)" message and `exit: 1`.
+2. Three lines `| D38 | Staleness`, `| D39 | CONTRACT.md`, `| D40 | Refines D10`; two `"note"` lines with the D39 description.
+3. `Image altinvest-ml Built`, both containers `Started`, then `{"status":"ok",...,"data_last_bar":{"btc":"2026-10-19",...}}` (the last closed day when you run it). Every compose command also warns that `version` is obsolete; harmless.
+4. `/predict/btc` with `"prediction_30d":0.0`, `"signal":"UNCERTAIN"`, risk_score near 95.7; `/risk/sol` near 81.6; `doge: HTTP 404`. Numbers move with each day of new data.
+5. `"all_servable": true` with all three `"status": "ok"`; `183 passed` and no skip lines.
+6. No git output; CSVs dated 18-10-2026, reports 19-10-2026; the containers and network are removed.
 
 ## Phase 6a: what ran (from repo root, 2026-10-21)
 

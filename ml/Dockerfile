@@ -1,36 +1,35 @@
-# Build from ml/ directory:
-#   docker build -t altinvest-ml ./ml
+# ML service v2. Build this from the REPO ROOT, like backend/Dockerfile:
+#   docker build -f ml/Dockerfile -t altinvest-ml .
+# (docker-compose.yml at the repo root already does this correctly)
 #
-# NOTE on image size/build time: prophet pulls in cmdstanpy, which compiles
-# a small C++ toolchain (cmdstan) the first time it's used, and tensorflow
-# is large on its own. This image will be several GB and the first build can
-# take 10-20+ minutes. That's expected for this stack, not a bug.
+# Serves baselines on :8001 (D27, D33, D35-D37; ml/README.md). No Prophet, TensorFlow or cmdstan, so the
+# image is small and builds in a few minutes. Raw CSVs are NOT baked in (.dockerignore): at startup the refresh
+# fetches and validates the serving data into /data (mount a volume there), then uvicorn starts. If the refresh
+# fails, the API still starts and returns 503 for assets without valid data (D40).
 
-FROM python:3.11-slim
+FROM python:3.12-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        build-essential \
-        g++ \
-        make \
-        git \
-        curl \
+# git only for the test suite: ml/tests/test_gitinfo.py builds a throwaway repo.
+RUN apt-get update && apt-get install -y --no-install-recommends git \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app/ml
+WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir --timeout 1000 --retries 10 -r requirements.txt
+COPY ml/requirements.txt ml/requirements.txt
+RUN pip install --no-cache-dir --timeout 1000 --retries 10 -r ml/requirements.txt
 
-# Pre-build cmdstan at image build time instead of on first request.
-# If this fails on your platform, comment it out - prophet will build it
-# lazily on first use instead (just makes the first /prediction call slow).
-RUN python -c "import cmdstanpy; cmdstanpy.install_cmdstan()" || true
+COPY ml/ ml/
 
-# Copy the rest of ml/ - this includes data/raw/*.csv and
-# models/artifacts/*.pkl|*.keras, which are read at REQUEST time
-# (not just training time), so they must ship in the image.
-COPY . .
+# Serving data directories (D40); never the evaluation snapshot under ml/.
+ENV ML_RAW_DIR=/data/raw \
+    ML_VALIDATION_DIR=/data/validation \
+    PYTHONUNBUFFERED=1
 
 EXPOSE 8001
 
-CMD ["uvicorn", "api.prediction_service:app", "--host", "0.0.0.0", "--port", "8001"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=180s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health', timeout=4)"
+
+# Refresh once (a failure is logged in /data/validation/refresh_status.json, not fatal), then serve.
+# exec makes uvicorn the main process, so `docker stop` reaches it.
+CMD ["sh", "-c", "python -m ml.data.refresh; exec uvicorn ml.api.service:app --host 0.0.0.0 --port 8001"]

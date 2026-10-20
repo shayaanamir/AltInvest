@@ -5,7 +5,8 @@
 Serves baselines only; nothing is approved (D27, D33, D35). /predict and /risk bodies are validated against
 docs/CONTRACT.md before they are returned (AGENTS rule 14). A violation raises ContractViolation, which the
 server turns into a 500 and TestClient re-raises in tests. Extras only on /debug (D6). Assets are
-case-insensitive; an asset not in config.ASSETS -> 404 ("not covered"); data that failed validation -> 503.
+case-insensitive; an asset not in config.ASSETS -> 404 ("not covered"); data that fails the serving gate
+(missing CSV or report, failed report, or a report that does not match the CSV; D40) -> 503.
 """
 
 from datetime import datetime, timezone

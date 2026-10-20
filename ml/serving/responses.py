@@ -5,7 +5,8 @@ metric is computed on any split. Nothing is approved, so baselines are served:
 - price: the last-value baseline, prediction_30d = 0 and no predicted price or interval (D35);
 - risk: persistence vol_30d (D27), mapped to risk_score by the pooled percentile (D36); sharpe per D37;
 - signal and confidence: ml.signal.signal_logic.generate_signal (D33).
-Staleness is measured from the latest bar's close (its open time + 1 day), when its data became complete.
+Staleness is measured from the latest bar's close (its open time + 1 day), when its data became complete (D38).
+Every asset passes the serving gate first (D40): its CSV must match a passed validation report, else NotServable.
 """
 
 import math
@@ -16,37 +17,22 @@ import numpy as np
 import pandas as pd
 
 from ml import config
-from ml.data.dataset_summary import require_validated
 from ml.data.loader import load_raw
+from ml.data.serving_gate import NotServable, servable_raw
 from ml.evaluation import metrics as m
 from ml.evaluation.backtest import percentile_rank
 from ml.features.features import build_features
 from ml.signal.signal_logic import generate_signal
 
 BAR = pd.Timedelta(days=1)
-DECISIONS_IN_FORCE = ("D6", "D27", "D33", "D35", "D36", "D37")
+DECISIONS_IN_FORCE = ("D6", "D27", "D33", "D35", "D36", "D37", "D38", "D40")
 NOTE_PRICE = ("No model beats the no-change baseline (D35): prediction_30d is the last-value baseline (0%); "
               "no predicted price or interval.")
 
 
-class NotServable(RuntimeError):
-    """An asset's data may not be served: its validation report is missing or did not pass (AGENTS rule 4)."""
-
-
-def _validated(asset: str) -> None:
-    try:
-        require_validated(asset)
-    except SystemExit as e:          # require_validated exits (it was written for CLIs); the API needs a 503
-        raise NotServable(str(e.code)) from None
-
-
 def feature_tables(assets=config.ASSETS) -> dict[str, pd.DataFrame]:
-    """Feature table of every pooled asset (D36). Refuses all of them if any one failed validation."""
-    out = {}
-    for a in assets:
-        _validated(a)
-        out[a] = build_features(load_raw(a))
-    return out
+    """Feature table of every pooled asset (D36). Refuses all of them if any one fails the serving gate (D40)."""
+    return {a: build_features(servable_raw(a)) for a in assets}
 
 
 def iso_utc(t: datetime) -> str:

@@ -14,6 +14,8 @@ Terms marked *(not used yet)* appear in the plan docs but no code uses them so f
 - **Synthetic data**: numbers produced by a program instead of the market. v1 used it, which made its metrics meaningless (docs/LEARNINGS.md).
 - **Pagination**: an API returns at most 1000 bars per request, so we ask repeatedly, each time starting after the last bar received.
 - **Rate limit / backoff**: the server refuses too many requests per minute; backoff means waiting longer after each failed try.
+- **Evaluation snapshot**: the frozen copy of the data every report was computed on (ml/data/raw and ml/reports/data, last bar 2026-10-17). The split boundaries come from its row count (D16, D18), so it must not grow; the refresh refuses to write there without `--force` (D40).
+- **Serving data**: the separate, daily-refreshed copy the API serves (ML_RAW_DIR and ML_VALIDATION_DIR; in Docker /data/raw and /data/validation). It is served only if its validation report passed and matches the CSV (D40).
 
 ## Returns and risk
 - **Return**: how much the price changed, as a fraction. 100 to 110 is +10%.
@@ -120,4 +122,8 @@ Terms marked *(not used yet)* appear in the plan docs but no code uses them so f
 - **JSON schema**: a machine-readable description of what a JSON response may contain: field names, types, allowed values. Ours are in docs/CONTRACT.md and allow no extra fields (`additionalProperties: false`).
 - **Contract test**: a test that calls the real service and checks every response against the agreed JSON schemas, so the backend gets exactly the fields it expects (ml/tests/test_contract.py).
 - **Stale data**: the latest daily bar closed too long ago (more than 48 h, config.STALE_DATA_HOURS). The API still answers, with "data stale: last bar <date>" in the note.
-- **404 vs 503**: HTTP status codes. 404 "not found": we do not cover this asset (for example DOGE). 503 "service unavailable": we cover it, but its data failed validation, so we refuse to serve it.
+- **Atomic replace**: swapping a file for a new version in one step (`os.replace`), so a reader sees either the whole old file or the whole new one, never half of each.
+- **Docker volume**: storage managed by Docker that outlives containers. The `ml-data` volume keeps the serving data when the ml containers are rebuilt or restarted; `docker compose down -v` deletes it.
+- **Healthcheck**: a command Docker runs regularly inside a container (here: GET /health) to mark it healthy or unhealthy.
+- **Sidecar service**: a helper container that runs next to the main one and shares its storage. `ml-refresh` uses the ml image and the `ml-data` volume only to refresh the data daily.
+- **404 vs 503**: HTTP status codes. 404 "not found": we do not cover this asset (for example DOGE). 503 "service unavailable": we cover it, but its data is missing, failed validation or does not match its validation report, so we refuse to serve it (D40).

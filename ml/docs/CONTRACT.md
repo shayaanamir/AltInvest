@@ -24,7 +24,7 @@ Internal extras (regime, probabilities, etc.) may only be exposed on a separate 
     "signal": {"type": ["string","null"], "enum": ["STRONG_BUY","BUY","HOLD","SELL","STRONG_SELL","UNCERTAIN",null]},
     "boosted_confidence": {"type": ["number","null"], "minimum": 0, "maximum": 1, "description": "Confidence after ensemble-agreement boosting"},
     "ensemble_price": {"type": ["number","null"], "description": "Raw weighted-average price across Prophet/LSTM/RandomForest before rounding"},
-    "note": {"type": ["string","null"], "description": "Present only on fallback/mock responses"}
+    "note": {"type": ["string","null"], "description": "Set when no model beats the no-change baseline, when the data is stale, or on fallback responses."}
   },
   "additionalProperties": false
 }
@@ -49,7 +49,7 @@ Example:
     "volatility": {"type": ["number","null"], "description": "Annualised volatility, e.g. 0.18 = 18%"},
     "sharpe_ratio": {"type": ["number","null"], "description": "Risk-adjusted return metric"},
     "timestamp": {"type": "string", "format": "date-time"},
-    "note": {"type": ["string","null"], "description": "Present only on fallback/mock responses"}
+    "note": {"type": ["string","null"], "description": "Set when no model beats the no-change baseline, when the data is stale, or on fallback responses."}
   },
   "additionalProperties": false
 }

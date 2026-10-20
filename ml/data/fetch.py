@@ -2,7 +2,8 @@
 
     python -m ml.data.fetch --asset btc
 
-Writes ml/data/raw/{asset}_1d.csv and ml/data/raw/{asset}_1d.fetch.json (fetch time, source).
+Writes {asset}_1d.csv and {asset}_1d.fetch.json (fetch time, source) to config.ML_RAW_DIR (D40; the evaluation
+snapshot ml/data/raw unless the ML_RAW_DIR env var is set).
 Only fully closed bars are kept. No forward-fill, no interpolation.
 """
 
@@ -11,11 +12,12 @@ import csv
 import json
 import time
 from datetime import datetime, timezone
+from pathlib import Path
 
 import requests
 
 from ml import config
-from ml.data.loader import COLUMNS, RAW_DIR, fetch_meta_path, raw_csv_path
+from ml.data.loader import COLUMNS, fetch_meta_path, raw_csv_path
 
 KLINES_URL = "https://api.binance.com/api/v3/klines"
 INTERVAL = "1d"
@@ -71,7 +73,8 @@ def closed_bars(klines: list, asset: str, now_ms: int) -> list[list]:
     return rows
 
 
-def fetch(asset: str) -> dict:
+def fetch(asset: str, raw_dir: Path | None = None) -> dict:
+    """Download every closed daily bar into raw_dir (default config.ML_RAW_DIR). Returns the fetch metadata."""
     symbol = config.ASSET_SYMBOLS[asset]
     session = requests.Session()
     klines, start_ms, pages = [], 0, 0      # startTime=0 -> earliest available bar
@@ -86,8 +89,8 @@ def fetch(asset: str) -> dict:
 
     now_ms = int(time.time() * 1000)
     rows = closed_bars(klines, asset, now_ms)
-    RAW_DIR.mkdir(parents=True, exist_ok=True)
-    with open(raw_csv_path(asset), "w", newline="", encoding="utf-8") as f:
+    raw_csv_path(asset, raw_dir).parent.mkdir(parents=True, exist_ok=True)
+    with open(raw_csv_path(asset, raw_dir), "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(COLUMNS)
         writer.writerows(rows)
@@ -103,7 +106,7 @@ def fetch(asset: str) -> dict:
         "bars_written": len(rows),
         "dropped_unclosed": len(klines) - len(rows),
     }
-    fetch_meta_path(asset).write_text(json.dumps(meta, indent=2), encoding="utf-8")
+    fetch_meta_path(asset, raw_dir).write_text(json.dumps(meta, indent=2), encoding="utf-8")
     return meta
 
 
