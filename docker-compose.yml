@@ -37,6 +37,7 @@ services:
       CMC_API_KEY: ${CMC_API_KEY:-}
       JWT_SECRET: ${JWT_SECRET:-}
       FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:5173}
+      TRUST_PROXY_HEADERS: ${TRUST_PROXY_HEADERS:-false}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}

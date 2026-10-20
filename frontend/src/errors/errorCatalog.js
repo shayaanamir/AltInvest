@@ -53,6 +53,7 @@ const CATALOG = {
     title: "Too many requests",
     message: "Slow down a moment and try again.",
     retryable: true,
+    useServerMessage: true, // the server says how long to wait
   },
   server: {
     title: "Something went wrong on our side",

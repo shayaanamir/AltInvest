@@ -13,6 +13,7 @@ AUTH-05 — Email verification: a link is emailed at signup and on request from 
 AUTH-06 — Change password from Settings (requires the current password).
 AUTH-08 — GET /auth/me: who the token belongs to (light; /profile adds activity counts).
 AUTH-09 — DELETE /auth/account: permanent, password-confirmed, removes everything the user owns.
+Attempt limits on login, signup, password reset and password re-entry: see auth/rate_limit.py.
 AUTH-07 — Sessions: every login is a row in `user_sessions`; Settings lists them and can
           revoke them (one, or all but this one). Logout drops the caller's own row.
 
@@ -40,6 +41,7 @@ from auth.security import (
     decode_access_token, JWT_EXPIRY_HOURS, password_problem,
 )
 from auth.dependencies import get_current_user_id, get_current_session, CurrentSession
+from auth import rate_limit as rl
 from utils.mailer import send_email, smtp_configured
 from db.queries import create_default_user_settings
 
@@ -59,7 +61,7 @@ def _issue_token(user_id: str, email: str, request: Request) -> str:
         session_id = create_user_session(
             ObjectId(user_id), expires_at,
             user_agent=(request.headers.get("user-agent") or "")[:512],
-            ip=request.client.host if request.client else None,
+            ip=rl.client_ip(request),
         )
     except Exception as exc:
         raise db_unavailable(exc)
@@ -76,6 +78,12 @@ def login(payload: LoginRequest, request: Request):
             status_code=422, detail="Email and password are required."
         )
 
+    ip = rl.client_ip(request)
+    account_ip = f"{email}|{ip}"
+    # Checked before the password, so a locked-out guesser learns nothing from further tries.
+    rl.check(rl.LOGIN_FAILURES_PER_ACCOUNT_IP, account_ip)
+    rl.check(rl.LOGIN_FAILURES_PER_IP, ip)
+
     try:
         from db.queries import get_user_by_email
         user = get_user_by_email(email)
@@ -86,12 +94,12 @@ def login(payload: LoginRequest, request: Request):
         status_code=401, detail="Invalid email or password."
     )
 
-    if not user:
+    if not user or not verify_password(password, user.get("password_hash", "")):
+        rl.record(rl.LOGIN_FAILURES_PER_ACCOUNT_IP, account_ip)
+        rl.record(rl.LOGIN_FAILURES_PER_IP, ip)
         raise invalid_credentials
 
-    if not verify_password(password, user.get("password_hash", "")):
-        raise invalid_credentials
-
+    rl.clear(rl.LOGIN_FAILURES_PER_ACCOUNT_IP, account_ip)
     user_id = str(user["_id"])
     token = _issue_token(user_id, email, request)
 
@@ -113,6 +121,7 @@ def signup(payload: SignupRequest, request: Request):
         raise HTTPException(status_code=422, detail="Name is required.")
     if problem := password_problem(password):
         raise HTTPException(status_code=422, detail=problem)
+    rl.hit(rl.SIGNUPS_PER_IP, rl.client_ip(request))
 
     try:
         from db.queries import email_exists, create_user
@@ -167,6 +176,7 @@ def me(user_id: ObjectId = Depends(get_current_user_id)):
 
 @router.delete("/auth/account")
 def delete_account(payload: DeleteAccountRequest, user_id: ObjectId = Depends(get_current_user_id)):
+    rl.check(rl.WRONG_PASSWORD_PER_USER, str(user_id))
     from db.queries import get_user_by_id, delete_user_account
     try:
         user = get_user_by_id(str(user_id))
@@ -177,6 +187,7 @@ def delete_account(payload: DeleteAccountRequest, user_id: ObjectId = Depends(ge
 
     # 400, not 401, for the same reason as change-password: a typo mustn't look like a lost session.
     if not verify_password(payload.password or "", user.get("password_hash", "")):
+        rl.record(rl.WRONG_PASSWORD_PER_USER, str(user_id))
         raise HTTPException(status_code=400, detail="Password is incorrect.")
 
     try:
@@ -191,16 +202,27 @@ def delete_account(payload: DeleteAccountRequest, user_id: ObjectId = Depends(ge
 # ── AUTH-03 — Forgot Password ────────────────────────────────────────────────
 
 @router.post("/auth/forgot-password")
-def forgot_password(payload: ForgotPasswordRequest):
+def forgot_password(payload: ForgotPasswordRequest, request: Request):
     email = (payload.email or "").strip().lower()
     if not email:
         raise HTTPException(status_code=422, detail="Email is required.")
+    rl.hit(rl.FORGOT_PER_IP, rl.client_ip(request))
 
     # Always the same message regardless of outcome — prevents account
     # enumeration via this endpoint, per the AUTH-03 spec.
     generic_response = {
         "message": "If an account exists for that email, we've sent password reset instructions."
     }
+
+    # Per-email cap: past it, answer as usual but send nothing, so the endpoint can't be used to
+    # flood someone's inbox and a 429 doesn't single out addresses being targeted.
+    try:
+        rl.check(rl.FORGOT_PER_EMAIL, email)
+    except HTTPException as exc:
+        if exc.status_code != 429:
+            raise
+        return generic_response
+    rl.record(rl.FORGOT_PER_EMAIL, email)
 
     try:
         from db.queries import get_user_by_email
@@ -225,9 +247,10 @@ def forgot_password(payload: ForgotPasswordRequest):
 # ── AUTH-04 — Reset Password ─────────────────────────────────────────────────
 
 @router.post("/auth/reset-password")
-def reset_password(payload: ResetPasswordRequest):
+def reset_password(payload: ResetPasswordRequest, request: Request):
     if problem := password_problem(payload.new_password):
         raise HTTPException(status_code=422, detail=problem)
+    rl.hit(rl.RESET_PER_IP, rl.client_ip(request))
 
     token_payload = decode_reset_token(payload.token)
     if not token_payload:
@@ -257,6 +280,7 @@ def change_password(payload: ChangePasswordRequest, session: CurrentSession = De
     if new_password == payload.current_password:
         raise HTTPException(status_code=422, detail="New password must be different from your current one.")
 
+    rl.check(rl.WRONG_PASSWORD_PER_USER, str(user_id))
     from db.queries import get_user_by_id, update_user, delete_other_user_sessions
     try:
         user = get_user_by_id(str(user_id))
@@ -267,6 +291,7 @@ def change_password(payload: ChangePasswordRequest, session: CurrentSession = De
 
     # 400, not 401: a wrong current password must not look like an expired session to the client.
     if not verify_password(payload.current_password or "", user.get("password_hash", "")):
+        rl.record(rl.WRONG_PASSWORD_PER_USER, str(user_id))
         raise HTTPException(status_code=400, detail="Current password is incorrect.")
 
     try:
