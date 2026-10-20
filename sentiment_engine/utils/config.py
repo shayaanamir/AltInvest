@@ -10,38 +10,134 @@ load_dotenv()
 
 # ── API Keys ──────────────────────────────────────────────────────────────────
 
-CMC_API_KEY = os.getenv("CMC_API_KEY", "0b5037eae2454c3cb82a5ea5f28ee0dd")
+CMC_API_KEY = os.getenv("CMC_API_KEY")
+if not CMC_API_KEY:
+    import warnings
+    warnings.warn(
+        "CMC_API_KEY is not set. CoinMarketCap requests will fail and the "
+        "pipeline will fall back to neutral market signals for every asset."
+    )
 MONGO_URI   = os.getenv("MONGO_URI", "mongodb://localhost:27017")
 MONGO_DB    = os.getenv("MONGO_DB", "altinvest")
 
 # ── Asset Definitions ─────────────────────────────────────────────────────────
-# Maps internal asset_id → CMC symbol + search keywords for RSS filtering
+# Maps internal asset_id → how to find the asset on CoinMarketCap and in RSS articles.
+#
+#   cmc_id          CoinMarketCap's stable id — what quote and trending lookups use. A symbol
+#                   isn't unique on CMC (and can change: MATIC became POL), the id is.
+#   cmc_symbol      Current ticker, for display/logging only.
+#   names           Full names / phrases that are unambiguous on their own. Matched
+#                   case-insensitively on word boundaries, in the title or the body.
+#   tickers         Ticker symbols. A "$TICKER" cashtag always matches. A bare ticker matches
+#                   case-insensitively unless the asset is marked ambiguous_ticker.
+#   ambiguous_ticker  The ticker is also an everyday word or acronym (link, near, uni, atom,
+#                   dot, sol, ada, pol), so a bare ticker only counts when it is written in
+#                   UPPERCASE in the article TITLE (e.g. "LINK jumps 10%", not "click the link").
+#
+# Deliberately NOT keywords: generic terms like "defi", "oracle", "ibc", "shiba" (a different
+# coin), "ether" (a chemical), or bare "binance" (exchange news isn't BNB news).
+#
+# Asset ids are kept stable for storage/API compatibility, which is why "matic" is the id of the
+# token that has been called POL since the Sept 2024 migration. Both names match its articles.
 
 ASSETS = {
     "btc": {
         "cmc_symbol": "BTC",
         "cmc_id": 1,
-        "keywords": ["bitcoin", "btc", "satoshi"],
+        "names": ["bitcoin", "satoshi nakamoto"],
+        "tickers": ["btc"],
     },
     "eth": {
         "cmc_symbol": "ETH",
         "cmc_id": 1027,
-        "keywords": ["ethereum", "eth", "ether", "vitalik"],
+        "names": ["ethereum", "vitalik buterin"],
+        "tickers": ["eth"],
     },
     "sol": {
         "cmc_symbol": "SOL",
         "cmc_id": 5426,
-        "keywords": ["solana", "sol"],
+        "names": ["solana"],
+        "tickers": ["sol"],
+        "ambiguous_ticker": True,
     },
     "bnb": {
         "cmc_symbol": "BNB",
         "cmc_id": 1839,
-        "keywords": ["binance", "bnb"],
+        "names": ["bnb chain", "binance coin", "binance smart chain"],
+        "tickers": ["bnb"],
     },
     "xrp": {
         "cmc_symbol": "XRP",
         "cmc_id": 52,
-        "keywords": ["ripple", "xrp"],
+        "names": ["xrp ledger", "ripple labs"],
+        "tickers": ["xrp", "xrpl"],
+    },
+    "ada": {
+        "cmc_symbol": "ADA",
+        "cmc_id": 2010,
+        "names": ["cardano"],
+        "tickers": ["ada"],
+        "ambiguous_ticker": True,   # also the Americans with Disabilities Act
+    },
+    "avax": {
+        "cmc_symbol": "AVAX",
+        "cmc_id": 5805,
+        "names": ["avalanche"],
+        "tickers": ["avax"],
+    },
+    "doge": {
+        "cmc_symbol": "DOGE",
+        "cmc_id": 74,
+        "names": ["dogecoin"],
+        "tickers": ["doge"],
+    },
+    "dot": {
+        "cmc_symbol": "DOT",
+        "cmc_id": 6636,
+        "names": ["polkadot", "parachain"],
+        "tickers": ["dot"],
+        "ambiguous_ticker": True,
+    },
+    "link": {
+        "cmc_symbol": "LINK",
+        "cmc_id": 1975,
+        "names": ["chainlink"],
+        "tickers": ["link"],
+        "ambiguous_ticker": True,
+    },
+    "matic": {
+        "cmc_symbol": "POL",        # renamed from MATIC; same CMC id
+        "cmc_id": 3890,
+        "names": ["polygon", "polygon ecosystem token"],
+        "tickers": ["matic", "pol"],
+        "ambiguous_ticker": True,   # "pol" is also an everyday abbreviation (politics, policy)
+    },
+    "uni": {
+        "cmc_symbol": "UNI",
+        "cmc_id": 7083,
+        "names": ["uniswap"],
+        "tickers": ["uni"],
+        "ambiguous_ticker": True,
+    },
+    "ltc": {
+        "cmc_symbol": "LTC",
+        "cmc_id": 2,
+        "names": ["litecoin"],
+        "tickers": ["ltc"],
+    },
+    "atom": {
+        "cmc_symbol": "ATOM",
+        "cmc_id": 3794,
+        "names": ["cosmos hub", "cosmos network", "cosmos sdk"],
+        "tickers": ["atom"],
+        "ambiguous_ticker": True,
+    },
+    "near": {
+        "cmc_symbol": "NEAR",
+        "cmc_id": 6535,
+        "names": ["near protocol"],
+        "tickers": ["near"],
+        "ambiguous_ticker": True,
     },
 }
 
@@ -144,6 +240,12 @@ CONFIDENCE_HIGH_THRESHOLD   = 30
 # Minimum score delta between current and 24h-ago to declare a trend
 
 TREND_DELTA_THRESHOLD = 0.05
+
+# The current score is compared with the stored reading closest to
+# TREND_LOOKBACK_HOURS ago, and only if one exists within TREND_TOLERANCE_HOURS of
+# that point. Otherwise the trend is "unknown" rather than a guess.
+TREND_LOOKBACK_HOURS  = 24
+TREND_TOLERANCE_HOURS = 6
 
 # ── MongoDB Collections ───────────────────────────────────────────────────────
 

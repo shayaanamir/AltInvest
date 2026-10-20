@@ -13,11 +13,18 @@ Final ensemble score across all articles is a trust-weighted average.
 
 from __future__ import annotations
 
-from utils.config import VADER_WEIGHT, FINBERT_WEIGHT
-from utils.logger import get_logger
-from nlp.vader_scorer   import score_articles as vader_score_articles
-from nlp.finbert_scorer import score_articles as finbert_score_articles
-from nlp.text_cleaner   import prepare_articles
+try:
+    from sentiment_engine.utils.config import VADER_WEIGHT, FINBERT_WEIGHT
+    from sentiment_engine.utils.logger import get_logger
+    from sentiment_engine.nlp.vader_scorer import score_articles as vader_score_articles
+    from sentiment_engine.nlp.finbert_scorer import score_articles as finbert_score_articles
+    from sentiment_engine.nlp.text_cleaner import prepare_articles
+except ImportError:
+    from utils.config import VADER_WEIGHT, FINBERT_WEIGHT
+    from utils.logger import get_logger
+    from nlp.vader_scorer import score_articles as vader_score_articles
+    from nlp.finbert_scorer import score_articles as finbert_score_articles
+    from nlp.text_cleaner import prepare_articles
 
 logger = get_logger("ensemble_scorer")
 
@@ -65,16 +72,24 @@ def score_articles(articles: list[dict]) -> list[dict]:
     result = []
     for article in ensemble_scored:
         vader_s   = article.get("vader_score", 0.0)
-        finbert_s = article.get("finbert_score", 0.0)
+        finbert_s = article.get("finbert_score")
         trust     = article.get("trust_weight", 1.0)
 
-        blended = _blend_scores(vader_s, finbert_s)
+        if finbert_s is None:
+            # FinBERT failed for this article: use VADER alone rather than blending in a
+            # fake 0.0, which would shrink every score toward neutral.
+            blended = round(vader_s, 4)
+            models  = "vader"
+        else:
+            blended = _blend_scores(vader_s, finbert_s)
+            models  = "vader+finbert"
         trust_weighted = round(blended * trust, 4)
 
         result.append({
             **article,
             "nlp_score":            blended,
             "trust_weighted_score": trust_weighted,
+            "nlp_models":           models,
         })
 
     # Log distribution

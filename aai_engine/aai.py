@@ -52,6 +52,22 @@ def normalise_sentiment(compound: float) -> float:
     return round((compound + 1.0) * 50.0, 2)
 
 
+# Expected 30-day move that maps to the ends of the scale: -20% -> 0, 0% -> 50, +20% -> 100.
+# A move beyond +/-20% in 30 days is already an extreme call, so it is clamped.
+EXPECTED_RETURN_SPAN_PCT = 20.0
+
+
+def normalise_expected_return(pct: float, span: float = EXPECTED_RETURN_SPAN_PCT) -> float:
+    """
+    Maps a predicted 30-day return (in percent) to [0, 100], linearly around 50.
+
+    The same scale for every asset: a prediction is scored by how much it expects the price to
+    move, not by the price level (which made a $50 asset and a $50,000 asset incomparable).
+    """
+    score = 50.0 + (pct / span) * 50.0
+    return round(min(max(score, 0.0), 100.0), 2)
+
+
 def normalise_price(price: float, min_price: float, max_price: float) -> float:
     """
     Min-max normalises a predicted price to [0, 100] using

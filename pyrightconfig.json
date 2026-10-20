@@ -1,0 +1,18 @@
+{
+  "include": [
+    "backend",
+    "sentiment_engine",
+    "aai_engine",
+    "ml",
+    "shared",
+    "db"
+  ],
+  "extraPaths": [
+    "backend",
+    "sentiment_engine",
+    "aai_engine",
+    "ml",
+    "shared",
+    "db"
+  ]
+}

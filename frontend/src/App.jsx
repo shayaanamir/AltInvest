@@ -1,96 +1,126 @@
-import { BrowserRouter, Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";
+import { useEffect, useState, useRef } from "react";
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
-import { makeStyles } from "./styles/makeStyles";
+import "./styles/tokens.css";
 import Sidebar from "./components/layout/Sidebar";
 import Topbar from "./components/layout/Topbar";
-import DashboardPage from "./pages/DashboardPage";
-import PortfolioPage from "./pages/PortfolioPage";
-import AssetDetailPage from "./pages/AssetDetailPage";
-import SentimentPage from "./pages/SentimentPage";
-import LandingPage from "./pages/LandingPage";
-import LoginPage from "./pages/auth/LoginPage";
-import SignupPage from "./pages/auth/SignupPage";
-import OnboardingPage from "./pages/onboarding/OnboardingPage";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
+import SessionExpiredModal from "./components/auth/SessionExpiredModal";
+import { ErrorBoundary, ConnectionBanner, ToastProvider } from "./errors";
+import { onSessionExpired } from "./hooks/sessionEvents";
+import { isAuthenticated } from "./hooks/useAuth";
+import { loadAppPreferences, resetAppPreferences, useAppPreferences, getDisplayCurrency } from "./services/appPreferences";
+import { ROUTES, BARE_PAGES, getPath, getPageName } from "./routes";
+import NotFoundPage from "./pages/NotFoundPage";
 
-const BARE_PAGES = ["Landing", "Login", "Signup", "Onboarding"];
+// Applies the saved settings that act on the whole app: loads them once the user is signed in,
+// then sets the theme (density and date format are read from the same store).
+function PreferencesBridge() {
+  const location = useLocation();
+  const { loaded, theme } = useAppPreferences();
+  const { setTheme } = useTheme();
 
-// Map logical string paths to router paths
-const getPath = (page) => {
-  switch (page) {
-    case "Landing": return "/";
-    case "Login": return "/login";
-    case "Signup": return "/signup";
-    case "Onboarding": return "/onboarding";
-    case "Portfolio": return "/portfolio";
-    case "Asset Detail": return "/asset-detail";
-    case "Sentiment": return "/sentiment";
-    case "Dashboard": return "/dashboard";
-    default: return "/";
-  }
-};
+  useEffect(() => {
+    if (isAuthenticated()) {
+      if (!loaded) loadAppPreferences().catch(() => {}); // settings are optional; defaults apply if this fails
+    } else if (loaded) {
+      resetAppPreferences();
+    }
+  }, [location.pathname, loaded]);
 
-const getPageName = (pathname) => {
-  if (pathname === "/") return "Landing";
-  if (pathname.startsWith("/login")) return "Login";
-  if (pathname.startsWith("/signup")) return "Signup";
-  if (pathname.startsWith("/onboarding")) return "Onboarding";
-  if (pathname.startsWith("/portfolio")) return "Portfolio";
-  if (pathname.startsWith("/asset-detail")) return "Asset Detail";
-  if (pathname.startsWith("/sentiment")) return "Sentiment";
-  if (pathname.startsWith("/dashboard")) return "Dashboard";
-  return "Dashboard";
-};
+  useEffect(() => {
+    if (theme) setTheme(theme);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [theme]);
+
+  return null;
+}
 
 function ShellRoutes() {
-  const { tokens: t } = useTheme();
-  const s = makeStyles(t);
-  
   const location = useLocation();
   const navigateRouter = useNavigate();
-  
-  const activePage = getPageName(location.pathname);
-  const isBare = BARE_PAGES.includes(activePage);
+  useAppPreferences(); // re-render when the display currency changes
+  const [sessionExpired, setSessionExpired] = useState(false);
 
-  // Wrapper around react-router navigate to support legacy string navigation
-  const navigate = (page) => {
-    navigateRouter(getPath(page));
+  // Track the current path so the modal's "Sign In" button can send the
+  // person back to where they were once they re-authenticate.
+  const currentPathRef = useRef(location.pathname + location.search);
+  currentPathRef.current = location.pathname + location.search;
+
+  useEffect(() => {
+    return onSessionExpired(() => setSessionExpired(true));
+  }, []);
+
+  const activePage = getPageName(location.pathname);
+  // A 404 sits inside the app shell for signed-in users, and on its own for everyone else.
+  const isBare = BARE_PAGES.includes(activePage) || (activePage === "NotFound" && !isAuthenticated());
+
+  const navigate = (page) => navigateRouter(getPath(page));
+
+  const handleSessionExpiredConfirm = () => {
+    setSessionExpired(false);
+    const returnPath = currentPathRef.current;
+    navigateRouter(`/login?return=${encodeURIComponent(returnPath)}`);
   };
 
   const pageContent = (
     <Routes>
-      <Route path="/" element={<LandingPage onNavigate={navigate} />} />
-      <Route path="/login" element={<LoginPage onNavigate={navigate} />} />
-      <Route path="/signup" element={<SignupPage onNavigate={(p) => navigate(p === "Dashboard" ? "Onboarding" : p)} />} />
-      <Route path="/onboarding" element={<OnboardingPage onNavigate={navigate} />} />
-      <Route path="/portfolio" element={<PortfolioPage />} />
-      <Route path="/asset-detail" element={<AssetDetailPage onNavigate={navigate} />} />
-      <Route path="/sentiment" element={<SentimentPage />} />
-      <Route path="/dashboard" element={<DashboardPage />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {ROUTES.map(({ key, path, element: Element, protected: isProtected }) => {
+        const inner =
+          key === "Landing" || key === "Login" || key === "Onboarding"
+            || key === "ForgotPassword" || key === "ResetPassword" || key === "VerifyEmail" ? <Element onNavigate={navigate} />
+            : key === "Signup" ? <Element onNavigate={(p) => navigate(p === "Dashboard" ? "Onboarding" : p)} />
+              : key === "Asset Detail" ? <Element onNavigate={navigate} />
+                : <Element />;
+
+        return (
+          <Route
+            key={key}
+            path={path}
+            element={isProtected ? <ProtectedRoute>{inner}</ProtectedRoute> : inner}
+          />
+        );
+      })}
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 
-  if (isBare) {
-    return pageContent;
-  }
+  // Changing the display currency (or rates arriving) re-mounts the page so every amount is redone.
+  const fx = getDisplayCurrency();
+  const wrappedPageContent = (
+    <ErrorBoundary key={`${location.pathname}|${fx.code}|${fx.asOf}`} resetKey={location.pathname}>
+      {pageContent}
+    </ErrorBoundary>
+  );
 
-  return (
-    <div style={s.root}>
+  const shell = isBare ? <><ConnectionBanner />{wrappedPageContent}</> : (
+    <div className="sv2" style={{ display: "flex", height: "100vh", width: "100vw", background: "var(--sv2-bg)", fontFamily: "'DM Sans','Segoe UI',sans-serif", color: "var(--sv2-text)", overflow: "hidden", transition: "background 0.25s, color 0.25s" }}>
       <Sidebar activePage={activePage} onNavigate={navigate} />
-      <div style={s.main}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--sv2-bg)", transition: "background 0.25s" }}>
         <Topbar />
-        {pageContent}
+        <ConnectionBanner />
+        <div className="app-content">{wrappedPageContent}</div>
       </div>
     </div>
+  );
+
+  return (
+    <>
+      {shell}
+      {sessionExpired && <SessionExpiredModal onConfirm={handleSessionExpiredConfirm} />}
+    </>
   );
 }
 
 export default function App() {
   return (
     <ThemeProvider>
-      <BrowserRouter>
-        <ShellRoutes />
-      </BrowserRouter>
+      <ToastProvider>
+        <BrowserRouter>
+          <PreferencesBridge />
+          <ShellRoutes />
+        </BrowserRouter>
+      </ToastProvider>
     </ThemeProvider>
   );
 }

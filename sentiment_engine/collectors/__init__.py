@@ -1,1 +1,3 @@
-
+"""
+collectors subpackage initialization.
+"""

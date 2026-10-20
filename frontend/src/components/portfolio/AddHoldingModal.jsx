@@ -1,0 +1,255 @@
+import { useEffect, useMemo, useState } from "react";
+import { useAsync } from "../../hooks/useAsync";
+import { fetchUniverse } from "../../services/assetRepository";
+import { portfolioApi } from "../../services/portfolioApi";
+import { formatUsd } from "../../utils/formatters";
+import { ErrorState, useToast } from "../../errors";
+import "./addHoldingModal.css";
+
+const KINDS = [
+  { key: "crypto", label: "Crypto" },
+  { key: "nft", label: "NFT" },
+];
+
+/**
+ * Adds a holding to the signed-in user's portfolio (POST /portfolio/holdings), or edits one.
+ * Assets come from the covered universe (GET /discover), so only assets the platform scores can be picked.
+ * Closes itself and calls onAdded() on success; failures stay in the dialog as a toast so nothing typed is lost.
+ *
+ * Pass initialKind + initialAssetId to open with an asset already chosen (e.g. from a watchlist).
+ *
+ * Edit mode: pass `holding` = { id, kind, assetId, symbol, name, quantity, price, tokenId } (price is the
+ * average buy price: USD for crypto, ETH for an NFT). The asset itself can't be changed, only the numbers.
+ */
+export default function AddHoldingModal({ onClose, onAdded, initialKind = "crypto", initialAssetId = null, holding = null }) {
+  const editing = !!holding;
+  const toast = useToast();
+  const { data: universe, loading, error, refetch } = useAsync(() => fetchUniverse({ category: "all", sort: "name", order: "asc" }), []);
+
+  const [kind, setKind] = useState(holding?.kind ?? initialKind);
+  const [query, setQuery] = useState("");
+  const [selectedId, setSelectedId] = useState(holding?.assetId ?? initialAssetId);
+  const [quantity, setQuantity] = useState(holding?.quantity != null ? String(holding.quantity) : "");
+  const [price, setPrice] = useState(holding?.price != null ? String(holding.price) : "");
+  const [tokenId, setTokenId] = useState(holding?.tokenId ?? "");
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e) => e.key === "Escape" && !submitting && onClose();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose, submitting]);
+
+  const choices = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return (universe || [])
+      .filter((u) => u.type === kind)
+      .filter((u) => !q || u.name.toLowerCase().includes(q) || (u.symbol || "").toLowerCase().includes(q));
+  }, [universe, kind, query]);
+
+  const selected = editing
+    ? { id: holding.assetId, symbol: holding.symbol, name: holding.name, price: null }
+    : (universe || []).find((u) => u.id === selectedId && u.type === kind) || null;
+  const ethUsd = (universe || []).find((u) => u.type === "crypto" && u.symbol === "ETH")?.price ?? null;
+  const isNft = kind === "nft";
+
+  const switchKind = (next) => {
+    setKind(next);
+    setSelectedId(null);
+    setPrice("");
+    setFieldErrors({});
+  };
+
+  const pick = (item) => {
+    setSelectedId(item.id);
+    setFieldErrors((e) => ({ ...e, asset: undefined }));
+  };
+
+  const validate = () => {
+    const errors = {};
+    if (!selected) errors.asset = isNft ? "Choose a collection." : "Choose an asset.";
+    if (isNft) {
+      if (!tokenId.trim()) errors.tokenId = "Enter the token ID you own.";
+    } else {
+      const qty = Number(quantity);
+      if (!quantity || !Number.isFinite(qty) || qty <= 0) errors.quantity = "Enter a quantity greater than 0.";
+    }
+    const p = Number(price);
+    if (price === "" || !Number.isFinite(p) || p <= 0) {
+      errors.price = isNft ? "Enter the price you paid, in ETH." : "Enter your average buy price in USD.";
+    }
+    return errors;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const errors = validate();
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
+    const p = Number(price);
+
+    if (editing) {
+      // The server recomputes the cost basis and records the correction in the holding's history.
+      const patch = isNft
+        ? { avg_buy_price_eth: p, ...(ethUsd ? { avg_buy_eth_usd_rate: ethUsd } : {}) }
+        : { quantity: Number(quantity), avg_buy_price_usd: p };
+      setSubmitting(true);
+      try {
+        await portfolioApi.updateHolding(holding.id, patch);
+      } catch (err) {
+        toast.error(err, { title: "Couldn't save the changes" });
+        setSubmitting(false);
+        return;
+      }
+      toast.success(`${holding.name} was updated.`, { title: "Holding saved" });
+      onAdded?.();
+      onClose();
+      return;
+    }
+
+    const payload = isNft
+      ? {
+          asset_type: "nft",
+          nft_collection_slug: selected.id,
+          nft_token_id: tokenId.trim(),
+          quantity: 1,
+          avg_buy_price_eth: p,
+          ...(ethUsd ? { avg_buy_eth_usd_rate: ethUsd } : {}),
+        }
+      : {
+          asset_type: "crypto",
+          symbol: selected.symbol,
+          quantity: Number(quantity),
+          avg_buy_price_usd: p,
+        };
+
+    setSubmitting(true);
+    let res;
+    try {
+      res = await portfolioApi.addHolding(payload);
+    } catch (err) {
+      toast.error(err, { title: "Couldn't add the holding" });
+      setSubmitting(false);
+      return;
+    }
+    toast.success(
+      res?.merged
+        ? `You already held ${selected.name}, so this was added to that holding at a new average price.`
+        : `${selected.name} was added to your portfolio.`,
+      { title: res?.merged ? "Added to your existing holding" : "Holding added" }
+    );
+    onAdded?.();
+    onClose();
+  };
+
+  return (
+    <div className="ahm-overlay" onClick={() => !submitting && onClose()}>
+      <form
+        className="ahm"
+        role="dialog"
+        aria-modal="true"
+        aria-label={editing ? "Edit holding" : "Add a holding"}
+        onClick={(e) => e.stopPropagation()}
+        onSubmit={handleSubmit}
+        noValidate
+      >
+        <div className="ahm-head">
+          <h2>{editing ? "Edit holding" : "Add a holding"}</h2>
+          <button type="button" className="ahm-close" aria-label="Close" onClick={onClose} disabled={submitting}>×</button>
+        </div>
+        <p className="ahm-desc">
+          {editing
+            ? `Correct what you recorded for ${holding.name}. To record buying or selling more, use History instead. Cost basis is recalculated for you.`
+            : "Record something you own. It feeds your portfolio value, performance and every score shown against your holdings."}
+        </p>
+
+        {!editing && <div className="ahm-tabs" role="tablist">
+          {KINDS.map((k) => (
+            <button
+              key={k.key}
+              type="button"
+              role="tab"
+              aria-selected={kind === k.key}
+              className={kind === k.key ? "active" : ""}
+              onClick={() => switchKind(k.key)}
+            >
+              {k.label}
+            </button>
+          ))}
+        </div>}
+
+        <label className="ahm-label">{isNft ? "Collection" : "Asset"}</label>
+        {editing && <div className="ahm-fixed">{holding.name}{holding.symbol ? ` · ${holding.symbol}` : ""}</div>}
+        {!editing && <input
+          className="ahm-input"
+          placeholder={isNft ? "Search collections" : "Search assets"}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          autoFocus
+        />}
+        {!editing && <div className="ahm-list">
+          {error ? (
+            <ErrorState error={error} onRetry={refetch} title="Couldn't load the asset list" />
+          ) : loading ? (
+            <div className="ahm-empty">Loading…</div>
+          ) : choices.length === 0 ? (
+            <div className="ahm-empty">{query ? "No matches." : "Nothing covered in this category yet."}</div>
+          ) : (
+            choices.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                className={`ahm-item ${c.id === selectedId ? "selected" : ""}`}
+                onClick={() => pick(c)}
+              >
+                <span className="ahm-dot" style={{ background: c.color || "var(--sv2-accent)" }}>
+                  {(c.symbol || c.name).slice(0, 3).toUpperCase()}
+                </span>
+                <span className="ahm-item-main">
+                  <span className="ahm-item-name">{c.name}</span>
+                  <span className="ahm-item-sub">{c.subcategory}</span>
+                </span>
+                <span className="ahm-item-price">{c.priceLabel || formatUsd(c.price)}</span>
+              </button>
+            ))
+          )}
+        </div>}
+        {fieldErrors.asset && <div className="ahm-field-error">{fieldErrors.asset}</div>}
+
+        {isNft ? (
+          <>
+            <label className="ahm-label">Token ID</label>
+            <input className="ahm-input" inputMode="numeric" placeholder="e.g. 4271" value={tokenId} onChange={(e) => setTokenId(e.target.value)} disabled={editing} />
+            {fieldErrors.tokenId && <div className="ahm-field-error">{fieldErrors.tokenId}</div>}
+          </>
+        ) : (
+          <>
+            <label className="ahm-label">Quantity</label>
+            <input className="ahm-input" inputMode="decimal" placeholder="e.g. 0.5" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+            {fieldErrors.quantity && <div className="ahm-field-error">{fieldErrors.quantity}</div>}
+          </>
+        )}
+
+        <label className="ahm-label">{isNft ? "Price paid (ETH)" : "Average buy price (USD)"}</label>
+        <input
+          className="ahm-input"
+          inputMode="decimal"
+          placeholder={selected && !isNft ? `Now ${formatUsd(selected.price)}` : "e.g. 2500"}
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+        />
+        {fieldErrors.price && <div className="ahm-field-error">{fieldErrors.price}</div>}
+        {isNft && !ethUsd && (
+          <div className="ahm-hint">No ETH price is stored, so the USD cost basis can't be worked out for this NFT.</div>
+        )}
+
+        <div className="ahm-footer">
+          <button type="button" className="ahm-cancel" onClick={onClose} disabled={submitting}>Cancel</button>
+          <button type="submit" className="ahm-submit" disabled={submitting}>{submitting ? (editing ? "Saving…" : "Adding…") : editing ? "Save changes" : "Add holding"}</button>
+        </div>
+      </form>
+    </div>
+  );
+}

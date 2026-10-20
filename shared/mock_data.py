@@ -10,30 +10,8 @@ Usage:
 
 from datetime import datetime, timezone
 
-SUPPORTED_ASSETS = {
-    "BTC": "Bitcoin",
-    "ETH": "Ethereum",
-}
-
-
 def _now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
-def mock_prediction(asset: str) -> dict:
-    """Placeholder — replaced by Person C's LSTM output in Phase 3."""
-    values = {
-        "BTC": {"predicted_price": 65000.0, "prediction_30d": 12.5, "confidence": 0.81},
-        "ETH": {"predicted_price": 3200.0,  "prediction_30d": 8.2,  "confidence": 0.76},
-    }
-    data = values.get(asset, {"predicted_price": None, "prediction_30d": None, "confidence": None})
-    return {
-        "asset": asset,
-        **data,
-        "model_version": "mock-v1",
-        "timestamp": _now(),
-        "note": "Phase 1 mock data — not from ML engine",
-    }
 
 
 def mock_sentiment(asset: str) -> dict:
@@ -44,7 +22,7 @@ def mock_sentiment(asset: str) -> dict:
 
     values = {
         "BTC": {
-            "sentiment_score": 0.72,
+            "sentiment_score": 0.44,
             "post_count": 100,
 
             "confidence": 0.87,
@@ -98,7 +76,7 @@ def mock_sentiment(asset: str) -> dict:
         },
 
         "ETH": {
-            "sentiment_score": 0.55,
+            "sentiment_score": 0.10,
             "post_count": 85,
 
             "confidence": 0.74,

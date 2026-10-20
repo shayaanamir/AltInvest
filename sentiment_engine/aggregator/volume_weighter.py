@@ -14,12 +14,20 @@ from __future__ import annotations
 
 import math
 
-from utils.config import (
-    CONFIDENCE_LOW_THRESHOLD,
-    CONFIDENCE_MEDIUM_THRESHOLD,
-    CONFIDENCE_HIGH_THRESHOLD,
-)
-from utils.logger import get_logger
+try:
+    from sentiment_engine.utils.config import (
+        CONFIDENCE_LOW_THRESHOLD,
+        CONFIDENCE_MEDIUM_THRESHOLD,
+        CONFIDENCE_HIGH_THRESHOLD,
+    )
+    from sentiment_engine.utils.logger import get_logger
+except ImportError:
+    from utils.config import (
+        CONFIDENCE_LOW_THRESHOLD,
+        CONFIDENCE_MEDIUM_THRESHOLD,
+        CONFIDENCE_HIGH_THRESHOLD,
+    )
+    from utils.logger import get_logger
 
 logger = get_logger("volume_weighter")
 
@@ -128,8 +136,8 @@ def compute_volume_metrics(articles: list[dict]) -> dict:
         "confidence":       confidence,
         "confidence_label": confidence_label(confidence),
         "signal_strength":  strength,
-        "Positive_count":   pos,
-        "Negative_count":   neg,
+        "positive_count":   pos,
+        "negative_count":   neg,
         "neutral_count":    neu,
         "source_count":     len(sources),
     }

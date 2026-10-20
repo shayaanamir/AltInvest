@@ -1,152 +1,94 @@
-import { 
-  portfolioHoldings, 
-  assetMarketData, 
-  asset_sentiment,
-  portfolioSnapshots,
-  assetPriceHistory,
-  marketInsights,
-  trendingAssets,
-  assets
-} from '../data/sample_data';
-import { USE_MOCK, API_BASE_URL } from "../config";
+import { apiFetch } from "./apiClient";
+import { authApi } from "./authApi";
+
+// Backend global_sentiment is -1..1; the dashboard gauge reads 0..100.
+const sentimentTo100 = (s) => Math.round(((s ?? 0) + 1) * 50);
+
+// Only plain http(s) links are ever rendered as hrefs (blocks javascript: and data: URLs).
+function safeHttpUrl(u) {
+  try {
+    const parsed = new URL(u);
+    return parsed.protocol === "https:" || parsed.protocol === "http:" ? parsed.href : null;
+  } catch {
+    return null;
+  }
+}
 
 export const dashboardApi = {
-  getStats: async () => {
-    if (USE_MOCK) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          let totalPortfolioValue = 0;
-          portfolioHoldings.forEach(holding => {
-            const marketData = assetMarketData.find(m => m.asset_id === holding.asset_id);
-            if (marketData) {
-              totalPortfolioValue += holding.quantity * marketData.price;
-            }
-          });
-
-          let totalVolume24h = 0;
-          assetMarketData.forEach(data => {
-            totalVolume24h += data.volume_24h;
-          });
-
-          let totalSentiment = 0;
-          let sentimentCount = 0;
-          asset_sentiment.forEach(s => {
-            totalSentiment += s.sentiment_score * 100; 
-            sentimentCount++;
-          });
-          const avgSentiment = sentimentCount > 0 ? Math.round(totalSentiment / sentimentCount) : 0;
-
-          let mood = "neutral";
-          if (avgSentiment >= 60) mood = "bullish";
-          else if (avgSentiment <= 40) mood = "bearish";
-
-          const snapshots = [...portfolioSnapshots].sort((a, b) => new Date(b.snapshot_date) - new Date(a.snapshot_date));
-          let portfolioChangePct = 0;
-          let portfolioPositive = true;
-          if (snapshots.length >= 2) {
-            const current = snapshots[0].total_value;
-            const previous = snapshots[1].total_value;
-            portfolioChangePct = ((current - previous) / previous) * 100;
-            portfolioPositive = portfolioChangePct >= 0;
-          }
-
-          let volToday = 0;
-          let volYesterday = 0;
-          assetPriceHistory.forEach(h => {
-            if (h.timestamp.startsWith("2026-05-18")) volToday += h.volume;
-            if (h.timestamp.startsWith("2026-05-17")) volYesterday += h.volume;
-          });
-          let volumeChangePct = 0;
-          let volumePositive = true;
-          if (volYesterday > 0) {
-             volumeChangePct = ((volToday - volYesterday) / volYesterday) * 100;
-             volumePositive = volumeChangePct >= 0;
-          }
-
-          resolve({
-            totalPortfolioValue,
-            totalVolume24h,
-            globalSentiment: avgSentiment,
-            marketMood: mood,
-            portfolioChange: Math.abs(portfolioChangePct).toFixed(2) + "%",
-            portfolioPositive,
-            volumeChange: Math.abs(volumeChangePct).toFixed(2) + "%",
-            volumePositive,
-            sentimentChange: "4.1%", 
-            sentimentPositive: true
-          });
-        }, 500); 
-      });
-    }
-
-    const res = await fetch(`${API_BASE_URL}/dashboard/stats`);
-    if (!res.ok) throw new Error("Failed to fetch dashboard stats");
-    return res.json();
+  getCurrentUser: async () => {
+    const u = await authApi.me();
+    return { name: u.name, initials: u.avatar_initials, color: u.avatar_color };
   },
 
-  getPerformanceData: async (filter = "1M") => {
-    if (USE_MOCK) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const sorted = [...portfolioSnapshots].sort((a, b) => new Date(a.snapshot_date) - new Date(b.snapshot_date));
-          resolve(sorted.map(s => ({
-            date: s.snapshot_date,
-            value: s.total_value
-          })));
-        }, 500);
-      });
-    }
+  getNotificationCount: async () => {
+    const items = await apiFetch("/notifications?limit=20");
+    return items.filter((n) => !n.read).length;
+  },
 
-    const res = await fetch(`${API_BASE_URL}/dashboard/performance?filter=${filter}`);
-    if (!res.ok) throw new Error("Failed to fetch performance data");
-    return res.json();
+  getMarketStats: async () => {
+    const s = await apiFetch("/dashboard/stats");
+    return {
+      totalPortfolioValue: s.portfolio_value_usd,
+      holdingsCount: s.holdings_count,
+      totalVolume24h: s.volume_24h_usd,
+      assetsCount: s.assets_count,
+      collectionsCount: s.collections_count,
+      globalSentiment: sentimentTo100(s.global_sentiment),
+      cryptoScoreCount: s.crypto_score_count,
+      nftScoreCount: s.nft_score_count,
+      marketMood: s.global_sentiment_label.toLowerCase(),
+      marketMoodConfidence: s.market_mood_confidence == null ? null : Math.round(s.market_mood_confidence),
+    };
+  },
+
+  // [{date, value}] — empty when portfolio_snapshots has nothing for the range.
+  getPerformanceHistory: async (filter = "1M") => {
+    const res = await apiFetch(`/dashboard/performance?filter=${filter}`);
+    return res.points.map((p) => ({ date: p.timestamp, value: p.value }));
   },
 
   getMarketInsights: async () => {
-    if (USE_MOCK) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve(marketInsights);
-        }, 500);
-      });
-    }
-
-    const res = await fetch(`${API_BASE_URL}/dashboard/insights`);
-    if (!res.ok) throw new Error("Failed to fetch market insights");
-    return res.json();
+    const rows = await apiFetch("/dashboard/insights");
+    return rows.map((r, i) => ({
+      id: `${r.published_at}-${i}`,
+      source: r.source,
+      title: r.title,
+      summary: r.summary,
+      impact: r.impact,
+      publishedAt: r.published_at,
+      url: safeHttpUrl(r.url),
+      relatedAssetSymbol: r.related_asset_symbol,
+      relatedNftSlug: r.related_nft_slug,
+    }));
   },
 
   getTrendingAssets: async () => {
-    if (USE_MOCK) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const result = trendingAssets.map(tAsset => {
-            const asset = assets.find(a => a.id === tAsset.asset_id) || {};
-            const marketData = assetMarketData.find(m => m.asset_id === tAsset.asset_id) || {};
-            
-            // Mock a sparkline data array of 20 points
-            const sparkline = Array.from({ length: 20 }, () => Math.floor(Math.random() * 20) + 40);
+    const rows = await apiFetch("/dashboard/trending");
+    return rows.map((r) => ({
+      symbol: r.symbol,
+      name: r.name,
+      logoColor: r.logo_color,
+      price: r.price,
+      change24h: r.change_24h,
+      sparkline: r.sparkline,
+      watching: !!r.watching,
+      aai: { score: r.aai_score, signal: r.signal },
+      reasons: r.reasons || [], // why it's trending, e.g. "2.4× its usual daily move"
+    }));
+  },
 
-            return {
-              id: tAsset.id,
-              sym: asset.symbol || "UNK",
-              name: asset.name || "Unknown",
-              cat: asset.asset_type || "Crypto",
-              price: marketData.price ? "$" + marketData.price.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : "$0.00",
-              chg: (tAsset.movement_percentage >= 0 ? "+" : "") + tAsset.movement_percentage + "%",
-              pos: tAsset.movement_percentage >= 0,
-              score: tAsset.trend_score,
-              sig: tAsset.movement_percentage >= 0 ? "Up" : "Down",
-              data: sparkline
-            };
-          });
-          resolve(result);
-        }, 500);
-      });
-    }
-
-    const res = await fetch(`${API_BASE_URL}/dashboard/trending`);
-    if (!res.ok) throw new Error("Failed to fetch trending assets");
-    return res.json();
-  }
+  getTrendingCollections: async () => {
+    const rows = await apiFetch("/dashboard/trending-collections");
+    return rows.map((r) => ({
+      slug: r.slug,
+      name: r.name,
+      symbol: r.symbol,
+      bannerColor: r.banner_color,
+      floorEth: r.floor_eth,
+      floorUsd: r.floor_usd,
+      change24h: r.change_24h,
+      volume24hEth: r.volume_24h_eth ?? null,
+      aai: { score: r.aai_score },
+    }));
+  },
 };

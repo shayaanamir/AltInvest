@@ -1,0 +1,3 @@
+"""
+aggregator subpackage initialization.
+"""

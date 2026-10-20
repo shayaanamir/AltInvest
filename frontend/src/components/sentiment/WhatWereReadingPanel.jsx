@@ -1,0 +1,62 @@
+import { useState } from "react";
+import { ErrorState } from "../../errors";
+import { useAsync } from "../../hooks/useAsync";
+import { sentimentApi, onSentimentUpdated } from "../../services/sentimentApi";
+import { onWatchlistsChanged } from "../../services/holdingsEvents";
+import { relativeTime } from "../../utils/dateTime";
+import { IconExternal } from "../icons";
+
+export default function WhatWereReadingPanel() {
+  const { data: rawItems, loading, error, refetch } = useAsync(() => sentimentApi.getWhatWereReading("news"), [], { subscribe: onSentimentUpdated });
+  const items = rawItems || [];
+  const { data: watched } = useAsync(() => sentimentApi.getWatchedAssetIds(), [], { subscribe: onWatchlistsChanged });
+  const [watchlistOnly, setWatchlistOnly] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+
+  const filtered = watchlistOnly ? items.filter((i) => watched?.has(i.assetId)) : items;
+  const visible = showAll ? filtered : filtered.slice(0, 4);
+
+  return (
+    <div className="sv2-card sv2-card-pad-sm">
+      <div className="sv2-flex-between" style={{ alignItems: "center" }}>
+        <span className="sv2-card-title">What we're reading</span>
+        <label className="sv2-checkbox-row">
+          <input type="checkbox" checked={watchlistOnly} onChange={(e) => setWatchlistOnly(e.target.checked)} />
+          Only my watchlist
+        </label>
+      </div>
+
+      <div className="sv2-mt-12">
+        {error ? (
+          <ErrorState error={error} onRetry={refetch} title="Couldn't load headlines" />
+        ) : loading ? (
+          <div className="sv2-muted sv2-small" style={{ padding: "16px 0" }}>Loading…</div>
+        ) : visible.length === 0 ? (
+          <div className="sv2-muted sv2-small" style={{ padding: "16px 0" }}>Nothing matches this filter.</div>
+        ) : (
+          visible.map((item, i) => (
+            <div key={i} className="sv2-news-item">
+              <span className={`sv2-dot ${item.score > 0.1 ? "positive" : item.score < -0.1 ? "negative" : "neutral"}`} />
+              <div>
+                <a href={item.link} target="_blank" rel="noreferrer" className="sv2-news-title">
+                  {item.title} <IconExternal />
+                </a>
+                <div className="sv2-meta-line">
+                  <span>{item.source}</span>
+                  <span>·</span>
+                  <span>{item.age_hours ? `${Math.round(item.age_hours)}h ago` : relativeTime()}</span>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {filtered.length > 4 && (
+        <button className="sv2-pill-btn sv2-mt-12" onClick={() => setShowAll((s) => !s)}>
+          {showAll ? "Show less" : "See more"}
+        </button>
+      )}
+    </div>
+  );
+}

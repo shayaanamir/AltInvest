@@ -1,66 +1,456 @@
-import { asset_sentiment } from '../data/sample_data';
-import { USE_MOCK, API_BASE_URL } from "../config";
+import { API_BASE_URL } from "../config";
+import { ApiError, kindFromStatus } from "../errors/errorCatalog";
+import { reportApiReachable } from "../errors/connectionStatus";
+import { confidenceLabelFromValue, getEvidencePhrase as evidencePhrase, bandByThreshold } from "../utils/scoring";
+import { fetchUniverse } from "./assetRepository";
+import { watchlistApi } from "./watchlistApi";
+
+/*
+ * Sentiment screens. Every figure here comes from the API:
+ *   GET /sentiment              latest reading per covered asset (the sentiment engine's output)
+ *   GET /sentiment/{id}/history readings over time
+ *   GET /sentiment/mood-trend   the average of all assets over time
+ *   GET /sentiment/themes       recurring themes
+ *   GET /discover               names, categories, prices, 24h change and the user's held flags
+ * Where there is no data (no NFT or real-estate sentiment source, no history yet) the result is empty
+ * or null so the screen can say so; nothing is filled in.
+ */
+
+/* ---------------- transport ---------------- */
+
+const FETCH_TIMEOUT_MS = 18000;         // GET requests
+const REFRESH_TIMEOUT_MS = 30000;       // POST /{asset}/refresh — runs one asset's pipeline
+const REFRESH_ALL_POLL_MS = 2000;       // how often to ask whether the background refresh-all has finished
+const REFRESH_ALL_MAX_WAIT_MS = 3 * 60 * 1000;
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = FETCH_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    reportApiReachable(true);
+    return res;
+  } catch (e) {
+    reportApiReachable(false);
+    throw e;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+function describeFetchError(e) {
+  return e.name === "AbortError" ? "request timed out" : e.message;
+}
+
+async function failFrom(res, what) {
+  const body = await res.json().catch(() => ({}));
+  return new ApiError(`${what} failed: ${res.status}`, {
+    status: res.status,
+    kind: kindFromStatus(res.status),
+    detail: typeof body.detail === "string" ? body.detail : null,
+  });
+}
+
+/** GET a JSON endpoint; throws an ApiError the UI can show with a Retry button. */
+async function getJson(path, what = "Request") {
+  let res;
+  try {
+    res = await fetchWithTimeout(`${API_BASE_URL}${path}`);
+  } catch (e) {
+    throw new ApiError(describeFetchError(e), { kind: e.name === "AbortError" ? "timeout" : "network" });
+  }
+  if (!res.ok) throw await failFrom(res, what);
+  return res.json();
+}
+
+async function postRefresh(assetId) {
+  let res;
+  try {
+    res = await fetchWithTimeout(`${API_BASE_URL}/sentiment/${assetId}/refresh`, { method: "POST" }, REFRESH_TIMEOUT_MS);
+  } catch (e) {
+    throw new ApiError(describeFetchError(e), { kind: e.name === "AbortError" ? "timeout" : "network" });
+  }
+  if (!res.ok) throw await failFrom(res, `Refresh for ${assetId}`);
+}
+
+async function postJson(path, what) {
+  let res;
+  try {
+    res = await fetchWithTimeout(`${API_BASE_URL}${path}`, { method: "POST" });
+  } catch (e) {
+    throw new ApiError(describeFetchError(e), { kind: e.name === "AbortError" ? "timeout" : "network" });
+  }
+  if (!res.ok) throw await failFrom(res, what);
+  return res.json();
+}
+
+// The hub mounts several widgets that all need the same two lists; share one request for a few seconds.
+const SHARE_MS = 5000;
+function shared(fn) {
+  let at = 0;
+  let pending = null;
+  const wrapped = () => {
+    if (!pending || Date.now() - at > SHARE_MS) {
+      at = Date.now();
+      pending = fn().catch((e) => {
+        pending = null; // never cache a failure
+        throw e;
+      });
+    }
+    return pending;
+  };
+  wrapped.reset = () => { pending = null; };
+  return wrapped;
+}
+
+const fetchAllSentimentRaw = shared(async () => {
+  const data = await getJson("/sentiment", "Sentiment request");
+  const seen = new Set();
+  const unique = [];
+  for (const item of Array.isArray(data) ? data : []) {
+    const id = (item.asset_id || item.asset || "").toLowerCase();
+    if (id && !seen.has(id)) {
+      seen.add(id);
+      unique.push(item);
+    }
+  }
+  return unique;
+});
+
+/** Covered-universe rows (name, category, price, 24h change, held) keyed by lower-case symbol / slug. */
+const loadMeta = shared(async () => {
+  const rows = await fetchUniverse({ category: "all" });
+  return new Map(rows.map((r) => [(r.type === "nft" ? r.id : r.symbol).toLowerCase(), r]));
+});
+
+const resetCaches = () => {
+  fetchAllSentimentRaw.reset();
+  loadMeta.reset();
+};
+
+// New sentiment data has arrived (the poller saw it, or a refresh finished). Mounted widgets
+// subscribe, via useAsync's { subscribe }, and re-fetch in place — so nothing has to be
+// remounted, and the user's scope, range, tab and filters stay as they were.
+const updates = new EventTarget();
+
+export function onSentimentUpdated(handler) {
+  updates.addEventListener("update", handler);
+  return () => updates.removeEventListener("update", handler);
+}
+
+export function notifySentimentUpdated() {
+  resetCaches(); // drop the shared lists so the re-fetches below see the new data
+  updates.dispatchEvent(new Event("update"));
+}
+
+/* ---------------- shaping ---------------- */
+
+function normaliseRecord(raw) {
+  return {
+    assetId: (raw.asset_id || raw.asset || "").toLowerCase(),
+    sentimentScore: raw.sentiment_score ?? 0,
+    confidence: raw.confidence ?? 0,
+    confidenceLabel: raw.confidence_label ?? "low",
+    trend: raw.trend ?? "unknown",
+    articleCount: raw.article_count ?? raw.post_count ?? 0,
+    sourceCount: raw.source_count ?? 0,
+    sourceBreakdown: raw.source_breakdown ?? { news_nlp: 0, market_signals: 0 },
+    distribution: raw.sentiment_distribution ?? { positive: 0, negative: 0, neutral: 0 },
+    topHeadlines: raw.top_headlines ?? [],
+    marketSignals: raw.market_signals ?? {},
+    articlesBySource: raw.articles_by_source ?? {},
+    dataQuality: raw.data_quality ?? {},
+    lastUpdated: raw.last_updated ?? raw.timestamp ?? null,
+  };
+}
+
+// The engine writes a neutral placeholder (no articles) when it finds nothing; that isn't a reading.
+const hasReading = (r) => r.articleCount > 0;
+
+function metaFor(meta, assetId) {
+  const m = meta.get(assetId);
+  return {
+    symbol: m?.symbol || assetId.toUpperCase(),
+    name: m?.name || assetId.toUpperCase(),
+    category: m?.type || "crypto",
+    subcategory: m?.subcategory || null,
+    held: !!m?.held,
+    price: m?.price ?? null,
+    changePct: m?.changePct ?? null,
+  };
+}
+
+function moodLabel(score) {
+  if (score >= 10) return "Bullish";
+  if (score <= -10) return "Bearish";
+  return "Neutral";
+}
+
+const QUALITATIVE_BANDS = [
+  { min: 70, label: "Strongly Positive" },
+  { min: 58, label: "Positive" },
+  { min: 45, label: "Mixed" },
+  { min: 35, label: "Neutral" },
+  { min: -Infinity, label: "Negative" },
+];
+
+export function qualitativeLabel(score) {
+  return bandByThreshold(score, QUALITATIVE_BANDS, null)?.label ?? null;
+}
+
+const toScore100 = (s) => Math.round((s + 1) * 50);
+
+export { confidenceLabelFromValue, evidencePhrase };
+export { relativeTime } from "../utils/dateTime";
+
+/* ---------------- public API ---------------- */
 
 export const sentimentApi = {
-  getSentimentData: async () => {
-    let data;
-    
-    if (USE_MOCK) {
-      data = await new Promise((resolve) => {
-        setTimeout(() => {
-          resolve(asset_sentiment);
-        }, 500);
-      });
-    } else {
-      const res = await fetch(`${API_BASE_URL}/sentiment`);
-      if (!res.ok) throw new Error("Failed to fetch sentiment data");
-      data = await res.json();
-    }
+  /**
+   * Mood gauges for the hub header. Only crypto has a sentiment source, so `nft` and `realEstate`
+   * are always null and `crypto` is null until the engine has produced a reading.
+   */
+  getMoodOverview: async () => {
+    const records = (await fetchAllSentimentRaw()).map(normaliseRecord).filter(hasReading);
+    if (!records.length) return { crypto: null, nft: null, realEstate: null };
 
-    // Process the entire JSON into the pieces needed by the frontend components
-    let totalScore = 0;
-    let scoreCount = 0;
-    
-    let totalNews = 0;
-    let totalSignals = 0;
-    let sourcesCount = 0;
-    
-    let headlines = [];
+    const avgScore = Math.round(records.reduce((s, r) => s + r.sentimentScore * 100, 0) / records.length);
+    const avgConfidence = records.reduce((s, r) => s + r.confidence, 0) / records.length;
+    return {
+      crypto: {
+        avgScore,
+        label: moodLabel(avgScore),
+        confidenceLabel: confidenceLabelFromValue(avgConfidence),
+        assetCount: records.length,
+        excludedCount: 0,
+      },
+      nft: null,
+      realEstate: null,
+    };
+  },
 
-    data.forEach(asset => {
-      // Global Sentiment
-      if (typeof asset.sentiment_score === 'number') {
-        totalScore += asset.sentiment_score;
-        scoreCount++;
-      }
-      
-      // Sources
-      if (asset.source_breakdown) {
-        totalNews += asset.source_breakdown.news_nlp || 0;
-        totalSignals += asset.source_breakdown.market_signals || 0;
-        sourcesCount++;
-      }
-      
-      // Headlines
-      if (asset.top_headlines) {
-        const withAssetId = asset.top_headlines.map(h => ({
-          ...h,
-          asset_id: asset.asset_id
-        }));
-        headlines = [...headlines, ...withAssetId];
-      }
+  /**
+   * Average mood over time, on the same -100..+100 scale as the mood gauge (getMoodOverview).
+   * Only crypto has history; other scopes are empty.
+   */
+  getMoodTrend: async (scope = "crypto", days = 30) => {
+    const crypto = async () => {
+      const rows = await getJson(`/sentiment/mood-trend?days=${encodeURIComponent(days)}`, "Mood trend request");
+      return rows.map((r) => ({ date: r.date, value: Math.round(r.value * 100) }));
+    };
+    if (scope === "both") return { crypto: await crypto(), nft: [], realEstate: [] };
+    if (scope === "crypto") return crypto();
+    return [];
+  },
+
+  /** Ranked asset list ("What stands out"). category: 'crypto' | 'nft' | 'all' */
+  getAssetList: async (category = "crypto") => {
+    const [raw, meta] = await Promise.all([fetchAllSentimentRaw(), loadMeta()]);
+    const records = raw.map(normaliseRecord).filter(hasReading);
+
+    const scored = records.map((r) => {
+      const m = metaFor(meta, r.assetId);
+      const score = toScore100(r.sentimentScore);
+      return {
+        assetId: r.assetId,
+        name: m.name,
+        symbol: m.symbol,
+        category: m.category,
+        subcategory: m.subcategory,
+        held: m.held,
+        score,
+        readLabel: `${qualitativeLabel(score)}, ${evidencePhrase(r.confidenceLabel)}`,
+        changePct: r.marketSignals?.price_change_24h ?? m.changePct ?? 0,
+      };
     });
 
-    headlines.sort((a, b) => a.age_hours - b.age_hours);
+    // Everything else the platform covers is listed too, unscored, with its real 24h move.
+    const scoredIds = new Set(scored.map((r) => r.assetId));
+    const unscored = [...meta.entries()]
+      .filter(([id]) => !scoredIds.has(id))
+      .map(([id, m]) => ({
+        assetId: id,
+        name: m.name,
+        symbol: m.symbol,
+        category: m.type,
+        subcategory: m.subcategory,
+        held: !!m.held,
+        score: null,
+        readLabel: "No sentiment reading yet",
+        changePct: m.changePct ?? 0,
+      }));
+
+    const all = [...scored, ...unscored];
+    const filtered = category === "all" ? all : all.filter((r) => r.category === category);
+
+    return filtered.sort((a, b) => {
+      if (a.score == null) return 1;
+      if (b.score == null) return -1;
+      return b.score - a.score;
+    });
+  },
+
+  /** Themes stored for the coverage (GET /sentiment/themes). */
+  getThemes: async () => {
+    const rows = await getJson("/sentiment/themes", "Themes request");
+    return rows.map((t) => ({ label: t.label, direction: t.direction, category: t.category }));
+  },
+
+  /** Headlines behind the readings. There is no NFT news source, so that tab is empty. */
+  getWhatWereReading: async (tab = "news") => {
+    if (tab === "nft") return [];
+    const records = (await fetchAllSentimentRaw()).map(normaliseRecord).filter(hasReading);
+    const headlines = records.flatMap((r) => r.topHeadlines.map((h) => ({ ...h, assetId: r.assetId })));
+    return headlines.sort((a, b) => (a.age_hours ?? 0) - (b.age_hours ?? 0));
+  },
+
+  /** Full detail for the asset drill-down. Throws a "not found" ApiError if there is no reading for the asset. */
+  getAssetDetail: async (assetId) => {
+    const [raw, meta] = await Promise.all([fetchAllSentimentRaw(), loadMeta()]);
+    const record = raw.map(normaliseRecord).find((r) => r.assetId === assetId && hasReading(r));
+    if (!record) {
+      const name = metaFor(meta, assetId).name;
+      throw new ApiError("No sentiment reading", { status: 404, kind: "notFound", detail: `There is no sentiment reading for ${name} yet.` });
+    }
+
+    const m = metaFor(meta, assetId);
+    const sentimentScore = record.sentimentScore;
+    const score = toScore100(sentimentScore);
+    const headlines = record.topHeadlines;
+
+    const d = record.distribution;
+    const distTotal = Math.max(1, d.positive + d.neutral + d.negative);
+    const pct = (n) => Math.round((n / distTotal) * 100);
+
+    // A factual one-liner built from the reading itself.
+    const narrative =
+      `Based on ${record.articleCount} article${record.articleCount === 1 ? "" : "s"} from ${record.sourceCount} source${record.sourceCount === 1 ? "" : "s"}: ` +
+      `${pct(d.positive)}% positive, ${pct(d.neutral)}% neutral, ${pct(d.negative)}% negative.`;
 
     return {
-      globalScore: scoreCount > 0 ? (totalScore / scoreCount) : 0.5,
-      sources: sourcesCount > 0 ? {
-        news: (totalNews / sourcesCount) * 100,
-        signals: (totalSignals / sourcesCount) * 100
-      } : { news: 0, signals: 0 },
-      headlines: headlines,
-      rawData: data // Just in case
+      assetId,
+      symbol: m.symbol,
+      name: m.name,
+      category: m.category,
+      subcategory: m.subcategory,
+      held: m.held,
+      price: m.price,
+      priceChangePct: record.marketSignals?.price_change_24h ?? m.changePct,
+      score,
+      sentimentScore,
+      label: qualitativeLabel(score) ?? "Neutral",
+      confidencePct: Math.round(record.confidence * 100),
+      confidenceLabel: record.confidenceLabel,
+      narrative,
+      trend: record.trend,
+      distribution: { positive: pct(d.positive), neutral: pct(d.neutral), negative: pct(d.negative) },
+      articleCount: record.articleCount,
+      sourceCount: record.sourceCount,
+      // The headlines that moved the news score most (the engine ranks them by their weighted
+      // share of it). Readings stored before the engine reported that have no such figure, and
+      // then there is nothing honest to show here, so the list is left empty.
+      drivingFactors: headlines
+        .filter((h) => h.contribution != null)
+        .sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution))
+        .slice(0, 3)
+        .map((h) => ({
+          direction: h.contribution >= 0 ? "up" : "down",
+          title: h.title,
+          description: [
+            `${h.contribution >= 0 ? "+" : ""}${h.contribution.toFixed(2)} of the news score`,
+            h.source,
+            h.age_hours != null ? `${Math.round(h.age_hours)}h ago` : null,
+          ].filter(Boolean).join(" · "),
+        })),
+      headlines,
+      sourceBreakdown: {
+        newsPct: Math.round((record.sourceBreakdown.news_nlp ?? 0) * 100),
+        marketPct: Math.round((record.sourceBreakdown.market_signals ?? 0) * 100),
+      },
+      articlesBySource: record.articlesBySource,
+      marketSignals: {
+        priceChange24h: record.marketSignals?.price_change_24h ?? m.changePct,
+        volumeChange24h: record.marketSignals?.volume_change_24h ?? null,
+        isTrending: record.marketSignals?.is_trending ?? null,
+        btcDominance: record.marketSignals?.btc_dominance ?? null,
+      },
+      // Which inputs fell back to placeholders, so the UI can say so instead of passing them off as readings.
+      dataQuality: {
+        cmcKeyMissing: !!record.dataQuality.cmc_key_missing,
+        cmcFallback: !!record.dataQuality.cmc_fallback,
+        finbertUnavailable: !!record.dataQuality.finbert_unavailable,
+      },
+      lastUpdated: record.lastUpdated,
     };
-  }
+  },
+
+  /** An asset's sentiment over time (0–100). Empty until the engine has stored at least two readings. */
+  getAssetOverTime: async (assetId, days = 30) => {
+    const lookback = days === "24h" ? 1 : days; // the chart's "24h" option is one day of readings
+    const json = await getJson(`/sentiment/${assetId}/history?days=${encodeURIComponent(lookback)}`, "History request");
+    const history = json.history || [];
+    if (history.length < 2) return [];
+    return [...history].reverse().map((h) => ({
+      date: h.last_updated || h.timestamp,
+      value: toScore100(h.sentiment_score ?? 0),
+    }));
+  },
+
+  /** Throws an ApiError if the refresh itself failed, so the UI can say so instead of re-showing old data. */
+  refreshAsset: async (assetId) => {
+    await postRefresh(assetId);
+    resetCaches();
+    return sentimentApi.getAssetDetail(assetId);
+  },
+
+  /**
+   * Refreshes every covered asset — used by the Hub's "Refresh Pipeline" button. The server runs
+   * the pipelines in the background (one request starts it, not one per asset); this waits for
+   * it to finish, then reports any assets that failed. Throws if it didn't fully succeed.
+   */
+  refreshAllActive: async () => {
+    await postJson("/sentiment/refresh", "Starting the refresh");
+
+    const deadline = Date.now() + REFRESH_ALL_MAX_WAIT_MS;
+    let status;
+    do {
+      await new Promise((resolve) => setTimeout(resolve, REFRESH_ALL_POLL_MS));
+      status = await getJson("/sentiment/refresh/status", "Refresh status");
+    } while (status.running && Date.now() < deadline);
+
+    notifySentimentUpdated(); // whatever was refreshed, even partly, is new data to show
+
+    if (status.running) {
+      throw new ApiError("The refresh is taking longer than expected.", {
+        kind: "timeout",
+        detail: "It is still running on the server. The page will update when it finishes.",
+      });
+    }
+
+    const outcomes = Object.values(status.results || {});
+    const failed = outcomes.filter((o) => o === "failed").length;
+    if (outcomes.length > 0 && failed === outcomes.length) {
+      throw new ApiError("Couldn't refresh any asset.", {
+        kind: "server",
+        detail: "The pipeline failed for every asset. Check the server logs.",
+      });
+    }
+    if (failed > 0) {
+      throw new ApiError(`${failed} of ${outcomes.length} assets could not be refreshed.`, {
+        kind: "partial",
+        detail: `${failed} of ${outcomes.length} assets could not be refreshed. The rest were updated.`,
+      });
+    }
+  },
+
+  getSwitchableAssets: async () => {
+    const rows = await sentimentApi.getAssetList("all");
+    return rows.filter((r) => r.score != null).map((r) => ({ id: r.assetId, name: r.name, symbol: r.symbol }));
+  },
+
+  /** Lower-case ids of everything on any of the signed-in user's watchlists ("Only my watchlist"). */
+  getWatchedAssetIds: async () => {
+    const lists = await watchlistApi.getInitialListsAsync();
+    return new Set(lists.flatMap((l) => l.items.map((i) => String(i.id).toLowerCase())));
+  },
 };

@@ -1,0 +1,57 @@
+{
+  "notFound": {
+    "title": "We couldn't find that page",
+    "subtitle": "The page you're looking for may have been moved or doesn't exist.",
+    "primaryCta": "Back to Dashboard",
+    "secondaryCta": "Back to Landing"
+  },
+  "sessionExpired": {
+    "title": "Your session has expired",
+    "subtitle": "Please sign in again to continue.",
+    "cta": "Sign In"
+  },
+  "networkOffline": {
+    "message": "You're offline — showing the last data we had."
+  },
+  "errorBoundary": {
+    "title": "Something went wrong",
+    "subtitle": "An unexpected error occurred while loading this page.",
+    "cta": "Reload"
+  },
+  "genericLoading": { "message": "Loading…" },
+  "genericError": {
+    "message": "Couldn't load this data.",
+    "cta": "Retry"
+  },
+  "genericEmpty": {
+    "insights": { "title": "No market insights right now", "subtitle": "Check back soon for the latest coverage." },
+    "trendingAssets": { "title": "Nothing trending right now", "subtitle": "Trending assets refresh throughout the day." },
+    "holdings": { "title": "No holdings yet", "subtitle": "Add your first position to start tracking performance.", "cta": "Add Holding" },
+    "watchlist": { "title": "This watchlist is empty", "subtitle": "Add assets from any asset page to track them here.", "cta": "Browse Discover" },
+    "alerts": { "title": "No alerts yet", "subtitle": "Set a threshold and AltInvest will watch it for you.", "cta": "Create Alert" },
+    "notifications": { "title": "You're all caught up", "subtitle": "New alerts and market events will show up here." },
+    "searchResults": { "title": "No results found", "subtitle": "Try a different search term." },
+    "discoverFilters": { "title": "No assets match these filters", "subtitle": "Try widening your filter ranges.", "cta": "Reset filters" },
+    "compareSlots": { "title": "Add at least 2 assets to compare", "subtitle": "Select assets from Discover, Search, or any Watchlist." }
+  },
+  "authValidation": {
+    "emailRequired": "Email is required.",
+    "emailInvalid": "Enter a valid email address.",
+    "passwordRequired": "Password is required.",
+    "passwordTooShort": "Password must be at least 8 characters.",
+    "nameRequired": "Full name is required.",
+    "loginFailedGeneric": "Invalid email or password.",
+    "signupEmailInUse": "An account with this email already exists.",
+    "resetTokenExpired": "This reset link has expired. Request a new one.",
+    "resetTokenInvalid": "This reset link is invalid.",
+    "verifyTokenExpired": "This verification link has expired.",
+    "alreadyVerified": "Your email is already verified."
+  },
+  "confirmDialogs": {
+    "removeHolding": { "title": "Remove this holding?", "message": "This won't affect your watchlists or alerts.", "confirmLabel": "Remove", "cancelLabel": "Cancel" },
+    "deleteAlert": { "title": "Delete this alert?", "message": "You'll stop receiving notifications for this condition.", "confirmLabel": "Delete", "cancelLabel": "Cancel" },
+    "deleteAccount": { "title": "Delete your account?", "message": "This permanently removes your portfolio, watchlists, and alerts. This cannot be undone.", "confirmLabel": "Delete Account", "cancelLabel": "Cancel" },
+    "abandonOnboarding": { "title": "Leave onboarding?", "message": "You can finish personalizing your dashboard later from Settings.", "confirmLabel": "Leave", "cancelLabel": "Stay" },
+    "logout": { "title": "Log out?", "message": "You'll need to sign in again to access your portfolio.", "confirmLabel": "Log Out", "cancelLabel": "Cancel" }
+  }
+}

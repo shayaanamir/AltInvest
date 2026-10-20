@@ -13,7 +13,10 @@ from __future__ import annotations
 # pyrefly: ignore [missing-import]
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
-from utils.logger import get_logger
+try:
+    from sentiment_engine.utils.logger import get_logger
+except ImportError:
+    from utils.logger import get_logger
 
 logger = get_logger("vader_scorer")
 

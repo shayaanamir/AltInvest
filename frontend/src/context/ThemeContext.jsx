@@ -1,19 +1,18 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import { dark, light } from "../theme/tokens";
 
 const ThemeContext = createContext(null);
 
 export function ThemeProvider({ children }) {
   const [isDark, setIsDark] = useState(true);
-  const tokens = isDark ? dark : light;
   const toggle = () => setIsDark((d) => !d);
+  const setTheme = (mode) => setIsDark(mode !== "light");
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
   }, [isDark]);
 
   return (
-    <ThemeContext.Provider value={{ tokens, isDark, toggle }}>
+    <ThemeContext.Provider value={{ isDark, toggle, setTheme }}>
       {children}
     </ThemeContext.Provider>
   );

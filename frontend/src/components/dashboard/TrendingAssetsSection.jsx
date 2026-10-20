@@ -1,0 +1,92 @@
+import { useNavigate } from "react-router-dom";
+import { useAsync } from "../../hooks/useAsync";
+import { dashboardApi } from "../../services/dashboardApi";
+import { formatAssetPrice, formatPct } from "../../utils/formatters";
+import { getAaiTierClass } from "../../utils/scoring";
+import Sparkline from "../charts/Sparkline";
+import AssetAvatar from "../shared/AssetAvatar";
+import { IconStar } from "../icons";
+import WatchStar from "../watchlists/WatchStar";
+import { onWatchlistsChanged } from "../../services/holdingsEvents";
+import { ErrorState } from "../../errors";
+
+export default function TrendingAssetsSection() {
+  const { data: assets, error, refetch } = useAsync(() => dashboardApi.getTrendingAssets(), [], { subscribe: onWatchlistsChanged });
+  const navigate = useNavigate();
+
+  return (
+    <section>
+      <div className="dv2-section-head">
+        <div>
+          <h2 className="dv2-section-title">Trending assets</h2>
+          <p className="dv2-section-sub">Moving unusually for each asset: its 24h move and volume against its own normal</p>
+        </div>
+        <a href="#" className="dv2-section-link" onClick={(e) => { e.preventDefault(); navigate("/discover"); }}>
+          See all →
+        </a>
+      </div>
+
+      <div className="dv2-asset-grid">
+        {error ? (
+          <ErrorState error={error} onRetry={refetch} title="Couldn't load trending assets" />
+        ) : !assets ? (
+          <div className="sv2-muted sv2-small">Loading trending assets…</div>
+        ) : assets.length === 0 ? (
+          <div className="sv2-muted sv2-small">No market data available yet.</div>
+        ) : (
+          assets.map((a) => {
+            const positive = a.change24h >= 0;
+            const watching = !!a.watching;
+            return (
+              <div
+                key={a.symbol}
+                className="sv2-card dv2-asset-card"
+                style={{ cursor: "pointer" }}
+                onClick={() => navigate(`/asset-detail?symbol=${a.symbol}`)}
+              >
+                <div className="dv2-asset-card-top">
+                  <div className="dv2-asset-id">
+                    <AssetAvatar symbol={a.symbol} color={a.logoColor} size={38} />
+                    <div>
+                      <div className="dv2-asset-name">{a.name}</div>
+                      <div className="dv2-asset-sym">{a.symbol}</div>
+                    </div>
+                  </div>
+                  <WatchStar item={{ type: "crypto", id: a.symbol, name: a.name }} watching={watching} />
+                </div>
+
+                <div className="dv2-asset-price-row">
+                  <div>
+                    <div className="dv2-asset-price">{formatAssetPrice(a.price)}</div>
+                    <div className="dv2-asset-price-label">last price</div>
+                  </div>
+                  <span className={`dv2-asset-change ${positive ? "positive" : "negative"}`}>
+                    {positive ? "↗" : "↘"} {formatPct(a.change24h, { withSign: true })}
+                  </span>
+                </div>
+
+                {a.reasons.length > 0 && <div className="dv2-trend-reason">{a.reasons.join(" · ")}</div>}
+
+                <div className="dv2-asset-chart">
+                  <Sparkline color={positive ? "var(--sv2-green)" : "var(--sv2-red)"} data={a.sparkline} width={220} height={44} />
+                </div>
+
+                <div className="dv2-asset-badges">
+                  <span className={`dv2-badge dv2-badge-aai ${getAaiTierClass(a.aai?.score)}`}>
+                    AAI {a.aai?.score != null ? Math.round(a.aai.score) : "—"}
+                  </span>
+                  {a.aai?.signal && <span className="sv2-badge-pill">{a.aai.signal}</span>}
+                  {watching && (
+                    <span className="sv2-badge-pill dv2-badge-watching" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                      <IconStar size={11} filled={true} /> Watching
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </section>
+  );
+}

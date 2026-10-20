@@ -1,0 +1,21 @@
+{
+  "categoryTabs": [
+    { "key": "crypto", "label": "Crypto" },
+    { "key": "nft", "label": "NFTs" },
+    { "key": "tokenized", "label": "Tokenized Assets", "disabled": true, "disabledReason": "Coming soon" }
+  ],
+  "pageSize": 24,
+  "defaultSort": { "key": "aai_score", "order": "desc" },
+  "filters": {
+    "marketCapRange": { "min": 0, "max": 1500000000000, "step": 1000000000, "unit": "USD" },
+    "sentimentRange": { "min": -1, "max": 1, "step": 0.05 },
+    "aaiScoreRange": { "min": 0, "max": 100, "step": 1 },
+    "volatilityRange": { "min": 0, "max": 100, "step": 1 },
+    "riskRange": { "min": 0, "max": 100, "step": 1 }
+  },
+  "emptyState": {
+    "title": "No assets match these filters",
+    "subtitle": "Try widening your AAI score or market cap range, or clearing the search.",
+    "cta": "Reset filters"
+  }
+}
