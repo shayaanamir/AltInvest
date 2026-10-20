@@ -333,6 +333,7 @@ class NotificationOut(BaseModel):
     read: bool
     timestamp: Optional[str] = None
     deep_link: Optional[Dict] = None
+    alert_id: Optional[str] = None
 
 class NFTCollectionListItem(BaseModel):
     slug: str

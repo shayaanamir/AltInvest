@@ -1,26 +1,27 @@
 import { timeAgo } from "../../../utils/dateTime";
+import { NOTIFICATION_TYPE_LABELS } from "../../../services/notificationsApi";
+import { IconX } from "../../icons";
 
-const TYPE_LABEL = {
-  alert_triggered: "Alert",
-  market_event: "Market",
-  system: "System",
-};
-
-export default function NotificationItem({ notification, onSelect }) {
+/** One notification row. `full` also shows the message (Notifications page). */
+export default function NotificationItem({ notification, onSelect, onDismiss, full = false }) {
   return (
-    <button
-      type="button"
-      className={`tb-notification-item ${notification.read ? "" : "unread"}`}
-      onClick={onSelect}
-    >
-      <span className="tb-notification-dot" />
-      <div className="tb-notification-text">
-        <div className="tb-notification-title-row">
-          <span className="tb-notification-type">{TYPE_LABEL[notification.type] || "Update"}</span>
-          <span className="tb-notification-time">{timeAgo(notification.timestamp)}</span>
+    <div className={`tb-notification-item ${notification.read ? "" : "unread"} ${full ? "full" : ""}`}>
+      <button type="button" className="tb-notification-main" onClick={onSelect}>
+        <span className="tb-notification-dot" aria-label={notification.read ? undefined : "Unread"} />
+        <div className="tb-notification-text">
+          <div className="tb-notification-title-row">
+            <span className="tb-notification-type">{NOTIFICATION_TYPE_LABELS[notification.type] || "Update"}</span>
+            <span className="tb-notification-time">{timeAgo(notification.timestamp)}</span>
+          </div>
+          <div className="tb-notification-title">{notification.title}</div>
+          {full && notification.message && <div className="tb-notification-message">{notification.message}</div>}
         </div>
-        <div className="tb-notification-title">{notification.title}</div>
-      </div>
-    </button>
+      </button>
+      {onDismiss && (
+        <button type="button" className="tb-notification-dismiss" onClick={onDismiss} title="Dismiss" aria-label={`Dismiss: ${notification.title}`}>
+          <IconX size={11} />
+        </button>
+      )}
+    </div>
   );
 }

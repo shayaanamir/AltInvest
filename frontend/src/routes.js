@@ -15,6 +15,7 @@ import ComparePage from "./pages/ComparePage";
 import AlertsPage from "./pages/AlertsPage";
 import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
+import NotificationsPage from "./pages/NotificationsPage";
 
 export const ROUTES = [
   { key: "Landing", path: "/", element: LandingPage, bare: true, inNav: false },
@@ -34,6 +35,7 @@ export const ROUTES = [
   { key: "Asset Detail", path: "/asset-detail", element: AssetDetailPage, inNav: false, protected: true },
   { key: "Settings", path: "/settings", element: SettingsPage, inNav: false, bottomNav: true, icon: "Settings", protected: true },
   { key: "Profile", path: "/profile", element: ProfilePage, inNav: false, protected: true },
+  { key: "Notifications", path: "/notifications", element: NotificationsPage, inNav: false, protected: true },
 ];
 
 export const NAV_ITEMS = ROUTES.filter((r) => r.inNav);

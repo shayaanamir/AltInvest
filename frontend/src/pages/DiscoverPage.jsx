@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { discoverApi } from "../services/discoverApi";
 import DiscoverFilters from "../components/discover/DiscoverFilters";
 import DiscoverAssetCard from "../components/discover/DiscoverAssetCard";
@@ -21,7 +21,9 @@ function defaultFilters(config) {
 export default function DiscoverPage() {
   const navigate = useNavigate();
   const [config, setConfig] = useState(null);
-  const [category, setCategory] = useState("crypto");
+  const [searchParams] = useSearchParams();
+  // ?category=nft opens on that tab (used by notification links).
+  const [category, setCategory] = useState(() => (searchParams.get("category") === "nft" ? "nft" : "crypto"));
   const [showFilters, setShowFilters] = useState(true);
   const [filters, setFilters] = useState(null);
   const [items, setItems] = useState([]);

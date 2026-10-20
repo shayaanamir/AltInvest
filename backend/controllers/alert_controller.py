@@ -174,7 +174,7 @@ def evaluate_alerts() -> dict:
             })
             db.notifications.insert_one({
                 "user_id": a["user_id"], "type": "alert_triggered", "title": title, "message": message,
-                "read": False, "timestamp": now,
+                "read": False, "timestamp": now, "alert_id": str(a["_id"]),
                 "deep_link": {"page": "AssetDetail", "symbol": a.get("target_symbol"), "slug": None}
                 if a.get("target_type") == "crypto" else {"page": "Discover", "symbol": None, "slug": a.get("target_slug")},
             })

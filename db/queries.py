@@ -385,17 +385,32 @@ def delete_alert(user_id: ObjectId, alert_id: str) -> bool:
 
 # ── Notifications ─────────────────────────────────────────────────────────────
 
-def get_notifications(user_id: ObjectId, unread_only: bool = False, limit: int = 50) -> list:
+def get_notifications(user_id: ObjectId, unread_only: bool = False, limit: int = 50,
+                      skip: int = 0, types: list | None = None) -> list:
     db = get_db()
     query = {"user_id": user_id}
     if unread_only:
         query["read"] = False
+    if types:
+        query["type"] = {"$in": types}
     out = []
-    for doc in db.notifications.find(query, sort=[("timestamp", -1)], limit=limit):
+    for doc in db.notifications.find(query, sort=[("timestamp", -1), ("_id", -1)], skip=skip, limit=limit):
         doc["id"] = str(doc.pop("_id"))
         doc["user_id"] = str(doc["user_id"])
         out.append(doc)
     return out
+
+
+def count_unread_notifications(user_id: ObjectId) -> int:
+    return get_db().notifications.count_documents({"user_id": user_id, "read": False})
+
+
+def mark_all_notifications_read(user_id: ObjectId) -> int:
+    return get_db().notifications.update_many({"user_id": user_id, "read": False}, {"$set": {"read": True}}).modified_count
+
+
+def delete_notification(user_id: ObjectId, notification_id: str) -> bool:
+    return get_db().notifications.delete_one({"_id": ObjectId(notification_id), "user_id": user_id}).deleted_count > 0
 
 
 def mark_notification_read(user_id: ObjectId, notification_id: str) -> bool:
