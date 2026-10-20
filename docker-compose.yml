@@ -35,6 +35,15 @@ services:
 
       MONGO_DB: altinvest
       CMC_API_KEY: ${CMC_API_KEY:-}
+      JWT_SECRET: ${JWT_SECRET:-}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:5173}
+      TRUST_PROXY_HEADERS: ${TRUST_PROXY_HEADERS:-false}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
     depends_on:
       mongodb:
         condition: service_healthy
@@ -83,6 +92,8 @@ services:
       # the frontend's built-in default (":5000/api") in src/config.js.
       VITE_USE_MOCK: "false"
       VITE_API_BASE_URL: "http://localhost:8000"
+      # Bind mounts from Windows don't deliver file events; let Vite poll (see vite.config.js).
+      VITE_WATCH_POLLING: "true"
     volumes:
       - ./frontend:/app
       - frontend_node_modules:/app/node_modules

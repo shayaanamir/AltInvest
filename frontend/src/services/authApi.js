@@ -3,6 +3,7 @@ import { API_BASE_URL } from "../config";
 import { ApiError, kindFromStatus } from "../errors/errorCatalog";
 import { reportApiReachable } from "../errors/connectionStatus";
 import { apiFetch } from "./apiClient";
+import { getToken, clearSession, setSession } from "../hooks/useAuth";
 
 /**
  * POST JSON to an auth endpoint. Throws ApiError:
@@ -38,7 +39,27 @@ async function authPost(path, body, fallbackMessage) {
     return data;
 }
 
+// One /auth/me request at a time: the topbar and dashboard ask for the user as they mount together.
+let _meRequest = null;
+
 export const authApi = {
+    /**
+     * The signed-in user: { id, name, email, email_verified, avatar_initials, avatar_color,
+     * onboarding_completed, created_at }. Also refreshes the user saved at login, so a name change or
+     * email verification shows up without signing in again. A 401 signs the user out (apiFetch).
+     */
+    me: () => {
+        if (!_meRequest) {
+            _meRequest = apiFetch("/auth/me")
+                .then((user) => {
+                    if (getToken()) setSession({ user });
+                    return user;
+                })
+                .finally(() => { _meRequest = null; });
+        }
+        return _meRequest;
+    },
+
     /**
      * Authenticate a user
      * @returns {Promise<{ user: any, token: string }>}
@@ -77,4 +98,39 @@ export const authApi = {
 
     /** Email the signed-in user a new verification link. Resolves with { message, sent }. */
     resendVerification: () => apiFetch("/auth/resend-verification", { method: "POST" }),
+
+    /** Change the signed-in user's password. A wrong current password comes back as a 400. */
+    changePassword: (currentPassword, newPassword) =>
+        apiFetch("/auth/change-password", {
+            method: "POST",
+            body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+        }),
+
+    /** Permanently delete the signed-in account and all its data. A wrong password is a 400. */
+    deleteAccount: (password) =>
+        apiFetch("/auth/account", { method: "DELETE", body: JSON.stringify({ password }) }),
+
+    /** Signed-in sessions for this account: [{ id, device, ip, created_at, last_active, current }]. */
+    listSessions: () => apiFetch("/auth/sessions"),
+
+    /** Sign out every session except this one. Resolves with { revoked }. */
+    revokeOtherSessions: () => apiFetch("/auth/sessions/revoke-others", { method: "POST" }),
+
+    /** Sign out one other session. */
+    revokeSession: (sessionId) => apiFetch(`/auth/sessions/${encodeURIComponent(sessionId)}`, { method: "DELETE" }),
+
+    /**
+     * End this session on the server and forget it locally. The server call is best-effort and not
+     * awaited (it always answers 204), so logging out never waits on, or fails because of, the network.
+     */
+    logout: () => {
+        const token = getToken();
+        clearSession();
+        if (!token) return;
+        fetch(`${API_BASE_URL}/auth/logout`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+            keepalive: true,
+        }).catch(() => {});
+    },
 };

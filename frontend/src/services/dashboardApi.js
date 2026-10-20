@@ -1,4 +1,5 @@
 import { apiFetch } from "./apiClient";
+import { authApi } from "./authApi";
 
 // Backend global_sentiment is -1..1; the dashboard gauge reads 0..100.
 const sentimentTo100 = (s) => Math.round(((s ?? 0) + 1) * 50);
@@ -15,8 +16,8 @@ function safeHttpUrl(u) {
 
 export const dashboardApi = {
   getCurrentUser: async () => {
-    const p = await apiFetch("/profile");
-    return { name: p.name, initials: p.avatar_initials, color: p.avatar_color };
+    const u = await authApi.me();
+    return { name: u.name, initials: u.avatar_initials, color: u.avatar_color };
   },
 
   getNotificationCount: async () => {

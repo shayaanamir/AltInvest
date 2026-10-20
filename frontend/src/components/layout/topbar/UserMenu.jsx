@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useAsync } from "../../../hooks/useAsync";
 import { useDisclosure } from "../../../hooks/useDisclosure";
-import { clearSession } from "../../../hooks/useAuth";
+import { authApi } from "../../../services/authApi";
 import { topbarApi } from "../../../services/topbarApi";
 import { describeError } from "../../../errors/errorCatalog";
 
@@ -28,7 +28,7 @@ export default function UserMenu() {
 
   const handleLogout = () => {
     close();
-    clearSession();
+    authApi.logout();
     navigate("/");
   };
 

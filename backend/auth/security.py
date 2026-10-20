@@ -8,17 +8,43 @@ JWT_SECRET MUST be set via environment variable in any real deployment.
 The default below is for local development only and must never be
 relied on outside a dev machine.
 """
+import logging
 import os
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
 import jwt
 
-JWT_SECRET = os.getenv("JWT_SECRET", "insecure-dev-secret-change-me")
+_DEV_JWT_SECRET = "insecure-dev-secret-change-me"
+# `or`, not a getenv default: docker-compose passes an unset variable through as "".
+JWT_SECRET = os.getenv("JWT_SECRET") or _DEV_JWT_SECRET
+if JWT_SECRET == _DEV_JWT_SECRET:
+    logging.getLogger("auth").warning(
+        "JWT_SECRET is not set; signing tokens with the built-in development secret. "
+        "Anyone who knows it can forge logins. Set JWT_SECRET in .env for any shared or deployed instance."
+    )
 JWT_ALGORITHM = "HS256"
+# Sliding sessions: a token lives JWT_EXPIRY_HOURS; while the user is active the client trades it for
+# a fresh one (POST /auth/refresh), so only 24h of inactivity signs them out — or SESSION_MAX_DAYS
+# after the original sign-in, whichever comes first.
 JWT_EXPIRY_HOURS = 24
+SESSION_MAX_DAYS = 30
 RESET_TOKEN_EXPIRY_MINUTES = 30
 VERIFY_TOKEN_EXPIRY_HOURS = 24
+
+PASSWORD_MIN_LENGTH = 8
+# bcrypt only reads the first 72 bytes (newer versions raise past that), so longer is refused.
+PASSWORD_MAX_BYTES = 72
+
+
+def password_problem(password: str, label: str = "Password") -> str | None:
+    """Why a new password is unacceptable, or None if it's fine."""
+    if len(password or "") < PASSWORD_MIN_LENGTH:
+        return f"{label} must be at least {PASSWORD_MIN_LENGTH} characters."
+    if len(password.encode("utf-8")) > PASSWORD_MAX_BYTES:
+        return f"{label} is too long (at most {PASSWORD_MAX_BYTES} bytes, about {PASSWORD_MAX_BYTES} characters)."
+    return None
+
 
 def hash_password(plain_password: str) -> str:
     """Hashes a plaintext password with bcrypt for storage."""
@@ -38,24 +64,28 @@ def verify_password(plain_password: str, password_hash: str) -> bool:
         return False
 
 
-def create_access_token(user_id: str, email: str) -> str:
-    """Issues a signed JWT for an authenticated user."""
-    now = datetime.now(timezone.utc)
+def create_access_token(user_id: str, email: str, session_id: str, expires_at: datetime) -> str:
+    """Issues a signed JWT for an authenticated user, tied to a row in user_sessions (`sid`)."""
     payload = {
         "sub": user_id,
         "email": email,
-        "iat": now,
-        "exp": now + timedelta(hours=JWT_EXPIRY_HOURS),
+        "sid": session_id,
+        "iat": datetime.now(timezone.utc),
+        "exp": expires_at,
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
 def decode_access_token(token: str) -> dict | None:
-    """Decodes/validates a JWT. Returns the payload, or None if invalid/expired."""
+    """Decodes/validates a login JWT. Returns the payload, or None if invalid/expired or not a
+    login token (reset and verification tokens carry a `purpose` and no session id)."""
     try:
-        return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
     except jwt.PyJWTError:
         return None
+    if payload.get("purpose") or not payload.get("sid"):
+        return None
+    return payload
 
 def create_reset_token(user_id: str, email: str) -> str:
     """Issues a short-lived, single-purpose JWT for password reset."""

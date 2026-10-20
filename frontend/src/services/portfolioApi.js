@@ -1,6 +1,7 @@
 import { apiFetch } from "./apiClient";
 import { fetchUniverse } from "./assetRepository";
 import { notifyHoldingsChanged } from "./holdingsEvents";
+import { getToken } from "../hooks/useAuth";
 
 function round2(n) {
   return Math.round(n * 100) / 100;
@@ -64,11 +65,17 @@ function mapNftHolding(h, meta) {
   };
 }
 
-let _cachedHoldings = null; // per-mount cache so getCryptoHoldings/getNftHoldings/getSummary don't triple-fetch
+// Per-mount cache so getCryptoHoldings/getNftHoldings/getSummary don't triple-fetch. It belongs to the
+// token it was fetched with, so after logout, account deletion or another sign-in it is never reused.
+let _cachedHoldings = null;
+let _cachedForToken = null;
 async function fetchAllHoldings() {
-  if (_cachedHoldings) return _cachedHoldings;
-  _cachedHoldings = await apiFetch("/portfolio/holdings");
-  return _cachedHoldings;
+  const token = getToken();
+  if (_cachedHoldings && _cachedForToken === token) return _cachedHoldings;
+  const rows = await apiFetch("/portfolio/holdings");
+  _cachedHoldings = rows;
+  _cachedForToken = token;
+  return rows;
 }
 // Called after every successful add / edit / remove: drops the cache and tells open screens to reload.
 export function invalidateHoldingsCache() {

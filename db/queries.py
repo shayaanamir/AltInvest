@@ -631,8 +631,26 @@ def get_user_by_id(user_id: str) -> dict | None:
     return db.users.find_one({"_id": ObjectId(user_id)})
 
 
+_user_indexes_ready = False
+
+
+def _ensure_user_indexes(db) -> None:
+    """One account per email, enforced by Mongo so two simultaneous signups can't both succeed."""
+    global _user_indexes_ready
+    if _user_indexes_ready:
+        return
+    try:
+        db.users.create_index("email", unique=True)
+    except OperationFailure as exc:
+        # Existing duplicate emails block the index; signup still checks email_exists() first.
+        print(f"[users] couldn't create unique index on users.email (duplicate emails in the data?): {exc}")
+    _user_indexes_ready = True
+
+
 def create_user(email: str, name: str, password_hash: str) -> str:
+    """Raises pymongo.errors.DuplicateKeyError if the email is already registered."""
     db = get_db()
+    _ensure_user_indexes(db)
     doc = {
         "email": email.lower().strip(), "name": name, "password_hash": password_hash,
         "created_at": datetime.now(timezone.utc), "email_verified": False,
@@ -704,3 +722,86 @@ def get_activity_counts(user_id: ObjectId) -> dict:
 def email_exists(email: str) -> bool:
     db = get_db()
     return db.users.find_one({"email": email.lower().strip()}, projection={"_id": 1}) is not None
+
+# ── Login sessions (one row per issued access token; deleting the row revokes the token) ──
+
+_session_indexes_ready = False
+
+
+def _sessions():
+    global _session_indexes_ready
+    db = get_db()
+    if not _session_indexes_ready:
+        db.user_sessions.create_index([("user_id", 1), ("last_active", -1)])
+        # Mongo drops each row once its token has expired.
+        db.user_sessions.create_index("expires_at", expireAfterSeconds=0)
+        _session_indexes_ready = True
+    return db.user_sessions
+
+
+def create_user_session(user_id: ObjectId, expires_at: datetime, user_agent: str, ip: str | None) -> str:
+    now = datetime.now(timezone.utc)
+    result = _sessions().insert_one({
+        "user_id": user_id, "created_at": now, "last_active": now, "expires_at": expires_at,
+        "user_agent": user_agent, "ip": ip,
+    })
+    return str(result.inserted_id)
+
+
+def get_user_session(session_id: str) -> dict | None:
+    try:
+        oid = ObjectId(session_id)
+    except Exception:
+        return None
+    return _sessions().find_one({"_id": oid})
+
+
+def touch_user_session(session_id: ObjectId, when: datetime) -> None:
+    _sessions().update_one({"_id": session_id}, {"$set": {"last_active": when}})
+
+
+def extend_user_session(session_id: ObjectId, expires_at: datetime) -> bool:
+    """Moves a live session's expiry later (never earlier). False if the session is gone."""
+    result = _sessions().update_one(
+        {"_id": session_id, "expires_at": {"$lt": expires_at}},
+        {"$set": {"expires_at": expires_at, "last_active": datetime.now(timezone.utc)}},
+    )
+    return result.matched_count > 0
+
+
+def list_user_sessions(user_id: ObjectId) -> list:
+    now = datetime.now(timezone.utc)
+    return list(_sessions().find(
+        {"user_id": user_id, "expires_at": {"$gt": now}}, sort=[("last_active", -1)]
+    ))
+
+
+def delete_user_session(user_id: ObjectId, session_id: ObjectId) -> bool:
+    return _sessions().delete_one({"_id": session_id, "user_id": user_id}).deleted_count > 0
+
+
+def delete_other_user_sessions(user_id: ObjectId, keep_session_id: ObjectId) -> int:
+    return _sessions().delete_many({"user_id": user_id, "_id": {"$ne": keep_session_id}}).deleted_count
+
+
+# Every collection holding rows that belong to one user (keyed by user_id).
+_USER_OWNED_COLLECTIONS = (
+    "portfolio_holdings", "portfolio_snapshots", "watchlists", "alerts", "notifications",
+    "user_settings", "user_search_history",
+)
+
+
+def delete_user_account(user_id: ObjectId) -> dict:
+    """
+    Permanently removes a user and everything they own. Returns rows deleted per collection.
+
+    No transaction (standalone Mongo), so the order matters: sessions first, so access ends at
+    once; the user record last, so a failure part-way leaves an account that can sign in and
+    delete again rather than orphaned data nobody can reach.
+    """
+    db = get_db()
+    deleted = {"user_sessions": _sessions().delete_many({"user_id": user_id}).deleted_count}
+    for name in _USER_OWNED_COLLECTIONS:
+        deleted[name] = db[name].delete_many({"user_id": user_id}).deleted_count
+    deleted["users"] = db.users.delete_one({"_id": user_id}).deleted_count
+    return deleted

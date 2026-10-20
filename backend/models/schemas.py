@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -561,3 +562,31 @@ class VerifyEmailRequest(BaseModel):
 class ResetPasswordRequest(BaseModel):
     token: str
     new_password: str
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+class SessionInfo(BaseModel):
+    id: str
+    device: str
+    ip: Optional[str] = None
+    created_at: datetime
+    last_active: datetime
+    current: bool
+
+
+class MeOut(BaseModel):
+    id: str
+    name: str
+    email: str
+    email_verified: bool
+    avatar_initials: Optional[str] = None
+    avatar_color: Optional[str] = None
+    onboarding_completed: bool
+    created_at: Optional[datetime] = None
+
+
+class DeleteAccountRequest(BaseModel):
+    password: str

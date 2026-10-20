@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAppPreferences } from "../../services/appPreferences";
 import { useTheme } from "../../context/ThemeContext";
-import { clearSession } from "../../hooks/useAuth";
+import { authApi } from "../../services/authApi";
 import { NAV_ITEMS, BOTTOM_NAV } from "../../routes";
 import {
   IconDashboard,
@@ -181,7 +181,7 @@ export default function Sidebar({ activePage, onNavigate }) {
             transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)"
           }}
           onClick={() => {
-            clearSession();
+            authApi.logout();
             if (onNavigate) onNavigate("Landing");
           }}
           title={collapsed ? "Logout" : undefined}

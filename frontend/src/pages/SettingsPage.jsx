@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/settingsProfile.css";
-import { clearSession } from "../hooks/useAuth";
+import { authApi } from "../services/authApi";
 import { useAsync } from "../hooks/useAsync";
 import { settingsApi } from "../services/settingsApi";
 import { applySavedPreference, resetAppPreferences } from "../services/appPreferences";
@@ -64,7 +64,7 @@ export default function SettingsPage() {
   };
 
   const handleLogout = () => {
-    clearSession();
+    authApi.logout();
     resetAppPreferences();
     navigate("/");
   };

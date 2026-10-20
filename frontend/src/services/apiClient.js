@@ -4,6 +4,7 @@ import { getToken, clearSession } from "../hooks/useAuth";
 import { emitSessionExpired } from "../hooks/sessionEvents";
 import { ApiError, kindFromStatus } from "../errors/errorCatalog";
 import { reportApiReachable } from "../errors/connectionStatus";
+import { maybeRefreshSession } from "./sessionRefresh";
 
 const REQUEST_TIMEOUT_MS = 20000;
 
@@ -52,6 +53,7 @@ export async function apiFetch(path, options = {}) {
       detail,
     });
   }
+  if (token) maybeRefreshSession();
   if (options.withHeaders) {
     // { data, headers } for callers that need a response header (e.g. Discover's X-Total-Count).
     return { data: res.status === 204 ? null : await res.json(), headers: res.headers };
