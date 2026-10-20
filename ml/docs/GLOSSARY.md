@@ -96,6 +96,8 @@ Terms marked *(not used yet)* appear in the plan docs but no code uses them so f
 - **Calibration / reliability table**: grouping predictions by stated probability (for example 0.3-0.4) and checking how often the class really happened in each group.
 - **ECE (expected calibration error)**: the count-weighted average gap between stated probability and observed frequency over the reliability table; 0 is perfectly calibrated.
 - **Convergence warning**: the fitting algorithm stopped at its iteration limit before settling. Phase 4c counts these per fold (D31).
+- **Move-vs-no-move skill vs up/down skill**: knowing *whether* the price will move a lot (useful for risk) versus knowing *which way* it will move (needed for BUY or SELL). Phase 5a found neither demonstrated for the ETH direction model (D33).
+- **Serving rule**: the recorded decision on what the API returns for an asset, whatever a model scores. For direction: signal UNCERTAIN, confidence null (D33).
 - **Statistical power**: the chance a test detects a real effect. Small samples have low power, so "not approved" may mean "not proven" rather than "no skill".
 - **Non-overlapping windows**: evaluating 30-day periods that do not share days, because daily steps with a 30-day horizon overlap 29/30 (docs/LEARNINGS.md). Used by the Phase 3 strategy baselines.
 - **Backtest**: replaying a strategy on past data to see how it would have done. *(not used yet)*

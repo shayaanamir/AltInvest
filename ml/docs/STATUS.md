@@ -1,9 +1,9 @@
 # STATUS
 
-Current phase: 5a (Step 0 of Phase 5) STOPPED before D33, waiting on the user (see below). 4c verdict unchanged: ETH approved, BTC and SOL not (D31, D32).
-Next: the user rewords D33; then D33 and D34 are appended and 5a finishes. 5b (signal logic + backtest) has not started.
+Current phase: 5a (Step 0 of Phase 5) DONE (2026-10-20). D32, D33, D34 recorded. 4c verdict unchanged: ETH approved, BTC and SOL not (D31, D32); direction is served UNCERTAIN for all three (D33).
+Next: 5b (signal logic + backtest). Not started; waiting on the user's go-ahead.
 
-## Phase 5a: what ran (from repo root, 2026-10-19), stopped before Step 0d
+## Phase 5a: what ran (from repo root, 2026-10-19 to 2026-10-20)
 
 - Started from a clean tree: HEAD 3bd9090, `git_dirty` False.
 - The task was split into 5a (Step 0 a-e plus its tests and docs) and 5b (Steps 1-5), following the review table in the task. The mechanism check runs once, in 0b. The `signal` shadowing check moves to 5b.
@@ -24,10 +24,11 @@ Next: the user rewords D33; then D33 and D34 are appended and 5a finishes. 5b (s
 | mean P(FLAT) / observed FLAT share | 0.410172 / 0.561974 | 0.440101 / 0.602888 | 0.435216 / 0.542793 |
 
 - STOP rule (ETH check 3 CI entirely above 0): not triggered. The CI contains 0.
-- Why I stopped before 0d: D33's reason says ETH's gain "is move-vs-no-move information". But ETH check 2, which measures exactly that, has a CI containing 0 (-0.045538 [-0.245999, 0.209584]). Only check 1 is clear: P(FLAT) rises when trailing volatility is low. D33 is a pre-registered user decision, so the user rewords it. D34 is held as well, because D32, D33 and D34 must be appended in that order.
-- Proposed reason text for D33 (needs approval): "Reason: ETH's 4c gain shows no demonstrated up/down skill and no demonstrated row-level move-vs-no-move skill (direction_mechanism.json, ETH last 40%, n_effective 27.7, D29/D30: Spearman(P(UP)-P(DOWN), fwd_return_30d) = 0.0148 [-0.1549, 0.1378]; Spearman(P(FLAT), abs fwd_return_30d) = -0.0455 [-0.2460, 0.2096]). It reflects P(FLAT) tracking trailing volatility (Spearman(P(FLAT), vol_30d) = -0.5274 [-0.6658, -0.3105]), so it cannot support BUY or SELL."
+- 5a paused before 0d: D33's draft reason ("is move-vs-no-move information") was not supported by ETH check 2 (CI contains 0). The user approved a reworded reason and a fix-3 sentence.
+- 0d/0e: D33 and D34 appended after D32, in order. D33's final reason: "Reason: ETH's 4c gain shows no demonstrated up/down skill and no demonstrated row-level move-vs-no-move skill (direction_mechanism.json, ETH last 40%, n_effective 27.7, D29/D30: Spearman(P(UP)-P(DOWN), fwd_return_30d) = 0.0148 [-0.1549, 0.1378]; Spearman(P(FLAT), abs fwd_return_30d) = -0.0455 [-0.2460, 0.2096]). It coincides with P(FLAT) tracking trailing volatility (Spearman(P(FLAT), vol_30d) = -0.5274 [-0.6658, -0.3105]), so it cannot support BUY or SELL."
+- Docs: `docs/phases/PHASE_5a_mechanism_check.md`, 2 glossary terms, AGENTS Docs list.
 
-## How to verify Phase 5a so far (PowerShell, from the repo root)
+## How to verify Phase 5a (PowerShell, from the repo root)
 
 ```powershell
 Set-Location C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest
