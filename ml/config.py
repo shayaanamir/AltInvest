@@ -28,3 +28,15 @@ WALKFORWARD_STEP = 30
 
 # Annualisation for Sharpe and volatility: sqrt(365) (docs/EVALUATION.md rule 5).
 ANNUALISATION_DAYS = 365
+
+# Signals the service may emit (D7: no STRONG_* without backtest evidence).
+SIGNALS = ("BUY", "HOLD", "SELL", "UNCERTAIN")
+
+# Whether a direction model is served per asset. All False: signal UNCERTAIN, confidence null (D33).
+DIRECTION_SERVED = {"btc": False, "eth": False, "sol": False}  # D33
+
+# Backtest (D34): cost per side on each change of position; random-signal baseline settings.
+BACKTEST_FEE_PER_SIDE = 0.001  # D34
+RANDOM_BASELINE_RUNS = 1000  # D34
+RANDOM_BASELINE_P_BUY = 0.5  # D34
+RANDOM_BASELINE_SEED = 0  # D34

@@ -10,7 +10,7 @@
 | 4a | Risk model (regression on log fwd 30d realised vol, D24; class metrics with fold thresholds) | walkforward_risk.json per asset: Spearman and class metrics vs trailing-vol baseline, approval verdict per D25; pytest passes | "How to verify Phase 4a yourself" in docs/STATUS.md |
 | 4b | Price model | compared vs baselines by walk-forward (D21, D28); report written even if it loses | Filled in docs/STATUS.md when the phase is completed (AGENTS rule 15) |
 | 4c | Direction model | calibration + baseline comparison reported, evaluated by walk-forward (D21) | "How to verify Phase 4c yourself" in docs/STATUS.md |
-| 5 | signal_logic.generate_signal + non-overlapping backtest | backtest.json with baselines and bootstrap CI; API/backtest import the same function | Filled in docs/STATUS.md when the phase is completed (AGENTS rule 15) |
+| 5 | signal_logic.generate_signal + non-overlapping backtest | backtest.json with baselines and bootstrap CI; API/backtest import the same function | "How to verify Phase 5b yourself" in docs/STATUS.md |
 | 6 | FastAPI :8001 (/predict, /risk, /health, /debug/...) | contract test validates real responses against CONTRACT.md schemas for all assets | Filled in docs/STATUS.md when the phase is completed (AGENTS rule 15) |
 | 7 | Backend integration (Person B) | backend calls ML over HTTP end to end | Filled in docs/STATUS.md when the phase is completed (AGENTS rule 15) |
 | 8 | NFTs | separate PLAN_NFT.md, started only after 7 | Filled in docs/STATUS.md when the phase is completed (AGENTS rule 15) |

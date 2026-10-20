@@ -121,9 +121,9 @@
   "note": "Report only (Phase 5a). Spearman CIs: moving-block bootstrap, block 30. No decision is made here.",
   "metadata": {
     "asset": "eth",
-    "generated_at": "2026-10-19T15:19:04Z",
-    "git_commit": "3bd9090da3a47ba8d8101b5900820a3955e3c0b1",
-    "git_dirty": true,
+    "generated_at": "2026-10-20T08:53:46Z",
+    "git_commit": "0a80f92b7acc79568cd66e716f055f4e954819e6",
+    "git_dirty": false,
     "n_feature_rows": 3319,
     "b2_test_start_row": 2821,
     "rows_built": [

@@ -1,7 +1,41 @@
 # STATUS
 
-Current phase: 5a (Step 0 of Phase 5) DONE (2026-10-20). D32, D33, D34 recorded. 4c verdict unchanged: ETH approved, BTC and SOL not (D31, D32); direction is served UNCERTAIN for all three (D33).
-Next: 5b (signal logic + backtest). Not started; waiting on the user's go-ahead.
+Current phase: 5b (generate_signal + backtest) DONE for BTC, ETH, SOL (2026-10-20). Served direction signal is UNCERTAIN for all three (D33); the backtest is evidence only (D32, D34).
+Next: Phase 6 (API). Not started; waiting on the user's go-ahead.
+
+Price fields blocked on Person B (D28); Phase 6 cannot finish /predict until that is answered.
+
+## Phase 5b: what ran (from repo root, 2026-10-20)
+
+- Started from a clean tree: HEAD 0a80f92, `git_dirty` False. `python -c "import signal; print(signal.__file__)"` shows the stdlib module before and after creating `ml/signal/`. `test_stdlib_signal_not_shadowed` checks it inside pytest.
+- Step 0: re-ran direction_mechanism once per asset. Only generated_at, git_commit and git_dirty (true -> false) changed. ETH last 40% unchanged: check 1 -0.5274 [-0.6658, -0.3105], check 2 -0.0455 [-0.2460, 0.2096], check 3 0.0148 [-0.1549, 0.1378].
+- config.py: `SIGNALS`, `DIRECTION_SERVED` (all False, D33), `BACKTEST_FEE_PER_SIDE` 0.001, `RANDOM_BASELINE_RUNS` 1000, plus `RANDOM_BASELINE_P_BUY` 0.5 and `RANDOM_BASELINE_SEED` 0 (D34 values, kept in config per AGENTS rule 6).
+- New modules:
+  - `ml/signal/signal_logic.py`: the ONE `generate_signal(asset, direction_probs=None, serve=None)`.
+  - `ml/evaluation/backtest.py`: pure accounting functions.
+  - `ml/evaluation/run_backtest.py`: writes `ml/reports/{asset}/backtest.json` and calls `signal_logic.generate_signal` for every window.
+  - No earlier module changed.
+- Fee accounting (interpretation of D34, recorded in each report's `protocol`): the same rule applies to every strategy and baseline. Each starts in cash; a fee is charged on each change of position; there is no exit fee at the end. Buy-and-hold therefore pays one entry fee. The hit rate counts in-market windows where the asset rose, before fees.
+- Tests: `ml/tests/test_signal_logic.py` (11) and `ml/tests/test_backtest.py` (8). `python -m pytest ml` -> `136 passed`.
+- `python -m ml.evaluation.run_backtest --asset btc|eth|sol` -> exit 0. `git_dirty: true` with a stderr warning (code uncommitted; not re-run).
+  - n_windows 68 / 68 / 37 = folds; `max_label_row_reached` 2820 / 2820 / 1893.
+  - The served strategy has 0 trades and equals always-HOLD exactly (`checks`).
+- STOP-AND-CHECK not triggered: the reference row does not beat buy-and-hold on any asset. Its paired CI is entirely below 0 for BTC and ETH, and contains 0 for SOL.
+
+| backtest.json | BTC | ETH | SOL |
+|---|---|---|---|
+| windows | 68 (2019-10-16 to 2025-04-17) | 68 (2019-10-16 to 2025-04-17) | 37 (2022-10-10 to 2025-09-24) |
+| served: cum return / Sharpe / max DD / trades / hit rate | 0 / null / 0 / 0 / null | 0 / null / 0 / 0 / null | 0 / null / 0 / 0 / null |
+| reference: cum return / Sharpe / max DD / trades / hit rate | 1.108803 / 0.447052 / -0.49491 / 26 / 0.666667 | -0.113371 / 0.174753 / -0.544219 / 16 / 0.416667 | 1.75352 / 0.835992 / -0.273914 / 10 / 0.714286 |
+| reference signals BUY / HOLD / SELL | 18 / 48 / 2 | 12 / 48 / 8 | 7 / 29 / 1 |
+| buy-and-hold: cum return / Sharpe / max DD / trades / hit rate | 11.891251 / 0.930386 / -0.732185 / 1 / 0.647059 | 13.172092 / 0.92021 / -0.764578 / 1 / 0.558824 | 5.051202 / 1.074023 / -0.575206 / 1 / 0.648649 |
+| always-HOLD: cum return / Sharpe / max DD / trades / hit rate | 0 / null / 0 / 0 / null | 0 / null / 0 / 0 / null | 0 / null / 0 / 0 / null |
+| random median: cum return / Sharpe / trades (max DD, hit rate not computed) | 2.537104 / 0.652597 / 34 | 2.873809 / 0.64808 / 34 | 1.302658 / 0.728254 / 19 |
+| reference percentile rank vs random: cum return / Sharpe | 29.3 / 22.5 | 9.0 / 5.6 | 57.3 / 59.0 |
+| paired mean window return, reference - buy-and-hold [95% CI] (half-width) | -0.040236 [-0.079152, -0.000819] (0.039167) | -0.069422 [-0.133323, -0.012689] (0.060317) | -0.05078 [-0.136176, 0.025724] (0.08095) |
+| paired mean window return, reference - always-HOLD [95% CI] (half-width) | 0.022052 [-0.014145, 0.067062] (0.040603) | 0.006082 [-0.021465, 0.034607] (0.028036) | 0.038024 [-0.006143, 0.09219] (0.049167) |
+
+- Power: with 37-68 windows, a non-significant difference means "no demonstrated gain" (D29, D30). The reference row is evidence only and never served (D34).
 
 ## Phase 5a: what ran (from repo root, 2026-10-19 to 2026-10-20)
 
@@ -27,6 +61,48 @@ Next: 5b (signal logic + backtest). Not started; waiting on the user's go-ahead.
 - 5a paused before 0d: D33's draft reason ("is move-vs-no-move information") was not supported by ETH check 2 (CI contains 0). The user approved a reworded reason and a fix-3 sentence.
 - 0d/0e: D33 and D34 appended after D32, in order. D33's final reason: "Reason: ETH's 4c gain shows no demonstrated up/down skill and no demonstrated row-level move-vs-no-move skill (direction_mechanism.json, ETH last 40%, n_effective 27.7, D29/D30: Spearman(P(UP)-P(DOWN), fwd_return_30d) = 0.0148 [-0.1549, 0.1378]; Spearman(P(FLAT), abs fwd_return_30d) = -0.0455 [-0.2460, 0.2096]). It coincides with P(FLAT) tracking trailing volatility (Spearman(P(FLAT), vol_30d) = -0.5274 [-0.6658, -0.3105]), so it cannot support BUY or SELL."
 - Docs: `docs/phases/PHASE_5a_mechanism_check.md`, 2 glossary terms, AGENTS Docs list.
+
+## How to verify Phase 5b yourself (PowerShell, from the repo root)
+
+```powershell
+Set-Location C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest
+
+# 1. The stdlib signal module is not shadowed by ml/signal
+python -c "import signal; print(signal.__file__)"
+
+# 2. All tests, then only the new ones (hand-made fixtures, offline)
+python -m pytest ml -q
+python -m pytest ml/tests/test_signal_logic.py ml/tests/test_backtest.py -q
+
+# 3. The served signal for every asset (D33)
+python -c "from ml.signal.signal_logic import generate_signal; [print(a, generate_signal(a)['signal'], generate_signal(a)['confidence']) for a in ('btc','eth','sol')]"
+
+# 4. Re-run (needs ml/data/raw/*.csv; about a minute per asset). WARNING appears only if code is uncommitted.
+foreach ($a in 'btc','eth','sol') { python -m ml.evaluation.run_backtest --asset $a; "$a exit: $LASTEXITCODE" }
+
+# 5. Windows, checks, served signals, reference vs buy-and-hold cumulative return, paired diff [CI], sealing
+python -c "import json; [print(a, (d:=json.load(open(f'ml/reports/{a}/backtest.json')))['protocol']['n_windows'], d['checks'], d['strategies']['served']['signal_counts'], d['strategies']['reference']['cumulative_return'], d['baselines']['buy_and_hold']['cumulative_return'], (x:=d['paired_mean_window_return']['reference_minus_buy_and_hold'])['estimate'], x['low'], x['high'], d['metadata']['max_label_row_reached']) for a in ('btc','eth','sol')]"
+
+# 6. Random baseline median cumulative return and the reference row's percentile rank
+python -c "import json; [print(a, (r:=json.load(open(f'ml/reports/{a}/backtest.json'))['baselines']['random'])['cumulative_return_percentiles']['p50'], r['reference_percentile_rank']) for a in ('btc','eth','sol')]"
+```
+
+Expected (observed 2026-10-20):
+
+1. A path ending in `Lib\signal.py` (the Python install), not `ml\signal`.
+2. `136 passed`; the two new files show `19 passed`.
+3. `btc UNCERTAIN None`, `eth UNCERTAIN None`, `sol UNCERTAIN None`.
+4. `wrote ...backtest.json` and `exit: 0` for each asset.
+5. Output:
+   - `btc 68 {'served_trades': 0, 'served_equals_always_hold': True} {'UNCERTAIN': 68} 1.108803 11.891251 -0.040236 -0.079152 -0.000819 2820`
+   - `eth 68 {'served_trades': 0, 'served_equals_always_hold': True} {'UNCERTAIN': 68} -0.113371 13.172092 -0.069422 -0.133323 -0.012689 2820`
+   - `sol 37 {'served_trades': 0, 'served_equals_always_hold': True} {'UNCERTAIN': 37} 1.75352 5.051202 -0.05078 -0.136176 0.025724 1893`
+6. Output:
+   - `btc 2.537104 {'cumulative_return': 29.3, 'sharpe': 22.5}`
+   - `eth 2.873809 {'cumulative_return': 9.0, 'sharpe': 5.6}`
+   - `sol 1.302658 {'cumulative_return': 57.3, 'sharpe': 59.0}`
+
+- Everything is deterministic (lbfgs fits; bootstrap and random baseline seeded with 0), so a re-run on the same data reproduces these values.
 
 ## How to verify Phase 5a (PowerShell, from the repo root)
 
