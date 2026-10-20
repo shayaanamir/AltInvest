@@ -109,16 +109,22 @@ def get_dashboard_performance(
         holdings = get_portfolio_holdings(user_id)
         crypto_holdings = [h for h in holdings if h.get("asset_type") == "crypto"]
 
+        # The last 24 hourly prices of every held asset in one aggregation (was one query per holding),
+        # walking the (asset, timestamp) index.
         db = get_db()
+        symbols = sorted({h["symbol"] for h in crypto_holdings if h.get("symbol")})
+        recent = {
+            g["_id"]: g["rows"]
+            for g in db.prices.aggregate([
+                {"$match": {"asset": {"$in": symbols}}},
+                {"$sort": {"asset": 1, "timestamp": -1}},
+                {"$group": {"_id": "$asset", "rows": {"$firstN": {"input": {"timestamp": "$timestamp", "price": "$price"}, "n": 24}}}},
+            ])
+        } if symbols else {}
+
         points_map: dict[str, float] = {}
         for h in crypto_holdings:
-            cursor = db.prices.find(
-                {"asset": h["symbol"]},
-                sort=[("timestamp", -1)],
-                limit=24,
-                projection={"_id": 0},
-            )
-            for p in cursor:
+            for p in recent.get(h.get("symbol"), []):
                 ts = p["timestamp"]
                 key = ts.strftime("%Y-%m-%dT%H:00:00Z") if hasattr(ts, "strftime") else str(ts)
                 price, quantity = _as_number(p.get("price")), _as_number(h.get("quantity"))

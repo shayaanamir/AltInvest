@@ -10,6 +10,7 @@ const EMPTY_RESULTS = { assets: [], collections: [] };
 export default function TopbarSearch() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState(EMPTY_RESULTS);
+  const [recent, setRecent] = useState([]); // the user's recent searches, shown before typing
   const { isOpen, open, close, ref } = useDisclosure();
   const inputRef = useRef(null);
   const navigate = useNavigate();
@@ -29,6 +30,21 @@ export default function TopbarSearch() {
     };
   }, [query]);
 
+  // Recent searches load each time the panel opens. They're a convenience: a failure just hides them.
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    topbarApi.getRecentSearches().then((list) => !cancelled && setRecent(list)).catch(() => !cancelled && setRecent([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
+
+  const clearRecent = () => {
+    setRecent([]);
+    topbarApi.clearRecentSearches().catch(() => {});
+  };
+
   // "/" focuses search from anywhere, unless the person is already typing
   useEffect(() => {
     function handleShortcut(event) {
@@ -43,6 +59,7 @@ export default function TopbarSearch() {
   }, []);
 
   const handleSelect = (item) => {
+    if (query.trim()) topbarApi.recordSearch(query.trim()).catch(() => {}); // remembered for next time
     close();
     setQuery("");
     if (item.kind === "asset") {
@@ -87,7 +104,19 @@ export default function TopbarSearch() {
         <>
           <div className="tb-search-backdrop" onClick={close} />
           <div className="tb-search-panel">
-            {!hasQuery ? (
+            {!hasQuery && recent.length > 0 ? (
+              <div className="tb-search-group">
+                <div className="tb-search-group-title tb-search-recent-head">
+                  <span>Recent searches</span>
+                  <button type="button" className="tb-search-recent-clear" onClick={clearRecent}>Clear</button>
+                </div>
+                {recent.map((q) => (
+                  <button key={q} type="button" className="tb-search-item" onClick={() => { setQuery(q); inputRef.current?.focus(); }}>
+                    <span className="tb-search-item-name">{q}</span>
+                  </button>
+                ))}
+              </div>
+            ) : !hasQuery ? (
               <div className="tb-search-empty">
                 Start typing to search assets, NFT collections, and tokenized assets.
               </div>

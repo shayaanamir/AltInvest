@@ -49,6 +49,11 @@ export const topbarApi = {
 
   markNotificationRead: async (id) => apiFetch(`/notifications/${id}/read`, { method: "PATCH" }),
 
+  // The signed-in user's recent searches (server-side, de-duplicated, newest first).
+  getRecentSearches: async () => (await apiFetch("/search/history?limit=6")).map((h) => h.query),
+  recordSearch: (query) => apiFetch("/search/history", { method: "POST", body: JSON.stringify({ query }) }),
+  clearRecentSearches: () => apiFetch("/search/history", { method: "DELETE" }),
+
   // Search runs against the same covered-universe rows Discover uses, so each result carries
   // its stored price / floor, AAI score and the user's held / watching flags.
   search: async (query) => {

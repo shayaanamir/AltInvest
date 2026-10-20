@@ -125,8 +125,20 @@ def _warmup_sentiment_engine() -> None:
         print(f"[startup] Sentiment engine warmup skipped/failed: {exc}")
 
 
+def _ensure_indexes() -> None:
+    try:
+        from db.indexes import ensure_indexes
+        result = ensure_indexes()
+        _log.info("[startup] indexes: %d ok, %d failed", result["created_or_present"], len(result["failed"]))
+    except Exception as exc:
+        _log.error("[startup] index creation skipped: %s: %s", type(exc).__name__, redact(exc))
+
+
 @app.on_event("startup")
 def on_startup():
+    # 0. Indexes the queries rely on (idempotent).
+    threading.Thread(target=_ensure_indexes, daemon=True, name="ensure-indexes").start()
+
     # 1. Warm up FinBERT so the first /sentiment request bears no model-load cost.
     threading.Thread(target=_warmup_sentiment_engine, daemon=True).start()
 
@@ -143,6 +155,10 @@ def on_startup():
     # 4. USD exchange rates for the display-currency setting (Frankfurter / ECB), every 6 hours.
     from controllers.fx_controller import run_fx_scheduler
     threading.Thread(target=run_fx_scheduler, daemon=True, name="fx-rates").start()
+
+    # 5. AAI scores for every covered crypto asset, so lists don't depend on someone opening a detail page.
+    from controllers.aai_controller import run_aai_refresh_scheduler
+    threading.Thread(target=run_aai_refresh_scheduler, daemon=True, name="aai-refresh").start()
 
 
 @app.get("/")

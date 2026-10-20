@@ -21,43 +21,56 @@ from db.queries import (
     add_watchlist_item,
     remove_watchlist_item,
     get_asset,
-    get_asset_market_data_latest,
     get_nft_collection,
-    get_nft_market_data_latest,
-    get_latest_aai_score,
+    get_assets_by_id,
+    get_asset_market_data_latest_by_id,
+    get_nft_collections_by_slug,
+    get_nft_market_data_latest_by_slug,
+    get_latest_aai_scores_for,
 )
 
 router = APIRouter(tags=["Watchlists"])
 
 
-def _enrich_item(item: dict) -> dict:
-    item = serialize_dates(item)
-    symbol_or_slug = item["symbol_or_slug"]
+def _enrich_watchlists(watchlists: list) -> list:
+    """
+    Adds name / price / 24h change / AAI to every item of every list, with one batched
+    lookup per collection for all items together (not several queries per item).
+    """
+    items = [i for w in watchlists for i in w.get("items", [])]
+    symbols = [i["symbol_or_slug"] for i in items if i.get("type") == "crypto"]
+    slugs = [i["symbol_or_slug"] for i in items if i.get("type") == "nft"]
+    assets = get_assets_by_id(symbols)
+    markets = get_asset_market_data_latest_by_id(symbols)
+    collections = get_nft_collections_by_slug(slugs)
+    nft_markets = get_nft_market_data_latest_by_slug(slugs)
+    crypto_aai = get_latest_aai_scores_for("crypto", [x.upper() for x in symbols])
+    nft_aai = get_latest_aai_scores_for("nft", slugs)
 
-    if item["type"] == "crypto":
-        asset = get_asset(symbol_or_slug) or {}
-        market = get_asset_market_data_latest(symbol_or_slug) or {}
-        aai = get_latest_aai_score("crypto", symbol_or_slug)
-        item["name"] = asset.get("name", symbol_or_slug)
-        item["price"] = market.get("price")
-        item["change_24h"] = market.get("change_24h")
-        item["aai_score"] = aai.get("aai_score") if aai else None
-    elif item["type"] == "nft":
-        collection = get_nft_collection(symbol_or_slug) or {}
-        market = get_nft_market_data_latest(symbol_or_slug) or {}
-        aai = get_latest_aai_score("nft", symbol_or_slug)
-        item["name"] = collection.get("name", symbol_or_slug)
-        item["price"] = market.get("floor_usd")
-        item["change_24h"] = market.get("change_24h")
-        item["aai_score"] = aai.get("aai_score") if aai else None
+    def enrich(item: dict) -> dict:
+        item = serialize_dates(item)
+        key = item["symbol_or_slug"]
+        if item["type"] == "crypto":
+            sym = key.upper()
+            market = markets.get(sym, {})
+            item["name"] = assets.get(sym, {}).get("name", key)
+            item["price"] = market.get("price")
+            item["change_24h"] = market.get("change_24h")
+            item["aai_score"] = (crypto_aai.get(sym) or {}).get("aai_score")
+        elif item["type"] == "nft":
+            market = nft_markets.get(key, {})
+            item["name"] = collections.get(key, {}).get("name", key)
+            item["price"] = market.get("floor_usd")
+            item["change_24h"] = market.get("change_24h")
+            item["aai_score"] = (nft_aai.get(key) or {}).get("aai_score")
+        return item
 
-    return item
-
-
-def _enrich_watchlist(w: dict) -> dict:
-    w = serialize_dates(w)
-    w["items"] = [_enrich_item(i) for i in w.get("items", [])]
-    return w
+    out = []
+    for w in watchlists:
+        w = serialize_dates(w)
+        w["items"] = [enrich(i) for i in w.get("items", [])]
+        out.append(w)
+    return out
 
 
 # ── GET /watchlists ──────────────────────────────────────────────────────────
@@ -65,7 +78,7 @@ def _enrich_watchlist(w: dict) -> dict:
 @router.get("/watchlists", response_model=list[WatchlistOut])
 def list_watchlists(user_id: ObjectId = Depends(get_current_user_id)):
     watchlists = get_watchlists(user_id)
-    return [_enrich_watchlist(w) for w in watchlists]
+    return _enrich_watchlists(watchlists)
 
 
 # ── POST /watchlists ─────────────────────────────────────────────────────────

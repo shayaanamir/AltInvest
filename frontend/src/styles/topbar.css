@@ -71,6 +71,12 @@
   color: var(--sv2-text-mute); padding: 4px 10px 6px;
 }
 
+.tb-search-recent-head { display: flex; align-items: center; justify-content: space-between; }
+.tb-search-recent-clear {
+  background: none; border: none; padding: 0; cursor: pointer; font-family: inherit;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--sv2-accent);
+}
+
 .tb-search-item {
   width: 100%; display: flex; align-items: center; justify-content: space-between;
   gap: 10px; background: none; border: none; border-radius: 9px;

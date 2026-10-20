@@ -7,6 +7,8 @@ score null (with `missing_inputs` / `note` saying why). Sentiment is the one com
 stand-in (a neutral 50 at zero confidence), and the response flags when that happened.
 """
 
+import time
+import logging
 from datetime import datetime, timezone
 from aai_engine.aai import compute_aai, normalise_sentiment, normalise_expected_return
 
@@ -66,9 +68,13 @@ def _expected_return_pct(pred: dict, asset: str) -> float | None:
     return (target / price - 1.0) * 100.0
 
 
-def compute_aai_response(asset: str) -> dict:
+def compute_aai_response(asset: str, sentiment: dict | None = None) -> dict:
+    """
+    `sentiment` lets a caller pass a reading it already has ({sentiment_score, confidence,
+    available}); without it the engine is asked, which may refresh a stale reading.
+    """
     pred = _get_real_prediction(asset)
-    sent = _get_real_sentiment(asset)
+    sent = sentiment if sentiment is not None else _get_real_sentiment(asset)
     risk = _get_real_risk(asset)
 
     expected = _expected_return_pct(pred, asset) if pred else None
@@ -112,3 +118,56 @@ def compute_aai_response(asset: str) -> dict:
 def is_complete(result: dict) -> bool:
     """True when every input was real (prediction, risk and sentiment): only then may it be cached."""
     return result.get("aai_score") is not None and result.get("sentiment_available") is not False
+
+
+# ── Background refresh ───────────────────────────────────────────────────────
+# Discover, Watchlists, Compare and Trending read AAI from `aai_scores`. Without this job a score
+# only appeared after someone opened that asset's intelligence panel.
+
+_log = logging.getLogger("aai_refresh")
+AAI_REFRESH_SECONDS = 30 * 60   # well inside the 60-minute freshness window the intelligence route uses
+
+
+def refresh_all_aai_scores() -> dict:
+    """
+    Computes and stores the AAI for every covered crypto asset. Uses only stored sentiment
+    readings (never runs the sentiment pipeline), and stores only complete scores; an asset
+    missing a prediction, risk score or recent sentiment keeps its previous row.
+    Returns {"stored": [...], "skipped": {asset: reason}}.
+    """
+    from db.queries import get_supported_assets, upsert_aai_score_generalized
+    from controllers.market_controller import live_sentiment_by_symbol
+
+    live = live_sentiment_by_symbol()
+    stored, skipped = [], {}
+    for a in get_supported_assets():
+        symbol = a["asset_id"].upper()
+        reading = live.get(symbol)
+        sentiment = (
+            {"sentiment_score": reading["score"], "confidence": reading["confidence"], "available": True}
+            if reading else {"sentiment_score": 0.0, "confidence": 0.0, "available": False}
+        )
+        result = compute_aai_response(symbol, sentiment=sentiment)
+        if not is_complete(result):
+            skipped[symbol] = ", ".join(result["missing_inputs"] + ([] if reading else ["recent sentiment"]))
+            continue
+        upsert_aai_score_generalized(
+            "crypto", symbol,
+            {**result, "target_type": "crypto", "target_id": symbol, "sentiment_trend": reading.get("trend"),
+             "timestamp": datetime.now(timezone.utc)},
+        )
+        stored.append(symbol)
+    return {"stored": stored, "skipped": skipped}
+
+
+def run_aai_refresh_scheduler(initial_delay_seconds: int = 120) -> None:
+    """Daemon-thread loop: first run shortly after startup (sentiment readings load first), then every 30 min."""
+    time.sleep(initial_delay_seconds)
+    while True:
+        try:
+            outcome = refresh_all_aai_scores()
+            _log.info("[aai] stored %d score(s); skipped %s", len(outcome["stored"]), outcome["skipped"] or "none")
+        except Exception as exc:
+            from utils.http_errors import redact
+            _log.error("[aai] refresh failed: %s: %s", type(exc).__name__, redact(exc))
+        time.sleep(AAI_REFRESH_SECONDS)
