@@ -25,6 +25,7 @@ _TOUCH_INTERVAL = timedelta(minutes=5)
 class CurrentSession:
     user_id: ObjectId
     session_id: ObjectId
+    email: str
 
 
 def _resolve(token: str) -> Optional[CurrentSession]:
@@ -45,12 +46,19 @@ def _resolve(token: str) -> Optional[CurrentSession]:
         return None
 
     now = datetime.now(timezone.utc)
+    # Mongo's TTL sweep runs about once a minute, so check the expiry here too.
+    expires = row.get("expires_at")
+    if expires is not None:
+        if expires.tzinfo is None:
+            expires = expires.replace(tzinfo=timezone.utc)
+        if expires <= now:
+            return None
     last = row.get("last_active")
     if last is not None and last.tzinfo is None:
         last = last.replace(tzinfo=timezone.utc)
     if last is None or now - last > _TOUCH_INTERVAL:
         touch_user_session(session_id, now)
-    return CurrentSession(user_id=user_id, session_id=session_id)
+    return CurrentSession(user_id=user_id, session_id=session_id, email=payload.get("email", ""))
 
 
 def get_current_session(authorization: Optional[str] = Header(None)) -> CurrentSession:

@@ -24,7 +24,11 @@ if JWT_SECRET == _DEV_JWT_SECRET:
         "Anyone who knows it can forge logins. Set JWT_SECRET in .env for any shared or deployed instance."
     )
 JWT_ALGORITHM = "HS256"
+# Sliding sessions: a token lives JWT_EXPIRY_HOURS; while the user is active the client trades it for
+# a fresh one (POST /auth/refresh), so only 24h of inactivity signs them out — or SESSION_MAX_DAYS
+# after the original sign-in, whichever comes first.
 JWT_EXPIRY_HOURS = 24
+SESSION_MAX_DAYS = 30
 RESET_TOKEN_EXPIRY_MINUTES = 30
 VERIFY_TOKEN_EXPIRY_HOURS = 24
 

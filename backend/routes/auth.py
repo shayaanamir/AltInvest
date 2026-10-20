@@ -14,6 +14,7 @@ AUTH-06 — Change password from Settings (requires the current password).
 AUTH-08 — GET /auth/me: who the token belongs to (light; /profile adds activity counts).
 AUTH-09 — DELETE /auth/account: permanent, password-confirmed, removes everything the user owns.
 Attempt limits on login, signup, password reset and password re-entry: see auth/rate_limit.py.
+AUTH-10 — POST /auth/refresh: sliding sessions (see auth/security.py JWT_EXPIRY_HOURS / SESSION_MAX_DAYS).
 AUTH-07 — Sessions: every login is a row in `user_sessions`; Settings lists them and can
           revoke them (one, or all but this one). Logout drops the caller's own row.
 
@@ -38,7 +39,7 @@ from auth.security import (
     verify_password, create_access_token, hash_password,
     create_reset_token, decode_reset_token,
     create_verify_token, decode_verify_token,
-    decode_access_token, JWT_EXPIRY_HOURS, password_problem,
+    decode_access_token, JWT_EXPIRY_HOURS, SESSION_MAX_DAYS, password_problem,
 )
 from auth.dependencies import get_current_user_id, get_current_session, CurrentSession
 from auth import rate_limit as rl
@@ -447,6 +448,44 @@ def revoke_session(session_id: str, session: CurrentSession = Depends(get_curren
     if not deleted:
         raise HTTPException(status_code=404, detail="Session not found.")
     return Response(status_code=204)
+
+
+@router.post("/auth/refresh")
+def refresh(session: CurrentSession = Depends(get_current_session)):
+    """
+    Trades a live token for a fresh one on the same session, pushing the session's expiry to
+    JWT_EXPIRY_HOURS from now (capped at SESSION_MAX_DAYS after sign-in). Once the cap is reached
+    there is nothing to extend: the answer is {"token": null} and the current token runs out as
+    issued, after which the user signs in again.
+    """
+    from db.queries import get_user_session, extend_user_session
+    try:
+        row = get_user_session(str(session.session_id))
+    except Exception as exc:
+        raise db_unavailable(exc)
+    if not row:
+        raise HTTPException(status_code=401, detail="Invalid or expired token.")
+
+    now = datetime.now(timezone.utc)
+    cap = _utc(row["created_at"]) + timedelta(days=SESSION_MAX_DAYS)
+    new_expiry = min(now + timedelta(hours=JWT_EXPIRY_HOURS), cap)
+    current_expiry = _utc(row["expires_at"])
+    if new_expiry <= current_expiry:
+        return {"token": None, "expires_at": current_expiry}
+
+    try:
+        if not extend_user_session(session.session_id, new_expiry):
+            raise HTTPException(status_code=401, detail="Invalid or expired token.")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise db_unavailable(exc)
+
+    token = create_access_token(
+        user_id=str(session.user_id), email=session.email,
+        session_id=str(session.session_id), expires_at=new_expiry,
+    )
+    return {"token": token, "expires_at": new_expiry}
 
 
 @router.post("/auth/logout", status_code=204)

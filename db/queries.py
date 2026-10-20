@@ -657,6 +657,15 @@ def touch_user_session(session_id: ObjectId, when: datetime) -> None:
     _sessions().update_one({"_id": session_id}, {"$set": {"last_active": when}})
 
 
+def extend_user_session(session_id: ObjectId, expires_at: datetime) -> bool:
+    """Moves a live session's expiry later (never earlier). False if the session is gone."""
+    result = _sessions().update_one(
+        {"_id": session_id, "expires_at": {"$lt": expires_at}},
+        {"$set": {"expires_at": expires_at, "last_active": datetime.now(timezone.utc)}},
+    )
+    return result.matched_count > 0
+
+
 def list_user_sessions(user_id: ObjectId) -> list:
     now = datetime.now(timezone.utc)
     return list(_sessions().find(

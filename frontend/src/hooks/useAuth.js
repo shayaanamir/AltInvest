@@ -24,7 +24,7 @@ export function clearSession() {
 }
 
 /** The token's payload, or null if it isn't a readable JWT. Not verified — the server does that. */
-function readTokenPayload(token) {
+export function readTokenPayload(token) {
   try {
     const part = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
     return JSON.parse(atob(part.padEnd(part.length + ((4 - (part.length % 4)) % 4), "=")));

@@ -4,6 +4,7 @@ import { getToken, clearSession } from "../hooks/useAuth";
 import { emitSessionExpired } from "../hooks/sessionEvents";
 import { ApiError, kindFromStatus } from "../errors/errorCatalog";
 import { reportApiReachable } from "../errors/connectionStatus";
+import { maybeRefreshSession } from "./sessionRefresh";
 
 const REQUEST_TIMEOUT_MS = 20000;
 
@@ -51,5 +52,6 @@ export async function apiFetch(path, options = {}) {
       detail,
     });
   }
+  if (token) maybeRefreshSession();
   return res.status === 204 ? null : res.json();
 }
