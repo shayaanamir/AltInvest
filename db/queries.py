@@ -259,29 +259,6 @@ def get_portfolio_holdings(user_id: ObjectId) -> list:
     return out
 
 
-def insert_portfolio_holding(user_id: ObjectId, payload: dict) -> str:
-    db = get_db()
-    now = datetime.now(timezone.utc)
-    doc = {**payload, "user_id": user_id, "date_added": now, "updated_at": now}
-    result = db.portfolio_holdings.insert_one(doc)
-    return str(result.inserted_id)
-
-
-def update_portfolio_holding(user_id: ObjectId, holding_id: str, payload: dict) -> bool:
-    db = get_db()
-    result = db.portfolio_holdings.update_one(
-        {"_id": ObjectId(holding_id), "user_id": user_id},
-        {"$set": {**payload, "updated_at": datetime.now(timezone.utc)}},
-    )
-    return result.matched_count > 0
-
-
-def delete_portfolio_holding(user_id: ObjectId, holding_id: str) -> bool:
-    db = get_db()
-    result = db.portfolio_holdings.delete_one({"_id": ObjectId(holding_id), "user_id": user_id})
-    return result.deleted_count > 0
-
-
 def get_portfolio_snapshots(user_id: ObjectId, days: int = 365) -> list:
     db = get_db()
     cursor = db.portfolio_snapshots.find(

@@ -17,17 +17,14 @@ from auth.dependencies import get_current_user_id
 from models.schemas import (
     PortfolioHoldingIn,
     PortfolioHoldingPatch,
+    PortfolioTradeIn,
     PortfolioHoldingOut,
     PortfolioSummary,
     AllocationSlice,
 )
 from controllers.portfolio_controller import get_valued_holdings
-from db.queries import (
-    insert_portfolio_holding,
-    update_portfolio_holding,
-    delete_portfolio_holding,
-    get_portfolio_snapshots,
-)
+from controllers import holdings_controller as holdings
+from controllers.portfolio_intelligence import build_intelligence
 
 router = APIRouter(tags=["Portfolio"])
 
@@ -127,24 +124,21 @@ def list_portfolio_holdings(user_id: ObjectId = Depends(get_current_user_id)):
     return [_serialize(h) for h in valued]
 
 
+# ── GET /portfolio/intelligence ─────────────────────────────────────────────
+
+@router.get("/portfolio/intelligence")
+def get_portfolio_intelligence(user_id: ObjectId = Depends(get_current_user_id)):
+    return build_intelligence(user_id)
+
+
 # ── POST /portfolio/holdings ────────────────────────────────────────────────
 
 @router.post("/portfolio/holdings", status_code=201)
 def create_portfolio_holding(
     payload: PortfolioHoldingIn, user_id: ObjectId = Depends(get_current_user_id)
 ):
-    if payload.asset_type not in ("crypto", "nft"):
-        raise HTTPException(status_code=422, detail="asset_type must be 'crypto' or 'nft'.")
-    if payload.asset_type == "crypto" and not payload.symbol:
-        raise HTTPException(status_code=422, detail="symbol is required for crypto holdings.")
-    if payload.asset_type == "nft" and not (payload.nft_collection_slug and payload.nft_token_id):
-        raise HTTPException(
-            status_code=422,
-            detail="nft_collection_slug and nft_token_id are required for nft holdings.",
-        )
-
-    holding_id = insert_portfolio_holding(user_id, payload.model_dump(exclude_none=True))
-    return {"id": holding_id}
+    """Adds a holding. Crypto the user already holds is merged into that holding ({"merged": true})."""
+    return holdings.add_holding(user_id, payload.model_dump(exclude_none=True))
 
 
 # ── PATCH /portfolio/holdings/{id} ──────────────────────────────────────────
@@ -153,16 +147,12 @@ def create_portfolio_holding(
 def patch_portfolio_holding(
     holding_id: str, payload: PortfolioHoldingPatch, user_id: ObjectId = Depends(get_current_user_id)
 ):
-    # Typed and validated by PortfolioHoldingPatch: numbers only, finite, quantity > 0.
+    """A correction to what was recorded. Typed by PortfolioHoldingPatch (finite numbers, quantity > 0)."""
     update = payload.model_dump(exclude_none=True)
     if not update:
         raise HTTPException(status_code=422, detail="No updatable fields provided.")
-
     require_object_id(holding_id, "holding")
-    updated = update_portfolio_holding(user_id, holding_id, update)
-
-    if not updated:
-        raise HTTPException(status_code=404, detail="Holding not found.")
+    holdings.correct_holding(user_id, holding_id, update)
     return {"status": "updated"}
 
 
@@ -173,8 +163,29 @@ def remove_portfolio_holding(
     holding_id: str, user_id: ObjectId = Depends(get_current_user_id)
 ):
     require_object_id(holding_id, "holding")
-    deleted = delete_portfolio_holding(user_id, holding_id)
-
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Holding not found.")
+    holdings.remove_holding(user_id, holding_id)
     return None
+
+
+# ── Transactions ────────────────────────────────────────────────────────────
+
+@router.post("/portfolio/holdings/{holding_id}/transactions", status_code=201)
+def record_trade(
+    holding_id: str, payload: PortfolioTradeIn, user_id: ObjectId = Depends(get_current_user_id)
+):
+    """Record a buy or sell against a crypto holding. Selling everything closes the holding."""
+    require_object_id(holding_id, "holding")
+    return holdings.trade(user_id, holding_id, payload.type, payload.quantity, payload.price_usd)
+
+
+@router.get("/portfolio/holdings/{holding_id}/transactions")
+def holding_transactions(holding_id: str, user_id: ObjectId = Depends(get_current_user_id)):
+    require_object_id(holding_id, "holding")
+    return holdings.list_transactions(user_id, holding_id)
+
+
+@router.get("/portfolio/transactions")
+def all_transactions(
+    limit: int = Query(100, ge=1, le=500), user_id: ObjectId = Depends(get_current_user_id)
+):
+    return holdings.list_transactions(user_id, limit=limit)

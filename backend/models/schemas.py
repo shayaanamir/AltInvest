@@ -184,7 +184,7 @@ class PortfolioHoldingIn(BaseModel):
     avg_buy_price_usd: Optional[float] = Field(None, ge=0, allow_inf_nan=False)
     avg_buy_price_eth: Optional[float] = Field(None, ge=0, allow_inf_nan=False)
     avg_buy_eth_usd_rate: Optional[float] = Field(None, ge=0, allow_inf_nan=False)
-    cost_basis_usd: Optional[float] = Field(None, ge=0, allow_inf_nan=False)
+    # No cost_basis_usd: the server computes it from quantity x price (controllers/holdings_controller.py).
 
 
 class PortfolioHoldingPatch(BaseModel):
@@ -193,7 +193,13 @@ class PortfolioHoldingPatch(BaseModel):
     avg_buy_price_usd: Optional[float] = Field(None, ge=0, allow_inf_nan=False)
     avg_buy_price_eth: Optional[float] = Field(None, ge=0, allow_inf_nan=False)
     avg_buy_eth_usd_rate: Optional[float] = Field(None, ge=0, allow_inf_nan=False)
-    cost_basis_usd: Optional[float] = Field(None, ge=0, allow_inf_nan=False)
+
+
+class PortfolioTradeIn(BaseModel):
+    """POST /portfolio/holdings/{id}/transactions: buy more of, or sell some of, a crypto holding."""
+    type: str = Field(pattern="^(buy|sell)$")
+    quantity: float = Field(gt=0, allow_inf_nan=False)
+    price_usd: float = Field(ge=0, allow_inf_nan=False)
 
 
 class WatchlistCreate(BaseModel):

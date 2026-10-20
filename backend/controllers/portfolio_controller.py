@@ -85,8 +85,8 @@ def get_valued_holdings(user_id) -> list[dict]:
         h = {**raw, **{f: _num(raw.get(f)) for f in _NUMERIC_FIELDS if f in raw}}
 
         if h.get("asset_type") == "crypto":
-            symbol = h.get("symbol", "")
-            asset_meta = assets_meta.get(symbol.upper(), {})
+            symbol = (h.get("symbol") or "").upper()   # older rows may have stored "btc"
+            asset_meta = assets_meta.get(symbol, {})
             valued.append(_valued(h, price_by_asset.get(symbol), h.get("quantity"), asset_meta.get("name", symbol)))
         elif h.get("asset_type") == "nft":
             slug = h.get("nft_collection_slug", "")

@@ -40,6 +40,10 @@ INDEXES = {
         ([("target_type", ASC), ("target_id", ASC), ("date", ASC)], {}),   # the daily upsert's filter
     ],
     "portfolio_holdings": [([("user_id", ASC), ("asset_type", ASC)], {})],
+    "portfolio_transactions": [
+        ([("user_id", ASC), ("holding_id", ASC), ("timestamp", DESC)], {}),
+        ([("user_id", ASC), ("timestamp", DESC)], {}),
+    ],
     "portfolio_snapshots": [([("user_id", ASC), ("snapshot_date", DESC)], {})],
     "watchlists": [([("user_id", ASC)], {})],
     "alerts": [([("user_id", ASC), ("status", ASC)], {})],

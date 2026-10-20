@@ -81,9 +81,20 @@ async function fetchUniverseById() {
   return new Map(rows.map((r) => [r.id, r]));
 }
 
+// One request serves both the summary card and the intelligence panel.
+let _intelPromise = null;
+function fetchIntelligence() {
+  if (!_intelPromise) {
+    _intelPromise = apiFetch("/portfolio/intelligence").finally(() => {
+      setTimeout(() => { _intelPromise = null; }, 0);
+    });
+  }
+  return _intelPromise;
+}
+
 export const portfolioApi = {
   getSummary: async () => {
-    const s = await apiFetch("/portfolio/summary");
+    const [s, intel] = await Promise.all([apiFetch("/portfolio/summary"), fetchIntelligence()]);
     return {
       totalBalance: s.total_value_usd,
       totalCostBasis: s.total_cost_basis_usd,
@@ -92,12 +103,13 @@ export const portfolioApi = {
       totalProfitLossPositive: s.total_unrealised_pnl_usd >= 0,
       positionsCount: s.holding_count,
       unpricedCount: s.unpriced_holding_count ?? 0, // holdings with no price, left out of the totals above
-      // Diversification isn't computed server-side yet (no
-      // /portfolio/intelligence route) — placeholder until it exists.
-      diversificationScore: 50,
-      diversificationLabel: "Not yet available",
-      needsRebalancing: false,
-      rebalanceNote: "Rebalancing insights are coming soon.",
+      // From GET /portfolio/intelligence: 0-100 from the spread of position values (null with no priced holdings).
+      diversificationScore: intel.diversification_score,
+      diversificationLabel: intel.diversification_label,
+      needsRebalancing: intel.concentrated,
+      rebalanceNote: intel.largest_position
+        ? `Largest position: ${intel.largest_position.name}, ${intel.largest_position.weight_pct}% of value.`
+        : "",
     };
   },
 
@@ -128,55 +140,43 @@ export const portfolioApi = {
       .map((h) => mapNftHolding(h, universe.get(h.nft_collection_slug)));
   },
 
-  // No /portfolio/intelligence route exists yet, so this is computed here from the user's
-  // holdings and the stored signal / sentiment / risk of each held asset.
+  // Computed on the server (GET /portfolio/intelligence), weighted by each position's current value.
   getIntelligence: async () => {
-    const [holdings, universe] = await Promise.all([fetchAllHoldings(), fetchUniverseById().catch(() => new Map())]);
-    const cryptoHoldings = holdings.filter((h) => h.asset_type === "crypto");
+    const i = await fetchIntelligence();
+    const LABELS = { BUY: "Buy", HOLD: "Hold", SELL: "Sell" };
     const signalMix = {};
-    let sentimentSum = 0;
-    let sentimentCount = 0;
-    let riskSum = 0;
-    let riskCount = 0;
-
-    cryptoHoldings.forEach((h) => {
-      const meta = universe.get(h.symbol);
-      if (meta?.signal) {
-        const label = { BUY: "Buy", HOLD: "Hold", SELL: "Sell" }[meta.signal] || "Hold";
-        signalMix[label] = (signalMix[label] || 0) + 1;
-      }
-      if (meta?.sentimentScore != null) {
-        sentimentSum += meta.sentimentScore;
-        sentimentCount += 1;
-      }
-      if (meta?.riskScore != null) {
-        riskSum += meta.riskScore;
-        riskCount += 1;
-      }
+    Object.entries(i.signal_mix || {}).forEach(([k, n]) => {
+      signalMix[LABELS[k] || k] = n;
     });
-
-    const suggestions = [];
-    if (holdings.length === 0) {
-      suggestions.push("No holdings yet — add assets to your portfolio to view risk, sentiment, and AI signal breakdown.");
-    } else if (cryptoHoldings.length === 0) {
-      suggestions.push("Only NFT holdings detected — add crypto assets to compute risk volatility and sentiment exposure.");
-    } else {
-      suggestions.push("Portfolio intelligence is computed from the stored scores of the assets you hold.");
-    }
-
     return {
-      aggregateRiskScore: riskCount ? Math.round(riskSum / riskCount) : null,
-      sentimentExposure: sentimentCount ? round2(sentimentSum / sentimentCount) : null,
+      aggregateRiskScore: i.aggregate_risk_score,
+      sentimentExposure: i.sentiment_exposure != null ? round2(i.sentiment_exposure) : null,
       signalMix,
-      suggestions,
-      concentrated: false,
+      suggestions: i.suggestions || [],
+      concentrated: i.concentrated,
+      diversificationScore: i.diversification_score,
+      largestPosition: i.largest_position,
     };
   },
 
+  // A holding's history: buys, sells, corrections, removal.
+  getTransactions: (holdingId) => apiFetch(`/portfolio/holdings/${holdingId}/transactions`),
+
+  // Buy more of / sell some of a crypto holding. Resolves with { quantity, closed, realised_pnl_usd }.
+  recordTrade: (holdingId, { type, quantity, price_usd }) =>
+    apiFetch(`/portfolio/holdings/${holdingId}/transactions`, {
+      method: "POST",
+      body: JSON.stringify({ type, quantity, price_usd }),
+    }).then((res) => {
+      invalidateHoldingsCache();
+      return res;
+    }),
+
   addHolding: (payload) => {
     // payload shape matches backend/models/schemas.py::PortfolioHoldingIn
-    // e.g. { asset_type: "crypto", symbol: "SOL", quantity: 2.5,
-    //        avg_buy_price_usd: 150, cost_basis_usd: 375 }
+    // e.g. { asset_type: "crypto", symbol: "SOL", quantity: 2.5, avg_buy_price_usd: 150 }
+    // The server works out the cost basis, and merges into an existing holding of the same asset
+    // (the response then has merged: true).
     return apiFetch("/portfolio/holdings", {
       method: "POST",
       body: JSON.stringify(payload),
