@@ -8,17 +8,39 @@ JWT_SECRET MUST be set via environment variable in any real deployment.
 The default below is for local development only and must never be
 relied on outside a dev machine.
 """
+import logging
 import os
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
 import jwt
 
-JWT_SECRET = os.getenv("JWT_SECRET", "insecure-dev-secret-change-me")
+_DEV_JWT_SECRET = "insecure-dev-secret-change-me"
+# `or`, not a getenv default: docker-compose passes an unset variable through as "".
+JWT_SECRET = os.getenv("JWT_SECRET") or _DEV_JWT_SECRET
+if JWT_SECRET == _DEV_JWT_SECRET:
+    logging.getLogger("auth").warning(
+        "JWT_SECRET is not set; signing tokens with the built-in development secret. "
+        "Anyone who knows it can forge logins. Set JWT_SECRET in .env for any shared or deployed instance."
+    )
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRY_HOURS = 24
 RESET_TOKEN_EXPIRY_MINUTES = 30
 VERIFY_TOKEN_EXPIRY_HOURS = 24
+
+PASSWORD_MIN_LENGTH = 8
+# bcrypt only reads the first 72 bytes (newer versions raise past that), so longer is refused.
+PASSWORD_MAX_BYTES = 72
+
+
+def password_problem(password: str, label: str = "Password") -> str | None:
+    """Why a new password is unacceptable, or None if it's fine."""
+    if len(password or "") < PASSWORD_MIN_LENGTH:
+        return f"{label} must be at least {PASSWORD_MIN_LENGTH} characters."
+    if len(password.encode("utf-8")) > PASSWORD_MAX_BYTES:
+        return f"{label} is too long (at most {PASSWORD_MAX_BYTES} bytes, about {PASSWORD_MAX_BYTES} characters)."
+    return None
+
 
 def hash_password(plain_password: str) -> str:
     """Hashes a plaintext password with bcrypt for storage."""

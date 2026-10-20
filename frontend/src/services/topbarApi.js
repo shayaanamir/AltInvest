@@ -1,6 +1,7 @@
 import { apiFetch } from "./apiClient";
 import { fetchUniverse } from "./assetRepository";
 import { getStoredUser } from "../hooks/useAuth";
+import { authApi } from "./authApi";
 
 const SEARCH_RESULT_LIMIT = 5;
 
@@ -13,12 +14,12 @@ function initialsFor(name) {
 export const topbarApi = {
   getCurrentUser: async () => {
     try {
-      const profile = await apiFetch("/profile");
+      const user = await authApi.me();
       return {
-        name: profile.name || "User",
-        email: profile.email || "",
-        initials: profile.avatar_initials || initialsFor(profile.name),
-        color: profile.avatar_color || "var(--sv2-accent)",
+        name: user.name || "User",
+        email: user.email || "",
+        initials: user.avatar_initials || initialsFor(user.name),
+        color: user.avatar_color || "var(--sv2-accent)",
       };
     } catch (e) {
       const stored = getStoredUser();

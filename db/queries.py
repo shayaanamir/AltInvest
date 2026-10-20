@@ -1,6 +1,7 @@
 from db.mongo_connection import get_db
 from datetime import datetime, timezone
 from bson import ObjectId
+from pymongo.errors import OperationFailure
 
 def get_latest_price(asset: str) -> dict | None:
     db = get_db()
@@ -540,8 +541,26 @@ def get_user_by_id(user_id: str) -> dict | None:
     return db.users.find_one({"_id": ObjectId(user_id)})
 
 
+_user_indexes_ready = False
+
+
+def _ensure_user_indexes(db) -> None:
+    """One account per email, enforced by Mongo so two simultaneous signups can't both succeed."""
+    global _user_indexes_ready
+    if _user_indexes_ready:
+        return
+    try:
+        db.users.create_index("email", unique=True)
+    except OperationFailure as exc:
+        # Existing duplicate emails block the index; signup still checks email_exists() first.
+        print(f"[users] couldn't create unique index on users.email (duplicate emails in the data?): {exc}")
+    _user_indexes_ready = True
+
+
 def create_user(email: str, name: str, password_hash: str) -> str:
+    """Raises pymongo.errors.DuplicateKeyError if the email is already registered."""
     db = get_db()
+    _ensure_user_indexes(db)
     doc = {
         "email": email.lower().strip(), "name": name, "password_hash": password_hash,
         "created_at": datetime.now(timezone.utc), "email_verified": False,

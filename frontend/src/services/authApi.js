@@ -3,7 +3,7 @@ import { API_BASE_URL } from "../config";
 import { ApiError, kindFromStatus } from "../errors/errorCatalog";
 import { reportApiReachable } from "../errors/connectionStatus";
 import { apiFetch } from "./apiClient";
-import { getToken, clearSession } from "../hooks/useAuth";
+import { getToken, clearSession, setSession } from "../hooks/useAuth";
 
 /**
  * POST JSON to an auth endpoint. Throws ApiError:
@@ -39,7 +39,27 @@ async function authPost(path, body, fallbackMessage) {
     return data;
 }
 
+// One /auth/me request at a time: the topbar and dashboard ask for the user as they mount together.
+let _meRequest = null;
+
 export const authApi = {
+    /**
+     * The signed-in user: { id, name, email, email_verified, avatar_initials, avatar_color,
+     * onboarding_completed, created_at }. Also refreshes the user saved at login, so a name change or
+     * email verification shows up without signing in again. A 401 signs the user out (apiFetch).
+     */
+    me: () => {
+        if (!_meRequest) {
+            _meRequest = apiFetch("/auth/me")
+                .then((user) => {
+                    if (getToken()) setSession({ user });
+                    return user;
+                })
+                .finally(() => { _meRequest = null; });
+        }
+        return _meRequest;
+    },
+
     /**
      * Authenticate a user
      * @returns {Promise<{ user: any, token: string }>}

@@ -53,8 +53,10 @@ def _resolve(token: str) -> Optional[CurrentSession]:
     return CurrentSession(user_id=user_id, session_id=session_id)
 
 
-def get_current_session(authorization: str = Header(...)) -> CurrentSession:
-    if not authorization.startswith("Bearer "):
+def get_current_session(authorization: Optional[str] = Header(None)) -> CurrentSession:
+    # Header(None) rather than Header(...): a missing header is "not signed in" (401), not a
+    # malformed request (FastAPI's 422).
+    if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(
             status_code=401, detail="Missing or invalid Authorization header."
         )

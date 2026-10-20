@@ -23,8 +23,33 @@ export function clearSession() {
   localStorage.removeItem(USER_KEY);
 }
 
+/** The token's payload, or null if it isn't a readable JWT. Not verified — the server does that. */
+function readTokenPayload(token) {
+  try {
+    const part = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    return JSON.parse(atob(part.padEnd(part.length + ((4 - (part.length % 4)) % 4), "=")));
+  } catch {
+    return null;
+  }
+}
+
+// Treat a token as expired a little early so a request doesn't leave with one about to lapse.
+const EXPIRY_SKEW_MS = 30_000;
+
+/**
+ * Whether there's a token that hasn't expired yet. An expired or unreadable token is cleared, so
+ * route guards send the user to login instead of rendering a page whose requests will all 401.
+ * The server still has the final say (a revoked session 401s and apiFetch signs the user out).
+ */
 export function isAuthenticated() {
-  return !!getToken();
+  const token = getToken();
+  if (!token) return false;
+  const exp = readTokenPayload(token)?.exp;
+  if (typeof exp !== "number" || exp * 1000 - EXPIRY_SKEW_MS <= Date.now()) {
+    clearSession();
+    return false;
+  }
+  return true;
 }
 
 // ── TEMPORARY: dev auto-login ────────────────────────────────────────────

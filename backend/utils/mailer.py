@@ -35,11 +35,11 @@ def send_email(to: str, subject: str, body: str) -> bool:
     msg.set_content(body)
 
     try:
-        with smtplib.SMTP(host, int(os.getenv("SMTP_PORT", "587")), timeout=15) as smtp:
-            if os.getenv("SMTP_STARTTLS", "true").lower() != "false":
+        with smtplib.SMTP(host, int(os.getenv("SMTP_PORT") or "587"), timeout=15) as smtp:
+            if (os.getenv("SMTP_STARTTLS") or "true").lower() != "false":
                 smtp.starttls()
             if user:
-                smtp.login(user, os.getenv("SMTP_PASSWORD", ""))
+                smtp.login(user, (os.getenv("SMTP_PASSWORD") or ""))
             smtp.send_message(msg)
         return True
     except Exception as exc:

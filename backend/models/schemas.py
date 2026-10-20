@@ -551,3 +551,14 @@ class SessionInfo(BaseModel):
     created_at: datetime
     last_active: datetime
     current: bool
+
+
+class MeOut(BaseModel):
+    id: str
+    name: str
+    email: str
+    email_verified: bool
+    avatar_initials: Optional[str] = None
+    avatar_color: Optional[str] = None
+    onboarding_completed: bool
+    created_at: Optional[datetime] = None

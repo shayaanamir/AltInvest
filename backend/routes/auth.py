@@ -11,6 +11,7 @@ issue a JWT.
 AUTH-03/04 — Forgot / reset password.
 AUTH-05 — Email verification: a link is emailed at signup and on request from the profile page.
 AUTH-06 — Change password from Settings (requires the current password).
+AUTH-08 — GET /auth/me: who the token belongs to (light; /profile adds activity counts).
 AUTH-07 — Sessions: every login is a row in `user_sessions`; Settings lists them and can
           revoke them (one, or all but this one). Logout drops the caller's own row.
 
@@ -25,16 +26,17 @@ from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
 from utils.http_errors import db_unavailable
 from bson import ObjectId
+from pymongo.errors import DuplicateKeyError
 from models.schemas import (
     LoginRequest, AuthResponse, AuthUser, SignupRequest,
     ForgotPasswordRequest, ResetPasswordRequest, VerifyEmailRequest,
-    ChangePasswordRequest, SessionInfo,
+    ChangePasswordRequest, SessionInfo, MeOut,
 )
 from auth.security import (
     verify_password, create_access_token, hash_password,
     create_reset_token, decode_reset_token,
     create_verify_token, decode_verify_token,
-    decode_access_token, JWT_EXPIRY_HOURS,
+    decode_access_token, JWT_EXPIRY_HOURS, password_problem,
 )
 from auth.dependencies import get_current_user_id, get_current_session, CurrentSession
 from utils.mailer import send_email, smtp_configured
@@ -45,7 +47,7 @@ log = logging.getLogger("auth")
 
 # Used to build the link embedded in the reset email. Override via env in
 # any deployment where the frontend isn't on localhost:5173.
-FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173")
+FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL") or "http://localhost:5173"
 
 
 def _issue_token(user_id: str, email: str, request: Request) -> str:
@@ -108,8 +110,8 @@ def signup(payload: SignupRequest, request: Request):
         raise HTTPException(status_code=422, detail="A valid email is required.")
     if not name:
         raise HTTPException(status_code=422, detail="Name is required.")
-    if len(password) < 8:
-        raise HTTPException(status_code=422, detail="Password must be at least 8 characters.")
+    if problem := password_problem(password):
+        raise HTTPException(status_code=422, detail=problem)
 
     try:
         from db.queries import email_exists, create_user
@@ -120,6 +122,9 @@ def signup(payload: SignupRequest, request: Request):
         create_default_user_settings(ObjectId(user_id))
     except HTTPException:
         raise
+    except DuplicateKeyError:
+        # Lost a race with another signup for the same email.
+        raise HTTPException(status_code=409, detail="An account with this email already exists.")
     except Exception as exc:
         raise db_unavailable(exc)
 
@@ -130,6 +135,32 @@ def signup(payload: SignupRequest, request: Request):
         user=AuthUser(id=user_id, name=name, email=email),
         token=token,
     )
+
+# ── AUTH-08 — Current user ───────────────────────────────────────────────────
+
+@router.get("/auth/me", response_model=MeOut)
+def me(user_id: ObjectId = Depends(get_current_user_id)):
+    from db.queries import get_user_by_id
+    try:
+        user = get_user_by_id(str(user_id))
+    except Exception as exc:
+        raise db_unavailable(exc)
+    if not user:
+        # The session outlived the account; treat it as signed out.
+        raise HTTPException(status_code=401, detail="Account not found.")
+
+    created_at = user.get("created_at")
+    return MeOut(
+        id=str(user["_id"]),
+        name=user.get("name", ""),
+        email=user.get("email", ""),
+        email_verified=bool(user.get("email_verified")),
+        avatar_initials=user.get("avatar_initials"),
+        avatar_color=user.get("avatar_color"),
+        onboarding_completed=bool((user.get("onboarding") or {}).get("completed")),
+        created_at=_utc(created_at) if isinstance(created_at, datetime) else None,
+    )
+
 
 # ── AUTH-03 — Forgot Password ────────────────────────────────────────────────
 
@@ -169,8 +200,8 @@ def forgot_password(payload: ForgotPasswordRequest):
 
 @router.post("/auth/reset-password")
 def reset_password(payload: ResetPasswordRequest):
-    if len(payload.new_password or "") < 8:
-        raise HTTPException(status_code=422, detail="Password must be at least 8 characters.")
+    if problem := password_problem(payload.new_password):
+        raise HTTPException(status_code=422, detail=problem)
 
     token_payload = decode_reset_token(payload.token)
     if not token_payload:
@@ -195,8 +226,8 @@ def reset_password(payload: ResetPasswordRequest):
 def change_password(payload: ChangePasswordRequest, session: CurrentSession = Depends(get_current_session)):
     user_id = session.user_id
     new_password = payload.new_password or ""
-    if len(new_password) < 8:
-        raise HTTPException(status_code=422, detail="New password must be at least 8 characters.")
+    if problem := password_problem(new_password, "New password"):
+        raise HTTPException(status_code=422, detail=problem)
     if new_password == payload.current_password:
         raise HTTPException(status_code=422, detail="New password must be different from your current one.")
 
