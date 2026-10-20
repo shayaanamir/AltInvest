@@ -44,7 +44,12 @@ export const topbarApi = {
     const q = query.trim();
     if (!q) return { assets: [], collections: [] };
 
-    const rows = await fetchUniverse({ category: "all", q, sort: "market_cap", order: "desc" });
+    // Assets and collections from the covered universe; insights from GET /search (text index).
+    // Insights are a bonus: if that call fails the asset results still show.
+    const [rows, found] = await Promise.all([
+      fetchUniverse({ category: "all", q, sort: "market_cap", order: "desc" }),
+      apiFetch(`/search?q=${encodeURIComponent(q.slice(0, 64))}&limit=${SEARCH_RESULT_LIMIT}`).catch(() => ({ insights: [] })),
+    ]);
 
     const assets = rows
       .filter((r) => r.type === "crypto")
@@ -76,6 +81,16 @@ export const topbarApi = {
         watching: c.watching,
       }));
 
-    return { assets, collections };
+    const insights = (found.insights || []).slice(0, 3).map((i, n) => ({
+      id: `insight-${n}-${i.title}`,
+      kind: "insight",
+      name: i.title,
+      subtitle: [i.source, (i.published_at || "").slice(0, 10)].filter(Boolean).join(" · "),
+      url: i.url || null,
+      symbol: i.related_asset_symbol || null,
+      slug: i.related_nft_slug || null,
+    }));
+
+    return { assets, collections, insights };
   },
 };

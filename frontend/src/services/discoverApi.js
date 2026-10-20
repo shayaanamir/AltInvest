@@ -26,12 +26,14 @@ export const discoverApi = {
   // Tabs, sort options, slider ranges and empty-state copy are UI configuration, not data.
   getConfig: async () => discoverConfig,
 
-  getItems: (category, filters) => {
+  // q: optional name / symbol text (from a search result link).
+  getItems: (category, filters, q) => {
     const sort = SORTS[filters?.sortBy] || SORTS.aai_desc;
     return fetchUniverse({
       category: category === "crypto" || category === "nft" ? category : "all",
       ...sort,
       ...(filters ? activeFilterParams(filters, discoverConfig.filters) : {}),
+      ...(q ? { q } : {}),
     });
   },
 };

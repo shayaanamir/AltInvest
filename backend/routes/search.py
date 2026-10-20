@@ -2,22 +2,20 @@
 routes/search.py
 
 Cross-collection text search (assets, nft_collections, market_insights).
-Logs the query to user_search_history when the caller is authenticated;
-search itself works unauthenticated (search bar shouldn't require login).
+Search itself is public (the search bar shouldn't require login) and doesn't record anything:
+the top bar searches as you type, so a search is only saved to history (POST /search/history)
+when the user actually picks a result.
 
 /search/history: the signed-in user's recent searches (read, record, clear). The history is
 de-duplicated, capped at 20 per user and expires after 90 days (db/queries.py, db/indexes.py).
 """
 import path_setup  # noqa: F401
 
-from typing import Optional
-
 from bson import ObjectId
-from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from utils.http_errors import db_unavailable
 
-from auth.security import decode_access_token
 from models.schemas import SearchResults
 from auth.dependencies import get_current_user_id
 from db.queries import search_all, log_search, get_search_history, clear_search_history
@@ -26,30 +24,12 @@ from utils.serialization import serialize_dates
 router = APIRouter(tags=["Search"])
 
 
-def _optional_user_id(authorization: Optional[str] = Header(None)) -> Optional[ObjectId]:
-    """
-    Best-effort auth: if a valid Bearer token is present, return the user_id
-    so the search can be logged. If absent or invalid, return None rather
-    than raising — search is public.
-    """
-    if not authorization or not authorization.startswith("Bearer "):
-        return None
-    payload = decode_access_token(authorization.split(" ", 1)[1])
-    if not payload:
-        return None
-    try:
-        return ObjectId(payload.get("sub"))
-    except Exception:
-        return None
-
-
 # ── GET /search ──────────────────────────────────────────────────────────────
 
 @router.get("/search", response_model=SearchResults)
 def search(
-    q: str = Query(..., min_length=1),
+    q: str = Query(..., min_length=1, max_length=64),
     limit: int = Query(10, ge=1, le=25),
-    authorization: Optional[str] = Header(None),
 ):
     if not q.strip():
         raise HTTPException(status_code=422, detail="Query cannot be empty.")
@@ -58,14 +38,10 @@ def search(
         results = search_all(q.strip(), limit=limit)
     except Exception as exc:
         raise db_unavailable(exc)
-
-    user_id = _optional_user_id(authorization)
-    if user_id:
-        try:
-            log_search(user_id, q.strip())
-        except Exception as exc:
-            print(f"[search] failed to log search history: {exc}")
-
+    for row in results["insights"]:
+        row.pop("score", None)
+        if hasattr(row.get("published_at"), "strftime"):
+            row["published_at"] = row["published_at"].strftime("%Y-%m-%dT%H:%M:%SZ")
     return results
 
 

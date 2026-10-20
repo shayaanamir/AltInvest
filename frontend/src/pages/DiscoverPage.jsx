@@ -21,7 +21,8 @@ function defaultFilters(config) {
 export default function DiscoverPage() {
   const navigate = useNavigate();
   const [config, setConfig] = useState(null);
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const nameQuery = searchParams.get("q") || ""; // set by search results (e.g. an NFT collection)
   // ?category=nft opens on that tab (used by notification links).
   const [category, setCategory] = useState(() => (searchParams.get("category") === "nft" ? "nft" : "crypto"));
   const [showFilters, setShowFilters] = useState(true);
@@ -46,7 +47,7 @@ export default function DiscoverPage() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    discoverApi.getItems(category, filters)
+    discoverApi.getItems(category, filters, nameQuery)
       .then((res) => {
         if (cancelled) return;
         setItems(res);
@@ -54,7 +55,7 @@ export default function DiscoverPage() {
       .catch((e) => { if (!cancelled) { console.error(e); setItems([]); setError(e); } })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [category, filters, reloadTick]);
+  }, [category, filters, reloadTick, nameQuery]);
 
   const toggleCompare = (item) => {
     setCompareIds((prev) => {
@@ -117,6 +118,12 @@ export default function DiscoverPage() {
           )}
 
           <div>
+            {nameQuery && (
+              <div className="disc-query-chip">
+                Showing matches for &ldquo;{nameQuery}&rdquo;
+                <button type="button" aria-label="Clear search" onClick={() => setSearchParams((p) => { p.delete("q"); return p; })}>×</button>
+              </div>
+            )}
             <div className="disc-count">
               {loading ? "Loading…" : `${items.length} asset${items.length === 1 ? "" : "s"} match your filters`}
             </div>

@@ -52,7 +52,10 @@ INDEXES = {
         ([("user_id", ASC), ("triggered_at", DESC)], {}),
     ],
     "notifications": [([("user_id", ASC), ("timestamp", DESC)], {}), ([("user_id", ASC), ("read", ASC)], {})],
-    "market_insights": [([("published_at", DESC)], {})],
+    "market_insights": [
+        ([("published_at", DESC)], {}),
+        ([("title", "text"), ("summary", "text")], {"weights": {"title": 3, "summary": 1}, "name": "insights_text"}),
+    ],
     "nft_collections": [([("slug", ASC)], {"unique": True})],
     "nft_market_data": [([("slug", ASC), ("timestamp", DESC)], {})],
     "nft_sales": [([("slug", ASC), ("timestamp", DESC)], {})],

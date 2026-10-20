@@ -82,7 +82,8 @@
   gap: 10px; background: none; border: none; border-radius: 9px;
   padding: 9px 10px; cursor: pointer; font-family: inherit; text-align: left;
 }
-.tb-search-item:hover { background: var(--sv2-card-alt); }
+.tb-search-item:hover, .tb-search-item.active { background: var(--sv2-card-alt); }
+.tb-search-error { color: var(--sv2-red); }
 .tb-search-item-name { font-size: 13px; font-weight: 700; color: var(--sv2-text); }
 .tb-search-item-symbol { font-weight: 500; color: var(--sv2-text-mute); }
 .tb-search-item-sub { font-size: 11px; color: var(--sv2-text-soft); margin-top: 2px; }

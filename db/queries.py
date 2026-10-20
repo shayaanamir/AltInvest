@@ -2,6 +2,7 @@ import re
 from db.mongo_connection import get_db
 from datetime import datetime, timezone
 from bson import ObjectId
+from pymongo.errors import OperationFailure
 
 def get_latest_price(asset: str) -> dict | None:
     db = get_db()
@@ -519,17 +520,26 @@ def get_nft_token_ownership_history(slug: str, token_id: str) -> list:
 
 def search_all(q: str, limit: int = 10) -> dict:
     db = get_db()
-    # Matched as literal text: escaping stops the query being run as a regular expression.
+    # Assets and collections: a case-insensitive substring match ("bitc" finds Bitcoin), on
+    # collections of a few dozen rows. The query is escaped, so it is matched as literal text and
+    # can't be run as a (possibly catastrophic) regular expression.
     regex = {"$regex": re.escape(q), "$options": "i"}
     assets = list(db.assets.find(
-        {"$or": [{"name": regex}, {"symbol": regex}]}, limit=limit, projection={"_id": 0}
+        {"$or": [{"name": regex}, {"symbol": regex}, {"asset_id": regex}]}, limit=limit, projection={"_id": 0}
     ))
     nfts = list(db.nft_collections.find(
-        {"$or": [{"name": regex}, {"symbol": regex}]}, limit=limit, projection={"_id": 0}
+        {"$or": [{"name": regex}, {"symbol": regex}, {"slug": regex}]}, limit=limit, projection={"_id": 0}
     ))
-    insights = list(db.market_insights.find(
-        {"title": regex}, limit=limit, projection={"_id": 0}
-    ))
+    # Insights: word search on the text index (title + summary, db/indexes.py), best match first.
+    # Falls back to the escaped substring match on the title if the index isn't there yet.
+    try:
+        insights = list(db.market_insights.find(
+            {"$text": {"$search": q}},
+            projection={"_id": 0, "score": {"$meta": "textScore"}},
+            sort=[("score", {"$meta": "textScore"})], limit=limit,
+        ))
+    except OperationFailure:
+        insights = list(db.market_insights.find({"title": regex}, limit=limit, projection={"_id": 0}))
     return {"assets": assets, "nft_collections": nfts, "insights": insights}
 
 
