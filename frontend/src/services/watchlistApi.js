@@ -55,8 +55,19 @@ export const watchlistApi = {
 
   // ── mutations ──────────────────────────────────────────────────────────
 
-  createList: (name) =>
-    apiFetch("/watchlists", { method: "POST", body: JSON.stringify({ name }) }).then((res) => {
+  // Creates the list and its starter items in one request: it either all works or nothing is created.
+  // items: [{ type: "crypto" | "nft", symbolOrSlug }]
+  createList: (name, items = []) =>
+    apiFetch("/watchlists", {
+      method: "POST",
+      body: JSON.stringify({ name, items: items.map((i) => ({ type: i.type, symbol_or_slug: i.symbolOrSlug })) }),
+    }).then((res) => {
+      notifyWatchlistsChanged();
+      return res;
+    }),
+
+  renameList: (watchlistId, name) =>
+    apiFetch(`/watchlists/${watchlistId}`, { method: "PATCH", body: JSON.stringify({ name }) }).then((res) => {
       notifyWatchlistsChanged();
       return res;
     }),
@@ -77,7 +88,7 @@ export const watchlistApi = {
     }),
 
   removeItem: (watchlistId, symbolOrSlug) =>
-    apiFetch(`/watchlists/${watchlistId}/items/${symbolOrSlug}`, { method: "DELETE" }).then((res) => {
+    apiFetch(`/watchlists/${watchlistId}/items/${encodeURIComponent(symbolOrSlug)}`, { method: "DELETE" }).then((res) => {
       notifyWatchlistsChanged();
       return res;
     }),

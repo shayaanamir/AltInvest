@@ -91,16 +91,10 @@ export default function AddHoldingModal({ onClose, onAdded, initialKind = "crypt
     const p = Number(price);
 
     if (editing) {
+      // The server recomputes the cost basis and records the correction in the holding's history.
       const patch = isNft
-        ? {
-            avg_buy_price_eth: p,
-            ...(ethUsd ? { avg_buy_eth_usd_rate: ethUsd, cost_basis_usd: Math.round(p * ethUsd * 100) / 100 } : {}),
-          }
-        : {
-            quantity: Number(quantity),
-            avg_buy_price_usd: p,
-            cost_basis_usd: Math.round(Number(quantity) * p * 100) / 100,
-          };
+        ? { avg_buy_price_eth: p, ...(ethUsd ? { avg_buy_eth_usd_rate: ethUsd } : {}) }
+        : { quantity: Number(quantity), avg_buy_price_usd: p };
       setSubmitting(true);
       try {
         await portfolioApi.updateHolding(holding.id, patch);
@@ -122,25 +116,30 @@ export default function AddHoldingModal({ onClose, onAdded, initialKind = "crypt
           nft_token_id: tokenId.trim(),
           quantity: 1,
           avg_buy_price_eth: p,
-          ...(ethUsd ? { avg_buy_eth_usd_rate: ethUsd, cost_basis_usd: Math.round(p * ethUsd * 100) / 100 } : {}),
+          ...(ethUsd ? { avg_buy_eth_usd_rate: ethUsd } : {}),
         }
       : {
           asset_type: "crypto",
           symbol: selected.symbol,
           quantity: Number(quantity),
           avg_buy_price_usd: p,
-          cost_basis_usd: Math.round(Number(quantity) * p * 100) / 100,
         };
 
     setSubmitting(true);
+    let res;
     try {
-      await portfolioApi.addHolding(payload);
+      res = await portfolioApi.addHolding(payload);
     } catch (err) {
       toast.error(err, { title: "Couldn't add the holding" });
       setSubmitting(false);
       return;
     }
-    toast.success(`${selected.name} was added to your portfolio.`, { title: "Holding added" });
+    toast.success(
+      res?.merged
+        ? `You already held ${selected.name}, so this was added to that holding at a new average price.`
+        : `${selected.name} was added to your portfolio.`,
+      { title: res?.merged ? "Added to your existing holding" : "Holding added" }
+    );
     onAdded?.();
     onClose();
   };
@@ -162,7 +161,7 @@ export default function AddHoldingModal({ onClose, onAdded, initialKind = "crypt
         </div>
         <p className="ahm-desc">
           {editing
-            ? `Correct what you recorded for ${holding.name}. Your portfolio value and cost basis update straight away.`
+            ? `Correct what you recorded for ${holding.name}. To record buying or selling more, use History instead. Cost basis is recalculated for you.`
             : "Record something you own. It feeds your portfolio value, performance and every score shown against your holdings."}
         </p>
 

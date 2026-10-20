@@ -12,6 +12,7 @@ import {
   IconStar,
   IconBell,
   IconSettings,
+  IconUser,
   IconLogout,
   IconCollapse,
 } from "../icons";
@@ -25,6 +26,8 @@ const ICONS_MAP = {
   Watchlists: IconStar,
   Alerts: IconBell,
   Settings: IconSettings,
+  Profile: IconUser,
+  Notifications: IconBell,
   Logout: IconLogout,
   Collapse: IconCollapse,
 };
@@ -131,7 +134,7 @@ export default function Sidebar({ activePage, onNavigate }) {
         paddingTop: 10,
         alignItems: collapsed ? "center" : "stretch"
       }}>
-        {/* Settings */}
+        {/* Notifications, Profile, Settings */}
         {BOTTOM_NAV.map((item) => {
           const active = item.key === activePage;
           return (

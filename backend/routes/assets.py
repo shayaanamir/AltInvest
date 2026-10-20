@@ -16,16 +16,9 @@ _AAI_CACHE_TTL_MINUTES = 60
 
 @router.get("/assets", response_model=List[AssetItem])
 def get_assets():
-    try:
-        from db.queries import get_supported_assets
-        results = get_supported_assets()
-        if results:
-            return [{"asset": r["asset_id"], "name": r["name"]} for r in results]
-    except Exception:
-        pass
-    # Fallback if MongoDB isn't up yet
-    print("MongoDB not available, returning mock assets")
-    return [{"asset": "BTC", "name": "Bitcoin"}, {"asset": "ETH", "name": "Ethereum"}]
+    # Database errors become a 503 (main.py); an empty collection is an empty list.
+    from db.queries import get_supported_assets
+    return [{"asset": r["asset_id"], "name": r["name"]} for r in get_supported_assets()]
 
 
 # ── GET /assets/{symbol}/detail ─────────────────────────────────────────────
@@ -45,6 +38,8 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
     than estimated:
       forecast        -> null when `predictions` has no row for the asset
       aai_panel       -> null when `aai_scores` has no row
+      about           -> description / website / ATH; fields are null where the asset row has none
+      related/similar -> see controllers/asset_detail_controller.py (each item carries a `reason`)
       risk_overview   -> [] when `risk_breakdown` has no row
     """
     from datetime import date
@@ -54,8 +49,9 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
     from db.queries import (
         get_asset, get_asset_market_data_latest, get_daily_price_series,
         get_latest_aai_score, get_latest_prediction, get_latest_risk_breakdown,
-        get_price_sparklines, get_user_flags,
+        get_price_sparklines, get_user_flags, get_prediction_history,
     )
+    from controllers.asset_detail_controller import related_and_similar, build_forecast
     from db.mongo_connection import get_db
 
     symbol = symbol.upper()
@@ -67,6 +63,7 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
         market = get_asset_market_data_latest(symbol) or {}
         history = get_daily_price_series(symbol, 365)
         prediction = get_latest_prediction(symbol)
+        prediction_runs = get_prediction_history(symbol, 12)
         aai = get_latest_aai_score("crypto", symbol)
         breakdown = get_latest_risk_breakdown(symbol)
         flags = get_user_flags(user_id)
@@ -85,23 +82,7 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
     except Exception as exc:
         raise db_unavailable(exc)
 
-    # Forecast: the single latest model run, drawn from the last known price to
-    # its 30-day target. `predictions` holds one target per run, not a curve.
-    forecast = None
-    if prediction and prediction.get("predicted_price") is not None and history:
-        from datetime import datetime, timedelta
-        last = history[-1]
-        target_day = (datetime.strptime(last["date"], "%Y-%m-%d") + timedelta(days=30)).strftime("%Y-%m-%d")
-        forecast = {
-            "points": [
-                {"date": last["date"], "price": last["price"]},
-                {"date": target_day, "price": prediction["predicted_price"]},
-            ],
-            "lower_bound": prediction.get("lower_bound"),
-            "upper_bound": prediction.get("upper_bound"),
-            "change_30d_pct": prediction.get("prediction_30d"),
-            "model_version": prediction.get("model_version"),
-        }
+    forecast = build_forecast(prediction, prediction_runs, history)
 
     aai_panel = None
     sentiment = None
@@ -148,19 +129,13 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
                     "level": _risk_level(breakdown[key], better),
                 })
 
-    # Similar assets: the asset's own related_assets first, topped up by market cap.
-    by_id = {i["id"]: i for i in universe}
-    related_ids = [r for r in (asset.get("related_assets") or []) if r in by_id and r != symbol]
-    rest = sorted((i for i in universe if i["id"] != symbol and i["id"] not in related_ids),
-                  key=lambda i: i.get("market_cap") or 0, reverse=True)
-    similar = [by_id[r] for r in related_ids] + rest
-    similar = similar[:4]
+    related, similar = related_and_similar(asset, universe)
     try:
-        sparks = get_price_sparklines([s["id"] for s in similar])
-        for s in similar:
-            s["sparkline"] = sparks.get(s["id"], [])
+        sparks = get_price_sparklines([x["id"] for x in related + similar])
+        for x in related + similar:
+            x["sparkline"] = sparks.get(x["id"], [])
     except Exception:
-        pass
+        pass   # sparklines are decoration; the lists still render without them
 
     return {
         "symbol": symbol,
@@ -184,7 +159,16 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
             "all_time_high": asset.get("all_time_high"),
         },
         "sentiment": sentiment,
-        "about": asset.get("description"),
+        "about": {
+            "description": asset.get("description"),
+            "website": asset.get("website"),
+            "all_time_high": asset.get("all_time_high"),
+            "ath_date": asset.get("ath_date"),
+            "category": asset.get("category"),
+            "subcategory": asset.get("subcategory"),
+            "source": asset.get("profile_source"),
+        },
+        "related": related,
         "similar": similar,
     }
 
@@ -255,7 +239,7 @@ def get_asset_performance(
 @router.get("/assets/{symbol}/intelligence", response_model=AAIResponse)
 def get_asset_intelligence(symbol: str):
     from db.queries import get_asset, get_latest_aai_score, upsert_aai_score_generalized
-    from controllers.aai_controller import compute_aai_response
+    from controllers.aai_controller import compute_aai_response, is_complete
 
     symbol = symbol.upper()
     try:
@@ -277,19 +261,20 @@ def get_asset_intelligence(symbol: str):
         ts = cached["timestamp"]
         return {
             "asset": symbol,
-            "aai_score": cached["aai_score"],
-            "pred_score": cached["pred_score"],
-            "sentiment_score": cached["sentiment_score"],
+            "aai_score": cached.get("aai_score"),
+            "pred_score": cached.get("pred_score"),
+            "expected_return_30d": cached.get("expected_return_30d"),
+            "sentiment_score": cached.get("sentiment_score"),
             "sentiment_confidence": cached.get("sentiment_confidence"),
-            "risk_score": cached["risk_score"],
-            "model_version": cached["model_version"],
+            "risk_score": cached.get("risk_score"),
+            "model_version": cached.get("model_version"),
             "timestamp": ts.strftime("%Y-%m-%dT%H:%M:%SZ") if hasattr(ts, "strftime") else ts,
         }
 
     result = compute_aai_response(symbol)
-    if result.get("sentiment_available") is False:
-        # Built with a neutral stand-in for sentiment: serve it, but don't cache it, so the
-        # next request tries for real sentiment again.
+    if not is_complete(result):
+        # Missing a prediction or risk score, or built with a neutral stand-in for sentiment:
+        # serve it, but never store it in aai_scores, where it would look like a real score.
         return result
     try:
         upsert_aai_score_generalized(

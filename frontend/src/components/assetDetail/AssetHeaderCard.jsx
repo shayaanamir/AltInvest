@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatAssetPrice, formatPct } from "../../utils/formatters";
 import { IconArrowLeft, IconClock, IconPlus, IconColumns, IconBell } from "../icons";
 import WatchStar from "../watchlists/WatchStar";
+import CreateAlertModal from "../alerts/CreateAlertModal";
 
 export default function AssetHeaderCard({ header, onBack }) {
   const navigate = useNavigate();
+  const [alerting, setAlerting] = useState(false);
 
   if (!header) return null;
   const positive = (header.change24h ?? 0) >= 0;
@@ -63,13 +66,20 @@ export default function AssetHeaderCard({ header, onBack }) {
               Compare
             </button>
 
-            <button className="adt-action-btn" onClick={() => navigate("/alerts")}>
+            <button className="adt-action-btn" onClick={() => setAlerting(true)}>
               <IconBell size={14} />
               Set alert
             </button>
           </div>
         </div>
       </div>
+      {alerting && (
+        <CreateAlertModal
+          target={{ type: "crypto", symbol: header.symbol, name: header.name }}
+          hint={header.price != null ? `Currently ${formatAssetPrice(header.price)}` : undefined}
+          onClose={() => setAlerting(false)}
+        />
+      )}
     </>
   );
 }

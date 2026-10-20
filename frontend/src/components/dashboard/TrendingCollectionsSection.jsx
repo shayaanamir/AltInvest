@@ -14,7 +14,7 @@ export default function TrendingCollectionsSection() {
       <div className="dv2-section-head">
         <div>
           <h2 className="dv2-section-title">Trending collections</h2>
-          <p className="dv2-section-sub">Floor price and AAI across covered NFT collections</p>
+          <p className="dv2-section-sub">Biggest 24h floor moves across covered collections</p>
         </div>
         <a href="#" className="dv2-section-link" onClick={(e) => { e.preventDefault(); navigate("/discover"); }}>
           See all →

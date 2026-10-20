@@ -9,10 +9,10 @@ import math
 
 from db.queries import (
     get_portfolio_holdings,
-    get_asset_market_data_all_latest,
-    get_nft_market_data_latest,
-    get_asset,
-    get_nft_collection,
+    get_asset_market_data_latest_by_id,
+    get_nft_market_data_latest_by_slug,
+    get_assets_by_id,
+    get_nft_collections_by_slug,
 )
 
 _NUMERIC_FIELDS = ("quantity", "cost_basis_usd", "avg_buy_price_usd", "avg_buy_price_eth", "avg_buy_eth_usd_rate")
@@ -71,21 +71,27 @@ def get_valued_holdings(user_id) -> list[dict]:
     cleaned first, so a bad value in the database (say a quantity saved as text) can't raise.
     """
     holdings = get_portfolio_holdings(user_id)
-    market_latest = get_asset_market_data_all_latest()
-    price_by_asset = {m["asset_id"]: _num(m.get("price")) for m in market_latest}
+
+    # Everything the holdings need, fetched once for all of them (not per holding).
+    symbols = [h.get("symbol", "") for h in holdings if h.get("asset_type") == "crypto"]
+    slugs = [h.get("nft_collection_slug", "") for h in holdings if h.get("asset_type") == "nft"]
+    price_by_asset = {k: _num(m.get("price")) for k, m in get_asset_market_data_latest_by_id(symbols).items()}
+    assets_meta = get_assets_by_id(symbols)
+    nft_markets = get_nft_market_data_latest_by_slug(slugs)
+    collections_meta = get_nft_collections_by_slug(slugs)
 
     valued = []
     for raw in holdings:
         h = {**raw, **{f: _num(raw.get(f)) for f in _NUMERIC_FIELDS if f in raw}}
 
         if h.get("asset_type") == "crypto":
-            symbol = h.get("symbol", "")
-            asset_meta = get_asset(symbol) or {}
+            symbol = (h.get("symbol") or "").upper()   # older rows may have stored "btc"
+            asset_meta = assets_meta.get(symbol, {})
             valued.append(_valued(h, price_by_asset.get(symbol), h.get("quantity"), asset_meta.get("name", symbol)))
         elif h.get("asset_type") == "nft":
             slug = h.get("nft_collection_slug", "")
-            nft_market = get_nft_market_data_latest(slug) or {}
-            collection_meta = get_nft_collection(slug) or {}
+            nft_market = nft_markets.get(slug, {})
+            collection_meta = collections_meta.get(slug, {})
             quantity = h["quantity"] if "quantity" in h else 1.0
             valued.append(_valued(h, _num(nft_market.get("floor_usd")), quantity, collection_meta.get("name", slug)))
         else:

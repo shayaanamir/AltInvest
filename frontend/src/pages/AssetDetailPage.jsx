@@ -56,6 +56,7 @@ export default function AssetDetailPage({ onNavigate }) {
               <PricePerformanceCard
                 priceHistory={detail.priceHistory}
                 forecast={detail.forecast}
+                forecastMeta={detail.forecastMeta}
                 aaiPanel={detail.aaiPanel}
               />
             </ErrorBoundary>
@@ -71,7 +72,18 @@ export default function AssetDetailPage({ onNavigate }) {
 
             <AboutAssetCard name={detail.header.name} about={detail.about} aaiScore={detail.aaiPanel?.score} />
 
-            <ErrorBoundary variant="section" label="Similar assets"><SimilarAssetsSection assets={detail.similarAssets} /></ErrorBoundary>
+            {detail.relatedAssets.length > 0 && (
+              <ErrorBoundary variant="section" label="Related assets">
+                <SimilarAssetsSection title="Related assets" assets={detail.relatedAssets} showCompare={false} />
+              </ErrorBoundary>
+            )}
+            <ErrorBoundary variant="section" label="Similar assets">
+              <SimilarAssetsSection
+                title="Similar profile"
+                assets={detail.similarAssets}
+                emptyText="Not enough scores stored to compare this asset's profile with others yet."
+              />
+            </ErrorBoundary>
           </>
         )}
       </div>

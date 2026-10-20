@@ -18,7 +18,7 @@ function sliceForFilter(arr, filter) {
   return arr.slice(-(FILTER_DAYS[filter] + 1));
 }
 
-export default function PricePerformanceCard({ priceHistory, forecast, aaiPanel }) {
+export default function PricePerformanceCard({ priceHistory, forecast, forecastMeta, aaiPanel }) {
   const [mode, setMode] = useState("Price");
   const [filter, setFilter] = useState("1M");
   const [containerRef, dims] = useElementSize({ W: 900, H: 320 });
@@ -43,9 +43,11 @@ export default function PricePerformanceCard({ priceHistory, forecast, aaiPanel 
       ? Math.max(1, daysApart(safeForecast[safeForecast.length - 1].date, lastDate))
       : 1;
 
+    const band = showForecast && forecastMeta?.lower != null && forecastMeta?.upper != null ? forecastMeta : null;
     const values = [
       ...history.map((d) => d.price),
       ...(showForecast ? safeForecast.map((d) => d.price) : []),
+      ...(band ? [band.lower, band.upper] : []),
     ];
     const minV = Math.min(...values) * 0.985;
     const maxV = Math.max(...values) * 1.015;
@@ -75,6 +77,12 @@ export default function PricePerformanceCard({ priceHistory, forecast, aaiPanel 
       const pts = [{ x: last.x, y: last.y }, ...forecastPts];
       forecastPath = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
     }
+    // The model's range at the target date: a shaded wedge from today's price out to lower..upper.
+    let bandPath = "";
+    if (band && forecastPts.length) {
+      const tx = forecastPts[forecastPts.length - 1].x;
+      bandPath = `M ${last.x.toFixed(1)} ${last.y.toFixed(1)} L ${tx.toFixed(1)} ${yFor(band.upper).toFixed(1)} L ${tx.toFixed(1)} ${yFor(band.lower).toFixed(1)} Z`;
+    }
 
     const yTicks = [0, 1, 2, 3].map((i) => minV + (vRange * i) / 3);
     // At most ~6 axis labels however many daily points the range holds.
@@ -94,8 +102,9 @@ export default function PricePerformanceCard({ priceHistory, forecast, aaiPanel 
         label: `+${daysApart(p.date, lastDate)}d`,
       }));
 
-    return { W, H, PAD_L, PAD_R, PAD_T, plotH, linePath, areaPath, forecastPath, last, yTicks, yFor, xLabels, forecastLabels, histPts, forecastPts };
-  }, [history, dims, showForecast, safeForecast]);
+    return {
+      bandPath, W, H, PAD_L, PAD_R, PAD_T, plotH, linePath, areaPath, forecastPath, last, yTicks, yFor, xLabels, forecastLabels, histPts, forecastPts };
+  }, [history, dims, showForecast, safeForecast, forecastMeta]);
 
   const signal = aaiPanel ? deriveAaiSignal(aaiPanel.score) : null;
   const [hoverPt, setHoverPt] = useState(null);
@@ -194,6 +203,7 @@ export default function PricePerformanceCard({ priceHistory, forecast, aaiPanel 
               {showForecast && (
                 <>
                   <line x1={chart.last.x} y1={chart.PAD_T} x2={chart.last.x} y2={chart.PAD_T + chart.plotH} stroke="var(--sv2-border-strong)" strokeWidth="1" strokeDasharray="3,3" />
+                  {chart.bandPath && <path d={chart.bandPath} fill="var(--sv2-accent)" opacity="0.1" />}
                   <path d={chart.forecastPath} fill="none" stroke="var(--sv2-accent)" strokeWidth="2" strokeDasharray="6,5" strokeLinecap="round" />
                   <circle cx={chart.last.x} cy={chart.last.y} r="3.5" fill="var(--sv2-accent)" />
                 </>
@@ -239,6 +249,14 @@ export default function PricePerformanceCard({ priceHistory, forecast, aaiPanel 
           <div className="adt-legend">
             <span><span className="adt-legend-swatch solid" /> Actual</span>
             <span><span className="adt-legend-swatch dashed" /> Predicted</span>
+            {forecastMeta?.lower != null && forecastMeta?.upper != null && (
+              <span>Range {formatAssetPrice(forecastMeta.lower)}–{formatAssetPrice(forecastMeta.upper)}</span>
+            )}
+            {forecastMeta?.meanAbsErrorPct != null && (
+              <span title="How far past 30-day forecasts were from the actual price on their target date">
+                Past accuracy: off by {forecastMeta.meanAbsErrorPct}% on average ({forecastMeta.scoredRuns} run{forecastMeta.scoredRuns === 1 ? "" : "s"})
+              </span>
+            )}
           </div>
         ) : <span />}
         {showForecast && signal && (

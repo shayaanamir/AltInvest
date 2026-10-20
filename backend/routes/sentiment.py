@@ -83,7 +83,8 @@ def _engine():
             from utils.config import ASSETS
         return run_pipeline, get_latest_sentiment, get_sentiment_history, get_all_latest, save_sentiment, ASSETS
     except ImportError as exc:
-        raise RuntimeError(
+        from utils.http_errors import EngineUnavailable
+        raise EngineUnavailable(
             f"Sentiment engine not importable: {exc}. "
             "Make sure you installed sentiment_engine/requirements.txt "
             "in the same Python environment as the backend."

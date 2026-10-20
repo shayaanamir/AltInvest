@@ -35,3 +35,7 @@
 .ahm-submit:disabled { opacity: 0.55; cursor: not-allowed; }
 .ahm-fixed { background: var(--sv2-chip); border: 1px solid var(--sv2-border); border-radius: 10px; padding: 10px 13px; font-size: 13.5px; font-weight: 700; }
 .ahm-input:disabled { opacity: 0.6; cursor: not-allowed; }
+.ahm-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.ahm-row .ahm-label { margin-top: 0; }
+.ahm-fixed-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ahm-link { background: none; border: none; padding: 0; color: var(--sv2-accent); font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }

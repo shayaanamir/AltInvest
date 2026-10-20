@@ -49,3 +49,22 @@ export const ALERT_CONDITION_OPTIONS = [
   { key: "shifts_bearish", label: "shifts bearish" },
   { key: "shifts_bullish", label: "shifts bullish" },
 ];
+
+// Which metrics each kind of target has, which conditions each metric takes, and each metric's
+// threshold range. Mirrors backend/controllers/alert_controller.py, which enforces the same rules.
+export const ALERT_METRICS_BY_TARGET = {
+  crypto: ["price", "aai_score", "risk", "sentiment"],
+  nft: ["price", "aai_score"],
+};
+export const ALERT_CONDITIONS_BY_METRIC = {
+  price: ["above", "below"],
+  aai_score: ["above", "below"],
+  risk: ["above", "below"],
+  sentiment: ["above", "below", "shifts_bullish", "shifts_bearish"],
+};
+export const ALERT_THRESHOLD_RANGES = {
+  price: { min: 0, max: null, exclusiveMin: true, placeholder: "e.g. 80000", label: "Price (USD)" },
+  aai_score: { min: 0, max: 100, placeholder: "0–100, e.g. 60", label: "AAI score (0–100)" },
+  risk: { min: 0, max: 100, placeholder: "0–100, e.g. 40", label: "Risk score (0–100)" },
+  sentiment: { min: -1, max: 1, placeholder: "-1 to 1, e.g. 0.3", label: "Sentiment (-1 to 1)" },
+};

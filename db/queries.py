@@ -1,3 +1,4 @@
+import re
 from db.mongo_connection import get_db
 from datetime import datetime, timezone
 from bson import ObjectId
@@ -58,16 +59,25 @@ def upsert_aai_score(asset: str, payload: dict) -> None:
         upsert=True
     )
 
-def _latest_per_key(collection: str, key: str) -> dict:
-    """{key_value: latest_doc} for collections keyed by a field + timestamp."""
+def _latest_rows(collection: str, key: str, match: dict | None = None) -> list:
+    """
+    The newest row per `key` value. Sorting on (key, timestamp desc) matches the
+    (key, timestamp) index in db/indexes.py, so MongoDB reads the first index entry per key
+    instead of sorting the whole collection in memory. allowDiskUse is a safety net only.
+    """
     db = get_db()
-    pipeline = [
-        {"$sort": {"timestamp": -1}},
+    pipeline = ([{"$match": match}] if match else []) + [
+        {"$sort": {key: 1, "timestamp": -1}},
         {"$group": {"_id": f"${key}", "doc": {"$first": "$$ROOT"}}},
         {"$replaceRoot": {"newRoot": "$doc"}},
         {"$project": {"_id": 0}},
     ]
-    return {d[key]: d for d in db[collection].aggregate(pipeline, allowDiskUse=True)}
+    return list(db[collection].aggregate(pipeline, allowDiskUse=True))
+
+
+def _latest_per_key(collection: str, key: str) -> dict:
+    """{key_value: latest_doc} for collections keyed by a field + timestamp."""
+    return {d[key]: d for d in _latest_rows(collection, key)}
 
 
 def get_all_latest_predictions() -> dict:
@@ -109,16 +119,19 @@ def get_daily_price_series(asset: str, days: int) -> list:
 def get_price_sparklines(assets: list[str], hours: int = 168, points: int = 28) -> dict:
     """{ASSET: [price, ...]} — the last `hours` of hourly prices, thinned to ~`points`."""
     db = get_db()
-    out = {}
+    symbols = sorted({a.upper() for a in assets})
+    by_asset: dict[str, list] = {s: [] for s in symbols}
+    if symbols:
+        # The last `hours` rows of every asset in one aggregation (was one query per asset),
+        # walking the (asset, timestamp) index newest-first; reversed to oldest-first below.
+        for g in db.prices.aggregate([
+            {"$match": {"asset": {"$in": symbols}}},
+            {"$sort": {"asset": 1, "timestamp": -1}},
+            {"$group": {"_id": "$asset", "prices": {"$firstN": {"input": "$price", "n": hours}}}},
+        ]):
+            by_asset[g["_id"]] = list(reversed(g["prices"]))
     step = max(1, hours // points)
-    for a in assets:
-        rows = list(db.prices.find(
-            {"asset": a.upper()}, sort=[("timestamp", -1)], limit=hours,
-            projection={"_id": 0, "price": 1},
-        ))
-        series = [r["price"] for r in reversed(rows)]
-        out[a.upper()] = series[::step] if len(series) > points else series
-    return out
+    return {s: (series[::step] if len(series) > points else series) for s, series in by_asset.items()}
 
 
 def get_user_flags(user_id) -> dict:
@@ -154,6 +167,22 @@ def get_asset(asset_id: str) -> dict | None:
     return db.assets.find_one({"asset_id": asset_id.upper()}, projection={"_id": 0})
 
 
+def get_assets_by_id(asset_ids) -> dict:
+    """{ASSET_ID: asset_doc} for many assets in one query."""
+    ids = sorted({a.upper() for a in asset_ids if a})
+    if not ids:
+        return {}
+    return {d["asset_id"]: d for d in get_db().assets.find({"asset_id": {"$in": ids}}, projection={"_id": 0})}
+
+
+def get_asset_market_data_latest_by_id(asset_ids) -> dict:
+    """{ASSET_ID: latest asset_market_data row} for many assets in one aggregation."""
+    ids = sorted({a.upper() for a in asset_ids if a})
+    if not ids:
+        return {}
+    return {d["asset_id"]: d for d in _latest_rows("asset_market_data", "asset_id", {"asset_id": {"$in": ids}})}
+
+
 def get_asset_market_data_latest(asset_id: str) -> dict | None:
     db = get_db()
     return db.asset_market_data.find_one(
@@ -165,14 +194,7 @@ def get_asset_market_data_latest(asset_id: str) -> dict | None:
 
 def get_asset_market_data_all_latest() -> list:
     """One latest snapshot per asset — used by dashboard/discover/trending."""
-    db = get_db()
-    pipeline = [
-        {"$sort": {"timestamp": -1}},
-        {"$group": {"_id": "$asset_id", "doc": {"$first": "$$ROOT"}}},
-        {"$replaceRoot": {"newRoot": "$doc"}},
-        {"$project": {"_id": 0}},
-    ]
-    return list(db.asset_market_data.aggregate(pipeline))
+    return _latest_rows("asset_market_data", "asset_id")
 
 
 def get_prediction_history(asset: str, days: int = 30) -> list:
@@ -238,29 +260,6 @@ def get_portfolio_holdings(user_id: ObjectId) -> list:
     return out
 
 
-def insert_portfolio_holding(user_id: ObjectId, payload: dict) -> str:
-    db = get_db()
-    now = datetime.now(timezone.utc)
-    doc = {**payload, "user_id": user_id, "date_added": now, "updated_at": now}
-    result = db.portfolio_holdings.insert_one(doc)
-    return str(result.inserted_id)
-
-
-def update_portfolio_holding(user_id: ObjectId, holding_id: str, payload: dict) -> bool:
-    db = get_db()
-    result = db.portfolio_holdings.update_one(
-        {"_id": ObjectId(holding_id), "user_id": user_id},
-        {"$set": {**payload, "updated_at": datetime.now(timezone.utc)}},
-    )
-    return result.matched_count > 0
-
-
-def delete_portfolio_holding(user_id: ObjectId, holding_id: str) -> bool:
-    db = get_db()
-    result = db.portfolio_holdings.delete_one({"_id": ObjectId(holding_id), "user_id": user_id})
-    return result.deleted_count > 0
-
-
 def get_portfolio_snapshots(user_id: ObjectId, days: int = 365) -> list:
     db = get_db()
     cursor = db.portfolio_snapshots.find(
@@ -282,11 +281,30 @@ def get_watchlists(user_id: ObjectId) -> list:
     return out
 
 
-def create_watchlist(user_id: ObjectId, name: str) -> str:
+def create_watchlist(user_id: ObjectId, name: str, items: list | None = None) -> str:
+    """Creates the list with its starter items in one write, so it can't half-succeed."""
     db = get_db()
-    doc = {"user_id": user_id, "name": name, "created_at": datetime.now(timezone.utc), "items": []}
+    now = datetime.now(timezone.utc)
+    doc = {
+        "user_id": user_id, "name": name, "created_at": now,
+        "items": [{"type": t, "symbol_or_slug": k, "added_at": now} for t, k in (items or [])],
+    }
     result = db.watchlists.insert_one(doc)
     return str(result.inserted_id)
+
+
+def rename_watchlist(user_id: ObjectId, watchlist_id: str, name: str) -> bool:
+    db = get_db()
+    result = db.watchlists.update_one({"_id": ObjectId(watchlist_id), "user_id": user_id}, {"$set": {"name": name}})
+    return result.matched_count > 0
+
+
+def watchlist_name_taken(user_id: ObjectId, name: str, except_id: str | None = None) -> bool:
+    db = get_db()
+    query = {"user_id": user_id, "name": {"$regex": f"^{re.escape(name)}$", "$options": "i"}}
+    if except_id:
+        query["_id"] = {"$ne": ObjectId(except_id)}
+    return db.watchlists.find_one(query, {"_id": 1}) is not None
 
 
 def delete_watchlist(user_id: ObjectId, watchlist_id: str) -> bool:
@@ -295,23 +313,35 @@ def delete_watchlist(user_id: ObjectId, watchlist_id: str) -> bool:
     return result.deleted_count > 0
 
 
-def add_watchlist_item(user_id: ObjectId, watchlist_id: str, item_type: str, symbol_or_slug: str) -> bool:
+def add_watchlist_item(user_id: ObjectId, watchlist_id: str, item_type: str, symbol_or_slug: str) -> str:
+    """
+    Adds an item unless it's already on the list. Returns "added", "duplicate" or "no_list".
+    The duplicate check is part of the update's filter, so two quick clicks can't add it twice.
+    """
     db = get_db()
+    oid = ObjectId(watchlist_id)
     item = {"type": item_type, "symbol_or_slug": symbol_or_slug, "added_at": datetime.now(timezone.utc)}
     result = db.watchlists.update_one(
-        {"_id": ObjectId(watchlist_id), "user_id": user_id},
+        {"_id": oid, "user_id": user_id, "items.symbol_or_slug": {"$ne": symbol_or_slug}},
         {"$push": {"items": item}},
     )
-    return result.matched_count > 0
+    if result.matched_count:
+        return "added"
+    return "duplicate" if db.watchlists.find_one({"_id": oid, "user_id": user_id}, {"_id": 1}) else "no_list"
 
 
-def remove_watchlist_item(user_id: ObjectId, watchlist_id: str, symbol_or_slug: str) -> bool:
+def remove_watchlist_item(user_id: ObjectId, watchlist_id: str, symbol_or_slug: str) -> str:
+    """Returns "removed", "no_item" or "no_list". Matches the item whatever case it was stored in."""
     db = get_db()
+    oid = ObjectId(watchlist_id)
+    variants = sorted({symbol_or_slug, symbol_or_slug.upper(), symbol_or_slug.lower()})
     result = db.watchlists.update_one(
-        {"_id": ObjectId(watchlist_id), "user_id": user_id},
-        {"$pull": {"items": {"symbol_or_slug": symbol_or_slug}}},
+        {"_id": oid, "user_id": user_id},
+        {"$pull": {"items": {"symbol_or_slug": {"$in": variants}}}},
     )
-    return result.matched_count > 0
+    if not result.matched_count:
+        return "no_list"
+    return "removed" if result.modified_count else "no_item"
 
 
 # ── Alerts ────────────────────────────────────────────────────────────────────
@@ -356,17 +386,32 @@ def delete_alert(user_id: ObjectId, alert_id: str) -> bool:
 
 # ── Notifications ─────────────────────────────────────────────────────────────
 
-def get_notifications(user_id: ObjectId, unread_only: bool = False, limit: int = 50) -> list:
+def get_notifications(user_id: ObjectId, unread_only: bool = False, limit: int = 50,
+                      skip: int = 0, types: list | None = None) -> list:
     db = get_db()
     query = {"user_id": user_id}
     if unread_only:
         query["read"] = False
+    if types:
+        query["type"] = {"$in": types}
     out = []
-    for doc in db.notifications.find(query, sort=[("timestamp", -1)], limit=limit):
+    for doc in db.notifications.find(query, sort=[("timestamp", -1), ("_id", -1)], skip=skip, limit=limit):
         doc["id"] = str(doc.pop("_id"))
         doc["user_id"] = str(doc["user_id"])
         out.append(doc)
     return out
+
+
+def count_unread_notifications(user_id: ObjectId) -> int:
+    return get_db().notifications.count_documents({"user_id": user_id, "read": False})
+
+
+def mark_all_notifications_read(user_id: ObjectId) -> int:
+    return get_db().notifications.update_many({"user_id": user_id, "read": False}, {"$set": {"read": True}}).modified_count
+
+
+def delete_notification(user_id: ObjectId, notification_id: str) -> bool:
+    return get_db().notifications.delete_one({"_id": ObjectId(notification_id), "user_id": user_id}).deleted_count > 0
 
 
 def mark_notification_read(user_id: ObjectId, notification_id: str) -> bool:
@@ -389,6 +434,22 @@ def get_nft_collection(slug: str) -> dict | None:
     return db.nft_collections.find_one({"slug": slug}, projection={"_id": 0})
 
 
+def get_nft_collections_by_slug(slugs) -> dict:
+    """{slug: collection_doc} for many collections in one query."""
+    wanted = sorted({x for x in slugs if x})
+    if not wanted:
+        return {}
+    return {d["slug"]: d for d in get_db().nft_collections.find({"slug": {"$in": wanted}}, projection={"_id": 0})}
+
+
+def get_nft_market_data_latest_by_slug(slugs) -> dict:
+    """{slug: latest nft_market_data row} for many collections in one aggregation."""
+    wanted = sorted({x for x in slugs if x})
+    if not wanted:
+        return {}
+    return {d["slug"]: d for d in _latest_rows("nft_market_data", "slug", {"slug": {"$in": wanted}})}
+
+
 def get_nft_market_data_latest(slug: str) -> dict | None:
     db = get_db()
     return db.nft_market_data.find_one(
@@ -397,14 +458,7 @@ def get_nft_market_data_latest(slug: str) -> dict | None:
 
 
 def get_nft_market_data_all_latest() -> list:
-    db = get_db()
-    pipeline = [
-        {"$sort": {"timestamp": -1}},
-        {"$group": {"_id": "$slug", "doc": {"$first": "$$ROOT"}}},
-        {"$replaceRoot": {"newRoot": "$doc"}},
-        {"$project": {"_id": 0}},
-    ]
-    return list(db.nft_market_data.aggregate(pipeline))
+    return _latest_rows("nft_market_data", "slug")
 
 
 def get_nft_sales(slug: str, limit: int = 20) -> list:
@@ -466,24 +520,60 @@ def get_nft_token_ownership_history(slug: str, token_id: str) -> list:
 
 def search_all(q: str, limit: int = 10) -> dict:
     db = get_db()
-    regex = {"$regex": q, "$options": "i"}
+    # Assets and collections: a case-insensitive substring match ("bitc" finds Bitcoin), on
+    # collections of a few dozen rows. The query is escaped, so it is matched as literal text and
+    # can't be run as a (possibly catastrophic) regular expression.
+    regex = {"$regex": re.escape(q), "$options": "i"}
     assets = list(db.assets.find(
-        {"$or": [{"name": regex}, {"symbol": regex}]}, limit=limit, projection={"_id": 0}
+        {"$or": [{"name": regex}, {"symbol": regex}, {"asset_id": regex}]}, limit=limit, projection={"_id": 0}
     ))
     nfts = list(db.nft_collections.find(
-        {"$or": [{"name": regex}, {"symbol": regex}]}, limit=limit, projection={"_id": 0}
+        {"$or": [{"name": regex}, {"symbol": regex}, {"slug": regex}]}, limit=limit, projection={"_id": 0}
     ))
-    insights = list(db.market_insights.find(
-        {"title": regex}, limit=limit, projection={"_id": 0}
-    ))
+    # Insights: word search on the text index (title + summary, db/indexes.py), best match first.
+    # Falls back to the escaped substring match on the title if the index isn't there yet.
+    try:
+        insights = list(db.market_insights.find(
+            {"$text": {"$search": q}},
+            projection={"_id": 0, "score": {"$meta": "textScore"}},
+            sort=[("score", {"$meta": "textScore"})], limit=limit,
+        ))
+    except OperationFailure:
+        insights = list(db.market_insights.find({"title": regex}, limit=limit, projection={"_id": 0}))
     return {"assets": assets, "nft_collections": nfts, "insights": insights}
 
 
+SEARCH_HISTORY_LIMIT = 20   # recent searches kept per user (rows also expire after 90 days, db/indexes.py)
+
+
 def log_search(user_id: ObjectId, query: str) -> None:
+    """Records a search: one row per distinct query (case-insensitive), capped per user."""
     db = get_db()
-    db.user_search_history.insert_one(
-        {"user_id": user_id, "query": query, "searched_at": datetime.now(timezone.utc)}
+    query = query.strip()[:200]
+    if not query:
+        return
+    db.user_search_history.update_one(
+        {"user_id": user_id, "query_key": query.lower()},
+        {"$set": {"query": query, "searched_at": datetime.now(timezone.utc)}},
+        upsert=True,
     )
+    stale = [d["_id"] for d in db.user_search_history.find(
+        {"user_id": user_id}, sort=[("searched_at", -1)], skip=SEARCH_HISTORY_LIMIT, projection={"_id": 1},
+    )]
+    if stale:
+        db.user_search_history.delete_many({"_id": {"$in": stale}})
+
+
+def get_search_history(user_id: ObjectId, limit: int = 10) -> list:
+    """The user's most recent distinct searches, newest first."""
+    return list(get_db().user_search_history.find(
+        {"user_id": user_id}, sort=[("searched_at", -1)], limit=limit,
+        projection={"_id": 0, "query": 1, "searched_at": 1},
+    ))
+
+
+def clear_search_history(user_id: ObjectId) -> int:
+    return get_db().user_search_history.delete_many({"user_id": user_id}).deleted_count
 
 
 def get_user_settings(user_id: ObjectId) -> dict | None:
@@ -590,15 +680,28 @@ def upsert_aai_score_generalized(target_type: str, target_id: str, payload: dict
 
 def get_all_latest_aai_scores(target_type: str) -> dict:
     """Returns {target_id: aai_score_doc} for the latest score per target."""
-    db = get_db()
+    return _latest_aai(target_type)
+
+
+def _latest_aai(target_type: str, target_ids=None) -> dict:
+    """Newest aai_scores row per target, sorted on the (target_type, target_id, timestamp) index."""
+    match: dict = {"target_type": target_type}
+    if target_ids is not None:
+        match["target_id"] = {"$in": sorted(set(target_ids))}
     pipeline = [
-        {"$match": {"target_type": target_type}},
-        {"$sort": {"timestamp": -1}},
+        {"$match": match},
+        {"$sort": {"target_type": 1, "target_id": 1, "timestamp": -1}},
         {"$group": {"_id": "$target_id", "doc": {"$first": "$$ROOT"}}},
         {"$replaceRoot": {"newRoot": "$doc"}},
         {"$project": {"_id": 0}},
     ]
-    return {d["target_id"]: d for d in db.aai_scores.aggregate(pipeline)}
+    return {d["target_id"]: d for d in get_db().aai_scores.aggregate(pipeline, allowDiskUse=True)}
+
+
+def get_latest_aai_scores_for(target_type: str, target_ids) -> dict:
+    """{target_id: latest aai_scores row} for the given targets, in one aggregation."""
+    ids = [t for t in target_ids if t]
+    return _latest_aai(target_type, ids) if ids else {}
 
 def update_user(user_id: ObjectId, payload: dict) -> bool:
     db = get_db()

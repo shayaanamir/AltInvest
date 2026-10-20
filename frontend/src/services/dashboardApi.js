@@ -73,6 +73,7 @@ export const dashboardApi = {
       sparkline: r.sparkline,
       watching: !!r.watching,
       aai: { score: r.aai_score, signal: r.signal },
+      reasons: r.reasons || [], // why it's trending, e.g. "2.4× its usual daily move"
     }));
   },
 
@@ -86,6 +87,7 @@ export const dashboardApi = {
       floorEth: r.floor_eth,
       floorUsd: r.floor_usd,
       change24h: r.change_24h,
+      volume24hEth: r.volume_24h_eth ?? null,
       aai: { score: r.aai_score },
     }));
   },

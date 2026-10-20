@@ -625,3 +625,10 @@
 [data-density="compact"] .sv2-detail-grid,
 [data-density="compact"] .sv2-subgrid-2,
 [data-density="compact"] .sv2-list-row-grid { gap: 8px; }
+
+/* ---------- 404 ---------- */
+.nf-standalone { min-height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; }
+.nf-card { max-width: 520px; margin: 40px auto; padding: 32px; text-align: left; }
+.nf-code { font-size: 44px; font-weight: 800; color: var(--sv2-accent); letter-spacing: -1px; margin-bottom: 4px; }
+.nf-path { background: var(--sv2-chip); padding: 1px 6px; border-radius: 6px; font-size: 12.5px; word-break: break-all; }
+.nf-actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }

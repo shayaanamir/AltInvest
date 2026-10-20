@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { BrowserRouter, Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import "./styles/tokens.css";
 import Sidebar from "./components/layout/Sidebar";
@@ -11,6 +11,7 @@ import { onSessionExpired } from "./hooks/sessionEvents";
 import { isAuthenticated } from "./hooks/useAuth";
 import { loadAppPreferences, resetAppPreferences, useAppPreferences, getDisplayCurrency } from "./services/appPreferences";
 import { ROUTES, BARE_PAGES, getPath, getPageName } from "./routes";
+import NotFoundPage from "./pages/NotFoundPage";
 
 // Applies the saved settings that act on the whole app: loads them once the user is signed in,
 // then sets the theme (density and date format are read from the same store).
@@ -51,7 +52,8 @@ function ShellRoutes() {
   }, []);
 
   const activePage = getPageName(location.pathname);
-  const isBare = BARE_PAGES.includes(activePage);
+  // A 404 sits inside the app shell for signed-in users, and on its own for everyone else.
+  const isBare = BARE_PAGES.includes(activePage) || (activePage === "NotFound" && !isAuthenticated());
 
   const navigate = (page) => navigateRouter(getPath(page));
 
@@ -79,7 +81,7 @@ function ShellRoutes() {
           />
         );
       })}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 

@@ -1,8 +1,17 @@
 import path_setup  # noqa: F401 — must be first, fixes sys.path before any local imports
 
 import threading
+import traceback
 
-from fastapi import FastAPI
+import logging
+
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from pymongo.errors import PyMongoError
+
+from utils.http_errors import (
+    DB_UNAVAILABLE_MESSAGE, ENGINE_UNAVAILABLE_MESSAGE, INTERNAL_ERROR_MESSAGE, EngineUnavailable, redact,
+)
 from fastapi.middleware.cors import CORSMiddleware
 
 from routes import (
@@ -27,11 +36,44 @@ from routes import (
     fx,
 )
 
+_log = logging.getLogger("api")
+
 app = FastAPI(
     title="AAIP Backend",
     description="Alternative Asset Intelligence Platform API",
     version="1.0.0",
 )
+
+# ── Error handling ───────────────────────────────────────────────────────────
+# One rule for every route: details go to the server log, the client gets a fixed message.
+#   database unreachable / failing (any pymongo error)  -> 503 "Unable to reach the database right now."
+#   sentiment engine not installed                      -> 503
+#   anything else unexpected                            -> 500, generic message
+# The catch-all is registered before CORS so it sits inside it and the 500 still carries CORS
+# headers (otherwise the browser reports it as a network failure).
+
+@app.exception_handler(PyMongoError)
+async def _database_error(request: Request, exc: PyMongoError):
+    _log.error("Database error on %s %s: %s: %s", request.method, request.url.path, type(exc).__name__, redact(exc))
+    return JSONResponse(status_code=503, content={"detail": DB_UNAVAILABLE_MESSAGE})
+
+
+@app.exception_handler(EngineUnavailable)
+async def _engine_unavailable(request: Request, exc: EngineUnavailable):
+    _log.error("Sentiment engine unavailable on %s %s: %s", request.method, request.url.path, redact(exc))
+    return JSONResponse(status_code=503, content={"detail": ENGINE_UNAVAILABLE_MESSAGE})
+
+
+@app.middleware("http")
+async def _unexpected_error(request: Request, call_next):
+    try:
+        return await call_next(request)
+    except Exception as exc:
+        # Full traceback for debugging, with any credentials in the message masked.
+        _log.error("Unhandled error on %s %s\n%s", request.method, request.url.path,
+                   redact("".join(traceback.format_exception(exc))))
+        return JSONResponse(status_code=500, content={"detail": INTERNAL_ERROR_MESSAGE})
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -39,6 +81,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Total-Count"],   # Discover's paging reads the match count from it
 )
 
 app.include_router(health.router)
@@ -83,8 +126,20 @@ def _warmup_sentiment_engine() -> None:
         print(f"[startup] Sentiment engine warmup skipped/failed: {exc}")
 
 
+def _ensure_indexes() -> None:
+    try:
+        from db.indexes import ensure_indexes
+        result = ensure_indexes()
+        _log.info("[startup] indexes: %d ok, %d failed", result["created_or_present"], len(result["failed"]))
+    except Exception as exc:
+        _log.error("[startup] index creation skipped: %s: %s", type(exc).__name__, redact(exc))
+
+
 @app.on_event("startup")
 def on_startup():
+    # 0. Indexes the queries rely on (idempotent).
+    threading.Thread(target=_ensure_indexes, daemon=True, name="ensure-indexes").start()
+
     # 1. Warm up FinBERT so the first /sentiment request bears no model-load cost.
     threading.Thread(target=_warmup_sentiment_engine, daemon=True).start()
 
@@ -101,6 +156,14 @@ def on_startup():
     # 4. USD exchange rates for the display-currency setting (Frankfurter / ECB), every 6 hours.
     from controllers.fx_controller import run_fx_scheduler
     threading.Thread(target=run_fx_scheduler, daemon=True, name="fx-rates").start()
+
+    # 5. AAI scores for every covered crypto asset, so lists don't depend on someone opening a detail page.
+    from controllers.aai_controller import run_aai_refresh_scheduler
+    threading.Thread(target=run_aai_refresh_scheduler, daemon=True, name="aai-refresh").start()
+
+    # 6. Alert evaluation every 5 minutes: triggers, history, notifications, email.
+    from controllers.alert_controller import run_alert_scheduler
+    threading.Thread(target=run_alert_scheduler, daemon=True, name="alerts").start()
 
 
 @app.get("/")

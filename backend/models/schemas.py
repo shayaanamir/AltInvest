@@ -100,14 +100,17 @@ class RiskResponse(BaseModel):
 
 class AAIResponse(BaseModel):
     asset: str
-    aai_score: float                # always clamped to [0, 100]
-    pred_score: float
+    aai_score: Optional[float] = None       # [0, 100]; null when the prediction or risk score is missing
+    pred_score: Optional[float] = None
+    expected_return_30d: Optional[float] = None
     sentiment_score: float
     sentiment_confidence: Optional[float] = None
     sentiment_available: Optional[bool] = None      # False: no recent sentiment, neutral 50 was used
     sentiment_note: Optional[str] = None
-    risk_score: float
-    model_version: str
+    risk_score: Optional[float] = None
+    missing_inputs: List[str] = []
+    note: Optional[str] = None
+    model_version: Optional[str] = None
     timestamp: str
 
 
@@ -182,7 +185,7 @@ class PortfolioHoldingIn(BaseModel):
     avg_buy_price_usd: Optional[float] = Field(None, ge=0, allow_inf_nan=False)
     avg_buy_price_eth: Optional[float] = Field(None, ge=0, allow_inf_nan=False)
     avg_buy_eth_usd_rate: Optional[float] = Field(None, ge=0, allow_inf_nan=False)
-    cost_basis_usd: Optional[float] = Field(None, ge=0, allow_inf_nan=False)
+    # No cost_basis_usd: the server computes it from quantity x price (controllers/holdings_controller.py).
 
 
 class PortfolioHoldingPatch(BaseModel):
@@ -191,16 +194,27 @@ class PortfolioHoldingPatch(BaseModel):
     avg_buy_price_usd: Optional[float] = Field(None, ge=0, allow_inf_nan=False)
     avg_buy_price_eth: Optional[float] = Field(None, ge=0, allow_inf_nan=False)
     avg_buy_eth_usd_rate: Optional[float] = Field(None, ge=0, allow_inf_nan=False)
-    cost_basis_usd: Optional[float] = Field(None, ge=0, allow_inf_nan=False)
 
 
-class WatchlistCreate(BaseModel):
-    name: str
+class PortfolioTradeIn(BaseModel):
+    """POST /portfolio/holdings/{id}/transactions: buy more of, or sell some of, a crypto holding."""
+    type: str = Field(pattern="^(buy|sell)$")
+    quantity: float = Field(gt=0, allow_inf_nan=False)
+    price_usd: float = Field(ge=0, allow_inf_nan=False)
 
 
 class WatchlistItemIn(BaseModel):
     type: str
     symbol_or_slug: str
+
+
+class WatchlistCreate(BaseModel):
+    name: str
+    items: List[WatchlistItemIn] = []   # optional starter items, added in the same request
+
+
+class WatchlistRename(BaseModel):
+    name: str
 
 
 class AlertCreate(BaseModel):
@@ -210,14 +224,22 @@ class AlertCreate(BaseModel):
     target_name: str
     metric_type: str
     condition: str
-    threshold_value: Optional[float] = None
+    threshold_value: Optional[float] = Field(None, allow_inf_nan=False)
     delivery_channel: str = "in-app"
 
 
 class AlertUpdate(BaseModel):
+    """Any part of the rule can change; the merged rule is validated as a whole.
+    status can be set to "active" (also re-arms a triggered alert) or "paused" — "triggered" is set
+    only by the evaluator."""
     status: Optional[str] = None
-    threshold_value: Optional[float] = None
+    target_type: Optional[str] = None
+    target_symbol: Optional[str] = None
+    target_slug: Optional[str] = None
+    target_name: Optional[str] = None
+    metric_type: Optional[str] = None
     condition: Optional[str] = None
+    threshold_value: Optional[float] = Field(None, allow_inf_nan=False)
     delivery_channel: Optional[str] = None
 
 
@@ -300,6 +322,7 @@ class AlertOut(BaseModel):
     created_at: Optional[str] = None
     last_triggered_at: Optional[str] = None
     last_observed_value: Optional[float] = None
+    last_checked_at: Optional[str] = None
 
 
 class NotificationOut(BaseModel):
@@ -311,6 +334,7 @@ class NotificationOut(BaseModel):
     read: bool
     timestamp: Optional[str] = None
     deep_link: Optional[Dict] = None
+    alert_id: Optional[str] = None
 
 class NFTCollectionListItem(BaseModel):
     slug: str

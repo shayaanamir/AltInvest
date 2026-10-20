@@ -3,8 +3,9 @@ import { useAsync } from "../../hooks/useAsync";
 import { onHoldingsChanged } from "../../services/holdingsEvents";
 import { portfolioApi } from "../../services/portfolioApi";
 import { ErrorState, useToast } from "../../errors";
-import { IconPlus, IconPencil, IconTrash, IconBell } from "../icons";
+import { IconPlus, IconPencil, IconTrash, IconBell, IconClock } from "../icons";
 import AddHoldingModal from "./AddHoldingModal";
+import HoldingHistoryModal from "./HoldingHistoryModal";
 import CreateAlertModal from "../alerts/CreateAlertModal";
 import { formatPct } from "../../utils/formatters";
 import NftArtPlaceholder from "./NftArtPlaceholder";
@@ -12,6 +13,7 @@ import NftArtPlaceholder from "./NftArtPlaceholder";
 export default function NftHoldingsGrid() {
   const toast = useToast();
   const [adding, setAdding] = useState(false);
+  const [history, setHistory] = useState(null); // holding whose history is open
   const [editing, setEditing] = useState(null);
   const [alertFor, setAlertFor] = useState(null);
   const { data: holdings, error, refetch } = useAsync(() => portfolioApi.getNftHoldings(), [], { subscribe: onHoldingsChanged });
@@ -61,6 +63,7 @@ export default function NftHoldingsGrid() {
                   </div>
                   <div className="pv2-manage-icons" style={{ marginTop: 10 }}>
                     <button type="button" title="Set alert" aria-label={`Set an alert on ${n.collectionName}`} onClick={() => setAlertFor(n)}><IconBell size={14} /></button>
+                    <button type="button" title="History" aria-label={`History of ${n.collectionName}`} onClick={() => setHistory({ id: n.id, kind: "nft", name: `${n.collectionName} #${n.tokenId}`, symbol: null, quantity: n.quantity })}><IconClock size={13} /></button>
                     <button type="button" title="Edit" aria-label={`Edit ${n.collectionName} #${n.tokenId}`} onClick={() => setEditing(n)}><IconPencil size={13} /></button>
                     <button
                       type="button"
@@ -86,6 +89,7 @@ export default function NftHoldingsGrid() {
         </div>
       )}
       {adding && <AddHoldingModal initialKind="nft" onClose={() => setAdding(false)} />}
+      {history && <HoldingHistoryModal holding={history} onClose={() => setHistory(null)} />}
       {editing && (
         <AddHoldingModal
           holding={{
