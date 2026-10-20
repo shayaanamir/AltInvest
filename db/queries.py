@@ -769,6 +769,20 @@ def extend_user_session(session_id: ObjectId, expires_at: datetime) -> bool:
     return result.matched_count > 0
 
 
+def replace_password_hash(user_id: ObjectId, expected_hash: str, new_hash: str) -> bool:
+    """Sets a new password hash only if the stored one is still `expected_hash` (compare-and-set),
+    so two uses of the same reset link can't both win. False if the hash had already changed."""
+    result = get_db().users.update_one(
+        {"_id": user_id, "password_hash": expected_hash},
+        {"$set": {"password_hash": new_hash, "password_changed_at": datetime.now(timezone.utc)}},
+    )
+    return result.modified_count > 0
+
+
+def delete_all_user_sessions(user_id: ObjectId) -> int:
+    return _sessions().delete_many({"user_id": user_id}).deleted_count
+
+
 def list_user_sessions(user_id: ObjectId) -> list:
     now = datetime.now(timezone.utc)
     return list(_sessions().find(

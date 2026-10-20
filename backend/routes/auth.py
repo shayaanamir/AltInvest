@@ -20,6 +20,7 @@ AUTH-07 — Sessions: every login is a row in `user_sessions`; Settings lists th
 
 Emails go out through utils/mailer.py (SMTP when configured, otherwise the link is logged).
 """
+import hmac
 import logging
 import os
 import path_setup  # noqa: F401 — must be first, fixes sys.path
@@ -37,7 +38,7 @@ from models.schemas import (
 )
 from auth.security import (
     verify_password, create_access_token, hash_password,
-    create_reset_token, decode_reset_token,
+    create_reset_token, decode_reset_token, password_fingerprint,
     create_verify_token, decode_verify_token,
     decode_access_token, JWT_EXPIRY_HOURS, SESSION_MAX_DAYS, password_problem,
 )
@@ -232,7 +233,7 @@ def forgot_password(payload: ForgotPasswordRequest, request: Request):
         raise db_unavailable(exc)
 
     if user:
-        token = create_reset_token(str(user["_id"]), email)
+        token = create_reset_token(str(user["_id"]), email, user.get("password_hash", ""))
         reset_link = f"{FRONTEND_BASE_URL}/reset-password?token={token}"
         send_email(
             email,
@@ -257,15 +258,38 @@ def reset_password(payload: ResetPasswordRequest, request: Request):
     if not token_payload:
         raise HTTPException(status_code=400, detail="This reset link is invalid or has expired.")
 
-    user_id = token_payload.get("sub")
+    invalid_link = HTTPException(status_code=400, detail="This reset link is invalid or has expired.")
     try:
-        from db.queries import update_user
-        updated = update_user(ObjectId(user_id), {"password_hash": hash_password(payload.new_password)})
+        user_id = ObjectId(token_payload.get("sub"))
+    except Exception:
+        raise invalid_link
+
+    from db.queries import get_user_by_id, replace_password_hash, delete_all_user_sessions
+    try:
+        user = get_user_by_id(str(user_id))
     except Exception as exc:
         raise db_unavailable(exc)
 
-    if not updated:
-        raise HTTPException(status_code=404, detail="Account not found.")
+    # The link is only good for the account and password it was issued against: once the password
+    # changes (this link used, another link used, a change in Settings) the fingerprint won't match.
+    current_hash = (user or {}).get("password_hash", "")
+    if (
+        not user
+        or user.get("email") != token_payload.get("email")
+        or not hmac.compare_digest(str(token_payload.get("pwv", "")), password_fingerprint(current_hash))
+    ):
+        raise invalid_link
+
+    try:
+        # Compare-and-set on the old hash: of two simultaneous uses of one link, only one wins.
+        if not replace_password_hash(user_id, current_hash, hash_password(payload.new_password)):
+            raise invalid_link
+        # Whoever knew the old password may be signed in somewhere; a reset ends every session.
+        delete_all_user_sessions(user_id)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise db_unavailable(exc)
 
     return {"message": "Password updated. You can now sign in with your new password."}
 

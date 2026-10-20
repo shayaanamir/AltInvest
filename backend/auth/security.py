@@ -8,6 +8,8 @@ JWT_SECRET MUST be set via environment variable in any real deployment.
 The default below is for local development only and must never be
 relied on outside a dev machine.
 """
+import hashlib
+import hmac
 import logging
 import os
 from datetime import datetime, timedelta, timezone
@@ -87,13 +89,24 @@ def decode_access_token(token: str) -> dict | None:
         return None
     return payload
 
-def create_reset_token(user_id: str, email: str) -> str:
-    """Issues a short-lived, single-purpose JWT for password reset."""
+def password_fingerprint(password_hash: str) -> str:
+    """A short keyed digest of the stored hash. It changes whenever the password does (bcrypt salts
+    every hash), and reveals nothing about the hash without JWT_SECRET."""
+    return hmac.new(JWT_SECRET.encode(), (password_hash or "").encode(), hashlib.sha256).hexdigest()[:32]
+
+
+def create_reset_token(user_id: str, email: str, password_hash: str) -> str:
+    """
+    Issues a short-lived, single-purpose JWT for password reset. It carries a fingerprint of the
+    current password hash (`pwv`), so it stops working as soon as the password changes — which
+    makes it single-use, and also kills older links after any password change.
+    """
     now = datetime.now(timezone.utc)
     payload = {
         "sub": user_id,
         "email": email,
         "purpose": "password_reset",
+        "pwv": password_fingerprint(password_hash),
         "iat": now,
         "exp": now + timedelta(minutes=RESET_TOKEN_EXPIRY_MINUTES),
     }
