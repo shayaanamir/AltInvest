@@ -106,6 +106,10 @@ export const authApi = {
             body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
         }),
 
+    /** Permanently delete the signed-in account and all its data. A wrong password is a 400. */
+    deleteAccount: (password) =>
+        apiFetch("/auth/account", { method: "DELETE", body: JSON.stringify({ password }) }),
+
     /** Signed-in sessions for this account: [{ id, device, ip, created_at, last_active, current }]. */
     listSessions: () => apiFetch("/auth/sessions"),
 

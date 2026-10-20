@@ -12,6 +12,7 @@ AUTH-03/04 — Forgot / reset password.
 AUTH-05 — Email verification: a link is emailed at signup and on request from the profile page.
 AUTH-06 — Change password from Settings (requires the current password).
 AUTH-08 — GET /auth/me: who the token belongs to (light; /profile adds activity counts).
+AUTH-09 — DELETE /auth/account: permanent, password-confirmed, removes everything the user owns.
 AUTH-07 — Sessions: every login is a row in `user_sessions`; Settings lists them and can
           revoke them (one, or all but this one). Logout drops the caller's own row.
 
@@ -30,7 +31,7 @@ from pymongo.errors import DuplicateKeyError
 from models.schemas import (
     LoginRequest, AuthResponse, AuthUser, SignupRequest,
     ForgotPasswordRequest, ResetPasswordRequest, VerifyEmailRequest,
-    ChangePasswordRequest, SessionInfo, MeOut,
+    ChangePasswordRequest, SessionInfo, MeOut, DeleteAccountRequest,
 )
 from auth.security import (
     verify_password, create_access_token, hash_password,
@@ -160,6 +161,31 @@ def me(user_id: ObjectId = Depends(get_current_user_id)):
         onboarding_completed=bool((user.get("onboarding") or {}).get("completed")),
         created_at=_utc(created_at) if isinstance(created_at, datetime) else None,
     )
+
+
+# ── AUTH-09 — Delete account ─────────────────────────────────────────────────
+
+@router.delete("/auth/account")
+def delete_account(payload: DeleteAccountRequest, user_id: ObjectId = Depends(get_current_user_id)):
+    from db.queries import get_user_by_id, delete_user_account
+    try:
+        user = get_user_by_id(str(user_id))
+    except Exception as exc:
+        raise db_unavailable(exc)
+    if not user:
+        raise HTTPException(status_code=401, detail="Account not found.")
+
+    # 400, not 401, for the same reason as change-password: a typo mustn't look like a lost session.
+    if not verify_password(payload.password or "", user.get("password_hash", "")):
+        raise HTTPException(status_code=400, detail="Password is incorrect.")
+
+    try:
+        deleted = delete_user_account(user_id)
+    except Exception as exc:
+        raise db_unavailable(exc)
+
+    log.info("account %s deleted: %s", user_id, deleted)
+    return {"message": "Your account has been deleted."}
 
 
 # ── AUTH-03 — Forgot Password ────────────────────────────────────────────────

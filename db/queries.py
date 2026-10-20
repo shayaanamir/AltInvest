@@ -670,3 +670,26 @@ def delete_user_session(user_id: ObjectId, session_id: ObjectId) -> bool:
 
 def delete_other_user_sessions(user_id: ObjectId, keep_session_id: ObjectId) -> int:
     return _sessions().delete_many({"user_id": user_id, "_id": {"$ne": keep_session_id}}).deleted_count
+
+
+# Every collection holding rows that belong to one user (keyed by user_id).
+_USER_OWNED_COLLECTIONS = (
+    "portfolio_holdings", "portfolio_snapshots", "watchlists", "alerts", "notifications",
+    "user_settings", "user_search_history",
+)
+
+
+def delete_user_account(user_id: ObjectId) -> dict:
+    """
+    Permanently removes a user and everything they own. Returns rows deleted per collection.
+
+    No transaction (standalone Mongo), so the order matters: sessions first, so access ends at
+    once; the user record last, so a failure part-way leaves an account that can sign in and
+    delete again rather than orphaned data nobody can reach.
+    """
+    db = get_db()
+    deleted = {"user_sessions": _sessions().delete_many({"user_id": user_id}).deleted_count}
+    for name in _USER_OWNED_COLLECTIONS:
+        deleted[name] = db[name].delete_many({"user_id": user_id}).deleted_count
+    deleted["users"] = db.users.delete_one({"_id": user_id}).deleted_count
+    return deleted

@@ -562,3 +562,7 @@ class MeOut(BaseModel):
     avatar_color: Optional[str] = None
     onboarding_completed: bool
     created_at: Optional[datetime] = None
+
+
+class DeleteAccountRequest(BaseModel):
+    password: str

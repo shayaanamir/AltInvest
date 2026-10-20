@@ -1,9 +1,13 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { IconTrash, IconDownload } from "../icons";
 import { portfolioApi } from "../../services/portfolioApi";
 import { watchlistApi } from "../../services/watchlistApi";
 import { alertsApi } from "../../services/alertsApi";
-import { useToast } from "../../errors";
+import { authApi } from "../../services/authApi";
+import { clearSession } from "../../hooks/useAuth";
+import { resetAppPreferences } from "../../services/appPreferences";
+import { useToast, describeError } from "../../errors";
 
 // Quote a CSV cell when it holds a comma, quote or newline. Text starting with = + - @ would be run as
 // a formula by spreadsheets, so those get a leading apostrophe (numbers are left alone).
@@ -66,8 +70,12 @@ function toCsv({ cryptoHoldings, nftHoldings, watchlists, alerts }) {
 export default function DataAccountSection({ data }) {
   const [confirming, setConfirming] = useState(false);
   const [confirmText, setConfirmText] = useState("");
+  const [password, setPassword] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
   const [exporting, setExporting] = useState(false);
   const toast = useToast();
+  const navigate = useNavigate();
 
   if (!data) return null;
 
@@ -100,7 +108,30 @@ export default function DataAccountSection({ data }) {
   };
 
   const requiredPhrase = data.accountDeletion?.confirmationPhrase || "DELETE";
-  const canDelete = confirmText.trim() === requiredPhrase;
+  const canDelete = confirmText.trim() === requiredPhrase && !!password && !deleting;
+
+  const cancelDelete = () => {
+    setConfirming(false); setConfirmText(""); setPassword(""); setDeleteError(null);
+  };
+
+  const handleDelete = async (e) => {
+    e.preventDefault();
+    if (!canDelete) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await authApi.deleteAccount(password);
+    } catch (err) {
+      setDeleteError(describeError(err).message);
+      setDeleting(false);
+      return;
+    }
+    // The server has already ended every session; just forget this one locally.
+    clearSession();
+    resetAppPreferences();
+    toast.success("Your account and all its data have been deleted.");
+    navigate("/", { replace: true });
+  };
 
   return (
     <>
@@ -126,21 +157,41 @@ export default function DataAccountSection({ data }) {
             <IconTrash size={14} /> Delete account
         </button>
         ) : (
-          <div className="set-delete-confirm">
-            <p className="set-row-desc">Type <strong>{requiredPhrase}</strong> to confirm.</p>
-            <input
-              className="set-input"
-              value={confirmText}
-              onChange={(e) => setConfirmText(e.target.value)}
-              placeholder={requiredPhrase}
-            />
+          <form className="set-delete-confirm" onSubmit={handleDelete}>
+            <p className="set-row-desc">
+              This permanently deletes your holdings, watchlists, alerts, notifications and settings, and
+              signs you out everywhere. It can't be undone.
+            </p>
+            <label className="set-field">
+              <span>Type <strong>{requiredPhrase}</strong> to confirm</span>
+              <input
+                className="set-input"
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+                placeholder={requiredPhrase}
+                autoComplete="off"
+              />
+            </label>
+            <label className="set-field">
+              <span>Your password</span>
+              <input
+                className="set-input"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </label>
+            {deleteError && <div className="set-form-status error">{deleteError}</div>}
             <div className="set-delete-actions">
-              <button className="set-btn-danger" disabled={!canDelete}>Confirm delete</button>
-              <button className="sv2-btn-outline" style={{ width: "auto" }} onClick={() => { setConfirming(false); setConfirmText(""); }}>
+              <button type="submit" className="set-btn-danger" disabled={!canDelete}>
+                {deleting ? "Deleting…" : "Confirm delete"}
+              </button>
+              <button type="button" className="sv2-btn-outline" style={{ width: "auto" }} disabled={deleting} onClick={cancelDelete}>
                 Cancel
               </button>
             </div>
-          </div>
+          </form>
         )}
       </div>
     </>
