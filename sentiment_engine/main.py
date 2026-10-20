@@ -25,7 +25,6 @@ sys.path.insert(0, os.path.dirname(__file__))
 try:
     from sentiment_engine.aggregator.sentiment_aggregator import run_pipeline
     from sentiment_engine.storage.mongo_handler import (
-        get_sentiment_history,
         save_sentiment,
         save_raw_articles,
     )
@@ -36,7 +35,6 @@ try:
 except ImportError:
     from aggregator.sentiment_aggregator import run_pipeline
     from storage.mongo_handler import (
-        get_sentiment_history,
         save_sentiment,
         save_raw_articles,
     )
@@ -61,11 +59,9 @@ def run_asset(asset_id: str, save: bool = True) -> dict:
     """
     logger.info(f"Starting pipeline for: {asset_id.upper()}")
 
-    # Load trend history from MongoDB (empty list if DB unavailable)
-    history = get_sentiment_history(asset_id, days=1)
-
-    # Run the main pipeline (returns output and raw_articles if return_raw_articles=True)
-    result, raw_articles = run_pipeline(asset_id, history=history, return_raw_articles=True)
+    # Run the main pipeline (returns output and raw_articles if return_raw_articles=True).
+    # It loads the ~24h-ago baseline for trend detection from MongoDB itself.
+    result, raw_articles = run_pipeline(asset_id, return_raw_articles=True)
 
     # Save to MongoDB
     if save:
@@ -114,7 +110,10 @@ Examples:
     # exactly once here and is reused for every subsequent asset in this process.
     # When running --asset all, this saves N-1 model load cycles.
     logger.info("Warming up NLP models (loads once, reused for all assets)...")
-    warmup_pipeline()
+    if warmup_pipeline():
+        logger.info("NLP models warmed up.")
+    else:
+        logger.warning("FinBERT failed to load; articles will be scored with VADER only.")
 
     if asset == "all":
         results = {}

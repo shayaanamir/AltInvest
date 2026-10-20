@@ -1,6 +1,12 @@
+import { getEvidencePhrase } from "../../utils/scoring";
+
+const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
 export default function AssetReadCard({ detail, colors }) {
   const score = detail?.score ?? 50;
   const scoreColor = score >= 58 ? colors.green : score >= 45 ? colors.accent : colors.red;
+  // Worded from this reading's own confidence, not asserted for every asset.
+  const evidence = getEvidencePhrase(detail.confidenceLabel);
   const formattedScore = detail?.sentimentScore != null
     ? `${detail.sentimentScore >= 0 ? "+" : ""}${Number(detail.sentimentScore).toFixed(2)}`
     : "—";
@@ -24,7 +30,9 @@ export default function AssetReadCard({ detail, colors }) {
           <div className="sv2-progress" style={{ width: 140, marginTop: 6 }}>
             <div className="sv2-progress-fill" style={{ width: `${detail.confidencePct}%`, background: colors.green }} />
           </div>
-          <div className="sv2-tiny sv2-mute2 sv2-mt-4">Well corroborated across independent sources.</div>
+          <div className="sv2-tiny sv2-mute2 sv2-mt-4">
+            {evidence[0].toUpperCase() + evidence.slice(1)} — {plural(detail.articleCount, "article")} from {plural(detail.sourceCount, "source")}.
+          </div>
         </div>
       </div>
 

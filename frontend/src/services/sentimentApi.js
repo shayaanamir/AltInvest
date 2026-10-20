@@ -19,7 +19,9 @@ import { watchlistApi } from "./watchlistApi";
 /* ---------------- transport ---------------- */
 
 const FETCH_TIMEOUT_MS = 18000;         // GET requests
-const REFRESH_TIMEOUT_MS = 30000;       // POST /refresh — triggers a full pipeline run
+const REFRESH_TIMEOUT_MS = 30000;       // POST /{asset}/refresh — runs one asset's pipeline
+const REFRESH_ALL_POLL_MS = 2000;       // how often to ask whether the background refresh-all has finished
+const REFRESH_ALL_MAX_WAIT_MS = 3 * 60 * 1000;
 
 async function fetchWithTimeout(url, options = {}, timeoutMs = FETCH_TIMEOUT_MS) {
   const controller = new AbortController();
@@ -71,6 +73,17 @@ async function postRefresh(assetId) {
   if (!res.ok) throw await failFrom(res, `Refresh for ${assetId}`);
 }
 
+async function postJson(path, what) {
+  let res;
+  try {
+    res = await fetchWithTimeout(`${API_BASE_URL}${path}`, { method: "POST" });
+  } catch (e) {
+    throw new ApiError(describeFetchError(e), { kind: e.name === "AbortError" ? "timeout" : "network" });
+  }
+  if (!res.ok) throw await failFrom(res, what);
+  return res.json();
+}
+
 // The hub mounts several widgets that all need the same two lists; share one request for a few seconds.
 const SHARE_MS = 5000;
 function shared(fn) {
@@ -115,6 +128,21 @@ const resetCaches = () => {
   loadMeta.reset();
 };
 
+// New sentiment data has arrived (the poller saw it, or a refresh finished). Mounted widgets
+// subscribe, via useAsync's { subscribe }, and re-fetch in place — so nothing has to be
+// remounted, and the user's scope, range, tab and filters stay as they were.
+const updates = new EventTarget();
+
+export function onSentimentUpdated(handler) {
+  updates.addEventListener("update", handler);
+  return () => updates.removeEventListener("update", handler);
+}
+
+export function notifySentimentUpdated() {
+  resetCaches(); // drop the shared lists so the re-fetches below see the new data
+  updates.dispatchEvent(new Event("update"));
+}
+
 /* ---------------- shaping ---------------- */
 
 function normaliseRecord(raw) {
@@ -123,7 +151,7 @@ function normaliseRecord(raw) {
     sentimentScore: raw.sentiment_score ?? 0,
     confidence: raw.confidence ?? 0,
     confidenceLabel: raw.confidence_label ?? "low",
-    trend: raw.trend ?? "stable",
+    trend: raw.trend ?? "unknown",
     articleCount: raw.article_count ?? raw.post_count ?? 0,
     sourceCount: raw.source_count ?? 0,
     sourceBreakdown: raw.source_breakdown ?? { news_nlp: 0, market_signals: 0 },
@@ -131,6 +159,7 @@ function normaliseRecord(raw) {
     topHeadlines: raw.top_headlines ?? [],
     marketSignals: raw.market_signals ?? {},
     articlesBySource: raw.articles_by_source ?? {},
+    dataQuality: raw.data_quality ?? {},
     lastUpdated: raw.last_updated ?? raw.timestamp ?? null,
   };
 }
@@ -200,11 +229,14 @@ export const sentimentApi = {
     };
   },
 
-  /** Average mood over time (0–100). Only crypto has history; other scopes are empty. */
+  /**
+   * Average mood over time, on the same -100..+100 scale as the mood gauge (getMoodOverview).
+   * Only crypto has history; other scopes are empty.
+   */
   getMoodTrend: async (scope = "crypto", days = 30) => {
     const crypto = async () => {
       const rows = await getJson(`/sentiment/mood-trend?days=${encodeURIComponent(days)}`, "Mood trend request");
-      return rows.map((r) => ({ date: r.date, value: toScore100(r.value) }));
+      return rows.map((r) => ({ date: r.date, value: Math.round(r.value * 100) }));
     };
     if (scope === "both") return { crypto: await crypto(), nft: [], realEstate: [] };
     if (scope === "crypto") return crypto();
@@ -313,11 +345,23 @@ export const sentimentApi = {
       trend: record.trend,
       distribution: { positive: pct(d.positive), neutral: pct(d.neutral), negative: pct(d.negative) },
       articleCount: record.articleCount,
-      drivingFactors: headlines.slice(0, 3).map((h) => ({
-        direction: (h.score ?? 0) >= 0 ? "up" : "down",
-        title: h.title,
-        description: [h.source, h.age_hours != null ? `${Math.round(h.age_hours)}h ago` : null].filter(Boolean).join(", "),
-      })),
+      sourceCount: record.sourceCount,
+      // The headlines that moved the news score most (the engine ranks them by their weighted
+      // share of it). Readings stored before the engine reported that have no such figure, and
+      // then there is nothing honest to show here, so the list is left empty.
+      drivingFactors: headlines
+        .filter((h) => h.contribution != null)
+        .sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution))
+        .slice(0, 3)
+        .map((h) => ({
+          direction: h.contribution >= 0 ? "up" : "down",
+          title: h.title,
+          description: [
+            `${h.contribution >= 0 ? "+" : ""}${h.contribution.toFixed(2)} of the news score`,
+            h.source,
+            h.age_hours != null ? `${Math.round(h.age_hours)}h ago` : null,
+          ].filter(Boolean).join(" · "),
+        })),
       headlines,
       sourceBreakdown: {
         newsPct: Math.round((record.sourceBreakdown.news_nlp ?? 0) * 100),
@@ -329,6 +373,12 @@ export const sentimentApi = {
         volumeChange24h: record.marketSignals?.volume_change_24h ?? null,
         isTrending: record.marketSignals?.is_trending ?? null,
         btcDominance: record.marketSignals?.btc_dominance ?? null,
+      },
+      // Which inputs fell back to placeholders, so the UI can say so instead of passing them off as readings.
+      dataQuality: {
+        cmcKeyMissing: !!record.dataQuality.cmc_key_missing,
+        cmcFallback: !!record.dataQuality.cmc_fallback,
+        finbertUnavailable: !!record.dataQuality.finbert_unavailable,
       },
       lastUpdated: record.lastUpdated,
     };
@@ -353,17 +403,42 @@ export const sentimentApi = {
     return sentimentApi.getAssetDetail(assetId);
   },
 
-  /** Refreshes every covered asset — used by the Hub's "Refresh Pipeline" button. */
+  /**
+   * Refreshes every covered asset — used by the Hub's "Refresh Pipeline" button. The server runs
+   * the pipelines in the background (one request starts it, not one per asset); this waits for
+   * it to finish, then reports any assets that failed. Throws if it didn't fully succeed.
+   */
   refreshAllActive: async () => {
-    const ids = (await fetchAllSentimentRaw()).map((r) => (r.asset_id || r.asset || "").toLowerCase()).filter(Boolean);
-    const results = await Promise.allSettled(ids.map((id) => postRefresh(id)));
-    resetCaches();
-    const failed = results.filter((r) => r.status === "rejected");
-    if (failed.length === ids.length && ids.length > 0) throw failed[0].reason; // everything failed: surface the real cause
-    if (failed.length > 0) {
-      throw new ApiError(`${failed.length} of ${ids.length} assets could not be refreshed.`, {
+    await postJson("/sentiment/refresh", "Starting the refresh");
+
+    const deadline = Date.now() + REFRESH_ALL_MAX_WAIT_MS;
+    let status;
+    do {
+      await new Promise((resolve) => setTimeout(resolve, REFRESH_ALL_POLL_MS));
+      status = await getJson("/sentiment/refresh/status", "Refresh status");
+    } while (status.running && Date.now() < deadline);
+
+    notifySentimentUpdated(); // whatever was refreshed, even partly, is new data to show
+
+    if (status.running) {
+      throw new ApiError("The refresh is taking longer than expected.", {
+        kind: "timeout",
+        detail: "It is still running on the server. The page will update when it finishes.",
+      });
+    }
+
+    const outcomes = Object.values(status.results || {});
+    const failed = outcomes.filter((o) => o === "failed").length;
+    if (outcomes.length > 0 && failed === outcomes.length) {
+      throw new ApiError("Couldn't refresh any asset.", {
+        kind: "server",
+        detail: "The pipeline failed for every asset. Check the server logs.",
+      });
+    }
+    if (failed > 0) {
+      throw new ApiError(`${failed} of ${outcomes.length} assets could not be refreshed.`, {
         kind: "partial",
-        detail: `${failed.length} of ${ids.length} assets could not be refreshed. The rest were updated.`,
+        detail: `${failed} of ${outcomes.length} assets could not be refreshed. The rest were updated.`,
       });
     }
   },

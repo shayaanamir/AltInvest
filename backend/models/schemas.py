@@ -1,4 +1,6 @@
-from pydantic import BaseModel
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, Dict, List
 
 
@@ -28,7 +30,10 @@ class HeadlineItem(BaseModel):
     # Only the title is guaranteed: feeds omit links and timestamps, and a pipeline
     # that found nothing returns no headlines at all.
     title: str
-    score: Optional[float] = None
+    score: Optional[float] = None                   # blended VADER + FinBERT score
+    contribution: Optional[float] = None            # this headline's share of the news score
+    vader_score: Optional[float] = None
+    finbert_score: Optional[float] = None
     source: Optional[str] = None
     age_hours: Optional[float] = None
     link: Optional[str] = None
@@ -49,6 +54,19 @@ class MarketSignals(BaseModel):
     btc_dominance: Optional[float] = None
 
 
+class DataQuality(BaseModel):
+    # Which inputs fell back to placeholders. Older stored records carry only
+    # degraded / cmc_fallback, so everything is optional.
+    degraded: Optional[bool] = None
+    cmc_fallback: Optional[bool] = None
+    quote_fallback: Optional[bool] = None
+    global_fallback: Optional[bool] = None
+    trending_fallback: Optional[bool] = None
+    cmc_key_missing: Optional[bool] = None
+    finbert_unavailable: Optional[bool] = None
+    reason: Optional[str] = None
+
+
 class SentimentResponse(BaseModel):
     asset: str
     sentiment_score: float                          # maps to their sentiment_score
@@ -66,6 +84,8 @@ class SentimentResponse(BaseModel):
     top_headlines: Optional[List[HeadlineItem]] = None
     market_signals: Optional[MarketSignals] = None
     articles_by_source: Optional[Dict[str, int]] = None
+    data_quality: Optional[DataQuality] = None
+    error: Optional[str] = None
     note: Optional[str] = None
 
 class RiskResponse(BaseModel):
@@ -83,6 +103,8 @@ class AAIResponse(BaseModel):
     pred_score: float
     sentiment_score: float
     sentiment_confidence: Optional[float] = None
+    sentiment_available: Optional[bool] = None      # False: no recent sentiment, neutral 50 was used
+    sentiment_note: Optional[str] = None
     risk_score: float
     model_version: str
     timestamp: str
@@ -145,6 +167,8 @@ class DashboardStats(BaseModel):
     crypto_score_count: int = 0
     nft_score_count: int = 0
     market_mood_confidence: Optional[float] = None   # avg sentiment confidence, 0-100
+    unpriced_holding_count: int = 0                  # holdings left out of portfolio_value_usd (no price)
+    sentiment_asset_count: int = 0                   # assets behind global_sentiment
 
 
 class PortfolioHoldingIn(BaseModel):
@@ -152,11 +176,21 @@ class PortfolioHoldingIn(BaseModel):
     symbol: Optional[str] = None
     nft_collection_slug: Optional[str] = None
     nft_token_id: Optional[str] = None
-    quantity: float
-    avg_buy_price_usd: Optional[float] = None
-    avg_buy_price_eth: Optional[float] = None
-    avg_buy_eth_usd_rate: Optional[float] = None
-    cost_basis_usd: Optional[float] = None
+    # Numbers only, finite, and sensible: a holding is valued as price * quantity.
+    quantity: float = Field(gt=0, allow_inf_nan=False)
+    avg_buy_price_usd: Optional[float] = Field(None, ge=0, allow_inf_nan=False)
+    avg_buy_price_eth: Optional[float] = Field(None, ge=0, allow_inf_nan=False)
+    avg_buy_eth_usd_rate: Optional[float] = Field(None, ge=0, allow_inf_nan=False)
+    cost_basis_usd: Optional[float] = Field(None, ge=0, allow_inf_nan=False)
+
+
+class PortfolioHoldingPatch(BaseModel):
+    """The fields PATCH /portfolio/holdings/{id} can change. Omitted or null fields are left alone."""
+    quantity: Optional[float] = Field(None, gt=0, allow_inf_nan=False)
+    avg_buy_price_usd: Optional[float] = Field(None, ge=0, allow_inf_nan=False)
+    avg_buy_price_eth: Optional[float] = Field(None, ge=0, allow_inf_nan=False)
+    avg_buy_eth_usd_rate: Optional[float] = Field(None, ge=0, allow_inf_nan=False)
+    cost_basis_usd: Optional[float] = Field(None, ge=0, allow_inf_nan=False)
 
 
 class WatchlistCreate(BaseModel):
@@ -200,25 +234,29 @@ class PortfolioHoldingOut(BaseModel):
     name: Optional[str] = None
     nft_collection_slug: Optional[str] = None
     nft_token_id: Optional[str] = None
-    quantity: float
+    quantity: Optional[float] = None                # None only for a stored row with an unreadable quantity
     avg_buy_price_usd: Optional[float] = None
     avg_buy_price_eth: Optional[float] = None
     avg_buy_eth_usd_rate: Optional[float] = None
     cost_basis_usd: Optional[float] = None
     current_price: Optional[float] = None
-    current_value_usd: Optional[float] = None
+    current_value_usd: Optional[float] = None       # None when it can't be valued; never a made-up 0
     unrealised_pnl_usd: Optional[float] = None
     unrealised_pnl_pct: Optional[float] = None
+    valuation_status: Optional[str] = None          # "ok" | "no_price" | "invalid_quantity" | "unsupported_type"
     date_added: Optional[str] = None
     updated_at: Optional[str] = None
 
 
 class PortfolioSummary(BaseModel):
+    # Value, cost basis and P&L cover only the holdings that could be valued, so they stay
+    # comparable. unpriced_holding_count says how many were left out; holding_count is all of them.
     total_value_usd: float
     total_cost_basis_usd: float
     total_unrealised_pnl_usd: float
     total_unrealised_pnl_pct: Optional[float] = None
     holding_count: int
+    unpriced_holding_count: int = 0
 
 
 class AllocationSlice(BaseModel):
@@ -414,6 +452,64 @@ class FxRatesOut(BaseModel):
     as_of: str
     source: Optional[str] = None
     supported: List[str]
+
+
+# ── Settings PATCH bodies, one per section ───────────────────────────────────
+# Unknown keys are rejected (extra="forbid"), so a typo or a stray key can't be written into a
+# user's settings document. Fields left out or null are not changed.
+
+class _SettingsPatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class PreferencesPatch(_SettingsPatch):
+    display_currency: Optional[str] = Field(None, max_length=8)   # checked against the supported list in the route
+    date_format: Optional[Literal["MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD"]] = None
+    default_landing_page: Optional[Literal["Dashboard", "Portfolio", "Sentiment"]] = None
+    default_dashboard_layout: Optional[Literal["minimal", "analyst", "trader", "ai-first"]] = None
+
+
+class AppearancePatch(_SettingsPatch):
+    theme: Optional[Literal["dark", "light"]] = None
+    density: Optional[Literal["comfortable", "compact"]] = None
+
+
+class NotificationChannelsPatch(_SettingsPatch):
+    inApp: Optional[bool] = None
+    push: Optional[bool] = None
+    email: Optional[bool] = None
+
+
+class NotificationAlertTypesPatch(_SettingsPatch):
+    aaiThresholdOnly: Optional[bool] = None
+    priceAlerts: Optional[bool] = None
+    sentimentShifts: Optional[bool] = None
+    minorPriceWiggles: Optional[bool] = None
+    marketNews: Optional[bool] = None
+    systemMessages: Optional[bool] = None
+
+
+class QuietHoursPatch(_SettingsPatch):
+    enabled: Optional[bool] = None
+    start: Optional[str] = Field(None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    end: Optional[str] = Field(None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    timezone: Optional[str] = Field(None, max_length=64)
+
+
+class NotificationsPatch(_SettingsPatch):
+    channels: Optional[NotificationChannelsPatch] = None
+    alert_types: Optional[NotificationAlertTypesPatch] = None
+    quiet_hours: Optional[QuietHoursPatch] = None
+
+
+class SecurityPatch(_SettingsPatch):
+    two_factor_enabled: Optional[bool] = None
+
+
+class ConnectedAccountsPatch(_SettingsPatch):
+    google: Optional[bool] = None
+    github: Optional[bool] = None
+    wallet: Optional[bool] = None
 
 
 class UserSettingsOut(BaseModel):

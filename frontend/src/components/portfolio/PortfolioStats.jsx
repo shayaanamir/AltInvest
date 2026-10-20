@@ -57,6 +57,12 @@ export default function PortfolioStats() {
         <div className="dv2-stat-label">Total Balance</div>
         <div className="dv2-stat-value">{formatCurrencyFull(summary.totalBalance)}</div>
         <div className="dv2-stat-sub">Cost basis {formatCurrencyWhole(summary.totalCostBasis)}</div>
+        {summary.unpricedCount > 0 && (
+          <div className="dv2-stat-sub">
+            {summary.unpricedCount} {summary.unpricedCount === 1 ? "holding has" : "holdings have"} no current price
+            and {summary.unpricedCount === 1 ? "isn't" : "aren't"} included.
+          </div>
+        )}
       </div>
 
       <div className="sv2-card dv2-stat-card">

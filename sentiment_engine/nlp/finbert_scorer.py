@@ -13,6 +13,8 @@ a fraction of a second for the whole batch on a 3090.
 
 from __future__ import annotations
 
+import threading
+import time
 from typing import Optional
 
 try:
@@ -27,6 +29,16 @@ logger = get_logger("finbert_scorer")
 # Lazy-loaded pipeline — only initialised once per process, then reused
 _pipeline = None
 
+# Many pipelines run concurrently (scheduler + requests), so loading is guarded by a lock:
+# the first caller loads the model, the rest wait for it instead of loading it again.
+_load_lock = threading.Lock()
+_load_error: Optional[str] = None      # why the last load failed; None if it hasn't failed
+_last_failed_at = 0.0                  # time.monotonic() of the last failed load
+
+# After a failed load (torch missing, no network for the weights, ...) don't retry on every
+# call — each retry re-imports torch and can take seconds. Retry once this has passed.
+_RETRY_AFTER_SECONDS = 300
+
 # Tune based on VRAM headroom. A 3090 (24GB) can comfortably handle much
 # larger batches than this for a base-sized BERT model — 64 is conservative
 # and leaves room for the rest of your stack (torch, other models, etc).
@@ -39,9 +51,21 @@ def _get_pipeline():
     Cached at module level so this cost is paid ONCE per process,
     not once per pipeline run — critical if you run this as a
     long-lived service instead of a fresh CLI process each cycle.
+
+    Thread-safe. Returns None if the model is unavailable; a failed load is
+    remembered and only retried after _RETRY_AFTER_SECONDS.
     """
-    global _pipeline
-    if _pipeline is None:
+    global _pipeline, _load_error, _last_failed_at
+    if _pipeline is not None:
+        return _pipeline
+
+    with _load_lock:
+        # Re-check: another thread may have finished loading while this one waited for the lock.
+        if _pipeline is not None:
+            return _pipeline
+        if _load_error is not None and time.monotonic() - _last_failed_at < _RETRY_AFTER_SECONDS:
+            return None
+
         try:
             logger.info(
                 "Initializing PyTorch and Transformers. If this is the first run, "
@@ -64,22 +88,36 @@ def _get_pipeline():
                 max_length=512,
                 device=device,
             )
+            _load_error = None
             logger.info("FinBERT model loaded successfully")
         except Exception as e:
-            logger.error(f"Failed to load FinBERT: {e}. Scores will default to 0.0")
             _pipeline = None
-    return _pipeline
+            _load_error = f"{type(e).__name__}: {e}"
+            _last_failed_at = time.monotonic()
+            logger.error(
+                f"Failed to load FinBERT: {_load_error}. Articles will be scored with VADER only; "
+                f"will retry in {_RETRY_AFTER_SECONDS}s."
+            )
+        return _pipeline
 
 
-def warmup_pipeline() -> None:
+def get_load_error() -> Optional[str]:
+    """Why FinBERT is unavailable, or None if it loaded (or hasn't been tried yet)."""
+    return _load_error
+
+
+def warmup_pipeline() -> bool:
     """
     Explicitly pre-load the FinBERT model and PyTorch into memory.
 
     Call this once at process startup so the first scoring call bears zero
     model-load latency.  Safe to call multiple times — subsequent calls are
     instant because the pipeline is cached at module level.
+
+    Returns True if the model is loaded and ready, False if it could not be
+    loaded (see get_load_error()).
     """
-    _get_pipeline()
+    return _get_pipeline() is not None
 
 
 def _label_to_signed_score(label: str, conf: float) -> float:
@@ -92,9 +130,10 @@ def _label_to_signed_score(label: str, conf: float) -> float:
     return 0.0
 
 
-def score_text(text: str) -> float:
+def score_text(text: str) -> Optional[float]:
     """
-    Scores a SINGLE piece of text with FinBERT.
+    Scores a SINGLE piece of text with FinBERT. Returns None if FinBERT is
+    unavailable or fails, so a failure isn't mistaken for a neutral 0.0.
 
     Kept for backwards compatibility / ad-hoc use, but the pipeline
     (score_articles) should always be preferred for batches — this
@@ -105,24 +144,29 @@ def score_text(text: str) -> float:
 
     pipe = _get_pipeline()
     if pipe is None:
-        return 0.0
+        return None
 
     try:
         result = pipe(text)[0]
         return _label_to_signed_score(result["label"], result["score"])
     except Exception as e:
         logger.error(f"FinBERT scoring error: {e}")
-        return 0.0
+        return None
 
 
 def score_articles(articles: list[dict]) -> list[dict]:
+    """
+    Adds finbert_score to each article. If FinBERT is unavailable or the batch
+    fails, finbert_score is None (not 0.0) so the ensemble can fall back to VADER
+    alone instead of treating the failure as a neutral reading.
+    """
     if not articles:
         return []
 
     pipe = _get_pipeline()
     if pipe is None:
-        logger.warning("FinBERT unavailable. Setting all finbert_scores to 0.0")
-        return [{**a, "finbert_score": 0.0} for a in articles]
+        logger.warning("FinBERT unavailable. Setting all finbert_scores to None (VADER-only)")
+        return [{**a, "finbert_score": None} for a in articles]
 
     texts = [
         a.get("finbert_text") or a.get("cleaned_text") or a.get("full_text", "")
@@ -142,11 +186,11 @@ def score_articles(articles: list[dict]) -> list[dict]:
                 torch.cuda.empty_cache()
                 results = pipe(safe_texts, batch_size=4, truncation=True, max_length=512)
             except Exception as e2:
-                logger.error(f"FinBERT retry also failed: {e2}. Falling back to 0.0 for all.")
-                return [{**a, "finbert_score": 0.0} for a in articles]
+                logger.error(f"FinBERT retry also failed: {e2}. Falling back to VADER-only for all.")
+                return [{**a, "finbert_score": None} for a in articles]
         else:
-            logger.error(f"FinBERT batch scoring failed: {e}. Falling back to 0.0 for all.")
-            return [{**a, "finbert_score": 0.0} for a in articles]
+            logger.error(f"FinBERT batch scoring failed: {e}. Falling back to VADER-only for all.")
+            return [{**a, "finbert_score": None} for a in articles]
 
     scored = []
     for article, result in zip(articles, results):

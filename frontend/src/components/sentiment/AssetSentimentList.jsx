@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { ErrorState } from "../../errors";
 import { useAsync } from "../../hooks/useAsync";
-import { sentimentApi } from "../../services/sentimentApi";
+import { sentimentApi, onSentimentUpdated } from "../../services/sentimentApi";
 import { onWatchlistsChanged } from "../../services/holdingsEvents";
 import WatchStar from "../watchlists/WatchStar";
 import { getAaiTierColor } from "../../utils/scoring";
@@ -27,7 +27,7 @@ export default function AssetSentimentList({ colors, onSelectAsset }) {
 
   // "all" (Everything) fetches the combined feed; "tokenized" is disabled/unreachable
   const apiScope = tab === "all" ? "all" : tab === "tokenized" ? "crypto" : tab;
-  const { data: rawRows, loading, error, refetch } = useAsync(() => sentimentApi.getAssetList(apiScope), [apiScope]);
+  const { data: rawRows, loading, error, refetch } = useAsync(() => sentimentApi.getAssetList(apiScope), [apiScope], { subscribe: onSentimentUpdated });
   const rows = rawRows || [];
   // Everything on the signed-in user's watchlists, kept current as they edit them.
   const { data: watched } = useAsync(() => sentimentApi.getWatchedAssetIds(), [], { subscribe: onWatchlistsChanged });

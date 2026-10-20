@@ -17,7 +17,7 @@ This is the one function Person B's backend calls.
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 try:
@@ -30,6 +30,8 @@ try:
         NEWS_NLP_WEIGHT,
         MARKET_SIGNAL_WEIGHT,
         TREND_DELTA_THRESHOLD,
+        TREND_LOOKBACK_HOURS,
+        TREND_TOLERANCE_HOURS,
     )
     from sentiment_engine.utils.logger import get_logger
 except ImportError:
@@ -42,6 +44,8 @@ except ImportError:
         NEWS_NLP_WEIGHT,
         MARKET_SIGNAL_WEIGHT,
         TREND_DELTA_THRESHOLD,
+        TREND_LOOKBACK_HOURS,
+        TREND_TOLERANCE_HOURS,
     )
     from utils.logger import get_logger
 
@@ -64,21 +68,46 @@ def _weighted_mean(scores: list[float], weights: list[float]) -> float:
     return round(sum(s * w for s, w in zip(scores, weights)) / total_weight, 4)
 
 
-def _detect_trend(current_score: float, history: list[dict]) -> str:
-    """
-    Compares current score against the most recent historical score.
-    Returns 'improving', 'deteriorating', or 'stable'.
-    """
-    if not history:
-        return "stable"
+def _parse_ts(value) -> Optional[datetime]:
+    """Parses a stored timestamp (ISO string or datetime) to an aware UTC datetime."""
+    if isinstance(value, datetime):
+        ts = value
+    else:
+        try:
+            ts = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    return ts if ts.tzinfo else ts.replace(tzinfo=timezone.utc)
 
-    # Most recent historical entry
-    previous = sorted(history, key=lambda h: h.get("timestamp", ""), reverse=True)
-    if not previous:
-        return "stable"
 
-    prev_score = previous[0].get("sentiment_score", 0.0)
-    delta      = current_score - prev_score
+def _detect_trend(current_score: float, history: list[dict], now: Optional[datetime] = None) -> str:
+    """
+    Compares the current score with the stored reading closest to TREND_LOOKBACK_HOURS
+    ago (24h), counting only readings within TREND_TOLERANCE_HOURS of that point.
+
+    Returns 'improving', 'deteriorating' or 'stable' — or 'unknown' when there is no
+    reading that old, so a lack of history isn't reported as a flat market.
+    """
+    now = now or datetime.now(tz=timezone.utc)
+    target = now - timedelta(hours=TREND_LOOKBACK_HOURS)
+    tolerance = timedelta(hours=TREND_TOLERANCE_HOURS)
+
+    baseline, best_gap = None, None
+    for h in history:
+        ts = _parse_ts(h.get("timestamp") or h.get("last_updated"))
+        if ts is None or h.get("sentiment_score") is None:
+            continue
+        # Skip the neutral placeholders written when no articles were found.
+        if not (h.get("confidence") or 0) > 0 or (h.get("data_quality") or {}).get("reason") == "no_articles":
+            continue
+        gap = abs(ts - target)
+        if gap <= tolerance and (best_gap is None or gap < best_gap):
+            baseline, best_gap = h, gap
+
+    if baseline is None:
+        return "unknown"
+
+    delta = current_score - baseline["sentiment_score"]
 
     if delta > TREND_DELTA_THRESHOLD:
         return "improving"
@@ -88,27 +117,68 @@ def _detect_trend(current_score: float, history: list[dict]) -> str:
         return "stable"
 
 
+def _load_trend_history(asset_id: str) -> list[dict]:
+    """Fetches the ~24h-ago readings for trend detection; [] if storage is unavailable."""
+    try:
+        try:
+            from sentiment_engine.storage.mongo_handler import get_trend_baseline
+        except ImportError:
+            from storage.mongo_handler import get_trend_baseline
+        return get_trend_baseline(asset_id)
+    except Exception as exc:
+        logger.warning(f"Could not load trend baseline for {asset_id}: {exc}")
+        return []
+
+
 def _extract_top_headlines(articles: list[dict], n: int = 5) -> list[dict]:
     """
-    Returns the top N most impactful headlines (highest absolute nlp_score),
-    sorted by absolute score descending.
+    Returns the N headlines that moved the news score the most, largest effect first.
+
+    `contribution` is the article's share of the weighted mean in run_pipeline —
+    nlp_score * (recency_weight * trust_weight) / sum of those weights — so the
+    contributions of ALL articles add up to the news score itself. A strongly-worded
+    but old or low-trust article therefore ranks below a milder fresh, trusted one.
+    Each headline also carries the blended score and the VADER and FinBERT scores it
+    was blended from.
     """
-    sorted_articles = sorted(
-        articles,
-        key=lambda a: abs(a.get("nlp_score", 0.0)),
-        reverse=True
+    weights = [a.get("recency_weight", 1.0) * a.get("trust_weight", 1.0) for a in articles]
+    total = sum(weights)
+    ranked = sorted(
+        ((a.get("nlp_score", 0.0) * w / total if total else 0.0, a) for a, w in zip(articles, weights)),
+        key=lambda pair: abs(pair[0]),
+        reverse=True,
     )
 
     return [
         {
             "title":  a.get("title", ""),
             "score":  round(a.get("nlp_score", 0.0), 4),
+            "contribution": round(contribution, 4),
+            "vader_score":   _round_or_none(a.get("vader_score")),
+            "finbert_score": _round_or_none(a.get("finbert_score")),
             "source": a.get("source", ""),
             "age_hours": a.get("age_hours", 0.0),
             "link":   a.get("link", ""),
         }
-        for a in sorted_articles[:n]
+        for contribution, a in ranked[:n]
     ]
+
+
+def _scoring_source(articles: list[dict]) -> tuple[str, bool]:
+    """
+    Describes which models actually scored the articles, so the label never claims
+    FinBERT when it didn't run. Returns (source label, finbert_unavailable).
+    """
+    with_finbert = sum(1 for a in articles if a.get("nlp_models") == "vader+finbert")
+    if with_finbert == len(articles):
+        return "Ensemble (VADER + FinBERT)", False
+    if with_finbert == 0:
+        return "VADER only (FinBERT unavailable)", True
+    return "Ensemble (VADER + FinBERT, partial)", True
+
+
+def _round_or_none(value: Optional[float]) -> Optional[float]:
+    return round(value, 4) if value is not None else None
 
 
 def _source_breakdown(articles: list[dict]) -> dict[str, int]:
@@ -130,9 +200,10 @@ def run_pipeline(
 
     Args:
         asset_id: e.g. "btc", "eth"
-        history:  Previous sentiment scores for trend detection.
-                  Pass in from MongoDB via storage/mongo_handler.py.
-                  If None, trend will be "stable".
+        history:  Stored readings for trend detection. Normally omitted: when None, the
+                  readings around 24h ago are loaded from MongoDB. Pass a list to
+                  override (e.g. in tests). With no reading near 24h old the trend is
+                  "unknown".
         return_raw_articles: if True, returns (output, raw_articles) instead
             of just output — lets callers reuse the articles already fetched
             here instead of re-fetching for storage purposes.
@@ -170,11 +241,14 @@ def run_pipeline(
     volume_metrics = compute_volume_metrics(scored_articles)
 
     # ── Step 6: Compute weighted NLP score ───────────────────────────────────
-    # Use recency_adjusted_score as the weight for each article's contribution
-    recency_scores  = [a["recency_adjusted_score"] for a in weighted_articles]
-    recency_weights = [a["recency_weight"] * a.get("trust_weight", 1.0) for a in weighted_articles]
+    # Weighted mean of raw nlp_score, with recency * trust as the weights.
+    # recency_adjusted_score must NOT be used here — it already has recency and
+    # trust multiplied in, so weighting it again would double-apply them and
+    # shrink the result toward neutral.
+    nlp_scores  = [a.get("nlp_score", 0.0) for a in weighted_articles]
+    nlp_weights = [a["recency_weight"] * a.get("trust_weight", 1.0) for a in weighted_articles]
 
-    raw_nlp_score = _weighted_mean(recency_scores, recency_weights)
+    raw_nlp_score = _weighted_mean(nlp_scores, nlp_weights)
     nlp_score_01  = _normalise_nlp_to_0_1(raw_nlp_score)
 
     # ── Step 7: Blend NLP + CMC ───────────────────────────────────────────────
@@ -182,13 +256,20 @@ def run_pipeline(
     final_score = round((final_score_01 * 2.0) - 1.0, 4)
 
     # ── Step 8: Trend detection ───────────────────────────────────────────────
-    trend = _detect_trend(final_score, history or [])
+    if history is None:
+        history = _load_trend_history(asset_id)
+    trend = _detect_trend(final_score, history)
 
     # ── Assemble output ───────────────────────────────────────────────────────
+    source, finbert_unavailable = _scoring_source(scored_articles)
+    quote_fallback  = bool(cmc_data.get("quote", {}).get("is_fallback", False))
+    global_fallback = bool(cmc_data.get("global", {}).get("is_fallback", False))
+
     output = {
         # Core contract fields (what Person B needs)
         "asset_id":        asset_id,
         "sentiment_score": final_score,          # 0.0 – 1.0
+        "source":          source,
         "confidence":      volume_metrics["confidence"],
         "confidence_label": volume_metrics["confidence_label"],
         "signal_strength": volume_metrics["signal_strength"],
@@ -213,20 +294,24 @@ def run_pipeline(
         # Top headlines
         "top_headlines": _extract_top_headlines(weighted_articles),
 
-        # CMC detail
+        # CMC detail — fallback values are placeholders, not readings, so they go out as None
         "market_signals": {
-            "price_change_24h":  cmc_data["quote"]["price_change_24h"],
-            "volume_change_24h": cmc_data["quote"]["volume_change_24h"],
+            "price_change_24h":  None if quote_fallback else cmc_data["quote"]["price_change_24h"],
+            "volume_change_24h": None if quote_fallback else cmc_data["quote"]["volume_change_24h"],
             "is_trending":       cmc_data["is_trending"],
-            "btc_dominance":     cmc_data["global"]["btc_dominance"],
+            "btc_dominance":     None if global_fallback else cmc_data["global"]["btc_dominance"],
         },
 
         # Per-source article counts
         "articles_by_source": _source_breakdown(scored_articles),
         "data_quality": {
-            "degraded": cmc_data.get("degraded", False),
-            "cmc_fallback": cmc_data.get("quote", {}).get("is_fallback", False)
-                            or cmc_data.get("global", {}).get("is_fallback", False),
+            "degraded":          cmc_data.get("degraded", False),
+            "cmc_fallback":      quote_fallback or global_fallback,
+            "quote_fallback":    quote_fallback,
+            "global_fallback":   global_fallback,
+            "trending_fallback": cmc_data.get("trending_fallback", False),
+            "cmc_key_missing":   cmc_data.get("key_missing", False),
+            "finbert_unavailable": finbert_unavailable,
         },
     }
 
@@ -250,7 +335,7 @@ def _neutral_output(asset_id: str, timestamp: datetime) -> dict:
         "confidence":         0.0,
         "confidence_label":   "low",
         "signal_strength":    "weak",
-        "trend":              "stable",
+        "trend":              "unknown",
         "last_updated":       timestamp.isoformat(),
         "article_count":      0,
         "source_count":       0,

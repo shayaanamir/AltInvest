@@ -28,6 +28,10 @@ def record_snapshots() -> int:
     for user_id in db.portfolio_holdings.distinct("user_id"):
         try:
             total = get_total_portfolio_value(user_id)
+            if total is None:
+                # A holding couldn't be valued; a snapshot without it would look like a drop.
+                log.warning("snapshot skipped for %s: a holding has no price", user_id)
+                continue
         except Exception as exc:
             log.error("snapshot skipped for %s: %s", user_id, exc)
             continue

@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { ErrorState, useToast } from "../../errors";
 import { useAsync } from "../../hooks/useAsync";
-import { sentimentApi } from "../../services/sentimentApi";
+import { sentimentApi, onSentimentUpdated } from "../../services/sentimentApi";
 import { fetchAssetStatus } from "../../services/assetRepository";
 import { onHoldingsChanged, onWatchlistsChanged } from "../../services/holdingsEvents";
 import CreateAlertModal from "../alerts/CreateAlertModal";
@@ -18,8 +18,8 @@ import MarketContextPanel from "./MarketContextPanel";
 
 export default function AssetSentimentDetail({ assetId, colors, onBack, onSwitchAsset }) {
   const toast = useToast();
-  const { data: detail, error, refetch, setData: setDetail } = useAsync(() => sentimentApi.getAssetDetail(assetId), [assetId]);
-  const { data: switchableRaw } = useAsync(() => sentimentApi.getSwitchableAssets(), []);
+  const { data: detail, error, refetch, setData: setDetail } = useAsync(() => sentimentApi.getAssetDetail(assetId), [assetId], { subscribe: onSentimentUpdated });
+  const { data: switchableRaw } = useAsync(() => sentimentApi.getSwitchableAssets(), [], { subscribe: onSentimentUpdated });
   const switchable = switchableRaw || [];
   const [refreshing, setRefreshing] = useState(false);
   // Whether the signed-in user holds / watches this asset (null: not in the covered universe).

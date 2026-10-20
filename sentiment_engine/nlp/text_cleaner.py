@@ -22,29 +22,46 @@ logger = get_logger("text_cleaner")
 
 # Boilerplate phrases that appear in many crypto news articles
 # and add no sentiment signal — strip them before scoring.
-BOILERPLATE_PATTERNS = [
-    r"read more.*",
-    r"click here.*",
-    r"subscribe.*newsletter.*",
-    r"follow us on.*",
-    r"sponsored content.*",
-    r"advertisement.*",
-    r"this article.*does not constitute.*",
-    r"not financial advice.*",
-    r"disclaimer.*",
-    r"the views expressed.*",
-    r"past performance.*",
-    r"\bshare this article\b.*",
-    r"©.*all rights reserved.*",
+#
+# Every pattern is confined to ONE sentence/line: [^.!?\n] never crosses a sentence end or
+# a newline, and there is no DOTALL. An unbounded ".*" would delete everything after the
+# first "read more" or "disclaimer", i.e. most of the article (or the title itself).
+
+_TAIL = r"[^.!?\n]*[.!?]?"                 # rest of the current sentence, plus its end mark
+_SENTENCE = r"[^.!?\n]*" + r"{}" + _TAIL   # the whole sentence around a phrase
+
+# Calls to action: remove the phrase and what trails it in the same sentence
+# ("Read more: Bitcoin hits 100k"), keeping whatever came before it.
+_TRAILING_PHRASES = [
+    r"\bread more\b",
+    r"\bclick here\b",
+    r"\bfollow us on\b",
+    r"\bsponsored content\b",
+    r"\bshare this article\b",
+    r"\bsubscribe\b[^.!?\n]*?\bnewsletter\b",
+    r"©",
 ]
 
-_BOILERPLATE_RE = re.compile(
-    "|".join(BOILERPLATE_PATTERNS),
-    flags=re.IGNORECASE | re.DOTALL,
+# Disclaimers: the whole sentence is boilerplate, so remove all of it.
+_WHOLE_SENTENCE_PHRASES = [
+    r"\bdoes not constitute\b",
+    r"\bnot financial advice\b",
+    r"\bdisclaimer\b",
+    r"\bthe views expressed\b",
+    r"\bpast performance\b",
+    r"\ball rights reserved\b",
+]
+
+BOILERPLATE_PATTERNS = (
+    [p + _TAIL for p in _TRAILING_PHRASES]
+    + [_SENTENCE.format(p) for p in _WHOLE_SENTENCE_PHRASES]
+    + [r"\badvertisement\b"]               # a bare label; nothing after it belongs to it
 )
 
+_BOILERPLATE_RE = re.compile("|".join(BOILERPLATE_PATTERNS), flags=re.IGNORECASE)
 
-def clean_text(raw: str) -> str:
+
+def clean_text(raw: str, strip_boilerplate: bool = True) -> str:
     """
     Full cleaning pipeline for a single piece of text.
 
@@ -52,7 +69,8 @@ def clean_text(raw: str) -> str:
     1. Normalise unicode
     2. Strip HTML tags
     3. Remove URLs
-    4. Remove boilerplate
+    4. Remove boilerplate (skipped when strip_boilerplate is False — headlines are
+       content, not feed furniture, so they shouldn't lose a sentence to it)
     5. Remove special characters (keep punctuation)
     6. Collapse whitespace
     7. Strip leading/trailing whitespace
@@ -74,7 +92,8 @@ def clean_text(raw: str) -> str:
     text = re.sub(r"https?://\S+|www\.\S+", " ", text)
 
     # 4. Remove boilerplate
-    text = _BOILERPLATE_RE.sub(" ", text)
+    if strip_boilerplate:
+        text = _BOILERPLATE_RE.sub(" ", text)
 
     # 5. Remove special characters — keep letters, digits, spaces, basic punctuation
     text = re.sub(r"[^\w\s.,!?$%\-']", " ", text)
@@ -121,10 +140,11 @@ def prepare_article(article: dict) -> dict:
     raw_title   = article.get("title", "")
     raw_summary = article.get("summary", "")
 
-    # Combine title and summary — title carries strong signal, weight it by repeating
-    combined = f"{raw_title}. {raw_title}. {raw_summary}"
-
-    cleaned = clean_text(combined)
+    # Combine title and summary — title carries strong signal, weight it by repeating.
+    # Boilerplate is stripped from the summary only; the headline is kept as written.
+    title   = clean_text(raw_title, strip_boilerplate=False)
+    summary = clean_text(raw_summary)
+    cleaned = clean_text(f"{title}. {title}. {summary}", strip_boilerplate=False)
     finbert_ready = truncate_for_finbert(cleaned)
 
     return {

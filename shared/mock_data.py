@@ -10,12 +10,6 @@ Usage:
 
 from datetime import datetime, timezone
 
-SUPPORTED_ASSETS = {
-    "BTC": "Bitcoin",
-    "ETH": "Ethereum",
-}
-
-
 def _now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 

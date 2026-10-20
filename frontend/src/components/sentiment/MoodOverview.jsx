@@ -1,6 +1,6 @@
 import { useAsync } from "../../hooks/useAsync";
 import { ErrorState } from "../../errors";
-import { sentimentApi } from "../../services/sentimentApi";
+import { sentimentApi, onSentimentUpdated } from "../../services/sentimentApi";
 import MoodGaugeCard from "./MoodGaugeCard";
 
 function cap(s) {
@@ -18,7 +18,7 @@ function NoReadingCard({ eyebrow, reason }) {
 }
 
 export default function MoodOverview({ colors }) {
-  const { data, error, refetch } = useAsync(() => sentimentApi.getMoodOverview(), []);
+  const { data, error, refetch } = useAsync(() => sentimentApi.getMoodOverview(), [], { subscribe: onSentimentUpdated });
 
   if (error) {
     return (

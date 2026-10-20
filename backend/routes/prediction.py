@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from models.schemas import PredictionResponse
-from shared.mock_data import mock_prediction, SUPPORTED_ASSETS
+from shared.mock_data import mock_prediction
+from utils.asset_gate import require_known_asset
 
 router = APIRouter(tags=["Prediction"])
 
@@ -36,12 +37,7 @@ def get_prediction(asset: str):
     ml/api/prediction_service.py or db/seed_predictions_risk.py).
     Falls back to mock data if nothing's in the DB yet, or Mongo is down.
     """
-    asset = asset.upper()
-    if asset not in SUPPORTED_ASSETS:
-        raise HTTPException(
-            status_code=422,
-            detail=f"Asset '{asset}' is not supported. Supported: {list(SUPPORTED_ASSETS.keys())}"
-        )
+    asset = require_known_asset(asset)
 
     try:
         from db.queries import get_latest_prediction

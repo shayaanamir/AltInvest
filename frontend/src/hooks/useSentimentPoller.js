@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import { API_BASE_URL } from "../config";
+import { reportApiReachable } from "../errors/connectionStatus";
 
 /**
  * useSentimentPoller
@@ -34,13 +35,21 @@ function newestTimestamp(items) {
 /**
  * @param {object}   opts
  * @param {function} opts.onUpdate  - Called when fresh data has arrived
+ * @param {function} [opts.onStatus] - Called after every check with true (it worked) or false
+ *                                     (it failed), so the UI can say a check failed instead of
+ *                                     silently staying on old data
  * @param {boolean}  [opts.enabled] - Set false to disable (e.g. when mock)
  */
-export function useSentimentPoller({ onUpdate, enabled = true } = {}) {
+export function useSentimentPoller({ onUpdate, onStatus, enabled = true } = {}) {
   const lastSeenRef   = useRef(null);
   const timerRef      = useRef(null);
   const onUpdateRef   = useRef(onUpdate);
-  onUpdateRef.current = onUpdate;
+  const onStatusRef   = useRef(onStatus);
+  useEffect(() => {
+    // Keep the latest callbacks without restarting the polling timers when they change.
+    onUpdateRef.current = onUpdate;
+    onStatusRef.current = onStatus;
+  });
 
   const poll = useCallback(async () => {
     if (!enabled) return;
@@ -48,17 +57,25 @@ export function useSentimentPoller({ onUpdate, enabled = true } = {}) {
       const res = await fetch(`${API_BASE_URL}/sentiment`, {
         signal: AbortSignal.timeout(10_000),
       });
-      if (!res.ok) return;
+      reportApiReachable(true); // the server answered, even if with an error status
+      if (!res.ok) {
+        onStatusRef.current?.(false);
+        return;
+      }
 
       const data    = await res.json();
       const newest  = newestTimestamp(data);
+      onStatusRef.current?.(true);
 
       if (newest && newest !== lastSeenRef.current) {
         lastSeenRef.current = newest;
         onUpdateRef.current?.();
       }
     } catch {
-      // Swallow — network/timeout errors are non-fatal for a poller
+      // Not fatal for a poller (it tries again next time), but it must not leave the UI
+      // claiming the data is live or that nothing is wrong
+      reportApiReachable(false);
+      onStatusRef.current?.(false);
     }
   }, [enabled]);
 

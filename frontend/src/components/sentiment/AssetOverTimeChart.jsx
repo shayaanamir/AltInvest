@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { ErrorState } from "../../errors";
 import { useAsync } from "../../hooks/useAsync";
-import { sentimentApi } from "../../services/sentimentApi";
+import { sentimentApi, onSentimentUpdated } from "../../services/sentimentApi";
 
 const RANGES = [
   { key: "24h", label: "24h" },
@@ -10,7 +10,8 @@ const RANGES = [
   { key: 90, label: "90d" },
 ];
 
-const TREND_TEXT = { improving: "Warming up", deteriorating: "Cooling down", stable: "Stable" };
+// Trend is measured against the reading from about 24h ago; "unknown" means there isn't one yet.
+const TREND_TEXT = { improving: "Warming up vs 24h ago", deteriorating: "Cooling down vs 24h ago", stable: "Steady vs 24h ago", unknown: "Not enough history for a 24h trend yet" };
 
 function formatDateLabel(dStr) {
   if (!dStr) return "";
@@ -24,7 +25,7 @@ export default function AssetOverTimeChart({ assetId, trend, colors }) {
   const [hoverIdx, setHoverIdx] = useState(null);
   const containerRef = useRef(null);
 
-  const { data: rawSeries, loading, error, refetch } = useAsync(() => sentimentApi.getAssetOverTime(assetId, range), [assetId, range]);
+  const { data: rawSeries, loading, error, refetch } = useAsync(() => sentimentApi.getAssetOverTime(assetId, range), [assetId, range], { subscribe: onSentimentUpdated });
   const series = rawSeries || [];
 
   const W = 420, H = 170;
@@ -91,7 +92,7 @@ export default function AssetOverTimeChart({ assetId, trend, colors }) {
           ))}
         </div>
       </div>
-      <div className="sv2-small sv2-mt-8" style={{ color, fontWeight: 700 }}>{TREND_TEXT[trend] ?? "Stable"}</div>
+      <div className="sv2-small sv2-mt-8" style={{ color, fontWeight: 700 }}>{TREND_TEXT[trend] ?? TREND_TEXT.unknown}</div>
       
       <div className="sv2-mt-8" style={{ position: "relative" }}>
         {loading ? (

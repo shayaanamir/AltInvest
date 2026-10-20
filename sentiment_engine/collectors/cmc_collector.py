@@ -37,7 +37,7 @@ HEADERS = {
 _CACHE_TTL_SECONDS = 90
 
 _global_cache: dict = {"data": None, "fetched_at": 0.0}
-_trending_cache: dict = {"data": None, "fetched_at": 0.0}
+_trending_cache: dict = {"data": None, "fetched_at": 0.0, "fetched": False}
 
 
 def _get(endpoint: str, params: dict = {}) -> Optional[dict]:
@@ -68,13 +68,17 @@ def fetch_quote_signals(asset_id: str) -> Optional[dict]:
         raise ValueError(f"Unknown asset: {asset_id}")
 
     symbol = ASSETS[asset_id]["cmc_symbol"]
-    data   = _get("/cryptocurrency/quotes/latest", {"symbol": symbol, "convert": "USD"})
+    cmc_id = ASSETS[asset_id]["cmc_id"]
 
-    if not data or "data" not in data or symbol not in data["data"]:
-        logger.warning(f"No CMC quote data for {symbol}. Returning neutral signals.")
+    # Look up by id, not symbol: symbols aren't unique on CMC (many tokens share a ticker)
+    # and they change — MATIC became POL — while the id stays put. The response is keyed by id.
+    data = _get("/cryptocurrency/quotes/latest", {"id": cmc_id, "convert": "USD"})
+
+    if not data or "data" not in data or str(cmc_id) not in data["data"]:
+        logger.warning(f"No CMC quote data for {symbol} (id {cmc_id}). Returning neutral signals.")
         return _neutral_quote_signals(asset_id)
 
-    asset_data = data["data"][symbol]
+    asset_data = data["data"][str(cmc_id)]
     quote      = asset_data["quote"]["USD"]
 
     p1h  = quote.get("percent_change_1h", 0)  or 0
@@ -85,12 +89,13 @@ def fetch_quote_signals(asset_id: str) -> Optional[dict]:
 
     price_score   = _normalise_pct((p1h * 0.2) + (p24h * 0.5) + (p7d * 0.3))
     volume_score  = _normalise_pct(vol, clip=100.0)
-    dom_score     = min(1.0, dom / 60.0)
 
+    # Market-cap dominance is reported but deliberately not scored: it measures size, not
+    # sentiment. Scoring it as dom/60 gave BTC ~0.9 and almost every other asset ~0.0,
+    # dragging their composite down regardless of what the market was doing.
     composite = round(
-        price_score  * 0.60 +
-        volume_score * 0.25 +
-        dom_score    * 0.15,
+        price_score  * 0.70 +
+        volume_score * 0.30,
         4
     )
 
@@ -104,7 +109,6 @@ def fetch_quote_signals(asset_id: str) -> Optional[dict]:
         "market_cap_dominance": round(dom, 4),
         "price_score":        price_score,
         "volume_score":       volume_score,
-        "dominance_score":    round(dom_score, 4),
         "composite_market_score": composite,
         "is_fallback":        False,
         "fetched_at":         datetime.now(tz=timezone.utc).isoformat(),
@@ -136,18 +140,23 @@ def fetch_global_metrics(force_refresh: bool = False) -> Optional[dict]:
         gdata = data["data"]
         quote = gdata.get("quote", {}).get("USD", {})
 
-        btc_dom  = gdata.get("btc_dominance", 50.0) or 50.0
-        mcap_chg = quote.get("total_market_cap_yesterday_percentage_change", 0) or 0
+        btc_dom = gdata.get("btc_dominance")
 
-        global_score = round(
-            _normalise_pct(mcap_chg) * 0.7 +
-            min(1.0, btc_dom / 60.0) * 0.3,
-            4
-        )
+        # True 24h change: current total market cap vs the value 24h ago. CMC's
+        # total_market_cap_yesterday_percentage_change is a different thing (yesterday's
+        # close vs the day before), so it isn't used. None if either value is missing.
+        mcap_now  = quote.get("total_market_cap")
+        mcap_prev = quote.get("total_market_cap_yesterday")
+        mcap_chg  = ((mcap_now / mcap_prev) - 1) * 100 if mcap_now and mcap_prev else None
+
+        # BTC dominance isn't scored (see fetch_quote_signals): it's a constant ~0.9 here,
+        # which would just add a fixed bullish offset. Without a market-cap change the
+        # score stays neutral.
+        global_score = round(_normalise_pct(mcap_chg), 4) if mcap_chg is not None else 0.5
 
         result = {
-            "btc_dominance":               round(btc_dom, 4),
-            "total_market_cap_change_24h": round(mcap_chg, 4),
+            "btc_dominance":               round(btc_dom, 4) if btc_dom is not None else None,
+            "total_market_cap_change_24h": round(mcap_chg, 4) if mcap_chg is not None else None,
             "global_market_score":         global_score,
             "is_fallback":                 False,
             "fetched_at":                  datetime.now(tz=timezone.utc).isoformat(),
@@ -158,10 +167,15 @@ def fetch_global_metrics(force_refresh: bool = False) -> Optional[dict]:
     return result
 
 
-def fetch_trending_assets(force_refresh: bool = False) -> list[str]:
-    """Asset-independent — cached the same way as global metrics."""
+def fetch_trending_assets(force_refresh: bool = False) -> Optional[list[int]]:
+    """
+    Asset-independent — cached the same way as global metrics.
+    Returns the CMC ids of the trending assets, or None when CMC couldn't be
+    reached, so callers can tell "not trending" apart from "unknown".
+    """
     now = time.monotonic()
-    if not force_refresh and _trending_cache["data"] is not None:
+    # "data" may legitimately be None (CMC unreachable), so track fetches separately.
+    if not force_refresh and _trending_cache["fetched"]:
         if now - _trending_cache["fetched_at"] < _CACHE_TTL_SECONDS:
             return _trending_cache["data"]
 
@@ -169,7 +183,7 @@ def fetch_trending_assets(force_refresh: bool = False) -> list[str]:
 
     if not data or "data" not in data:
         logger.warning("Could not fetch CMC trending assets.")
-        result = []
+        result = None
     else:
         raw_list = []
         d_data = data["data"]
@@ -181,14 +195,17 @@ def fetch_trending_assets(force_refresh: bool = False) -> list[str]:
             else:
                 raw_list = list(d_data.values())
 
+        # CMC ids, not symbols: a trending token that merely shares a ticker with one of our
+        # assets must not count as that asset trending.
         result = [
-            item["symbol"].upper()
+            int(item["id"])
             for item in raw_list
-            if isinstance(item, dict) and "symbol" in item
+            if isinstance(item, dict) and item.get("id") is not None
         ]
 
     _trending_cache["data"] = result
     _trending_cache["fetched_at"] = now
+    _trending_cache["fetched"] = True
     return result
 
 
@@ -207,8 +224,7 @@ def fetch_all_signals(asset_id: str) -> dict:
         global_m = global_future.result()
         trending = trending_future.result()
 
-    symbol      = ASSETS[asset_id]["cmc_symbol"]
-    is_trending = symbol in trending
+    is_trending = (ASSETS[asset_id]["cmc_id"] in trending) if trending is not None else None
     trend_bonus = 0.05 if is_trending else 0.0
 
     cmc_score = round(
@@ -220,7 +236,9 @@ def fetch_all_signals(asset_id: str) -> dict:
         4
     )
 
-    degraded = bool(quote.get("is_fallback")) or bool(global_m.get("is_fallback"))
+    quote_fallback  = bool(quote.get("is_fallback"))
+    global_fallback = bool(global_m.get("is_fallback"))
+    degraded = quote_fallback or global_fallback
     if degraded:
         logger.warning(f"CMC data degraded for {asset_id.upper()} — using fallback component(s)")
 
@@ -232,6 +250,10 @@ def fetch_all_signals(asset_id: str) -> dict:
         "is_trending":     is_trending,
         "final_cmc_score": cmc_score,
         "degraded":        degraded,
+        "quote_fallback":  quote_fallback,
+        "global_fallback": global_fallback,
+        "trending_fallback": trending is None,
+        "key_missing":     not CMC_API_KEY,
     }
 
 
@@ -246,7 +268,6 @@ def _neutral_quote_signals(asset_id: str) -> dict:
         "market_cap_dominance":   0.0,
         "price_score":            0.5,
         "volume_score":           0.5,
-        "dominance_score":        0.5,
         "composite_market_score": 0.5,
         "is_fallback":            True,
         "fetched_at":             datetime.now(tz=timezone.utc).isoformat(),
