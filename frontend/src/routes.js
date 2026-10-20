@@ -33,9 +33,9 @@ export const ROUTES = [
   { key: "Watchlists", path: "/watchlists", element: WatchlistsPage, inNav: true, icon: "Watchlists", protected: true },
   { key: "Alerts", path: "/alerts", element: AlertsPage, inNav: true, icon: "Alerts", protected: true },
   { key: "Asset Detail", path: "/asset-detail", element: AssetDetailPage, inNav: false, protected: true },
+  { key: "Notifications", path: "/notifications", element: NotificationsPage, inNav: false, bottomNav: true, icon: "Notifications", protected: true },
+  { key: "Profile", path: "/profile", element: ProfilePage, inNav: false, bottomNav: true, icon: "Profile", protected: true },
   { key: "Settings", path: "/settings", element: SettingsPage, inNav: false, bottomNav: true, icon: "Settings", protected: true },
-  { key: "Profile", path: "/profile", element: ProfilePage, inNav: false, protected: true },
-  { key: "Notifications", path: "/notifications", element: NotificationsPage, inNav: false, protected: true },
 ];
 
 export const NAV_ITEMS = ROUTES.filter((r) => r.inNav);
@@ -46,11 +46,11 @@ export function getPath(pageKey) {
   return ROUTES.find((r) => r.key === pageKey)?.path ?? "/";
 }
 
+// The page a URL belongs to: its exact path (a trailing "/" is ignored). Anything else is "NotFound",
+// matching what the router renders (prefix matching used to call "/dashboardx" the dashboard).
 export function getPageName(pathname) {
-  if (pathname === "/") return "Landing";
-  const match = [...ROUTES]
-    .filter((r) => r.path !== "/")
-    .sort((a, b) => b.path.length - a.path.length)
-    .find((r) => pathname.startsWith(r.path));
-  return match?.key ?? "Dashboard";
+  const path = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+  if (path === "/") return "Landing";
+  const match = ROUTES.find((r) => r.path !== "/" && path === r.path);
+  return match?.key ?? "NotFound";
 }

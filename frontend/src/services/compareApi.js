@@ -1,5 +1,5 @@
 import { apiFetch } from "./apiClient";
-import { fetchUniverse, mapUniverseItem } from "./assetRepository";
+import { mapUniverseItem } from "./assetRepository";
 import { getEvidencePhrase } from "../utils/scoring";
 
 export function sentimentReadLabel(score) {
@@ -14,22 +14,24 @@ export function sentimentReadLabel(score) {
 export const evidenceLabel = getEvidencePhrase;
 
 export const compareApi = {
-  // The picker universe is the same covered universe Discover browses.
-  getUniverse: () => fetchUniverse({ category: "all", sort: "name", order: "asc" }),
-  getAssetUniverse: () => fetchUniverse({ category: "all", sort: "name", order: "asc" }),
+  /**
+   * The picker's search (GET /compare/candidates): light rows, searched and ranked on the server,
+   * best match first. Resolves to { items, total, maxSelectable }.
+   */
+  searchCandidates: async ({ q = "", category = "all", selected = [], limit = 30 } = {}) => {
+    const p = new URLSearchParams({ q: q.trim().slice(0, 64), category, selected: selected.join(","), limit });
+    const res = await apiFetch(`/compare/candidates?${p}`);
+    return {
+      items: res.items.map((r) => ({ ...mapUniverseItem(r), selected: r.selected })),
+      total: res.total,
+      maxSelectable: res.max_selectable,
+    };
+  },
 
-  search: (query) => fetchUniverse({ category: "all", sort: "name", order: "asc", q: query.trim() }),
-
-  // Ids are a mix of crypto symbols and NFT slugs; the universe says which is which.
+  // Ids are a mix of crypto symbols and NFT slugs; the server works out which is which.
   getByIds: async (ids) => {
-    const universe = await fetchUniverse({ category: "all" });
-    const known = ids.map((id) => universe.find((a) => a.id === id)).filter(Boolean);
-    if (known.length < 2) return known;
-    const assets = known.filter((a) => a.type === "crypto").map((a) => a.id);
-    const nft = known.filter((a) => a.type === "nft").map((a) => a.id);
-    const res = await apiFetch(
-      `/compare?assets=${encodeURIComponent(assets.join(","))}&nft=${encodeURIComponent(nft.join(","))}`
-    );
+    if (ids.length < 2) return [];
+    const res = await apiFetch(`/compare?ids=${encodeURIComponent(ids.join(","))}`);
     return res.items.map(mapUniverseItem);
   },
 };
