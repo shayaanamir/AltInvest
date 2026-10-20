@@ -24,6 +24,7 @@ export default function SimilarAssetCard({ asset }) {
         <WatchStar item={{ type: "crypto", id: asset.symbol, name: asset.name }} watching={asset.watching} size={15} />
       </div>
 
+      {asset.reason && <div className="adt-similar-reason">{asset.reason}</div>}
       <div className="adt-similar-price">{formatAssetPrice(asset.price)}</div>
       <div className="adt-similar-price-label">last price</div>
 

@@ -58,6 +58,16 @@ export const assetDetailApi = {
       priceHistory: d.price_history,
       // Only the model's target point; the chart draws the branch from the last actual price.
       forecast: d.forecast ? d.forecast.points.slice(1) : null,
+      // The target's band and how earlier runs turned out (runs whose target date has passed).
+      forecastMeta: d.forecast && {
+        lower: d.forecast.lower_bound,
+        upper: d.forecast.upper_bound,
+        changePct: d.forecast.change_30d_pct,
+        confidence: d.forecast.confidence,
+        modelVersion: d.forecast.model_version,
+        meanAbsErrorPct: d.forecast.mean_abs_error_pct,
+        scoredRuns: (d.forecast.runs || []).filter((x) => x.error_pct != null).length,
+      },
       aaiPanel: d.aai_panel && {
         score: d.aai_panel.score,
         signal: d.aai_panel.signal,
@@ -71,8 +81,21 @@ export const assetDetailApi = {
         confidence: d.sentiment.confidence == null ? null : Math.round(d.sentiment.confidence * 100),
         trend: d.sentiment.trend,
       },
-      about: d.about,
-      similarAssets: d.similar.map((s) => {
+      about: d.about && {
+        description: d.about.description,
+        website: d.about.website,
+        allTimeHigh: d.about.all_time_high,
+        athDate: d.about.ath_date,
+        source: d.about.source,
+      },
+      relatedAssets: (d.related || []).map(mapPeer),
+      similarAssets: (d.similar || []).map(mapPeer),
+    };
+  },
+};
+
+// A related / similar asset card: the universe row plus why it was picked.
+function mapPeer(s) {
         const m = mapUniverseItem(s);
         return {
           symbol: m.symbol,
@@ -85,8 +108,6 @@ export const assetDetailApi = {
           signal: m.signal,
           held: m.held,
           watching: m.watching,
+          reason: s.reason || null,
         };
-      }),
-    };
-  },
-};
+}
