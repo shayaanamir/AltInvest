@@ -3,6 +3,7 @@ import { API_BASE_URL } from "../config";
 import { ApiError, kindFromStatus } from "../errors/errorCatalog";
 import { reportApiReachable } from "../errors/connectionStatus";
 import { apiFetch } from "./apiClient";
+import { getToken, clearSession } from "../hooks/useAuth";
 
 /**
  * POST JSON to an auth endpoint. Throws ApiError:
@@ -84,4 +85,28 @@ export const authApi = {
             method: "POST",
             body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
         }),
+
+    /** Signed-in sessions for this account: [{ id, device, ip, created_at, last_active, current }]. */
+    listSessions: () => apiFetch("/auth/sessions"),
+
+    /** Sign out every session except this one. Resolves with { revoked }. */
+    revokeOtherSessions: () => apiFetch("/auth/sessions/revoke-others", { method: "POST" }),
+
+    /** Sign out one other session. */
+    revokeSession: (sessionId) => apiFetch(`/auth/sessions/${encodeURIComponent(sessionId)}`, { method: "DELETE" }),
+
+    /**
+     * End this session on the server and forget it locally. The server call is best-effort and not
+     * awaited (it always answers 204), so logging out never waits on, or fails because of, the network.
+     */
+    logout: () => {
+        const token = getToken();
+        clearSession();
+        if (!token) return;
+        fetch(`${API_BASE_URL}/auth/logout`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+            keepalive: true,
+        }).catch(() => {});
+    },
 };

@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -542,3 +543,11 @@ class ResetPasswordRequest(BaseModel):
 class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str
+
+class SessionInfo(BaseModel):
+    id: str
+    device: str
+    ip: Optional[str] = None
+    created_at: datetime
+    last_active: datetime
+    current: bool

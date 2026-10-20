@@ -41,8 +41,7 @@ function mapBackendSettings(s) {
     security: {
       twoFactorEnabled: s.security?.two_factor_enabled ?? false,
       twoFactorStatus: "coming_soon",
-      // Active sessions aren't backed by a route yet (no GET /settings/sessions), so none are listed.
-      activeSessions: [],
+      // Active sessions are loaded by SecuritySection itself from GET /auth/sessions.
     },
     connectedAccounts: {
       google: { connected: !!s.connected_accounts?.google, status: "coming_soon" },

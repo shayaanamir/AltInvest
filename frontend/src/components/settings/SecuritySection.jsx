@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { authApi } from "../../services/authApi";
 import { describeError } from "../../errors/errorCatalog";
 
@@ -18,7 +18,21 @@ export default function SecuritySection({ data }) {
   const [confirm, setConfirm] = useState("");
   const [status, setStatus] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [sessions, setSessions] = useState(data?.activeSessions || []);
+  const [sessions, setSessions] = useState(null); // null until the first load finishes
+  const [sessionsError, setSessionsError] = useState(null);
+  const [sessionStatus, setSessionStatus] = useState(null);
+  const [revoking, setRevoking] = useState(null); // "others" | a session id | null
+
+  const loadSessions = useCallback(async () => {
+    setSessionsError(null);
+    try {
+      setSessions(await authApi.listSessions());
+    } catch (err) {
+      setSessionsError(describeError(err).message);
+    }
+  }, []);
+
+  useEffect(() => { loadSessions(); }, [loadSessions]);
 
   if (!data) return null;
 
@@ -44,9 +58,16 @@ export default function SecuritySection({ data }) {
     setSaving(true);
     setStatus(null);
     try {
-      await authApi.changePassword(current, next);
-      setStatus({ type: "success", message: "Password updated." });
+      const res = await authApi.changePassword(current, next);
+      const signedOut = res?.signed_out_sessions || 0;
+      setStatus({
+        type: "success",
+        message: signedOut
+          ? `Password updated. Your other ${signedOut === 1 ? "session was" : `${signedOut} sessions were`} logged out.`
+          : "Password updated.",
+      });
       setCurrent(""); setNext(""); setConfirm("");
+      if (signedOut) loadSessions();
     } catch (err) {
       setStatus({ type: "error", message: describeError(err).message });
     } finally {
@@ -54,7 +75,30 @@ export default function SecuritySection({ data }) {
     }
   };
 
-  const logOutOthers = () => setSessions((s) => s.filter((sess) => sess.current));
+  const revoke = async (target) => {
+    if (revoking) return;
+    setRevoking(target);
+    setSessionStatus(null);
+    try {
+      if (target === "others") {
+        const { revoked } = await authApi.revokeOtherSessions();
+        setSessionStatus({
+          type: "success",
+          message: revoked === 1 ? "Logged out of 1 other session." : `Logged out of ${revoked} other sessions.`,
+        });
+      } else {
+        await authApi.revokeSession(target);
+        setSessionStatus({ type: "success", message: "Session logged out." });
+      }
+    } catch (err) {
+      setSessionStatus({ type: "error", message: describeError(err).message });
+    } finally {
+      setRevoking(null);
+      loadSessions(); // show what the server has now, whether or not the call worked
+    }
+  };
+
+  const otherCount = sessions ? sessions.filter((s) => !s.current).length : 0;
 
   return (
     <>
@@ -84,20 +128,52 @@ export default function SecuritySection({ data }) {
 
       <div className="sv2-card set-subcard">
         <div className="set-section-title">Active sessions</div>
-        <div className="set-sessions">
-          {sessions.map((s) => (
-            <div key={s.id} className="set-session-row">
-              <div className="set-session-device">
-                {s.device}
-                {s.current && <span className="sv2-tag-held" style={{ marginLeft: 8 }}>This device</span>}
+        {sessionsError ? (
+          <div className="set-form-status error">
+            {sessionsError}{" "}
+            <button type="button" className="sv2-btn-outline" style={{ width: "auto" }} onClick={loadSessions}>
+              Retry
+            </button>
+          </div>
+        ) : sessions === null ? (
+          <div className="set-session-meta">Loading sessions…</div>
+        ) : (
+          <div className="set-sessions">
+            {sessions.map((s) => (
+              <div key={s.id} className="set-session-row">
+                <div className="set-session-device">
+                  {s.device}
+                  {s.current && <span className="sv2-tag-held" style={{ marginLeft: 8 }}>This device</span>}
+                </div>
+                <div className="set-session-meta">
+                  {s.ip ? `${s.ip} · ` : ""}{s.current ? "active now" : formatLastActive(s.last_active)}
+                  {!s.current && (
+                    <button
+                      type="button"
+                      className="sv2-btn-outline"
+                      style={{ width: "auto", marginLeft: 8 }}
+                      disabled={!!revoking}
+                      onClick={() => revoke(s.id)}
+                      aria-label={`Log out ${s.device}`}
+                    >
+                      {revoking === s.id ? "Logging out…" : "Log out"}
+                    </button>
+                  )}
+                </div>
               </div>
-              <div className="set-session-meta">{s.location} · {formatLastActive(s.lastActive)}</div>
-            </div>
-          ))}
-        </div>
-        {sessions.length > 1 && (
-          <button className="sv2-btn-outline set-mt-8" style={{ width: "auto" }} onClick={logOutOthers}>
-            Log out of other sessions
+            ))}
+          </div>
+        )}
+        {sessionStatus && <div className={`set-form-status ${sessionStatus.type} set-mt-8`}>{sessionStatus.message}</div>}
+        {otherCount > 0 && (
+          <button
+            type="button"
+            className="sv2-btn-outline set-mt-8"
+            style={{ width: "auto" }}
+            disabled={!!revoking}
+            onClick={() => revoke("others")}
+          >
+            {revoking === "others" ? "Logging out…" : "Log out of other sessions"}
           </button>
         )}
       </div>

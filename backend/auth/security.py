@@ -38,24 +38,28 @@ def verify_password(plain_password: str, password_hash: str) -> bool:
         return False
 
 
-def create_access_token(user_id: str, email: str) -> str:
-    """Issues a signed JWT for an authenticated user."""
-    now = datetime.now(timezone.utc)
+def create_access_token(user_id: str, email: str, session_id: str, expires_at: datetime) -> str:
+    """Issues a signed JWT for an authenticated user, tied to a row in user_sessions (`sid`)."""
     payload = {
         "sub": user_id,
         "email": email,
-        "iat": now,
-        "exp": now + timedelta(hours=JWT_EXPIRY_HOURS),
+        "sid": session_id,
+        "iat": datetime.now(timezone.utc),
+        "exp": expires_at,
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
 def decode_access_token(token: str) -> dict | None:
-    """Decodes/validates a JWT. Returns the payload, or None if invalid/expired."""
+    """Decodes/validates a login JWT. Returns the payload, or None if invalid/expired or not a
+    login token (reset and verification tokens carry a `purpose` and no session id)."""
     try:
-        return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
     except jwt.PyJWTError:
         return None
+    if payload.get("purpose") or not payload.get("sid"):
+        return None
+    return payload
 
 def create_reset_token(user_id: str, email: str) -> str:
     """Issues a short-lived, single-purpose JWT for password reset."""

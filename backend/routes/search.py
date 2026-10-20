@@ -9,32 +9,14 @@ import path_setup  # noqa: F401
 
 from typing import Optional
 
-from bson import ObjectId
 from fastapi import APIRouter, Header, HTTPException, Query
 from utils.http_errors import db_unavailable
 
-from auth.security import decode_access_token
+from auth.dependencies import get_optional_user_id
 from models.schemas import SearchResults
 from db.queries import search_all, log_search
 
 router = APIRouter(tags=["Search"])
-
-
-def _optional_user_id(authorization: Optional[str] = Header(None)) -> Optional[ObjectId]:
-    """
-    Best-effort auth: if a valid Bearer token is present, return the user_id
-    so the search can be logged. If absent or invalid, return None rather
-    than raising — search is public.
-    """
-    if not authorization or not authorization.startswith("Bearer "):
-        return None
-    payload = decode_access_token(authorization.split(" ", 1)[1])
-    if not payload:
-        return None
-    try:
-        return ObjectId(payload.get("sub"))
-    except Exception:
-        return None
 
 
 # ── GET /search ──────────────────────────────────────────────────────────────
@@ -53,7 +35,7 @@ def search(
     except Exception as exc:
         raise db_unavailable(exc)
 
-    user_id = _optional_user_id(authorization)
+    user_id = get_optional_user_id(authorization)
     if user_id:
         try:
             log_search(user_id, q.strip())

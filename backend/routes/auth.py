@@ -11,40 +11,60 @@ issue a JWT.
 AUTH-03/04 — Forgot / reset password.
 AUTH-05 — Email verification: a link is emailed at signup and on request from the profile page.
 AUTH-06 — Change password from Settings (requires the current password).
+AUTH-07 — Sessions: every login is a row in `user_sessions`; Settings lists them and can
+          revoke them (one, or all but this one). Logout drops the caller's own row.
 
 Emails go out through utils/mailer.py (SMTP when configured, otherwise the link is logged).
 """
+import logging
 import os
 import path_setup  # noqa: F401 — must be first, fixes sys.path
 
 from datetime import datetime, timezone, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
 from utils.http_errors import db_unavailable
 from bson import ObjectId
 from models.schemas import (
     LoginRequest, AuthResponse, AuthUser, SignupRequest,
     ForgotPasswordRequest, ResetPasswordRequest, VerifyEmailRequest,
-    ChangePasswordRequest,
+    ChangePasswordRequest, SessionInfo,
 )
 from auth.security import (
     verify_password, create_access_token, hash_password,
     create_reset_token, decode_reset_token,
     create_verify_token, decode_verify_token,
+    decode_access_token, JWT_EXPIRY_HOURS,
 )
-from auth.dependencies import get_current_user_id
+from auth.dependencies import get_current_user_id, get_current_session, CurrentSession
 from utils.mailer import send_email, smtp_configured
 from db.queries import create_default_user_settings
 
 router = APIRouter(tags=["Auth"])
+log = logging.getLogger("auth")
 
 # Used to build the link embedded in the reset email. Override via env in
 # any deployment where the frontend isn't on localhost:5173.
 FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173")
 
 
+def _issue_token(user_id: str, email: str, request: Request) -> str:
+    """Opens a session row for this sign-in and returns a token bound to it."""
+    from db.queries import create_user_session
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRY_HOURS)
+    try:
+        session_id = create_user_session(
+            ObjectId(user_id), expires_at,
+            user_agent=(request.headers.get("user-agent") or "")[:512],
+            ip=request.client.host if request.client else None,
+        )
+    except Exception as exc:
+        raise db_unavailable(exc)
+    return create_access_token(user_id=user_id, email=email, session_id=session_id, expires_at=expires_at)
+
+
 @router.post("/auth/login", response_model=AuthResponse)
-def login(payload: LoginRequest):
+def login(payload: LoginRequest, request: Request):
     email = (payload.email or "").strip().lower()
     password = payload.password or ""
 
@@ -69,8 +89,8 @@ def login(payload: LoginRequest):
     if not verify_password(password, user.get("password_hash", "")):
         raise invalid_credentials
 
-    user_id = str(user.get("_id", email))
-    token = create_access_token(user_id=user_id, email=email)
+    user_id = str(user["_id"])
+    token = _issue_token(user_id, email, request)
 
     return AuthResponse(
         user=AuthUser(id=user_id, name=user.get("name", ""), email=email),
@@ -79,7 +99,7 @@ def login(payload: LoginRequest):
 
 
 @router.post("/auth/signup", response_model=AuthResponse, status_code=201)
-def signup(payload: SignupRequest):
+def signup(payload: SignupRequest, request: Request):
     email = (payload.email or "").strip().lower()
     password = payload.password or ""
     name = (payload.name or "").strip()
@@ -103,7 +123,7 @@ def signup(payload: SignupRequest):
     except Exception as exc:
         raise db_unavailable(exc)
 
-    token = create_access_token(user_id=user_id, email=email)
+    token = _issue_token(user_id, email, request)
     _send_verification(user_id, email)
 
     return AuthResponse(
@@ -172,14 +192,15 @@ def reset_password(payload: ResetPasswordRequest):
 # ── AUTH-06 — Change password (signed in) ────────────────────────────────────
 
 @router.post("/auth/change-password")
-def change_password(payload: ChangePasswordRequest, user_id: ObjectId = Depends(get_current_user_id)):
+def change_password(payload: ChangePasswordRequest, session: CurrentSession = Depends(get_current_session)):
+    user_id = session.user_id
     new_password = payload.new_password or ""
     if len(new_password) < 8:
         raise HTTPException(status_code=422, detail="New password must be at least 8 characters.")
     if new_password == payload.current_password:
         raise HTTPException(status_code=422, detail="New password must be different from your current one.")
 
-    from db.queries import get_user_by_id, update_user
+    from db.queries import get_user_by_id, update_user, delete_other_user_sessions
     try:
         user = get_user_by_id(str(user_id))
     except Exception as exc:
@@ -196,10 +217,12 @@ def change_password(payload: ChangePasswordRequest, user_id: ObjectId = Depends(
             "password_hash": hash_password(new_password),
             "password_changed_at": datetime.now(timezone.utc),
         })
+        # Anyone signed in with the old password is signed out; this device stays in.
+        signed_out = delete_other_user_sessions(user_id, session.session_id)
     except Exception as exc:
         raise db_unavailable(exc)
 
-    return {"message": "Password updated."}
+    return {"message": "Password updated.", "signed_out_sessions": signed_out}
 
 
 # ── AUTH-05 — Email verification ─────────────────────────────────────────────
@@ -271,3 +294,89 @@ def verify_email(payload: VerifyEmailRequest):
         raise db_unavailable(exc)
 
     return {"message": "Your email is verified."}
+
+
+# ── AUTH-07 — Sessions ───────────────────────────────────────────────────────
+
+_BROWSERS = (("Edg/", "Edge"), ("OPR/", "Opera"), ("Firefox/", "Firefox"), ("Chrome/", "Chrome"), ("Safari/", "Safari"))
+_SYSTEMS = (("iPhone", "iPhone"), ("iPad", "iPad"), ("Android", "Android"), ("Windows", "Windows"),
+            ("Mac OS X", "macOS"), ("CrOS", "ChromeOS"), ("Linux", "Linux"))
+
+
+def _device_label(user_agent: str) -> str:
+    """A short "Chrome on Windows" style label; good enough to tell sessions apart."""
+    ua = user_agent or ""
+    browser = next((name for marker, name in _BROWSERS if marker in ua), None)
+    system = next((name for marker, name in _SYSTEMS if marker in ua), None)
+    if browser and system:
+        return f"{browser} on {system}"
+    return browser or system or "Unknown device"
+
+
+def _utc(dt: datetime) -> datetime:
+    # PyMongo hands back naive datetimes; they are UTC.
+    return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt
+
+
+@router.get("/auth/sessions", response_model=list[SessionInfo])
+def list_sessions(session: CurrentSession = Depends(get_current_session)):
+    from db.queries import list_user_sessions
+    try:
+        rows = list_user_sessions(session.user_id)
+    except Exception as exc:
+        raise db_unavailable(exc)
+    return [
+        SessionInfo(
+            id=str(row["_id"]),
+            device=_device_label(row.get("user_agent", "")),
+            ip=row.get("ip"),
+            created_at=_utc(row["created_at"]),
+            last_active=_utc(row.get("last_active") or row["created_at"]),
+            current=row["_id"] == session.session_id,
+        )
+        for row in rows
+    ]
+
+
+@router.post("/auth/sessions/revoke-others")
+def revoke_other_sessions(session: CurrentSession = Depends(get_current_session)):
+    from db.queries import delete_other_user_sessions
+    try:
+        revoked = delete_other_user_sessions(session.user_id, session.session_id)
+    except Exception as exc:
+        raise db_unavailable(exc)
+    return {"revoked": revoked}
+
+
+@router.delete("/auth/sessions/{session_id}", status_code=204)
+def revoke_session(session_id: str, session: CurrentSession = Depends(get_current_session)):
+    try:
+        target = ObjectId(session_id)
+    except Exception:
+        raise HTTPException(status_code=404, detail="Session not found.")
+    if target == session.session_id:
+        raise HTTPException(status_code=400, detail="Use Log out to end this session.")
+
+    from db.queries import delete_user_session
+    try:
+        deleted = delete_user_session(session.user_id, target)
+    except Exception as exc:
+        raise db_unavailable(exc)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Session not found.")
+    return Response(status_code=204)
+
+
+@router.post("/auth/logout", status_code=204)
+def logout(authorization: str | None = Header(None)):
+    """Ends the caller's session. Always 204: a token that is already invalid has nothing to end,
+    and a client logging out shouldn't be told its session expired."""
+    payload = decode_access_token(authorization.split(" ", 1)[1]) if authorization and authorization.startswith("Bearer ") else None
+    if payload:
+        from db.queries import delete_user_session
+        try:
+            delete_user_session(ObjectId(payload["sub"]), ObjectId(payload["sid"]))
+        except Exception as exc:
+            # The token still lapses at its expiry; logging out locally shouldn't fail over this.
+            log.warning("logout: couldn't delete session: %s", exc)
+    return Response(status_code=204)
