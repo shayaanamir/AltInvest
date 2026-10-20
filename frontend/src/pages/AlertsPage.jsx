@@ -6,6 +6,7 @@ import AlertRow from "../components/alerts/AlertRow";
 import HowAlertsWorkCard from "../components/alerts/HowAlertsWorkCard";
 import { IconPlus } from "../components/icons";
 import CreateAlertModal from "../components/alerts/CreateAlertModal";
+import AlertHistoryModal from "../components/alerts/AlertHistoryModal";
 import { ErrorState, useToast } from "../errors";
 import { useState } from "react";
 
@@ -15,6 +16,7 @@ export default function AlertsPage() {
   const alerts = rawAlerts || [];
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [historyFor, setHistoryFor] = useState(null);
 
   // forcedStatus comes from the play/pause button; the switch just flips paused <-> active.
   const toggle = async (id, forcedStatus) => {
@@ -75,7 +77,7 @@ export default function AlertsPage() {
           <div className="alr-flex-col">
             <AlertSection title="Active" count={active.length} subtitle="Watching in the background">
               {active.map((a) => (
-                <AlertRow key={a.id} alert={a} onToggle={toggle} onEdit={edit} onDelete={remove} />
+                <AlertRow key={a.id} alert={a} onToggle={toggle} onEdit={edit} onDelete={remove} onHistory={setHistoryFor} />
               ))}
             </AlertSection>
 
@@ -85,13 +87,13 @@ export default function AlertsPage() {
               subtitle="Fired — review and re-arm if still relevant"
             >
               {triggered.map((a) => (
-                <AlertRow key={a.id} alert={a} onToggle={toggle} onEdit={edit} onDelete={remove} />
+                <AlertRow key={a.id} alert={a} onToggle={toggle} onEdit={edit} onDelete={remove} onHistory={setHistoryFor} />
               ))}
             </AlertSection>
 
             <AlertSection title="Paused" count={paused.length} subtitle="Kept, but not evaluated">
               {paused.map((a) => (
-                <AlertRow key={a.id} alert={a} onToggle={toggle} onEdit={edit} onDelete={remove} />
+                <AlertRow key={a.id} alert={a} onToggle={toggle} onEdit={edit} onDelete={remove} onHistory={setHistoryFor} />
               ))}
             </AlertSection>
 
@@ -99,6 +101,7 @@ export default function AlertsPage() {
           </div>
         )}
         {creating && <CreateAlertModal onClose={() => setCreating(false)} onCreated={refetch} />}
+        {historyFor && <AlertHistoryModal alert={historyFor} onClose={() => setHistoryFor(null)} />}
         {editingAlert && <CreateAlertModal alert={editingAlert} onClose={() => setEditingId(null)} onCreated={refetch} />}
       </div>
     </div>

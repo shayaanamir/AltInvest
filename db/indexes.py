@@ -46,7 +46,11 @@ INDEXES = {
     ],
     "portfolio_snapshots": [([("user_id", ASC), ("snapshot_date", DESC)], {})],
     "watchlists": [([("user_id", ASC)], {})],
-    "alerts": [([("user_id", ASC), ("status", ASC)], {})],
+    "alerts": [([("user_id", ASC), ("status", ASC)], {}), ([("status", ASC)], {})],
+    "alert_triggers": [
+        ([("user_id", ASC), ("alert_id", ASC), ("triggered_at", DESC)], {}),
+        ([("user_id", ASC), ("triggered_at", DESC)], {}),
+    ],
     "notifications": [([("user_id", ASC), ("timestamp", DESC)], {})],
     "market_insights": [([("published_at", DESC)], {})],
     "nft_collections": [([("slug", ASC)], {"unique": True})],

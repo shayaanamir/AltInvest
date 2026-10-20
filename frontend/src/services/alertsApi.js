@@ -75,6 +75,7 @@ function mapBackendAlert(a, universe) {
     createdAt: a.created_at,
     lastTriggeredAt: a.last_triggered_at,
     lastObservedValue: a.last_observed_value,
+    lastCheckedAt: a.last_checked_at,
   };
   return normaliseAlert(shaped, universe);
 }
@@ -115,4 +116,7 @@ export const alertsApi = {
   },
 
   deleteAlert: async (id) => apiFetch(`/alerts/${id}`, { method: "DELETE" }),
+
+  // Every time this alert fired, newest first.
+  getTriggers: (id) => apiFetch(`/alerts/${id}/triggers`),
 };

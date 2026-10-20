@@ -223,14 +223,22 @@ class AlertCreate(BaseModel):
     target_name: str
     metric_type: str
     condition: str
-    threshold_value: Optional[float] = None
+    threshold_value: Optional[float] = Field(None, allow_inf_nan=False)
     delivery_channel: str = "in-app"
 
 
 class AlertUpdate(BaseModel):
+    """Any part of the rule can change; the merged rule is validated as a whole.
+    status can be set to "active" (also re-arms a triggered alert) or "paused" — "triggered" is set
+    only by the evaluator."""
     status: Optional[str] = None
-    threshold_value: Optional[float] = None
+    target_type: Optional[str] = None
+    target_symbol: Optional[str] = None
+    target_slug: Optional[str] = None
+    target_name: Optional[str] = None
+    metric_type: Optional[str] = None
     condition: Optional[str] = None
+    threshold_value: Optional[float] = Field(None, allow_inf_nan=False)
     delivery_channel: Optional[str] = None
 
 
@@ -313,6 +321,7 @@ class AlertOut(BaseModel):
     created_at: Optional[str] = None
     last_triggered_at: Optional[str] = None
     last_observed_value: Optional[float] = None
+    last_checked_at: Optional[str] = None
 
 
 class NotificationOut(BaseModel):

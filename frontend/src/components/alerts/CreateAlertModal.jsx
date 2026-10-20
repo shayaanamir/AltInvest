@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useAsync } from "../../hooks/useAsync";
 import { alertsApi } from "../../services/alertsApi";
 import { fetchUniverse } from "../../services/assetRepository";
-import { ALERT_METRIC_OPTIONS, ALERT_CONDITION_OPTIONS } from "../../content/uiOptions";
+import {
+  ALERT_METRIC_OPTIONS, ALERT_CONDITION_OPTIONS, ALERT_METRICS_BY_TARGET, ALERT_CONDITIONS_BY_METRIC, ALERT_THRESHOLD_RANGES,
+} from "../../content/uiOptions";
 import { formatUsd } from "../../utils/formatters";
 import { ErrorState, useToast } from "../../errors";
 import "../portfolio/addHoldingModal.css";
@@ -18,8 +20,8 @@ const CHANNELS = [
  *   Create, target known:   <CreateAlertModal target={{ type, symbol|slug, name }} hint? />
  *   Create, pick a target:  <CreateAlertModal />               (shows a search over the covered universe)
  *   defaults={{ metric, condition }} opens a create dialog pre-set to that rule.
- *   Edit:                   <CreateAlertModal alert={alert} />  (target and metric are fixed; condition,
- *                                                                threshold and delivery channel can change)
+ *   Edit:                   <CreateAlertModal alert={alert} />  (everything can change: target, metric,
+ *                                                                condition, threshold, channel; saving re-arms it)
  * Calls onCreated() after a successful save, then closes. Failures stay in the dialog as a toast.
  */
 export default function CreateAlertModal({ target: fixedTarget, alert, hint, defaults, onClose, onCreated }) {
@@ -28,7 +30,8 @@ export default function CreateAlertModal({ target: fixedTarget, alert, hint, def
 
   const [picked, setPicked] = useState(null);
   const [query, setQuery] = useState("");
-  const needsPicker = !editing && !fixedTarget;
+  const [changingTarget, setChangingTarget] = useState(false); // edit mode: picking a different asset
+  const needsPicker = (!editing && !fixedTarget) || changingTarget;
   const { data: universe, loading, error: universeError, refetch } = useAsync(
     () => (needsPicker ? fetchUniverse({ category: "all", sort: "name", order: "asc" }) : Promise.resolve([])),
     [needsPicker]
@@ -47,23 +50,34 @@ export default function CreateAlertModal({ target: fixedTarget, alert, hint, def
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose, submitting]);
 
-  const target = editing
-    ? { type: alert.targetType, symbol: alert.targetSymbol, slug: alert.targetSlug, name: alert.name }
-    : fixedTarget || (picked && { type: picked.type, symbol: picked.symbol, slug: picked.id, name: picked.name });
+  const target = picked
+    ? { type: picked.type, symbol: picked.symbol, slug: picked.id, name: picked.name }
+    : editing
+      ? { type: alert.targetType, symbol: alert.targetSymbol, slug: alert.targetSlug, name: alert.name }
+      : fixedTarget || null;
 
   const choices = useMemo(() => {
     const q = query.trim().toLowerCase();
     return (universe || []).filter((u) => !q || u.name.toLowerCase().includes(q) || (u.symbol || "").toLowerCase().includes(q));
   }, [universe, query]);
 
-  // "Shifts bullish / bearish" only means something for the sentiment metric.
-  const conditions = ALERT_CONDITION_OPTIONS.filter((c) => metric === "sentiment" || !c.key.startsWith("shifts_"));
+  // Only the metrics this kind of target has, and only the conditions that metric takes.
+  const metrics = ALERT_METRIC_OPTIONS.filter((m) => ALERT_METRICS_BY_TARGET[target?.type || "crypto"].includes(m.key));
+  const conditions = ALERT_CONDITION_OPTIONS.filter((c) => ALERT_CONDITIONS_BY_METRIC[metric]?.includes(c.key));
   const needsThreshold = condition === "above" || condition === "below";
-  const metricLabel = ALERT_METRIC_OPTIONS.find((m) => m.key === metric)?.label ?? metric;
+  const range = ALERT_THRESHOLD_RANGES[metric];
 
   const changeMetric = (next) => {
     setMetric(next);
-    if (next !== "sentiment" && condition.startsWith("shifts_")) setCondition("above");
+    if (!ALERT_CONDITIONS_BY_METRIC[next].includes(condition)) setCondition("above");
+    setError(null);
+  };
+
+  // A new target may not have the current metric (NFTs have no sentiment or risk score).
+  const pickTarget = (item) => {
+    setPicked(item);
+    setChangingTarget(false);
+    if (!ALERT_METRICS_BY_TARGET[item.type].includes(metric)) changeMetric("price");
     setError(null);
   };
 
@@ -76,8 +90,10 @@ export default function CreateAlertModal({ target: fixedTarget, alert, hint, def
     let value = null;
     if (needsThreshold) {
       value = Number(threshold);
-      if (threshold === "" || !Number.isFinite(value) || (metric === "price" && value <= 0)) {
-        setError(metric === "price" ? "Enter a price greater than 0." : "Enter a number for the threshold.");
+      const tooLow = range.exclusiveMin ? value <= range.min : value < range.min;
+      const tooHigh = range.max != null && value > range.max;
+      if (threshold === "" || !Number.isFinite(value) || tooLow || tooHigh) {
+        setError(range.max == null ? "Enter a price greater than 0." : `Enter a value between ${range.min} and ${range.max}.`);
         return;
       }
     }
@@ -86,8 +102,13 @@ export default function CreateAlertModal({ target: fixedTarget, alert, hint, def
     try {
       if (editing) {
         await alertsApi.updateAlert(alert.id, {
+          target_type: target.type,
+          target_symbol: target.type === "crypto" ? target.symbol : null,
+          target_slug: target.type === "nft" ? target.slug : null,
+          target_name: target.name,
+          metric_type: metric,
           condition,
-          ...(value != null ? { threshold_value: value } : {}),
+          threshold_value: value,
           delivery_channel: channel,
         });
       } else {
@@ -106,7 +127,7 @@ export default function CreateAlertModal({ target: fixedTarget, alert, hint, def
       setSubmitting(false);
       return;
     }
-    if (editing) toast.success(`The alert on ${target.name} was updated.`, { title: "Alert saved" });
+    if (editing) toast.success(`The alert on ${target.name} was updated and is watching again.`, { title: "Alert saved" });
     else toast.success(`We'll watch ${target.name} for you. Manage it on the Alerts page.`, { title: "Alert created" });
     onCreated?.();
     onClose();
@@ -133,6 +154,16 @@ export default function CreateAlertModal({ target: fixedTarget, alert, hint, def
             : "Pick an asset or collection, then set the rule that should notify you."}
         </p>
 
+        {editing && !changingTarget && (
+          <>
+            <label className="ahm-label">Asset or collection</label>
+            <div className="ahm-fixed ahm-fixed-row">
+              <span>{target?.name}</span>
+              <button type="button" className="ahm-link" onClick={() => setChangingTarget(true)}>Change</button>
+            </div>
+          </>
+        )}
+
         {needsPicker && (
           <>
             <label className="ahm-label">Asset or collection</label>
@@ -156,7 +187,7 @@ export default function CreateAlertModal({ target: fixedTarget, alert, hint, def
                     key={`${c.type}-${c.id}`}
                     type="button"
                     className={`ahm-item ${picked && picked.id === c.id && picked.type === c.type ? "selected" : ""}`}
-                    onClick={() => { setPicked(c); setError(null); }}
+                    onClick={() => pickTarget(c)}
                   >
                     <span className="ahm-dot" style={{ background: c.color || "var(--sv2-accent)" }}>
                       {(c.symbol || c.name).slice(0, 3).toUpperCase()}
@@ -174,13 +205,10 @@ export default function CreateAlertModal({ target: fixedTarget, alert, hint, def
         )}
 
         <label className="ahm-label">Watch</label>
-        {editing ? (
-          <div className="ahm-fixed">{metricLabel}</div>
-        ) : (
-          <select className="ahm-input" value={metric} onChange={(e) => changeMetric(e.target.value)}>
-            {ALERT_METRIC_OPTIONS.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
-          </select>
-        )}
+        <select className="ahm-input" value={metric} onChange={(e) => changeMetric(e.target.value)}>
+          {metrics.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
+        </select>
+        {target?.type === "nft" && <div className="ahm-hint">NFT collections have price and AAI alerts; there's no NFT sentiment or risk score.</div>}
 
         <label className="ahm-label">When it</label>
         <select className="ahm-input" value={condition} onChange={(e) => { setCondition(e.target.value); setError(null); }}>
@@ -189,11 +217,11 @@ export default function CreateAlertModal({ target: fixedTarget, alert, hint, def
 
         {needsThreshold && (
           <>
-            <label className="ahm-label">{metric === "price" ? "Price (USD)" : "Value"}</label>
+            <label className="ahm-label">{range.label}</label>
             <input
               className="ahm-input"
               inputMode="decimal"
-              placeholder={metric === "price" ? "e.g. 80000" : "e.g. 60"}
+              placeholder={range.placeholder}
               value={threshold}
               onChange={(e) => { setThreshold(e.target.value); setError(null); }}
               autoFocus={!needsPicker}

@@ -1,5 +1,7 @@
 import { useTheme } from "../../context/ThemeContext";
-import { IconThemeToggle } from "../icons";
+import { useState } from "react";
+import { IconThemeToggle, IconBell } from "../icons";
+import CreateAlertModal from "../alerts/CreateAlertModal";
 import TopbarSearch from "./topbar/TopbarSearch";
 import MarketStatusPill from "./topbar/MarketStatusPill";
 import NotificationsMenu from "./topbar/NotificationsMenu";
@@ -8,6 +10,7 @@ import "../../styles/topbar.css";
 
 export default function Topbar() {
   const { isDark, toggle } = useTheme();
+  const [creatingAlert, setCreatingAlert] = useState(false); // "New alert" from any page
 
   return (
     <header className="tb-root">
@@ -15,6 +18,11 @@ export default function Topbar() {
 
       <div className="tb-right">
         <MarketStatusPill />
+
+        <button type="button" className="tb-icon-btn tb-new-alert" onClick={() => setCreatingAlert(true)} title="New alert" aria-label="Create an alert">
+          <IconBell size={15} />
+          <span className="tb-new-alert-plus" aria-hidden="true">+</span>
+        </button>
 
         <NotificationsMenu />
 
@@ -29,6 +37,7 @@ export default function Topbar() {
         </button>
 
         <UserMenu />
+        {creatingAlert && <CreateAlertModal onClose={() => setCreatingAlert(false)} />}
       </div>
     </header>
   );

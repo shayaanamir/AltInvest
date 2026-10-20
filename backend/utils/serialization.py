@@ -9,7 +9,7 @@ routes/notifications.py all need the same conversion.
 
 _DATETIME_FIELDS = (
     "created_at", "added_at", "updated_at", "date_added",
-    "last_triggered_at", "timestamp",
+    "last_triggered_at", "last_checked_at", "timestamp", "searched_at",
 )
 
 

@@ -160,6 +160,10 @@ def on_startup():
     from controllers.aai_controller import run_aai_refresh_scheduler
     threading.Thread(target=run_aai_refresh_scheduler, daemon=True, name="aai-refresh").start()
 
+    # 6. Alert evaluation every 5 minutes: triggers, history, notifications, email.
+    from controllers.alert_controller import run_alert_scheduler
+    threading.Thread(target=run_alert_scheduler, daemon=True, name="alerts").start()
+
 
 @app.get("/")
 def root():

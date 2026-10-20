@@ -228,3 +228,5 @@
   .tb-user-name { display: none; }
   .tb-search { max-width: 220px; }
 }
+.tb-new-alert { position: relative; }
+.tb-new-alert-plus { position: absolute; top: 3px; right: 3px; font-size: 10px; font-weight: 800; line-height: 1; color: var(--sv2-accent); }
