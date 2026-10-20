@@ -12,6 +12,7 @@ import hashlib
 import hmac
 import logging
 import os
+import re
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
@@ -46,6 +47,23 @@ def password_problem(password: str, label: str = "Password") -> str | None:
     if len(password.encode("utf-8")) > PASSWORD_MAX_BYTES:
         return f"{label} is too long (at most {PASSWORD_MAX_BYTES} bytes, about {PASSWORD_MAX_BYTES} characters)."
     return None
+
+
+# Practical address check, not full RFC 5322: ASCII local part (no leading, trailing or doubled dots),
+# then a domain of valid labels ending in an alphabetic TLD.
+_EMAIL_RE = re.compile(
+    r"^(?!\.)(?!.*\.\.)[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]{1,64}(?<!\.)"
+    r"@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}$"
+)
+EMAIL_MAX_LENGTH = 254
+
+
+def normalize_email(raw: str | None) -> str | None:
+    """Trimmed, lower-cased address, or None if it isn't a plausible email."""
+    email = (raw or "").strip().lower()
+    if len(email) > EMAIL_MAX_LENGTH or not _EMAIL_RE.match(email):
+        return None
+    return email
 
 
 def hash_password(plain_password: str) -> str:

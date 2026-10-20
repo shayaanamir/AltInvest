@@ -38,6 +38,11 @@ LOGIN_FAILURES_PER_IP = Limit(
     "Too many failed sign-in attempts from this network.",
 )
 SIGNUPS_PER_IP = Limit("signup_ip", 10, timedelta(hours=1), "Too many accounts created from this network.")
+# Signup has to say when an email is taken (it signs the new user straight in), so those answers are
+# capped tightly per IP to make probing which addresses have accounts impractical.
+SIGNUP_TAKEN_PER_IP = Limit("signup_taken_ip", 5, timedelta(hours=1), "Too many signup attempts from this network.")
+# At most one "someone tried to sign up with your email" notice per address per day.
+SIGNUP_TAKEN_NOTICE_PER_EMAIL = Limit("signup_taken_notice", 1, timedelta(days=1), "")
 FORGOT_PER_EMAIL = Limit("forgot_email", 3, timedelta(hours=1), "Too many password reset requests for this email.")
 FORGOT_PER_IP = Limit("forgot_ip", 10, timedelta(hours=1), "Too many password reset requests.")
 RESET_PER_IP = Limit("reset_ip", 10, timedelta(minutes=15), "Too many password reset attempts.")

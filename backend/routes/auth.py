@@ -40,7 +40,7 @@ from auth.security import (
     verify_password, create_access_token, hash_password,
     create_reset_token, decode_reset_token, password_fingerprint,
     create_verify_token, decode_verify_token,
-    decode_access_token, JWT_EXPIRY_HOURS, SESSION_MAX_DAYS, password_problem,
+    decode_access_token, JWT_EXPIRY_HOURS, SESSION_MAX_DAYS, password_problem, normalize_email,
 )
 from auth.dependencies import get_current_user_id, get_current_session, CurrentSession
 from auth import rate_limit as rl
@@ -111,32 +111,64 @@ def login(payload: LoginRequest, request: Request):
     )
 
 
+_MAX_NAME = 80  # same cap as PATCH /profile
+
+
+def _email_taken(email: str, ip: str) -> HTTPException:
+    """Counts an "already registered" answer against the IP and tells the real owner (at most once a
+    day) that someone tried to sign up with their address. Returns the 409 to raise."""
+    rl.record(rl.SIGNUP_TAKEN_PER_IP, ip)
+    try:
+        rl.check(rl.SIGNUP_TAKEN_NOTICE_PER_EMAIL, email)
+    except HTTPException:
+        pass  # already told them today
+    else:
+        rl.record(rl.SIGNUP_TAKEN_NOTICE_PER_EMAIL, email)
+        send_email(
+            email,
+            "Someone tried to create an AltInvest account with your email",
+            "Someone just tried to sign up for AltInvest using this email address, which already has "
+            "an account.\n\n"
+            f"If that was you, sign in instead: {FRONTEND_BASE_URL}/login\n"
+            f"Forgot your password? Reset it here: {FRONTEND_BASE_URL}/forgot-password\n\n"
+            "If it wasn't you, nothing has changed and you can ignore this email.",
+        )
+    return HTTPException(status_code=409, detail="An account with this email already exists.")
+
+
 @router.post("/auth/signup", response_model=AuthResponse, status_code=201)
 def signup(payload: SignupRequest, request: Request):
-    email = (payload.email or "").strip().lower()
+    email = normalize_email(payload.email)
     password = payload.password or ""
     name = (payload.name or "").strip()
 
-    if not email or "@" not in email:
-        raise HTTPException(status_code=422, detail="A valid email is required.")
+    if not email:
+        raise HTTPException(status_code=422, detail="Enter a valid email address.")
     if not name:
         raise HTTPException(status_code=422, detail="Name is required.")
+    if len(name) > _MAX_NAME:
+        raise HTTPException(status_code=422, detail=f"Name must be at most {_MAX_NAME} characters.")
     if problem := password_problem(password):
         raise HTTPException(status_code=422, detail=problem)
-    rl.hit(rl.SIGNUPS_PER_IP, rl.client_ip(request))
+    ip = rl.client_ip(request)
+    rl.hit(rl.SIGNUPS_PER_IP, ip)
+    # Checked before looking the email up, so a blocked prober learns nothing more.
+    rl.check(rl.SIGNUP_TAKEN_PER_IP, ip)
 
     try:
         from db.queries import email_exists, create_user
-        if email_exists(email):
-            raise HTTPException(status_code=409, detail="An account with this email already exists.")
-
-        user_id = create_user(email, name, hash_password(password))
-        create_default_user_settings(ObjectId(user_id))
-    except HTTPException:
-        raise
+        taken = email_exists(email)
+        if not taken:
+            user_id = create_user(email, name, hash_password(password))
     except DuplicateKeyError:
-        # Lost a race with another signup for the same email.
-        raise HTTPException(status_code=409, detail="An account with this email already exists.")
+        taken = True  # lost a race with another signup for the same email
+    except Exception as exc:
+        raise db_unavailable(exc)
+    if taken:
+        raise _email_taken(email, ip)
+
+    try:
+        create_default_user_settings(ObjectId(user_id))
     except Exception as exc:
         raise db_unavailable(exc)
 
@@ -205,9 +237,9 @@ def delete_account(payload: DeleteAccountRequest, user_id: ObjectId = Depends(ge
 
 @router.post("/auth/forgot-password")
 def forgot_password(payload: ForgotPasswordRequest, request: Request):
-    email = (payload.email or "").strip().lower()
+    email = normalize_email(payload.email)
     if not email:
-        raise HTTPException(status_code=422, detail="Email is required.")
+        raise HTTPException(status_code=422, detail="Enter a valid email address.")
     rl.hit(rl.FORGOT_PER_IP, rl.client_ip(request))
 
     # Always the same message regardless of outcome — prevents account
