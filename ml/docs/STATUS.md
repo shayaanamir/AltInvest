@@ -1,7 +1,59 @@
 # STATUS
 
-Current phase: 6b (daily refresh, serving gate, v2 Docker image and compose services) DONE (2026-10-21). The service runs from a fresh clone with `docker compose up -d --build ml ml-refresh`.
+Current phase: 6c (hardening before the PR) DONE (2026-10-21), on top of 6b (daily refresh, serving gate, v2 Docker image and compose services). The service runs from a fresh clone with `docker compose up -d --build ml ml-refresh`.
 Next: the PR from ml-v2 into main (not pushed, not opened), then Phase 7 (backend integration, Person B).
+
+## Phase 6c: what ran (from repo root, 2026-10-21)
+
+- Started from a clean tree: HEAD d994366. Hashes of all 39 files under ml/data/raw and ml/reports taken first.
+- 1. Gaps:
+  - The refresh treats new data with any missing day as a failure (`ValidationFailed: N missing day(s), first <date>`). The previous files are restored.
+  - Serving turns the gap error from `build_features` into NotServable -> 503 (it used to be a 500).
+  - validate.py is unchanged, so the snapshot reports are byte-identical.
+- 2. Monotonicity: the refresh rejects new data with fewer rows or an earlier last bar than the CSV it would replace (`OlderData: ...`). The previous files are restored.
+- 3. Evaluation guard: `ml/data/snapshot_guard.require_snapshot()` is the first line of `main()` in all 10 report writers: the six run_* modules, power_check, direction_mechanism, risk_mapping_check and ml.data.dataset_summary.
+  - It exits 1 with a D40 message when ML_RAW_DIR or ML_VALIDATION_DIR is not the snapshot default.
+  - ml/README.md now warns that ml.data.fetch and ml.data.validate overwrite the snapshot on the host.
+- 4. DOCKER.md: `down -v` now also mentions the `ml-data` volume. The v1 Prophet/TensorFlow image note is replaced by the v2 image (small; needs HTTPS to Binance). No other v1 mentions remain in DOCKER.md.
+- Tests:
+  - `test_snapshot_guard.py` (11): the helper, plus one refuse/run smoke test per guarded module.
+  - `test_refresh.py` +4: a gap, fewer rows and earlier last bar, fewer rows only, earlier last bar only. Each restores all three files.
+  - `test_serving.py` +1: a gap gives 503 through the API.
+  - `python -m pytest ml` -> `199 passed` (183 + 16).
+  - First run: 1 failure in my own fixture arithmetic (a 2-day shift of 402 rows still ends 2026-10-17, which the refresh correctly accepted). Changed it to a 3-day shift; the assertion is unchanged.
+- Docker: `docker compose up -d --build ml` -> healthy.
+  - `/predict/btc` validates against PredictionResponse.
+  - The startup refresh on the existing ml-data volume accepted the new day (3351 -> 3352 rows, last bar 2026-10-20).
+  - `docker compose exec ml python -m ml.evaluation.run_backtest --asset btc` refuses with the D40 message.
+  - `docker compose down` keeps the volume.
+- All 39 snapshot and report files are byte-identical after the phase (SHA-256).
+
+## How to verify Phase 6c yourself (PowerShell, from the repo root)
+
+```powershell
+Set-Location C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest
+
+# 1. All tests, then only the 6c ones (hand-made fixtures, no network)
+python -m pytest ml -q
+python -m pytest ml/tests/test_snapshot_guard.py -q
+python -m pytest ml/tests/test_refresh.py ml/tests/test_serving.py -q -k "gaps_and_older or gap_in_bars"
+
+# 2. The guard: refuses with a serving directory set, passes on the snapshot (no report is written)
+$env:ML_RAW_DIR = "$env:TEMP\ml-serving-raw"; python -m ml.evaluation.power_check --asset btc; "exit: $LASTEXITCODE"
+Remove-Item Env:ML_RAW_DIR; python -c "from ml.data.snapshot_guard import snapshot_mismatches; print(snapshot_mismatches())"
+
+# 3. Docker: rebuild, wait until healthy, call /predict/btc, the guard inside the container, stop
+docker compose up -d --build ml
+curl.exe -s --retry 60 --retry-all-errors --retry-delay 2 http://127.0.0.1:8001/predict/btc; ""
+docker compose exec ml python -m ml.evaluation.run_backtest --asset btc
+docker compose down
+```
+
+Expected (observed 2026-10-21):
+
+1. `199 passed`; `11 passed`; `5 passed` (4 refresh cases plus the API gap case).
+2. `refusing to write evaluation reports: ML_RAW_DIR=...ml-serving-raw is not the evaluation snapshot (D40). ...`, then `exit: 1`; then `[]`.
+3. A PredictionResponse with `"prediction_30d":0.0` and `"signal":"UNCERTAIN"`. Then the refusal, naming `ML_RAW_DIR=/data/raw, ML_VALIDATION_DIR=/data/validation`. The containers are removed and the volume is kept.
 
 ## Phase 6b: what ran (from repo root, 2026-10-21)
 

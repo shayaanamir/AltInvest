@@ -43,7 +43,7 @@ From the container run on 2026-10-20 at 20:15 UTC (`/data/validation/refresh_sta
 
 ## 7. Limits
 - Each refresh downloads the full history again (about 4 pages per asset).
-- A gap in new data passes validation, but serving refuses gapped bars with a 500, not a 503 (Recommendations in ml/docs/STATUS.md).
+- Phase 6c fixed three limits: the refresh now rejects data with a gap or data older than what it replaces, a gap is a 503 in serving, and every evaluation report writer refuses to run on the serving data (ml/docs/STATUS.md, Phase 6c).
 - Re-running evaluation on newer data needs a new D-number that fixes the split dates (D40).
 
 ## 8. Verify and next

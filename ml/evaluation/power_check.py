@@ -14,6 +14,7 @@ import json
 from datetime import datetime, timezone
 
 from ml import config
+from ml.data.snapshot_guard import require_snapshot
 from ml.data.validate import ML_ROOT
 from ml.evaluation.run_baselines import _clean
 from ml.gitinfo import git_metadata
@@ -77,6 +78,7 @@ def run(asset: str) -> dict:
 
 
 def main() -> None:
+    require_snapshot()                                  # D40: evaluation snapshot only
     parser = argparse.ArgumentParser(description="Power check of the walk-forward confirmation protocol")
     parser.add_argument("--asset", required=True, choices=config.ASSETS)
     asset = parser.parse_args().asset

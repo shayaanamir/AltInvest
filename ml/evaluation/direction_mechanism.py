@@ -19,6 +19,7 @@ import pandas as pd
 
 from ml import config
 from ml.data.dataset_summary import require_validated
+from ml.data.snapshot_guard import require_snapshot
 from ml.data.validate import ML_ROOT
 from ml.evaluation.prob_metrics import log_loss_rows
 from ml.evaluation.run_baselines import _clean, ranking_metrics
@@ -103,6 +104,7 @@ def run(asset: str) -> dict:
 
 
 def main() -> None:
+    require_snapshot()                                  # D40: evaluation snapshot only
     parser = argparse.ArgumentParser(description="Mechanism check of the 4c direction model (report only)")
     parser.add_argument("--asset", required=True, choices=config.ASSETS)
     asset = parser.parse_args().asset

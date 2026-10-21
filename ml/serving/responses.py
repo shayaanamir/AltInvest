@@ -31,8 +31,16 @@ NOTE_PRICE = ("No model beats the no-change baseline (D35): prediction_30d is th
 
 
 def feature_tables(assets=config.ASSETS) -> dict[str, pd.DataFrame]:
-    """Feature table of every pooled asset (D36). Refuses all of them if any one fails the serving gate (D40)."""
-    return {a: build_features(servable_raw(a)) for a in assets}
+    """Feature table of every pooled asset (D36). Refuses all of them if any one fails the serving gate (D40)
+    or has a gap in its bars (build_features refuses gaps)."""
+    out = {}
+    for a in assets:
+        raw = servable_raw(a)
+        try:
+            out[a] = build_features(raw)
+        except ValueError as e:
+            raise NotServable(f"{a}: bars cannot be served ({e})") from None
+    return out
 
 
 def iso_utc(t: datetime) -> str:

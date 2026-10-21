@@ -54,6 +54,12 @@ Locally, the service reads the evaluation snapshot in `ml/data/raw` (git-ignored
 `python -m ml.data.refresh` refuses to overwrite it unless given `--force`, because growing those files would
 move the sealed test split (D40). To refresh into other folders, set `ML_RAW_DIR` and `ML_VALIDATION_DIR`.
 
+Careful on the host: `python -m ml.data.fetch` and `python -m ml.data.validate` have no such guard. With the env
+vars unset they overwrite the evaluation snapshot (ml/data/raw, ml/reports/data). Run them only to rebuild the
+snapshot on purpose, which needs a new D-number. The evaluation report writers (ml/evaluation/run_*,
+power_check, direction_mechanism, risk_mapping_check, ml.data.dataset_summary) refuse to run when either env
+var points anywhere else (D40).
+
 ## Tests and docs
 
 - Tests: `python -m pytest ml` from the repo root. `ml/tests/test_contract.py` checks real responses against

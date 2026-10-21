@@ -40,7 +40,8 @@ Then visit:
 - Backend docs: http://localhost:8000/docs
 - ML service docs: http://localhost:8001/docs
 
-To stop: `docker compose down` (add `-v` to also wipe the Mongo volume).
+To stop: `docker compose down` (add `-v` to also wipe the volumes: Mongo's data and the ML service's
+`ml-data`; the `ml` service re-fetches its data from Binance at the next start).
 
 ## Important things to know before you build
 
@@ -55,9 +56,11 @@ To stop: `docker compose down` (add `-v` to also wipe the Mongo volume).
 
 2. **First build will be slow and the images will be large.** The backend
    image also installs `sentiment_engine/requirements.txt`, which pulls in
-   `torch` + `transformers` (for FinBERT). The `ml` image installs
-   `prophet` (which compiles `cmdstan` — a small C++ toolchain) and
-   `tensorflow`. Expect a few GB per image and a 10–20 minute first build.
+   `torch` + `transformers` (for FinBERT). Expect a few GB for the backend
+   image and a 10–20 minute first build. The `ml` image is small
+   (python:3.12-slim with pandas, scikit-learn and FastAPI; no Prophet or
+   TensorFlow) and builds in a few minutes. It needs outbound HTTPS to
+   api.binance.com at startup and daily at 00:05 UTC to fetch its data.
    Subsequent builds are cached and much faster.
 
    If you want a fast local loop and don't need real sentiment scoring

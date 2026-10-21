@@ -201,6 +201,14 @@ def _set_report(path, **changes):
     path.write_text(json.dumps({**json.loads(path.read_text(encoding="utf-8")), **changes}), encoding="utf-8")
 
 
+def _gap_in_bars(raw, rep):
+    """Drop one middle day from the btc CSV and update its report to match, so only the gap is wrong."""
+    path = raw / "btc_1d.csv"
+    df = pd.read_csv(path).drop(index=100)
+    df.to_csv(path, index=False)
+    _set_report(rep / "btc_validation.json", rows=len(df))
+
+
 GATE_BREAKS = {     # (how the btc data is broken, the asset the 503 must name)
     "missing_csv": (lambda raw, rep: (raw / "btc_1d.csv").unlink(), "btc"),
     "missing_report": (lambda raw, rep: (rep / "btc_validation.json").unlink(), "btc"),
@@ -210,6 +218,7 @@ GATE_BREAKS = {     # (how the btc data is broken, the asset the 503 must name)
     "unreadable_report": (lambda raw, rep: (rep / "btc_validation.json").write_text("{not json"), "btc"),
     "report_not_passed": (lambda raw, rep: _set_report(rep / "btc_validation.json", passed=False), "btc"),
     "other_asset_missing_csv": (lambda raw, rep: (raw / "sol_1d.csv").unlink(), "sol"),
+    "gap_in_bars": (_gap_in_bars, "btc"),                   # Phase 6c: build_features refuses gaps -> 503
 }
 
 

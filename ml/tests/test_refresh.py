@@ -212,3 +212,35 @@ def test_data_paths_default_to_the_snapshot_dirs_when_env_unset(tmp_path):
     assert _paths_in_subprocess(ML_RAW_DIR="", ML_VALIDATION_DIR="") == [raw, val, raw, val]
     r, v = (tmp_path / "r").resolve(), (tmp_path / "v").resolve()
     assert _paths_in_subprocess(ML_RAW_DIR=str(r), ML_VALIDATION_DIR=str(v)) == [r, v, r, v]
+
+
+def _drop_row(i: int):
+    return lambda df: df.drop(index=i).reset_index(drop=True)
+
+
+def _shift_days(days: int):
+    def shift(df):
+        ts = pd.to_datetime(df["timestamp"], utc=True) - pd.Timedelta(days=days)
+        return df.assign(timestamp=ts.dt.strftime("%Y-%m-%dT%H:%M:%SZ"))
+    return shift
+
+
+@pytest.mark.parametrize("n, edit, reason", [
+    (401, _drop_row(200), "ValidationFailed: 1 missing day(s), first 2026-04-01T00:00:00Z"),   # longer, but a gap
+    (399, None, "OlderData: new data has 399 rows ending 2026-10-16; served data has 400 rows ending 2026-10-17"),
+    (400, _drop_row(0), "OlderData: new data has 399 rows ending 2026-10-17;"),               # fewer rows only
+    (402, _shift_days(3), "OlderData: new data has 402 rows ending 2026-10-16;"),             # earlier last bar only
+])
+def test_refresh_rejects_gaps_and_older_data(monkeypatch, dirs, n, edit, reason):
+    """Phase 6c: the previous CSV, meta and report stay in place, and the reason is recorded."""
+    raw, val = dirs
+    monkeypatch.setattr(fetch, "fetch", fake_fetch(400))
+    assert refresh.run_once() == 0
+    before = _files(raw, val)
+    monkeypatch.setattr(fetch, "fetch", fake_fetch(n, edit=edit))
+    assert refresh.run_once() == 0                  # still servable on the previous data
+    assert _files(raw, val) == before and len(before) == 9
+    a = _status(val)["assets"]["btc"]
+    assert a["status"] == "failed" and a["reason"].startswith(reason) and a["servable"] and a["rows"] == 400
+    monkeypatch.setattr(fetch, "fetch", fake_fetch(401))      # control: longer and later data is accepted
+    assert refresh.run_once() == 0 and _status(val)["assets"]["btc"]["rows"] == 401

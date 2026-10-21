@@ -16,6 +16,7 @@ import pandas as pd
 
 from ml import config
 from ml.data.dataset_summary import require_validated
+from ml.data.snapshot_guard import require_snapshot
 from ml.data.validate import ML_ROOT
 from ml.evaluation import metrics as m
 from ml.evaluation.run_baselines import _add_note, _clean, price_metrics
@@ -120,6 +121,7 @@ def run(asset: str) -> dict:
 
 
 def main() -> None:
+    require_snapshot()                                  # D40: evaluation snapshot only
     parser = argparse.ArgumentParser(description="Walk-forward price model evaluation and approval verdict")
     parser.add_argument("--asset", required=True, choices=config.ASSETS)
     asset = parser.parse_args().asset

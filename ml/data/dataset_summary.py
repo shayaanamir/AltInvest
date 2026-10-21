@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 
 from ml import config
 from ml.data.loader import load_raw
+from ml.data.snapshot_guard import require_snapshot
 from ml.data.validate import report_path, repo_relative
 from ml.evaluation.splits import make_splits, split_dates
 from ml.features.features import FEATURE_COLUMNS, build_features
@@ -85,6 +86,7 @@ def summarise(asset: str) -> dict:
 
 
 def main() -> None:
+    require_snapshot()                                  # D40: evaluation snapshot only
     parser = argparse.ArgumentParser(description="Dataset summary: features, labels, splits")
     parser.add_argument("--asset", required=True, choices=config.ASSETS)
     asset = parser.parse_args().asset

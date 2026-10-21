@@ -17,6 +17,7 @@ import pandas as pd
 from ml import config
 from ml.data.dataset_summary import require_validated
 from ml.data.loader import load_raw
+from ml.data.snapshot_guard import require_snapshot
 from ml.data.validate import ML_ROOT
 from ml.evaluation import baselines as bl
 from ml.evaluation.run_baselines import (_add_note, _clean, class_metrics, price_metrics, ranking_metrics,
@@ -127,6 +128,7 @@ def run_metadata(asset: str, data: pd.DataFrame, b2: int, n: int, pooled: pd.Dat
 
 
 def main() -> None:
+    require_snapshot()                                  # D40: evaluation snapshot only
     parser = argparse.ArgumentParser(description="Walk-forward evaluation of the baselines")
     parser.add_argument("--asset", required=True, choices=config.ASSETS)
     asset = parser.parse_args().asset

@@ -6,7 +6,8 @@
 
 Writes only to config.ML_RAW_DIR and config.ML_VALIDATION_DIR, and refuses the evaluation snapshot
 (ml/data/raw, ml/reports/data) without --force. Per asset: back up the CSV, its .fetch.json and its validation
-report; fetch into a staging folder and validate there (fetch.fetch, validate.build_report); only a passing set
+report; fetch into a staging folder and validate there (fetch.fetch, validate.build_report). New data must also
+have no missing day and must not be shorter or end earlier than the data it replaces. Only a passing set
 replaces the served files, each with os.replace (atomic on one filesystem). On any failure all three are restored,
 so the asset keeps serving its last good data, with the D38 staleness note once it applies. A lock file stops two
 refreshes (the ml service at startup and the ml-refresh sidecar) from running at once.
@@ -24,9 +25,11 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+import pandas as pd
+
 from ml import config
 from ml.data import fetch, validate
-from ml.data.loader import fetch_meta_path, raw_csv_path
+from ml.data.loader import fetch_meta_path, load_raw, raw_csv_path
 from ml.data.serving_gate import NotServable, servable_raw
 
 STATUS_FILE = "refresh_status.json"
@@ -41,6 +44,10 @@ class SnapshotProtected(RuntimeError):
 
 class ValidationFailed(RuntimeError):
     """The fetched data did not pass validation."""
+
+
+class OlderData(RuntimeError):
+    """The fetched data has fewer rows or an earlier last bar than the data it would replace."""
 
 
 class RefreshBusy(RuntimeError):
@@ -114,6 +121,27 @@ def _restore(files: dict[str, Path], backups: dict[str, Path]) -> None:
             p.unlink(missing_ok=True)
 
 
+def _current_extent(asset: str) -> tuple[int, pd.Timestamp] | None:
+    """(rows, last timestamp) of the CSV now served, or None if there is none or it cannot be read."""
+    try:
+        df = load_raw(asset)
+    except (OSError, ValueError, KeyError):
+        return None
+    return (len(df), df["timestamp"].max()) if len(df) else None
+
+
+def check_new_data(report: dict, current: tuple[int, pd.Timestamp] | None) -> None:
+    """Gaps and going backwards are failures (Phase 6c): the previous files stay in place."""
+    if report["missing_days_count"]:
+        raise ValidationFailed(f"{report['missing_days_count']} missing day(s), first {report['missing_days'][0]}")
+    if current is not None:
+        rows, last = current
+        new_last = pd.Timestamp(report["last_timestamp"])
+        if report["rows"] < rows or new_last < last:
+            raise OlderData(f"new data has {report['rows']} rows ending {new_last.date()}; "
+                            f"served data has {rows} rows ending {last.date()}")
+
+
 def servable_state(asset: str) -> dict:
     try:
         df = servable_raw(asset)
@@ -141,6 +169,7 @@ def refresh_asset(asset: str) -> dict:
         report["raw_file"] = validate.repo_relative(files["csv"]).as_posix()
         if not report["passed"]:
             raise ValidationFailed(f"checks failed: {[c for c, ok in report['checks'].items() if not ok]}")
+        check_new_data(report, _current_extent(asset))
         tmp_report.write_text(json.dumps(report, indent=2), encoding="utf-8")
         os.replace(raw_csv_path(asset, staging), files["csv"])
         os.replace(fetch_meta_path(asset, staging), files["meta"])

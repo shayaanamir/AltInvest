@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 import numpy as np
 
 from ml import config
+from ml.data.snapshot_guard import require_snapshot
 from ml.gitinfo import git_metadata
 from ml.data.dataset_summary import prepare, require_validated
 from ml.data.validate import ML_ROOT
@@ -223,6 +224,7 @@ def run(asset: str) -> dict:
 
 
 def main() -> None:
+    require_snapshot()                                  # D40: evaluation snapshot only
     parser = argparse.ArgumentParser(description="Evaluate baselines on validation and test")
     parser.add_argument("--asset", required=True, choices=config.ASSETS)
     asset = parser.parse_args().asset
