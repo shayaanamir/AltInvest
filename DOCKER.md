@@ -25,7 +25,7 @@ AltInvest/
 |------------|------|------------|
 | `mongodb`  | 27017 | Database used by backend + sentiment engine |
 | `backend`  | 8000  | FastAPI app (`backend/main.py`) — assets, prediction, sentiment, risk, aai, health routes |
-| `ml`       | 8001  | Standalone FastAPI ML service (`ml/api/prediction_service.py`) — Prophet/RandomForest/LSTM. Not called by `backend` automatically; it's a separate service per `ml/README.md` |
+| `ml`       | 8001  | ML service v2 (`ml/api/service.py`): `/predict/{asset}`, `/risk/{asset}`, `/health` for BTC, ETH, SOL, serving baselines only (see `ml/README.md`). Fetches its own data into the `ml-data` volume at startup; the `ml-refresh` sidecar refreshes it daily at 00:05 UTC. Not called by `backend` automatically yet |
 | `frontend` | 5173  | Vite dev server |
 
 ## Quick start
@@ -40,7 +40,8 @@ Then visit:
 - Backend docs: http://localhost:8000/docs
 - ML service docs: http://localhost:8001/docs
 
-To stop: `docker compose down` (add `-v` to also wipe the Mongo volume).
+To stop: `docker compose down` (add `-v` to also wipe the volumes: Mongo's data and the ML service's
+`ml-data`; the `ml` service re-fetches its data from Binance at the next start).
 
 ## Important things to know before you build
 
@@ -55,9 +56,11 @@ To stop: `docker compose down` (add `-v` to also wipe the Mongo volume).
 
 2. **First build will be slow and the images will be large.** The backend
    image also installs `sentiment_engine/requirements.txt`, which pulls in
-   `torch` + `transformers` (for FinBERT). The `ml` image installs
-   `prophet` (which compiles `cmdstan` — a small C++ toolchain) and
-   `tensorflow`. Expect a few GB per image and a 10–20 minute first build.
+   `torch` + `transformers` (for FinBERT). Expect a few GB for the backend
+   image and a 10–20 minute first build. The `ml` image is small
+   (python:3.12-slim with pandas, scikit-learn and FastAPI; no Prophet or
+   TensorFlow) and builds in a few minutes. It needs outbound HTTPS to
+   api.binance.com at startup and daily at 00:05 UTC to fetch its data.
    Subsequent builds are cached and much faster.
 
    If you want a fast local loop and don't need real sentiment scoring
@@ -103,7 +106,8 @@ This serves the built static assets via nginx, with an SPA fallback to
 
 - `backend` runs with `uvicorn --reload`, watching the bind-mounted
   `backend/`, `shared/`, `aai_engine/`, and `db/` folders.
-- `ml` runs with `uvicorn --reload` on the bind-mounted `ml/` folder.
+- `ml` has no hot reload: its source is copied into the image (no bind
+  mount). After editing `ml/`, run `docker compose up -d --build ml ml-refresh`.
 - `frontend` runs the Vite dev server, which already has HMR.
 
 `sentiment_engine/` is bind-mounted into the backend container too, but

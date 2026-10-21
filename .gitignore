@@ -2,7 +2,7 @@
 # Python
 # =========================
 # ML artifacts and data
-ml/data/
+ml/data/raw/
 ml/experiments/
 *.pkl
 *.h5
@@ -103,3 +103,11 @@ temp/
 # =========================
 coverage/
 docs/
+# ML v2 docs are tracked (AGENTS rules 13, 15, 16): re-include them after the docs/ rule above
+!ml/docs/
+
+# ML v2 (D13): raw data and model files ignored; artifact metadata.json stays tracked
+*.keras
+ml/artifacts/*/*
+!ml/artifacts/*/metadata.json
+PLANNER.md

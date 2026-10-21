@@ -1,26 +1,12 @@
-# ─── Core Data & ML ───────────────────────────────────────────────────────────
-pandas>=2.0.0
-numpy>=1.26.0
-scikit-learn>=1.4.0
-
-# ─── Forecasting ──────────────────────────────────────────────────────────────
-prophet>=1.1.5
-
-# ─── Boosting ─────────────────────────────────────────────────────────────────
-xgboost>=2.0.0
-
-# ─── Deep Learning (LSTM) — pick ONE and uncomment ───────────────────────────
-tensorflow>=2.16.0
-# torch>=2.2.0              # uncomment if switching to PyTorch
-
-# ─── API Layer ────────────────────────────────────────────────────────────────
-fastapi>=0.111.0
-uvicorn[standard]>=0.29.0
-
-# ─── Experiment Tracking ──────────────────────────────────────────────────────
-mlflow>=2.13.0              # install before running any training!
-
-# ─── Dev / Notebooks ──────────────────────────────────────────────────────────
-jupyter>=1.0.0
-black>=24.0.0
-pytest>=8.0.0
+# ML v2 dependencies. Pinned to the versions on the dev machine (Python 3.12.10).
+# Heavy libs (TensorFlow, Prophet) are added only if they beat baselines (docs/REQUIREMENTS.md).
+numpy==2.2.6
+pandas==2.3.3
+scikit-learn==1.7.2
+requests==2.33.1
+fastapi==0.115.0
+uvicorn==0.30.6
+jsonschema==4.26.0
+rfc3339-validator==0.1.4   # jsonschema's date-time check silently passes without it
+httpx==0.28.1
+pytest==9.1.1

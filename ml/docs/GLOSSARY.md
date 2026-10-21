@@ -1,0 +1,129 @@
+# GLOSSARY (plain English; add new terms whenever a phase introduces them)
+
+Terms marked *(not used yet)* appear in the plan docs but no code uses them so far.
+
+## Market data
+- **Kline / candlestick**: one time slice of trading summarised as open, high, low, close and volume. Binance calls its API record a "kline".
+- **OHLCV**: Open, High, Low, Close, Volume of one bar. Open/close are the first/last price of the slice, high/low the extremes, volume the amount traded.
+- **Daily bar**: one kline covering one UTC day (00:00 to 24:00). We use the close as "the price of that day" (docs/DATA.md).
+- **Closed bar**: a bar whose time slice is over. The current day's bar is still changing, so `fetch.py` drops it.
+- **UTC**: the world time standard, used for all timestamps so day boundaries are the same everywhere.
+- **Spot symbol (BTCUSDT)**: Binance's name for the market that trades BTC against USDT, a coin pegged to the US dollar.
+- **Gap / missing day**: a calendar day inside the date range with no bar. We report gaps; we never fill them.
+- **Forward-fill / interpolation**: inventing a missing value by copying the last one or drawing a line between neighbours. Forbidden here (AGENTS rule 4, docs/DATA.md).
+- **Synthetic data**: numbers produced by a program instead of the market. v1 used it, which made its metrics meaningless (docs/LEARNINGS.md).
+- **Pagination**: an API returns at most 1000 bars per request, so we ask repeatedly, each time starting after the last bar received.
+- **Rate limit / backoff**: the server refuses too many requests per minute; backoff means waiting longer after each failed try.
+- **Evaluation snapshot**: the frozen copy of the data every report was computed on (ml/data/raw and ml/reports/data, last bar 2026-10-17). The split boundaries come from its row count (D16, D18), so it must not grow; the refresh refuses to write there without `--force` (D40).
+- **Serving data**: the separate, daily-refreshed copy the API serves (ML_RAW_DIR and ML_VALIDATION_DIR; in Docker /data/raw and /data/validation). It is served only if its validation report passed and matches the CSV (D40).
+
+## Returns and risk
+- **Return**: how much the price changed, as a fraction. 100 to 110 is +10%.
+- **Log return**: ln(today's close / yesterday's close). Close to the ordinary return for small moves, and daily log returns can be added up over time.
+- **Volatility**: how violently returns swing, usually the standard deviation of returns.
+- **Annualised volatility**: daily volatility scaled to a year: daily std x sqrt(365) for crypto, which trades every day (docs/EVALUATION.md rule 5). Served as `volatility` on /risk.
+- **Pooled percentile**: where today's value ranks among the values of ALL served assets on all dates up to today (ties count half). risk_score = 100 x (1 - that rank), so calmer = higher = safer, and scores compare across assets (D36).
+- **Sharpe ratio**: average return divided by volatility, a "return per unit of risk" score. Annualised with sqrt(365) for daily returns, sqrt(365/30) for 30-day windows.
+- **Kurtosis**: a number describing how fat the extreme ends of a distribution are.
+- **Excess kurtosis**: kurtosis minus 3, so a normal (bell-curve) distribution scores 0. Positive means more extreme days than a bell curve predicts.
+- **Heavy tails**: extreme moves (crashes, spikes) happen far more often than a bell curve would allow. Real crypto has them; high excess kurtosis is the symptom.
+- **Volatility clustering**: big moves tend to be followed by big moves, calm by calm. Measured here by the autocorrelation of absolute returns.
+- **Autocorrelation (lag-1)**: how strongly a series resembles itself shifted by one step. +1 same, 0 unrelated, -1 opposite.
+
+## Modelling and evaluation
+- **Horizon**: how far ahead we predict: 30 daily bars (D3).
+- **Label**: the answer a model is trained to predict, built from the future (for example the price 30 days later).
+- **Feature**: an input to a model, built only from the past.
+- **Leakage**: information from the future getting into training or features, which makes results look better than they could be in real use.
+- **Train / validation / test split**: three chronological pieces of the data. Train teaches the model, validation is for choosing between options, test is a final exam used once.
+- **Embargo**: a gap (30 days) left between splits so labels, which look 30 days ahead, in one piece cannot overlap the next piece (D16, D18).
+- **Warm-up rows**: the first 30 rows, dropped because their 30-day features cannot be computed yet (D18).
+- **Trailing window**: a calculation over the last k rows up to and including today, for example a 7-day moving average. It never uses future rows.
+- **Moving average (MA7, MA30)**: the average close over the last 7 or 30 days.
+- **MA cross (`ma_cross`)**: +1 if close > MA7 > MA30 (uptrend), -1 if close < MA7 < MA30 (downtrend), else 0.
+- **Volume ratio**: ln(today's volume / average volume of the last 30 days). Above 0 means busier than usual.
+- **High-low range**: ln(high / low) of a day, a simple measure of how much the price moved within it.
+- **Forward return / forward volatility**: the log return, or the std of daily log returns, over the next 30 days. These are labels, so they use the future.
+- **Percentile**: the value below which a given percent of the data falls. The 40th percentile is bigger than 40% of the values.
+- **Percentile threshold**: a cut-off set at a percentile of the train data, for example "FLAT if the move is smaller than the 40th percentile of train moves" (D19).
+- **Terciles**: the 33rd and 67th percentiles, which cut data into three roughly equal groups (low, medium, high risk) (D9, D19).
+- **Class balance**: the percent of rows in each class. Very unequal balance makes accuracy misleading.
+- **Majority-class baseline**: always predicting the most common class in TRAIN (D20). Any model must beat it.
+- **Last-value / drift baseline**: price forecasts of "no change" and "the train average 30-day return".
+- **Momentum baseline**: predicting the next 30 days' direction from the last 30 days' move.
+- **Persistence baseline**: predicting tomorrow's risk from today's trailing 30-day volatility.
+- **Buy-and-hold / always-HOLD**: holding the asset the whole time, or staying in cash (0 return).
+- **MAE / RMSE**: average absolute error, and the square root of the average squared error (punishes big misses more). Here in price units (USDT).
+- **MAPE**: average absolute error as a percent of the actual price.
+- **Skill vs naive**: 1 - MAE_model / MAE_last_value. Above 0 means better than "no change".
+- **Directional accuracy**: share of forecasts with the right sign (up vs down).
+- **Accuracy / balanced accuracy**: share of correct classes; balanced accuracy averages the per-class recall, so a constant guess scores 1/(number of classes).
+- **Precision / recall**: of the rows predicted as a class, how many were right; of the rows that were that class, how many were found.
+- **F1 / macro-F1**: one score combining precision and recall per class; macro-F1 is the plain average over classes.
+- **Confusion matrix**: table of actual class (rows) against predicted class (columns).
+- **MCC (Matthews correlation)**: a -1 to +1 score of classification quality that stays honest on unbalanced classes. 0 means no better than chance.
+- **Brier score**: average squared error of predicted probabilities; 0 is perfect.
+- **ROC-AUC**: chance a model scores a random positive above a random negative; 0.5 is chance. Needs probabilities. *(not used yet)*
+- **Calibration**: whether "70% likely" events happen about 70% of the time. *(not used yet)*
+- **Spearman correlation**: correlation of ranks: +1 means the predicted order matches the actual order perfectly.
+- **Coverage / interval width**: share of actual values inside a predicted range, and how wide the range is. *(not used yet)*
+- **n_effective**: labelled rows / 30. Rough count of independent observations, since neighbouring 30-day labels overlap (D20).
+- **Bootstrap / confidence interval (CI)**: resampling the data many times to see how much a number could vary; the 95% CI is the range it falls in 95% of the time.
+- **Moving-block bootstrap**: a bootstrap that resamples runs of 30 neighbouring rows together, so overlapping labels stay together.
+- **Max drawdown**: the largest fall from a previous peak of the money curve.
+- **Baseline**: a deliberately simple predictor (for example "price stays the same"). A model is only worth shipping if it beats it. Phase 3 baselines are in `ml/reports/{asset}/baselines.json`.
+- **Walk-forward**: testing by repeatedly training on the past and predicting the next stretch, moving forward in time (D21, Phase 4.0).
+- **Expanding window**: each walk-forward step trains on all data from the start up to the cut-off, so the training set grows over time.
+- **Fold**: one walk-forward step: a training range plus the 30 rows it predicts.
+- **Origin**: the first row a fold predicts. The fold trains only on rows more than 30 before it.
+- **Pooled**: predictions from all folds put together and scored as one set.
+- **Sealed test split**: the last 15% of rows, which no code reads until the single final evaluation (D21).
+- **Paired bootstrap**: a bootstrap that resamples the same rows for two predictors at once, to get a CI for the difference between them (D22, D25). Used in Phase 4a.
+- **Regression**: predicting a number (here log volatility) rather than a class.
+- **Ridge regression**: a straight-line model with a penalty that keeps coefficients small; alpha sets how strong the penalty is.
+- **Regularisation**: deliberately limiting how closely a model can fit training data, so it generalises better.
+- **HAR model**: "heterogeneous autoregressive": predicts future volatility from recent volatility measured over several window lengths (here 7 and 30 days).
+- **Gradient-boosted trees (HistGradientBoosting)**: many small decision trees added one after another, each fixing the previous ones' errors.
+- **Standardisation**: shifting and scaling each feature to mean 0 and std 1, using the training fold's statistics only.
+- **Config**: one fixed model setup (model type, features, settings). D25 allows at most 4 per model type, declared before any run.
+- **Ranking set / confirmation set**: the first 60% of folds, used to pick the best config, and the last 40%, used once to check it (D25).
+- **Return space / USDT space**: measuring errors on the predicted log return (independent of the price level) versus on the predicted price in dollars-pegged USDT (bigger in expensive years) (D28).
+- **Skill vs last-value**: 1 - MAE_model / MAE_last_value. Negative means the model is worse than predicting "no change".
+- **Shrinkage**: what strong regularisation does: it pulls a model's predictions towards the training average.
+- **CI half-width**: half the width of a confidence interval, (high - low) / 2. Roughly the margin of error of the estimate.
+- **Minimum detectable difference (power check)**: the smallest true improvement the protocol is likely to confirm. Approximated here by the CI half-width; reliable (80% power) detection needs about 1.43x that (D29).
+- **No demonstrated gain**: a model was not shown to be better, which is not the same as being shown to be no better (D29).
+- **Log loss (multiclass)**: the average of -ln(probability given to the class that actually happened). Saying 1/3 for each of three classes scores ln 3 = 1.0986; lower is better, and confident wrong answers are punished hard (D31).
+- **Class prior baseline**: predicting each class with the probability it had in the training fold, the same for every row (D31).
+- **Multinomial logistic regression**: a linear model that gives one score per class and turns the scores into probabilities that sum to 1 (softmax).
+- **Calibration / reliability table**: grouping predictions by stated probability (for example 0.3-0.4) and checking how often the class really happened in each group.
+- **ECE (expected calibration error)**: the count-weighted average gap between stated probability and observed frequency over the reliability table; 0 is perfectly calibrated.
+- **Convergence warning**: the fitting algorithm stopped at its iteration limit before settling. Phase 4c counts these per fold (D31).
+- **Move-vs-no-move skill vs up/down skill**: knowing *whether* the price will move a lot (useful for risk) versus knowing *which way* it will move (needed for BUY or SELL). Phase 5a found neither demonstrated for the ETH direction model (D33).
+- **Serving rule**: the recorded decision on what the API returns for an asset, whatever a model scores. For direction: signal UNCERTAIN, confidence null (D33).
+- **generate_signal**: the one function (`ml/signal/signal_logic.py`) that turns direction probabilities into BUY/HOLD/SELL/UNCERTAIN. The API and the backtest both call it (AGENTS rule 6).
+- **Long-only**: a strategy that can only own the coin or hold cash; SELL means "be in cash", not "bet on a fall" (D34).
+- **Transaction cost**: the fee paid when buying or selling; here 0.1% each time the position changes (D34).
+- **Random-signal baseline**: a strategy that says BUY with 50% chance each window, repeated over 1000 seeded runs, to show what luck alone gives (D34).
+- **Percentile rank**: the percent of values below a given value (ties count half); e.g. rank 9 means the strategy beat only 9% of random runs.
+- **Reference (evidence-only) strategy**: a strategy run in the backtest to show what a model would have done, but never served by the API (D34).
+- **Statistical power**: the chance a test detects a real effect. Small samples have low power, so "not approved" may mean "not proven" rather than "no skill".
+- **Non-overlapping windows**: evaluating 30-day periods that do not share days, because daily steps with a 30-day horizon overlap 29/30 (docs/LEARNINGS.md). Used by the Phase 3 strategy baselines.
+- **Backtest**: replaying a strategy on past data to see how it would have done. *(not used yet)*
+- **Baseline serving**: the API returns a baseline's answer (no change for price, today's volatility for risk), plus a note, because no model beat it (D27, D35).
+
+## Engineering
+- **Unit test**: a tiny automatic check of one function using small made-up inputs (here, hand-made fixtures, not market data).
+- **Fixture**: the small made-up input a test uses.
+- **Git-ignored**: a file Git does not track, so it is not committed. Raw data files are ignored; reports are tracked (D13, D15).
+- **Artifact**: a saved model file. Each gets a `metadata.json` (AGENTS rule 10). *(not used yet)*
+- **Pickle**: Python's way of saving objects to a file; it breaks if saved from a script run as `python file.py` (AGENTS rule 9). *(not used yet)*
+- **Exit code**: the number a command returns: 0 means success, 1 means failure. `validate` returns 1 if any check fails.
+- **JSON schema**: a machine-readable description of what a JSON response may contain: field names, types, allowed values. Ours are in docs/CONTRACT.md and allow no extra fields (`additionalProperties: false`).
+- **Contract test**: a test that calls the real service and checks every response against the agreed JSON schemas, so the backend gets exactly the fields it expects (ml/tests/test_contract.py).
+- **Stale data**: the latest daily bar closed too long ago (more than 48 h, config.STALE_DATA_HOURS). The API still answers, with "data stale: last bar <date>" in the note.
+- **Atomic replace**: swapping a file for a new version in one step (`os.replace`), so a reader sees either the whole old file or the whole new one, never half of each.
+- **Docker volume**: storage managed by Docker that outlives containers. The `ml-data` volume keeps the serving data when the ml containers are rebuilt or restarted; `docker compose down -v` deletes it.
+- **Healthcheck**: a command Docker runs regularly inside a container (here: GET /health) to mark it healthy or unhealthy.
+- **Sidecar service**: a helper container that runs next to the main one and shares its storage. `ml-refresh` uses the ml image and the `ml-data` volume only to refresh the data daily.
+- **404 vs 503**: HTTP status codes. 404 "not found": we do not cover this asset (for example DOGE). 503 "service unavailable": we cover it, but its data is missing, failed validation or does not match its validation report, so we refuse to serve it (D40).

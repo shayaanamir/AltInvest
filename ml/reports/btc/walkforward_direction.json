@@ -1,0 +1,4025 @@
+{
+  "configs_declared": {
+    "count": 2,
+    "configs": {
+      "logreg_c0.1": "LogisticRegression(C=0.1, max_iter=1000)",
+      "logreg_c1": "LogisticRegression(max_iter=1000)"
+    },
+    "baseline": "prior: train-fold class frequencies as probabilities",
+    "eps": 1e-06,
+    "features": "all existing feature columns",
+    "scaling": "standardised with train-fold mean/std",
+    "target": "direction class (DOWN/FLAT/UP) with each fold's own thresholds (D19, D21)",
+    "convergence_warnings": {
+      "logreg_c0.1": {
+        "folds_with_warning": 0,
+        "n_folds": 68
+      },
+      "logreg_c1": {
+        "folds_with_warning": 0,
+        "n_folds": 68
+      }
+    }
+  },
+  "all_folds": {
+    "logreg_c0.1": {
+      "n_folds": 68,
+      "n_pooled": 2031,
+      "n_effective": 67.7,
+      "log_loss": 1.097402,
+      "log_loss_ci95": {
+        "low": 1.064219,
+        "high": 1.138791,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "brier": 0.664332,
+      "roc_auc_ovr": 0.447975,
+      "ece": {
+        "per_class": {
+          "DOWN": 0.101519,
+          "FLAT": 0.077371,
+          "UP": 0.079484
+        },
+        "macro": 0.086125
+      },
+      "reliability_bins": {
+        "DOWN": [
+          {
+            "bin_low": 0.0,
+            "bin_high": 0.1,
+            "count": 2,
+            "mean_prob": 0.092334,
+            "observed_freq": 0.0
+          },
+          {
+            "bin_low": 0.1,
+            "bin_high": 0.2,
+            "count": 181,
+            "mean_prob": 0.184329,
+            "observed_freq": 0.381215
+          },
+          {
+            "bin_low": 0.2,
+            "bin_high": 0.3,
+            "count": 1517,
+            "mean_prob": 0.25031,
+            "observed_freq": 0.195122
+          },
+          {
+            "bin_low": 0.3,
+            "bin_high": 0.4,
+            "count": 289,
+            "mean_prob": 0.326654,
+            "observed_freq": 0.086505
+          },
+          {
+            "bin_low": 0.4,
+            "bin_high": 0.5,
+            "count": 32,
+            "mean_prob": 0.432231,
+            "observed_freq": 0.0625
+          },
+          {
+            "bin_low": 0.5,
+            "bin_high": 0.6,
+            "count": 9,
+            "mean_prob": 0.53438,
+            "observed_freq": 0.0
+          },
+          {
+            "bin_low": 0.6,
+            "bin_high": 0.7,
+            "count": 1,
+            "mean_prob": 0.600284,
+            "observed_freq": 0.0
+          },
+          {
+            "bin_low": 0.7,
+            "bin_high": 0.8,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.8,
+            "bin_high": 0.9,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.9,
+            "bin_high": 1.0,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          }
+        ],
+        "FLAT": [
+          {
+            "bin_low": 0.0,
+            "bin_high": 0.1,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.1,
+            "bin_high": 0.2,
+            "count": 12,
+            "mean_prob": 0.183706,
+            "observed_freq": 0.166667
+          },
+          {
+            "bin_low": 0.2,
+            "bin_high": 0.3,
+            "count": 153,
+            "mean_prob": 0.266758,
+            "observed_freq": 0.568627
+          },
+          {
+            "bin_low": 0.3,
+            "bin_high": 0.4,
+            "count": 629,
+            "mean_prob": 0.359146,
+            "observed_freq": 0.476948
+          },
+          {
+            "bin_low": 0.4,
+            "bin_high": 0.5,
+            "count": 1060,
+            "mean_prob": 0.442823,
+            "observed_freq": 0.461321
+          },
+          {
+            "bin_low": 0.5,
+            "bin_high": 0.6,
+            "count": 167,
+            "mean_prob": 0.526847,
+            "observed_freq": 0.45509
+          },
+          {
+            "bin_low": 0.6,
+            "bin_high": 0.7,
+            "count": 4,
+            "mean_prob": 0.625928,
+            "observed_freq": 0.75
+          },
+          {
+            "bin_low": 0.7,
+            "bin_high": 0.8,
+            "count": 5,
+            "mean_prob": 0.74972,
+            "observed_freq": 0.0
+          },
+          {
+            "bin_low": 0.8,
+            "bin_high": 0.9,
+            "count": 1,
+            "mean_prob": 0.817957,
+            "observed_freq": 0.0
+          },
+          {
+            "bin_low": 0.9,
+            "bin_high": 1.0,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          }
+        ],
+        "UP": [
+          {
+            "bin_low": 0.0,
+            "bin_high": 0.1,
+            "count": 1,
+            "mean_prob": 0.093782,
+            "observed_freq": 1.0
+          },
+          {
+            "bin_low": 0.1,
+            "bin_high": 0.2,
+            "count": 66,
+            "mean_prob": 0.174661,
+            "observed_freq": 0.621212
+          },
+          {
+            "bin_low": 0.2,
+            "bin_high": 0.3,
+            "count": 704,
+            "mean_prob": 0.260104,
+            "observed_freq": 0.291193
+          },
+          {
+            "bin_low": 0.3,
+            "bin_high": 0.4,
+            "count": 879,
+            "mean_prob": 0.346882,
+            "observed_freq": 0.385666
+          },
+          {
+            "bin_low": 0.4,
+            "bin_high": 0.5,
+            "count": 333,
+            "mean_prob": 0.438557,
+            "observed_freq": 0.273273
+          },
+          {
+            "bin_low": 0.5,
+            "bin_high": 0.6,
+            "count": 48,
+            "mean_prob": 0.52159,
+            "observed_freq": 0.104167
+          },
+          {
+            "bin_low": 0.6,
+            "bin_high": 0.7,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.7,
+            "bin_high": 0.8,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.8,
+            "bin_high": 0.9,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.9,
+            "bin_high": 1.0,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          }
+        ]
+      },
+      "mean_prob_vs_observed": {
+        "DOWN": {
+          "mean_predicted": 0.259435,
+          "observed_freq": 0.193008
+        },
+        "FLAT": {
+          "mean_predicted": 0.410324,
+          "observed_freq": 0.471196
+        },
+        "UP": {
+          "mean_predicted": 0.330241,
+          "observed_freq": 0.335795
+        }
+      },
+      "argmax_class_metrics": {
+        "accuracy": 0.404234,
+        "balanced_accuracy": 0.310443,
+        "macro_f1": 0.276861,
+        "mcc": -0.044438,
+        "brier_one_hot": 1.191531,
+        "per_class": {
+          "DOWN": {
+            "precision": 0.061538,
+            "recall": 0.010204,
+            "support": 392,
+            "predicted": 65
+          },
+          "FLAT": {
+            "precision": 0.455933,
+            "recall": 0.68652,
+            "support": 957,
+            "predicted": 1441
+          },
+          "UP": {
+            "precision": 0.304762,
+            "recall": 0.234604,
+            "support": 682,
+            "predicted": 525
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "DOWN",
+            "FLAT",
+            "UP"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              4,
+              304,
+              84
+            ],
+            [
+              19,
+              657,
+              281
+            ],
+            [
+              42,
+              480,
+              160
+            ]
+          ]
+        },
+        "accuracy_ci95": {
+          "low": 0.338712,
+          "high": 0.460869,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        }
+      }
+    },
+    "logreg_c1": {
+      "n_folds": 68,
+      "n_pooled": 2031,
+      "n_effective": 67.7,
+      "log_loss": 1.101399,
+      "log_loss_ci95": {
+        "low": 1.066988,
+        "high": 1.143007,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "brier": 0.666923,
+      "roc_auc_ovr": 0.446083,
+      "ece": {
+        "per_class": {
+          "DOWN": 0.106989,
+          "FLAT": 0.081739,
+          "UP": 0.081418
+        },
+        "macro": 0.090049
+      },
+      "reliability_bins": {
+        "DOWN": [
+          {
+            "bin_low": 0.0,
+            "bin_high": 0.1,
+            "count": 4,
+            "mean_prob": 0.08086,
+            "observed_freq": 0.0
+          },
+          {
+            "bin_low": 0.1,
+            "bin_high": 0.2,
+            "count": 198,
+            "mean_prob": 0.182698,
+            "observed_freq": 0.388889
+          },
+          {
+            "bin_low": 0.2,
+            "bin_high": 0.3,
+            "count": 1492,
+            "mean_prob": 0.25056,
+            "observed_freq": 0.192359
+          },
+          {
+            "bin_low": 0.3,
+            "bin_high": 0.4,
+            "count": 293,
+            "mean_prob": 0.329569,
+            "observed_freq": 0.085324
+          },
+          {
+            "bin_low": 0.4,
+            "bin_high": 0.5,
+            "count": 33,
+            "mean_prob": 0.438779,
+            "observed_freq": 0.090909
+          },
+          {
+            "bin_low": 0.5,
+            "bin_high": 0.6,
+            "count": 9,
+            "mean_prob": 0.559029,
+            "observed_freq": 0.0
+          },
+          {
+            "bin_low": 0.6,
+            "bin_high": 0.7,
+            "count": 2,
+            "mean_prob": 0.617895,
+            "observed_freq": 0.0
+          },
+          {
+            "bin_low": 0.7,
+            "bin_high": 0.8,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.8,
+            "bin_high": 0.9,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.9,
+            "bin_high": 1.0,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          }
+        ],
+        "FLAT": [
+          {
+            "bin_low": 0.0,
+            "bin_high": 0.1,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.1,
+            "bin_high": 0.2,
+            "count": 16,
+            "mean_prob": 0.179957,
+            "observed_freq": 0.25
+          },
+          {
+            "bin_low": 0.2,
+            "bin_high": 0.3,
+            "count": 158,
+            "mean_prob": 0.265995,
+            "observed_freq": 0.56962
+          },
+          {
+            "bin_low": 0.3,
+            "bin_high": 0.4,
+            "count": 617,
+            "mean_prob": 0.359204,
+            "observed_freq": 0.47812
+          },
+          {
+            "bin_low": 0.4,
+            "bin_high": 0.5,
+            "count": 1056,
+            "mean_prob": 0.443028,
+            "observed_freq": 0.462121
+          },
+          {
+            "bin_low": 0.5,
+            "bin_high": 0.6,
+            "count": 172,
+            "mean_prob": 0.528747,
+            "observed_freq": 0.436047
+          },
+          {
+            "bin_low": 0.6,
+            "bin_high": 0.7,
+            "count": 5,
+            "mean_prob": 0.612715,
+            "observed_freq": 1.0
+          },
+          {
+            "bin_low": 0.7,
+            "bin_high": 0.8,
+            "count": 5,
+            "mean_prob": 0.766691,
+            "observed_freq": 0.0
+          },
+          {
+            "bin_low": 0.8,
+            "bin_high": 0.9,
+            "count": 2,
+            "mean_prob": 0.835354,
+            "observed_freq": 0.0
+          },
+          {
+            "bin_low": 0.9,
+            "bin_high": 1.0,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          }
+        ],
+        "UP": [
+          {
+            "bin_low": 0.0,
+            "bin_high": 0.1,
+            "count": 1,
+            "mean_prob": 0.081565,
+            "observed_freq": 1.0
+          },
+          {
+            "bin_low": 0.1,
+            "bin_high": 0.2,
+            "count": 74,
+            "mean_prob": 0.17052,
+            "observed_freq": 0.567568
+          },
+          {
+            "bin_low": 0.2,
+            "bin_high": 0.3,
+            "count": 711,
+            "mean_prob": 0.259181,
+            "observed_freq": 0.299578
+          },
+          {
+            "bin_low": 0.3,
+            "bin_high": 0.4,
+            "count": 864,
+            "mean_prob": 0.347313,
+            "observed_freq": 0.381944
+          },
+          {
+            "bin_low": 0.4,
+            "bin_high": 0.5,
+            "count": 329,
+            "mean_prob": 0.440602,
+            "observed_freq": 0.273556
+          },
+          {
+            "bin_low": 0.5,
+            "bin_high": 0.6,
+            "count": 52,
+            "mean_prob": 0.528034,
+            "observed_freq": 0.115385
+          },
+          {
+            "bin_low": 0.6,
+            "bin_high": 0.7,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.7,
+            "bin_high": 0.8,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.8,
+            "bin_high": 0.9,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.9,
+            "bin_high": 1.0,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          }
+        ]
+      },
+      "mean_prob_vs_observed": {
+        "DOWN": {
+          "mean_predicted": 0.259795,
+          "observed_freq": 0.193008
+        },
+        "FLAT": {
+          "mean_predicted": 0.410579,
+          "observed_freq": 0.471196
+        },
+        "UP": {
+          "mean_predicted": 0.329626,
+          "observed_freq": 0.335795
+        }
+      },
+      "argmax_class_metrics": {
+        "accuracy": 0.40128,
+        "balanced_accuracy": 0.308876,
+        "macro_f1": 0.277268,
+        "mcc": -0.048341,
+        "brier_one_hot": 1.19744,
+        "per_class": {
+          "DOWN": {
+            "precision": 0.094595,
+            "recall": 0.017857,
+            "support": 392,
+            "predicted": 74
+          },
+          "FLAT": {
+            "precision": 0.455494,
+            "recall": 0.684431,
+            "support": 957,
+            "predicted": 1438
+          },
+          "UP": {
+            "precision": 0.294798,
+            "recall": 0.22434,
+            "support": 682,
+            "predicted": 519
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "DOWN",
+            "FLAT",
+            "UP"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              7,
+              300,
+              85
+            ],
+            [
+              21,
+              655,
+              281
+            ],
+            [
+              46,
+              483,
+              153
+            ]
+          ]
+        },
+        "accuracy_ci95": {
+          "low": 0.33481,
+          "high": 0.458887,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        }
+      }
+    },
+    "prior": {
+      "n_folds": 68,
+      "n_pooled": 2031,
+      "n_effective": 67.7,
+      "log_loss": 1.063176,
+      "log_loss_ci95": {
+        "low": 1.036719,
+        "high": 1.096172,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "brier": 0.642964,
+      "roc_auc_ovr": 0.429835,
+      "ece": {
+        "per_class": {
+          "DOWN": 0.060948,
+          "FLAT": 0.071196,
+          "UP": 0.010248
+        },
+        "macro": 0.047464
+      },
+      "reliability_bins": {
+        "DOWN": [
+          {
+            "bin_low": 0.0,
+            "bin_high": 0.1,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.1,
+            "bin_high": 0.2,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.2,
+            "bin_high": 0.3,
+            "count": 2001,
+            "mean_prob": 0.253248,
+            "observed_freq": 0.192904
+          },
+          {
+            "bin_low": 0.3,
+            "bin_high": 0.4,
+            "count": 30,
+            "mean_prob": 0.30122,
+            "observed_freq": 0.2
+          },
+          {
+            "bin_low": 0.4,
+            "bin_high": 0.5,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.5,
+            "bin_high": 0.6,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.6,
+            "bin_high": 0.7,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.7,
+            "bin_high": 0.8,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.8,
+            "bin_high": 0.9,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.9,
+            "bin_high": 1.0,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          }
+        ],
+        "FLAT": [
+          {
+            "bin_low": 0.0,
+            "bin_high": 0.1,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.1,
+            "bin_high": 0.2,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.2,
+            "bin_high": 0.3,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.3,
+            "bin_high": 0.4,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.4,
+            "bin_high": 0.5,
+            "count": 2031,
+            "mean_prob": 0.4,
+            "observed_freq": 0.471196
+          },
+          {
+            "bin_low": 0.5,
+            "bin_high": 0.6,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.6,
+            "bin_high": 0.7,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.7,
+            "bin_high": 0.8,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.8,
+            "bin_high": 0.9,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.9,
+            "bin_high": 1.0,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          }
+        ],
+        "UP": [
+          {
+            "bin_low": 0.0,
+            "bin_high": 0.1,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.1,
+            "bin_high": 0.2,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.2,
+            "bin_high": 0.3,
+            "count": 30,
+            "mean_prob": 0.29878,
+            "observed_freq": 0.233333
+          },
+          {
+            "bin_low": 0.3,
+            "bin_high": 0.4,
+            "count": 2001,
+            "mean_prob": 0.346752,
+            "observed_freq": 0.337331
+          },
+          {
+            "bin_low": 0.4,
+            "bin_high": 0.5,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.5,
+            "bin_high": 0.6,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.6,
+            "bin_high": 0.7,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.7,
+            "bin_high": 0.8,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.8,
+            "bin_high": 0.9,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          },
+          {
+            "bin_low": 0.9,
+            "bin_high": 1.0,
+            "count": 0,
+            "mean_prob": null,
+            "observed_freq": null
+          }
+        ]
+      },
+      "mean_prob_vs_observed": {
+        "DOWN": {
+          "mean_predicted": 0.253957,
+          "observed_freq": 0.193008
+        },
+        "FLAT": {
+          "mean_predicted": 0.4,
+          "observed_freq": 0.471196
+        },
+        "UP": {
+          "mean_predicted": 0.346043,
+          "observed_freq": 0.335795
+        }
+      },
+      "argmax_class_metrics": {
+        "accuracy": 0.471196,
+        "balanced_accuracy": 0.333333,
+        "macro_f1": 0.213521,
+        "mcc": null,
+        "brier_one_hot": 1.057607,
+        "per_class": {
+          "DOWN": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 392,
+            "predicted": 0
+          },
+          "FLAT": {
+            "precision": 0.471196,
+            "recall": 1.0,
+            "support": 957,
+            "predicted": 2031
+          },
+          "UP": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 682,
+            "predicted": 0
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "DOWN",
+            "FLAT",
+            "UP"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              0,
+              392,
+              0
+            ],
+            [
+              0,
+              957,
+              0
+            ],
+            [
+              0,
+              682,
+              0
+            ]
+          ]
+        },
+        "note": "class(es) ['DOWN', 'UP'] are never predicted: their precision is null; mcc is null: undefined when the predictions (or the actual labels) are a single class",
+        "accuracy_ci95": {
+          "low": 0.398781,
+          "high": 0.55,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        }
+      }
+    },
+    "hard/train_majority": {
+      "n_folds": 68,
+      "n_pooled": 2031,
+      "n_effective": 67.7,
+      "accuracy": 0.471196,
+      "balanced_accuracy": 0.333333,
+      "macro_f1": 0.213521,
+      "mcc": null,
+      "brier_one_hot": 1.057607,
+      "per_class": {
+        "DOWN": {
+          "precision": null,
+          "recall": 0.0,
+          "support": 392,
+          "predicted": 0
+        },
+        "FLAT": {
+          "precision": 0.471196,
+          "recall": 1.0,
+          "support": 957,
+          "predicted": 2031
+        },
+        "UP": {
+          "precision": null,
+          "recall": 0.0,
+          "support": 682,
+          "predicted": 0
+        }
+      },
+      "confusion_matrix": {
+        "labels": [
+          "DOWN",
+          "FLAT",
+          "UP"
+        ],
+        "rows_actual_cols_predicted": [
+          [
+            0,
+            392,
+            0
+          ],
+          [
+            0,
+            957,
+            0
+          ],
+          [
+            0,
+            682,
+            0
+          ]
+        ]
+      },
+      "note": "class(es) ['DOWN', 'UP'] are never predicted: their precision is null; mcc is null: undefined when the predictions (or the actual labels) are a single class; roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities; hard class predictions have no probabilities; context only, not used in ranking or approval",
+      "accuracy_ci95": {
+        "low": 0.398781,
+        "high": 0.55,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "roc_auc_ovr": null,
+      "calibration": null,
+      "log_loss": null,
+      "brier": null,
+      "ece": null
+    },
+    "hard/always_up": {
+      "n_folds": 68,
+      "n_pooled": 2031,
+      "n_effective": 67.7,
+      "accuracy": 0.335795,
+      "balanced_accuracy": 0.333333,
+      "macro_f1": 0.167588,
+      "mcc": null,
+      "brier_one_hot": 1.32841,
+      "per_class": {
+        "DOWN": {
+          "precision": null,
+          "recall": 0.0,
+          "support": 392,
+          "predicted": 0
+        },
+        "FLAT": {
+          "precision": null,
+          "recall": 0.0,
+          "support": 957,
+          "predicted": 0
+        },
+        "UP": {
+          "precision": 0.335795,
+          "recall": 1.0,
+          "support": 682,
+          "predicted": 2031
+        }
+      },
+      "confusion_matrix": {
+        "labels": [
+          "DOWN",
+          "FLAT",
+          "UP"
+        ],
+        "rows_actual_cols_predicted": [
+          [
+            0,
+            0,
+            392
+          ],
+          [
+            0,
+            0,
+            957
+          ],
+          [
+            0,
+            0,
+            682
+          ]
+        ]
+      },
+      "note": "class(es) ['DOWN', 'FLAT'] are never predicted: their precision is null; mcc is null: undefined when the predictions (or the actual labels) are a single class; roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities; hard class predictions have no probabilities; context only, not used in ranking or approval",
+      "accuracy_ci95": {
+        "low": 0.247144,
+        "high": 0.425406,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "roc_auc_ovr": null,
+      "calibration": null,
+      "log_loss": null,
+      "brier": null,
+      "ece": null
+    },
+    "hard/momentum": {
+      "n_folds": 68,
+      "n_pooled": 2031,
+      "n_effective": 67.7,
+      "accuracy": 0.344165,
+      "balanced_accuracy": 0.316174,
+      "macro_f1": 0.316389,
+      "mcc": -0.044111,
+      "brier_one_hot": 1.311669,
+      "per_class": {
+        "DOWN": {
+          "precision": 0.189526,
+          "recall": 0.193878,
+          "support": 392,
+          "predicted": 401
+        },
+        "FLAT": {
+          "precision": 0.391079,
+          "recall": 0.393939,
+          "support": 957,
+          "predicted": 964
+        },
+        "UP": {
+          "precision": 0.369369,
+          "recall": 0.360704,
+          "support": 682,
+          "predicted": 666
+        }
+      },
+      "confusion_matrix": {
+        "labels": [
+          "DOWN",
+          "FLAT",
+          "UP"
+        ],
+        "rows_actual_cols_predicted": [
+          [
+            76,
+            231,
+            85
+          ],
+          [
+            245,
+            377,
+            335
+          ],
+          [
+            80,
+            356,
+            246
+          ]
+        ]
+      },
+      "accuracy_ci95": {
+        "low": 0.287531,
+        "high": 0.407706,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "roc_auc_ovr": null,
+      "calibration": null,
+      "note": "roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities; hard class predictions have no probabilities; context only, not used in ranking or approval",
+      "log_loss": null,
+      "brier": null,
+      "ece": null
+    }
+  },
+  "ranking_first_60pct": {
+    "n_folds": 40,
+    "date_range": [
+      "2019-10-16",
+      "2023-01-27"
+    ],
+    "metric": "pooled mean log loss (lower is better)",
+    "order": [
+      "logreg_c0.1",
+      "logreg_c1"
+    ],
+    "results": {
+      "logreg_c0.1": {
+        "n_folds": 40,
+        "n_pooled": 1200,
+        "n_effective": 40.0,
+        "log_loss": 1.143606,
+        "log_loss_ci95": {
+          "low": 1.092596,
+          "high": 1.196074,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "brier": 0.692917,
+        "roc_auc_ovr": 0.443481,
+        "ece": {
+          "per_class": {
+            "DOWN": 0.097791,
+            "FLAT": 0.074611,
+            "UP": 0.097421
+          },
+          "macro": 0.089941
+        },
+        "reliability_bins": {
+          "DOWN": [
+            {
+              "bin_low": 0.0,
+              "bin_high": 0.1,
+              "count": 2,
+              "mean_prob": 0.092334,
+              "observed_freq": 0.0
+            },
+            {
+              "bin_low": 0.1,
+              "bin_high": 0.2,
+              "count": 162,
+              "mean_prob": 0.183073,
+              "observed_freq": 0.41358
+            },
+            {
+              "bin_low": 0.2,
+              "bin_high": 0.3,
+              "count": 786,
+              "mean_prob": 0.249457,
+              "observed_freq": 0.26972
+            },
+            {
+              "bin_low": 0.3,
+              "bin_high": 0.4,
+              "count": 208,
+              "mean_prob": 0.33007,
+              "observed_freq": 0.105769
+            },
+            {
+              "bin_low": 0.4,
+              "bin_high": 0.5,
+              "count": 32,
+              "mean_prob": 0.432231,
+              "observed_freq": 0.0625
+            },
+            {
+              "bin_low": 0.5,
+              "bin_high": 0.6,
+              "count": 9,
+              "mean_prob": 0.53438,
+              "observed_freq": 0.0
+            },
+            {
+              "bin_low": 0.6,
+              "bin_high": 0.7,
+              "count": 1,
+              "mean_prob": 0.600284,
+              "observed_freq": 0.0
+            },
+            {
+              "bin_low": 0.7,
+              "bin_high": 0.8,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.8,
+              "bin_high": 0.9,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.9,
+              "bin_high": 1.0,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            }
+          ],
+          "FLAT": [
+            {
+              "bin_low": 0.0,
+              "bin_high": 0.1,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.1,
+              "bin_high": 0.2,
+              "count": 12,
+              "mean_prob": 0.183706,
+              "observed_freq": 0.166667
+            },
+            {
+              "bin_low": 0.2,
+              "bin_high": 0.3,
+              "count": 130,
+              "mean_prob": 0.265091,
+              "observed_freq": 0.492308
+            },
+            {
+              "bin_low": 0.3,
+              "bin_high": 0.4,
+              "count": 363,
+              "mean_prob": 0.351309,
+              "observed_freq": 0.38843
+            },
+            {
+              "bin_low": 0.4,
+              "bin_high": 0.5,
+              "count": 521,
+              "mean_prob": 0.45066,
+              "observed_freq": 0.393474
+            },
+            {
+              "bin_low": 0.5,
+              "bin_high": 0.6,
+              "count": 164,
+              "mean_prob": 0.527192,
+              "observed_freq": 0.457317
+            },
+            {
+              "bin_low": 0.6,
+              "bin_high": 0.7,
+              "count": 4,
+              "mean_prob": 0.625928,
+              "observed_freq": 0.75
+            },
+            {
+              "bin_low": 0.7,
+              "bin_high": 0.8,
+              "count": 5,
+              "mean_prob": 0.74972,
+              "observed_freq": 0.0
+            },
+            {
+              "bin_low": 0.8,
+              "bin_high": 0.9,
+              "count": 1,
+              "mean_prob": 0.817957,
+              "observed_freq": 0.0
+            },
+            {
+              "bin_low": 0.9,
+              "bin_high": 1.0,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            }
+          ],
+          "UP": [
+            {
+              "bin_low": 0.0,
+              "bin_high": 0.1,
+              "count": 1,
+              "mean_prob": 0.093782,
+              "observed_freq": 1.0
+            },
+            {
+              "bin_low": 0.1,
+              "bin_high": 0.2,
+              "count": 66,
+              "mean_prob": 0.174661,
+              "observed_freq": 0.621212
+            },
+            {
+              "bin_low": 0.2,
+              "bin_high": 0.3,
+              "count": 430,
+              "mean_prob": 0.254939,
+              "observed_freq": 0.286047
+            },
+            {
+              "bin_low": 0.3,
+              "bin_high": 0.4,
+              "count": 441,
+              "mean_prob": 0.34612,
+              "observed_freq": 0.394558
+            },
+            {
+              "bin_low": 0.4,
+              "bin_high": 0.5,
+              "count": 215,
+              "mean_prob": 0.443039,
+              "observed_freq": 0.293023
+            },
+            {
+              "bin_low": 0.5,
+              "bin_high": 0.6,
+              "count": 47,
+              "mean_prob": 0.522049,
+              "observed_freq": 0.106383
+            },
+            {
+              "bin_low": 0.6,
+              "bin_high": 0.7,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.7,
+              "bin_high": 0.8,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.8,
+              "bin_high": 0.9,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.9,
+              "bin_high": 1.0,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            }
+          ]
+        },
+        "mean_prob_vs_observed": {
+          "DOWN": {
+            "mean_predicted": 0.261509,
+            "observed_freq": 0.2525
+          },
+          "FLAT": {
+            "mean_predicted": 0.410429,
+            "observed_freq": 0.408333
+          },
+          "UP": {
+            "mean_predicted": 0.328061,
+            "observed_freq": 0.339167
+          }
+        },
+        "argmax_class_metrics": {
+          "accuracy": 0.36,
+          "balanced_accuracy": 0.311788,
+          "macro_f1": 0.272917,
+          "mcc": -0.035283,
+          "brier_one_hot": 1.28,
+          "per_class": {
+            "DOWN": {
+              "precision": 0.061538,
+              "recall": 0.013201,
+              "support": 303,
+              "predicted": 65
+            },
+            "FLAT": {
+              "precision": 0.395172,
+              "recall": 0.634694,
+              "support": 490,
+              "predicted": 787
+            },
+            "UP": {
+              "precision": 0.336207,
+              "recall": 0.287469,
+              "support": 407,
+              "predicted": 348
+            }
+          },
+          "confusion_matrix": {
+            "labels": [
+              "DOWN",
+              "FLAT",
+              "UP"
+            ],
+            "rows_actual_cols_predicted": [
+              [
+                4,
+                228,
+                71
+              ],
+              [
+                19,
+                311,
+                160
+              ],
+              [
+                42,
+                248,
+                117
+              ]
+            ]
+          },
+          "accuracy_ci95": {
+            "low": 0.280813,
+            "high": 0.440042,
+            "level": 0.95,
+            "block_size": 30,
+            "n_boot": 1000,
+            "seed": 0
+          }
+        }
+      },
+      "logreg_c1": {
+        "n_folds": 40,
+        "n_pooled": 1200,
+        "n_effective": 40.0,
+        "log_loss": 1.150164,
+        "log_loss_ci95": {
+          "low": 1.098574,
+          "high": 1.203376,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "brier": 0.697135,
+        "roc_auc_ovr": 0.440295,
+        "ece": {
+          "per_class": {
+            "DOWN": 0.102362,
+            "FLAT": 0.081146,
+            "UP": 0.099908
+          },
+          "macro": 0.094472
+        },
+        "reliability_bins": {
+          "DOWN": [
+            {
+              "bin_low": 0.0,
+              "bin_high": 0.1,
+              "count": 4,
+              "mean_prob": 0.08086,
+              "observed_freq": 0.0
+            },
+            {
+              "bin_low": 0.1,
+              "bin_high": 0.2,
+              "count": 174,
+              "mean_prob": 0.181054,
+              "observed_freq": 0.413793
+            },
+            {
+              "bin_low": 0.2,
+              "bin_high": 0.3,
+              "count": 768,
+              "mean_prob": 0.249705,
+              "observed_freq": 0.269531
+            },
+            {
+              "bin_low": 0.3,
+              "bin_high": 0.4,
+              "count": 210,
+              "mean_prob": 0.333532,
+              "observed_freq": 0.1
+            },
+            {
+              "bin_low": 0.4,
+              "bin_high": 0.5,
+              "count": 33,
+              "mean_prob": 0.438779,
+              "observed_freq": 0.090909
+            },
+            {
+              "bin_low": 0.5,
+              "bin_high": 0.6,
+              "count": 9,
+              "mean_prob": 0.559029,
+              "observed_freq": 0.0
+            },
+            {
+              "bin_low": 0.6,
+              "bin_high": 0.7,
+              "count": 2,
+              "mean_prob": 0.617895,
+              "observed_freq": 0.0
+            },
+            {
+              "bin_low": 0.7,
+              "bin_high": 0.8,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.8,
+              "bin_high": 0.9,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.9,
+              "bin_high": 1.0,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            }
+          ],
+          "FLAT": [
+            {
+              "bin_low": 0.0,
+              "bin_high": 0.1,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.1,
+              "bin_high": 0.2,
+              "count": 16,
+              "mean_prob": 0.179957,
+              "observed_freq": 0.25
+            },
+            {
+              "bin_low": 0.2,
+              "bin_high": 0.3,
+              "count": 134,
+              "mean_prob": 0.264379,
+              "observed_freq": 0.492537
+            },
+            {
+              "bin_low": 0.3,
+              "bin_high": 0.4,
+              "count": 354,
+              "mean_prob": 0.351433,
+              "observed_freq": 0.389831
+            },
+            {
+              "bin_low": 0.4,
+              "bin_high": 0.5,
+              "count": 515,
+              "mean_prob": 0.450935,
+              "observed_freq": 0.394175
+            },
+            {
+              "bin_low": 0.5,
+              "bin_high": 0.6,
+              "count": 169,
+              "mean_prob": 0.529095,
+              "observed_freq": 0.43787
+            },
+            {
+              "bin_low": 0.6,
+              "bin_high": 0.7,
+              "count": 5,
+              "mean_prob": 0.612715,
+              "observed_freq": 1.0
+            },
+            {
+              "bin_low": 0.7,
+              "bin_high": 0.8,
+              "count": 5,
+              "mean_prob": 0.766691,
+              "observed_freq": 0.0
+            },
+            {
+              "bin_low": 0.8,
+              "bin_high": 0.9,
+              "count": 2,
+              "mean_prob": 0.835354,
+              "observed_freq": 0.0
+            },
+            {
+              "bin_low": 0.9,
+              "bin_high": 1.0,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            }
+          ],
+          "UP": [
+            {
+              "bin_low": 0.0,
+              "bin_high": 0.1,
+              "count": 1,
+              "mean_prob": 0.081565,
+              "observed_freq": 1.0
+            },
+            {
+              "bin_low": 0.1,
+              "bin_high": 0.2,
+              "count": 74,
+              "mean_prob": 0.17052,
+              "observed_freq": 0.567568
+            },
+            {
+              "bin_low": 0.2,
+              "bin_high": 0.3,
+              "count": 432,
+              "mean_prob": 0.253762,
+              "observed_freq": 0.300926
+            },
+            {
+              "bin_low": 0.3,
+              "bin_high": 0.4,
+              "count": 429,
+              "mean_prob": 0.346319,
+              "observed_freq": 0.384615
+            },
+            {
+              "bin_low": 0.4,
+              "bin_high": 0.5,
+              "count": 213,
+              "mean_prob": 0.445211,
+              "observed_freq": 0.295775
+            },
+            {
+              "bin_low": 0.5,
+              "bin_high": 0.6,
+              "count": 51,
+              "mean_prob": 0.528539,
+              "observed_freq": 0.117647
+            },
+            {
+              "bin_low": 0.6,
+              "bin_high": 0.7,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.7,
+              "bin_high": 0.8,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.8,
+              "bin_high": 0.9,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.9,
+              "bin_high": 1.0,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            }
+          ]
+        },
+        "mean_prob_vs_observed": {
+          "DOWN": {
+            "mean_predicted": 0.261991,
+            "observed_freq": 0.2525
+          },
+          "FLAT": {
+            "mean_predicted": 0.410775,
+            "observed_freq": 0.408333
+          },
+          "UP": {
+            "mean_predicted": 0.327235,
+            "observed_freq": 0.339167
+          }
+        },
+        "argmax_class_metrics": {
+          "accuracy": 0.355,
+          "balanced_accuracy": 0.308134,
+          "macro_f1": 0.272339,
+          "mcc": -0.042225,
+          "brier_one_hot": 1.29,
+          "per_class": {
+            "DOWN": {
+              "precision": 0.094595,
+              "recall": 0.023102,
+              "support": 303,
+              "predicted": 74
+            },
+            "FLAT": {
+              "precision": 0.393862,
+              "recall": 0.628571,
+              "support": 490,
+              "predicted": 782
+            },
+            "UP": {
+              "precision": 0.322674,
+              "recall": 0.272727,
+              "support": 407,
+              "predicted": 344
+            }
+          },
+          "confusion_matrix": {
+            "labels": [
+              "DOWN",
+              "FLAT",
+              "UP"
+            ],
+            "rows_actual_cols_predicted": [
+              [
+                7,
+                224,
+                72
+              ],
+              [
+                21,
+                308,
+                161
+              ],
+              [
+                46,
+                250,
+                111
+              ]
+            ]
+          },
+          "accuracy_ci95": {
+            "low": 0.275833,
+            "high": 0.437542,
+            "level": 0.95,
+            "block_size": 30,
+            "n_boot": 1000,
+            "seed": 0
+          }
+        }
+      },
+      "prior": {
+        "n_folds": 40,
+        "n_pooled": 1200,
+        "n_effective": 40.0,
+        "log_loss": 1.0948,
+        "log_loss_ci95": {
+          "low": 1.054438,
+          "high": 1.138658,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "brier": 0.662989,
+        "roc_auc_ovr": 0.436498,
+        "ece": {
+          "per_class": {
+            "DOWN": 0.004333,
+            "FLAT": 0.008333,
+            "UP": 0.007605
+          },
+          "macro": 0.006757
+        },
+        "reliability_bins": {
+          "DOWN": [
+            {
+              "bin_low": 0.0,
+              "bin_high": 0.1,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.1,
+              "bin_high": 0.2,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.2,
+              "bin_high": 0.3,
+              "count": 1170,
+              "mean_prob": 0.251998,
+              "observed_freq": 0.253846
+            },
+            {
+              "bin_low": 0.3,
+              "bin_high": 0.4,
+              "count": 30,
+              "mean_prob": 0.30122,
+              "observed_freq": 0.2
+            },
+            {
+              "bin_low": 0.4,
+              "bin_high": 0.5,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.5,
+              "bin_high": 0.6,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.6,
+              "bin_high": 0.7,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.7,
+              "bin_high": 0.8,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.8,
+              "bin_high": 0.9,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.9,
+              "bin_high": 1.0,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            }
+          ],
+          "FLAT": [
+            {
+              "bin_low": 0.0,
+              "bin_high": 0.1,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.1,
+              "bin_high": 0.2,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.2,
+              "bin_high": 0.3,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.3,
+              "bin_high": 0.4,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.4,
+              "bin_high": 0.5,
+              "count": 1200,
+              "mean_prob": 0.4,
+              "observed_freq": 0.408333
+            },
+            {
+              "bin_low": 0.5,
+              "bin_high": 0.6,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.6,
+              "bin_high": 0.7,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.7,
+              "bin_high": 0.8,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.8,
+              "bin_high": 0.9,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.9,
+              "bin_high": 1.0,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            }
+          ],
+          "UP": [
+            {
+              "bin_low": 0.0,
+              "bin_high": 0.1,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.1,
+              "bin_high": 0.2,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.2,
+              "bin_high": 0.3,
+              "count": 30,
+              "mean_prob": 0.29878,
+              "observed_freq": 0.233333
+            },
+            {
+              "bin_low": 0.3,
+              "bin_high": 0.4,
+              "count": 1170,
+              "mean_prob": 0.348002,
+              "observed_freq": 0.34188
+            },
+            {
+              "bin_low": 0.4,
+              "bin_high": 0.5,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.5,
+              "bin_high": 0.6,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.6,
+              "bin_high": 0.7,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.7,
+              "bin_high": 0.8,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.8,
+              "bin_high": 0.9,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.9,
+              "bin_high": 1.0,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            }
+          ]
+        },
+        "mean_prob_vs_observed": {
+          "DOWN": {
+            "mean_predicted": 0.253228,
+            "observed_freq": 0.2525
+          },
+          "FLAT": {
+            "mean_predicted": 0.4,
+            "observed_freq": 0.408333
+          },
+          "UP": {
+            "mean_predicted": 0.346772,
+            "observed_freq": 0.339167
+          }
+        },
+        "argmax_class_metrics": {
+          "accuracy": 0.408333,
+          "balanced_accuracy": 0.333333,
+          "macro_f1": 0.193294,
+          "mcc": null,
+          "brier_one_hot": 1.183333,
+          "per_class": {
+            "DOWN": {
+              "precision": null,
+              "recall": 0.0,
+              "support": 303,
+              "predicted": 0
+            },
+            "FLAT": {
+              "precision": 0.408333,
+              "recall": 1.0,
+              "support": 490,
+              "predicted": 1200
+            },
+            "UP": {
+              "precision": null,
+              "recall": 0.0,
+              "support": 407,
+              "predicted": 0
+            }
+          },
+          "confusion_matrix": {
+            "labels": [
+              "DOWN",
+              "FLAT",
+              "UP"
+            ],
+            "rows_actual_cols_predicted": [
+              [
+                0,
+                303,
+                0
+              ],
+              [
+                0,
+                490,
+                0
+              ],
+              [
+                0,
+                407,
+                0
+              ]
+            ]
+          },
+          "note": "class(es) ['DOWN', 'UP'] are never predicted: their precision is null; mcc is null: undefined when the predictions (or the actual labels) are a single class",
+          "accuracy_ci95": {
+            "low": 0.315833,
+            "high": 0.498333,
+            "level": 0.95,
+            "block_size": 30,
+            "n_boot": 1000,
+            "seed": 0
+          }
+        }
+      },
+      "hard/train_majority": {
+        "n_folds": 40,
+        "n_pooled": 1200,
+        "n_effective": 40.0,
+        "accuracy": 0.408333,
+        "balanced_accuracy": 0.333333,
+        "macro_f1": 0.193294,
+        "mcc": null,
+        "brier_one_hot": 1.183333,
+        "per_class": {
+          "DOWN": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 303,
+            "predicted": 0
+          },
+          "FLAT": {
+            "precision": 0.408333,
+            "recall": 1.0,
+            "support": 490,
+            "predicted": 1200
+          },
+          "UP": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 407,
+            "predicted": 0
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "DOWN",
+            "FLAT",
+            "UP"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              0,
+              303,
+              0
+            ],
+            [
+              0,
+              490,
+              0
+            ],
+            [
+              0,
+              407,
+              0
+            ]
+          ]
+        },
+        "note": "class(es) ['DOWN', 'UP'] are never predicted: their precision is null; mcc is null: undefined when the predictions (or the actual labels) are a single class; roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities; hard class predictions have no probabilities; context only, not used in ranking or approval",
+        "accuracy_ci95": {
+          "low": 0.315833,
+          "high": 0.498333,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "roc_auc_ovr": null,
+        "calibration": null,
+        "log_loss": null,
+        "brier": null,
+        "ece": null
+      },
+      "hard/always_up": {
+        "n_folds": 40,
+        "n_pooled": 1200,
+        "n_effective": 40.0,
+        "accuracy": 0.339167,
+        "balanced_accuracy": 0.333333,
+        "macro_f1": 0.168845,
+        "mcc": null,
+        "brier_one_hot": 1.321667,
+        "per_class": {
+          "DOWN": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 303,
+            "predicted": 0
+          },
+          "FLAT": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 490,
+            "predicted": 0
+          },
+          "UP": {
+            "precision": 0.339167,
+            "recall": 1.0,
+            "support": 407,
+            "predicted": 1200
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "DOWN",
+            "FLAT",
+            "UP"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              0,
+              0,
+              303
+            ],
+            [
+              0,
+              0,
+              490
+            ],
+            [
+              0,
+              0,
+              407
+            ]
+          ]
+        },
+        "note": "class(es) ['DOWN', 'FLAT'] are never predicted: their precision is null; mcc is null: undefined when the predictions (or the actual labels) are a single class; roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities; hard class predictions have no probabilities; context only, not used in ranking or approval",
+        "accuracy_ci95": {
+          "low": 0.236646,
+          "high": 0.460854,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "roc_auc_ovr": null,
+        "calibration": null,
+        "log_loss": null,
+        "brier": null,
+        "ece": null
+      },
+      "hard/momentum": {
+        "n_folds": 40,
+        "n_pooled": 1200,
+        "n_effective": 40.0,
+        "accuracy": 0.321667,
+        "balanced_accuracy": 0.316408,
+        "macro_f1": 0.316795,
+        "mcc": -0.035933,
+        "brier_one_hot": 1.356667,
+        "per_class": {
+          "DOWN": {
+            "precision": 0.241935,
+            "recall": 0.247525,
+            "support": 303,
+            "predicted": 310
+          },
+          "FLAT": {
+            "precision": 0.30426,
+            "recall": 0.306122,
+            "support": 490,
+            "predicted": 493
+          },
+          "UP": {
+            "precision": 0.405542,
+            "recall": 0.395577,
+            "support": 407,
+            "predicted": 397
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "DOWN",
+            "FLAT",
+            "UP"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              75,
+              161,
+              67
+            ],
+            [
+              171,
+              150,
+              169
+            ],
+            [
+              64,
+              182,
+              161
+            ]
+          ]
+        },
+        "accuracy_ci95": {
+          "low": 0.248313,
+          "high": 0.414187,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "roc_auc_ovr": null,
+        "calibration": null,
+        "note": "roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities; hard class predictions have no probabilities; context only, not used in ranking or approval",
+        "log_loss": null,
+        "brier": null,
+        "ece": null
+      }
+    }
+  },
+  "confirmation_last_40pct": {
+    "n_folds": 28,
+    "n_pooled": 831,
+    "n_effective": 27.7,
+    "date_range": [
+      "2023-01-28",
+      "2025-05-07"
+    ],
+    "top_config": "logreg_c0.1",
+    "logloss_prior": 1.017508,
+    "logloss_top": 1.030682,
+    "paired_diff_logloss_prior_minus_top": {
+      "estimate": -0.013174,
+      "low": -0.045709,
+      "high": 0.017069,
+      "level": 0.95,
+      "block_size": 30,
+      "n_boot": 1000,
+      "seed": 0
+    },
+    "ci_half_width": 0.031389,
+    "results": {
+      "logreg_c0.1": {
+        "n_folds": 28,
+        "n_pooled": 831,
+        "n_effective": 27.7,
+        "log_loss": 1.030682,
+        "log_loss_ci95": {
+          "low": 0.990254,
+          "high": 1.070121,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "brier": 0.623056,
+        "roc_auc_ovr": 0.469824,
+        "ece": {
+          "per_class": {
+            "DOWN": 0.14934,
+            "FLAT": 0.153063,
+            "UP": 0.053582
+          },
+          "macro": 0.118662
+        },
+        "reliability_bins": {
+          "DOWN": [
+            {
+              "bin_low": 0.0,
+              "bin_high": 0.1,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.1,
+              "bin_high": 0.2,
+              "count": 19,
+              "mean_prob": 0.195041,
+              "observed_freq": 0.105263
+            },
+            {
+              "bin_low": 0.2,
+              "bin_high": 0.3,
+              "count": 731,
+              "mean_prob": 0.251228,
+              "observed_freq": 0.114911
+            },
+            {
+              "bin_low": 0.3,
+              "bin_high": 0.4,
+              "count": 81,
+              "mean_prob": 0.31788,
+              "observed_freq": 0.037037
+            },
+            {
+              "bin_low": 0.4,
+              "bin_high": 0.5,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.5,
+              "bin_high": 0.6,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.6,
+              "bin_high": 0.7,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.7,
+              "bin_high": 0.8,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.8,
+              "bin_high": 0.9,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.9,
+              "bin_high": 1.0,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            }
+          ],
+          "FLAT": [
+            {
+              "bin_low": 0.0,
+              "bin_high": 0.1,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.1,
+              "bin_high": 0.2,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.2,
+              "bin_high": 0.3,
+              "count": 23,
+              "mean_prob": 0.276178,
+              "observed_freq": 1.0
+            },
+            {
+              "bin_low": 0.3,
+              "bin_high": 0.4,
+              "count": 266,
+              "mean_prob": 0.369842,
+              "observed_freq": 0.597744
+            },
+            {
+              "bin_low": 0.4,
+              "bin_high": 0.5,
+              "count": 539,
+              "mean_prob": 0.435248,
+              "observed_freq": 0.526902
+            },
+            {
+              "bin_low": 0.5,
+              "bin_high": 0.6,
+              "count": 3,
+              "mean_prob": 0.507963,
+              "observed_freq": 0.333333
+            },
+            {
+              "bin_low": 0.6,
+              "bin_high": 0.7,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.7,
+              "bin_high": 0.8,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.8,
+              "bin_high": 0.9,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.9,
+              "bin_high": 1.0,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            }
+          ],
+          "UP": [
+            {
+              "bin_low": 0.0,
+              "bin_high": 0.1,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.1,
+              "bin_high": 0.2,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.2,
+              "bin_high": 0.3,
+              "count": 274,
+              "mean_prob": 0.268209,
+              "observed_freq": 0.29927
+            },
+            {
+              "bin_low": 0.3,
+              "bin_high": 0.4,
+              "count": 438,
+              "mean_prob": 0.347649,
+              "observed_freq": 0.376712
+            },
+            {
+              "bin_low": 0.4,
+              "bin_high": 0.5,
+              "count": 118,
+              "mean_prob": 0.430392,
+              "observed_freq": 0.237288
+            },
+            {
+              "bin_low": 0.5,
+              "bin_high": 0.6,
+              "count": 1,
+              "mean_prob": 0.500002,
+              "observed_freq": 0.0
+            },
+            {
+              "bin_low": 0.6,
+              "bin_high": 0.7,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.7,
+              "bin_high": 0.8,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.8,
+              "bin_high": 0.9,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.9,
+              "bin_high": 1.0,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            }
+          ]
+        },
+        "mean_prob_vs_observed": {
+          "DOWN": {
+            "mean_predicted": 0.25644,
+            "observed_freq": 0.1071
+          },
+          "FLAT": {
+            "mean_predicted": 0.410172,
+            "observed_freq": 0.561974
+          },
+          "UP": {
+            "mean_predicted": 0.333388,
+            "observed_freq": 0.330927
+          }
+        },
+        "argmax_class_metrics": {
+          "accuracy": 0.468111,
+          "balanced_accuracy": 0.299088,
+          "macro_f1": 0.26919,
+          "mcc": -0.102756,
+          "brier_one_hot": 1.063779,
+          "per_class": {
+            "DOWN": {
+              "precision": null,
+              "recall": 0.0,
+              "support": 89,
+              "predicted": 0
+            },
+            "FLAT": {
+              "precision": 0.529052,
+              "recall": 0.740899,
+              "support": 467,
+              "predicted": 654
+            },
+            "UP": {
+              "precision": 0.242938,
+              "recall": 0.156364,
+              "support": 275,
+              "predicted": 177
+            }
+          },
+          "confusion_matrix": {
+            "labels": [
+              "DOWN",
+              "FLAT",
+              "UP"
+            ],
+            "rows_actual_cols_predicted": [
+              [
+                0,
+                76,
+                13
+              ],
+              [
+                0,
+                346,
+                121
+              ],
+              [
+                0,
+                232,
+                43
+              ]
+            ]
+          },
+          "note": "class(es) ['DOWN'] are never predicted: their precision is null",
+          "accuracy_ci95": {
+            "low": 0.375451,
+            "high": 0.574007,
+            "level": 0.95,
+            "block_size": 30,
+            "n_boot": 1000,
+            "seed": 0
+          }
+        }
+      },
+      "logreg_c1": {
+        "n_folds": 28,
+        "n_pooled": 831,
+        "n_effective": 27.7,
+        "log_loss": 1.03098,
+        "log_loss_ci95": {
+          "low": 0.990417,
+          "high": 1.069967,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "brier": 0.623295,
+        "roc_auc_ovr": 0.471058,
+        "ece": {
+          "per_class": {
+            "DOWN": 0.150316,
+            "FLAT": 0.152947,
+            "UP": 0.054718
+          },
+          "macro": 0.119327
+        },
+        "reliability_bins": {
+          "DOWN": [
+            {
+              "bin_low": 0.0,
+              "bin_high": 0.1,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.1,
+              "bin_high": 0.2,
+              "count": 24,
+              "mean_prob": 0.194616,
+              "observed_freq": 0.208333
+            },
+            {
+              "bin_low": 0.2,
+              "bin_high": 0.3,
+              "count": 724,
+              "mean_prob": 0.251466,
+              "observed_freq": 0.110497
+            },
+            {
+              "bin_low": 0.3,
+              "bin_high": 0.4,
+              "count": 83,
+              "mean_prob": 0.319543,
+              "observed_freq": 0.048193
+            },
+            {
+              "bin_low": 0.4,
+              "bin_high": 0.5,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.5,
+              "bin_high": 0.6,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.6,
+              "bin_high": 0.7,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.7,
+              "bin_high": 0.8,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.8,
+              "bin_high": 0.9,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.9,
+              "bin_high": 1.0,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            }
+          ],
+          "FLAT": [
+            {
+              "bin_low": 0.0,
+              "bin_high": 0.1,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.1,
+              "bin_high": 0.2,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.2,
+              "bin_high": 0.3,
+              "count": 24,
+              "mean_prob": 0.275015,
+              "observed_freq": 1.0
+            },
+            {
+              "bin_low": 0.3,
+              "bin_high": 0.4,
+              "count": 263,
+              "mean_prob": 0.369664,
+              "observed_freq": 0.596958
+            },
+            {
+              "bin_low": 0.4,
+              "bin_high": 0.5,
+              "count": 541,
+              "mean_prob": 0.435501,
+              "observed_freq": 0.526802
+            },
+            {
+              "bin_low": 0.5,
+              "bin_high": 0.6,
+              "count": 3,
+              "mean_prob": 0.509149,
+              "observed_freq": 0.333333
+            },
+            {
+              "bin_low": 0.6,
+              "bin_high": 0.7,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.7,
+              "bin_high": 0.8,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.8,
+              "bin_high": 0.9,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.9,
+              "bin_high": 1.0,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            }
+          ],
+          "UP": [
+            {
+              "bin_low": 0.0,
+              "bin_high": 0.1,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.1,
+              "bin_high": 0.2,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.2,
+              "bin_high": 0.3,
+              "count": 279,
+              "mean_prob": 0.267571,
+              "observed_freq": 0.297491
+            },
+            {
+              "bin_low": 0.3,
+              "bin_high": 0.4,
+              "count": 435,
+              "mean_prob": 0.348292,
+              "observed_freq": 0.37931
+            },
+            {
+              "bin_low": 0.4,
+              "bin_high": 0.5,
+              "count": 116,
+              "mean_prob": 0.432139,
+              "observed_freq": 0.232759
+            },
+            {
+              "bin_low": 0.5,
+              "bin_high": 0.6,
+              "count": 1,
+              "mean_prob": 0.502304,
+              "observed_freq": 0.0
+            },
+            {
+              "bin_low": 0.6,
+              "bin_high": 0.7,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.7,
+              "bin_high": 0.8,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.8,
+              "bin_high": 0.9,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.9,
+              "bin_high": 1.0,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            }
+          ]
+        },
+        "mean_prob_vs_observed": {
+          "DOWN": {
+            "mean_predicted": 0.256624,
+            "observed_freq": 0.1071
+          },
+          "FLAT": {
+            "mean_predicted": 0.410296,
+            "observed_freq": 0.561974
+          },
+          "UP": {
+            "mean_predicted": 0.33308,
+            "observed_freq": 0.330927
+          }
+        },
+        "argmax_class_metrics": {
+          "accuracy": 0.468111,
+          "balanced_accuracy": 0.298589,
+          "macro_f1": 0.268218,
+          "mcc": -0.104469,
+          "brier_one_hot": 1.063779,
+          "per_class": {
+            "DOWN": {
+              "precision": null,
+              "recall": 0.0,
+              "support": 89,
+              "predicted": 0
+            },
+            "FLAT": {
+              "precision": 0.528963,
+              "recall": 0.743041,
+              "support": 467,
+              "predicted": 656
+            },
+            "UP": {
+              "precision": 0.24,
+              "recall": 0.152727,
+              "support": 275,
+              "predicted": 175
+            }
+          },
+          "confusion_matrix": {
+            "labels": [
+              "DOWN",
+              "FLAT",
+              "UP"
+            ],
+            "rows_actual_cols_predicted": [
+              [
+                0,
+                76,
+                13
+              ],
+              [
+                0,
+                347,
+                120
+              ],
+              [
+                0,
+                233,
+                42
+              ]
+            ]
+          },
+          "note": "class(es) ['DOWN'] are never predicted: their precision is null",
+          "accuracy_ci95": {
+            "low": 0.376594,
+            "high": 0.572804,
+            "level": 0.95,
+            "block_size": 30,
+            "n_boot": 1000,
+            "seed": 0
+          }
+        }
+      },
+      "prior": {
+        "n_folds": 28,
+        "n_pooled": 831,
+        "n_effective": 27.7,
+        "log_loss": 1.017508,
+        "log_loss_ci95": {
+          "low": 0.991899,
+          "high": 1.047668,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "brier": 0.614046,
+        "roc_auc_ovr": 0.383154,
+        "ece": {
+          "per_class": {
+            "DOWN": 0.147908,
+            "FLAT": 0.161974,
+            "UP": 0.014065
+          },
+          "macro": 0.107982
+        },
+        "reliability_bins": {
+          "DOWN": [
+            {
+              "bin_low": 0.0,
+              "bin_high": 0.1,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.1,
+              "bin_high": 0.2,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.2,
+              "bin_high": 0.3,
+              "count": 831,
+              "mean_prob": 0.255008,
+              "observed_freq": 0.1071
+            },
+            {
+              "bin_low": 0.3,
+              "bin_high": 0.4,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.4,
+              "bin_high": 0.5,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.5,
+              "bin_high": 0.6,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.6,
+              "bin_high": 0.7,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.7,
+              "bin_high": 0.8,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.8,
+              "bin_high": 0.9,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.9,
+              "bin_high": 1.0,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            }
+          ],
+          "FLAT": [
+            {
+              "bin_low": 0.0,
+              "bin_high": 0.1,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.1,
+              "bin_high": 0.2,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.2,
+              "bin_high": 0.3,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.3,
+              "bin_high": 0.4,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.4,
+              "bin_high": 0.5,
+              "count": 831,
+              "mean_prob": 0.4,
+              "observed_freq": 0.561974
+            },
+            {
+              "bin_low": 0.5,
+              "bin_high": 0.6,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.6,
+              "bin_high": 0.7,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.7,
+              "bin_high": 0.8,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.8,
+              "bin_high": 0.9,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.9,
+              "bin_high": 1.0,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            }
+          ],
+          "UP": [
+            {
+              "bin_low": 0.0,
+              "bin_high": 0.1,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.1,
+              "bin_high": 0.2,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.2,
+              "bin_high": 0.3,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.3,
+              "bin_high": 0.4,
+              "count": 831,
+              "mean_prob": 0.344992,
+              "observed_freq": 0.330927
+            },
+            {
+              "bin_low": 0.4,
+              "bin_high": 0.5,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.5,
+              "bin_high": 0.6,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.6,
+              "bin_high": 0.7,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.7,
+              "bin_high": 0.8,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.8,
+              "bin_high": 0.9,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            },
+            {
+              "bin_low": 0.9,
+              "bin_high": 1.0,
+              "count": 0,
+              "mean_prob": null,
+              "observed_freq": null
+            }
+          ]
+        },
+        "mean_prob_vs_observed": {
+          "DOWN": {
+            "mean_predicted": 0.255008,
+            "observed_freq": 0.1071
+          },
+          "FLAT": {
+            "mean_predicted": 0.4,
+            "observed_freq": 0.561974
+          },
+          "UP": {
+            "mean_predicted": 0.344992,
+            "observed_freq": 0.330927
+          }
+        },
+        "argmax_class_metrics": {
+          "accuracy": 0.561974,
+          "balanced_accuracy": 0.333333,
+          "macro_f1": 0.239856,
+          "mcc": null,
+          "brier_one_hot": 0.876053,
+          "per_class": {
+            "DOWN": {
+              "precision": null,
+              "recall": 0.0,
+              "support": 89,
+              "predicted": 0
+            },
+            "FLAT": {
+              "precision": 0.561974,
+              "recall": 1.0,
+              "support": 467,
+              "predicted": 831
+            },
+            "UP": {
+              "precision": null,
+              "recall": 0.0,
+              "support": 275,
+              "predicted": 0
+            }
+          },
+          "confusion_matrix": {
+            "labels": [
+              "DOWN",
+              "FLAT",
+              "UP"
+            ],
+            "rows_actual_cols_predicted": [
+              [
+                0,
+                89,
+                0
+              ],
+              [
+                0,
+                467,
+                0
+              ],
+              [
+                0,
+                275,
+                0
+              ]
+            ]
+          },
+          "note": "class(es) ['DOWN', 'UP'] are never predicted: their precision is null; mcc is null: undefined when the predictions (or the actual labels) are a single class",
+          "accuracy_ci95": {
+            "low": 0.445187,
+            "high": 0.67512,
+            "level": 0.95,
+            "block_size": 30,
+            "n_boot": 1000,
+            "seed": 0
+          }
+        }
+      },
+      "hard/train_majority": {
+        "n_folds": 28,
+        "n_pooled": 831,
+        "n_effective": 27.7,
+        "accuracy": 0.561974,
+        "balanced_accuracy": 0.333333,
+        "macro_f1": 0.239856,
+        "mcc": null,
+        "brier_one_hot": 0.876053,
+        "per_class": {
+          "DOWN": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 89,
+            "predicted": 0
+          },
+          "FLAT": {
+            "precision": 0.561974,
+            "recall": 1.0,
+            "support": 467,
+            "predicted": 831
+          },
+          "UP": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 275,
+            "predicted": 0
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "DOWN",
+            "FLAT",
+            "UP"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              0,
+              89,
+              0
+            ],
+            [
+              0,
+              467,
+              0
+            ],
+            [
+              0,
+              275,
+              0
+            ]
+          ]
+        },
+        "note": "class(es) ['DOWN', 'UP'] are never predicted: their precision is null; mcc is null: undefined when the predictions (or the actual labels) are a single class; roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities; hard class predictions have no probabilities; context only, not used in ranking or approval",
+        "accuracy_ci95": {
+          "low": 0.445187,
+          "high": 0.67512,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "roc_auc_ovr": null,
+        "calibration": null,
+        "log_loss": null,
+        "brier": null,
+        "ece": null
+      },
+      "hard/always_up": {
+        "n_folds": 28,
+        "n_pooled": 831,
+        "n_effective": 27.7,
+        "accuracy": 0.330927,
+        "balanced_accuracy": 0.333333,
+        "macro_f1": 0.165763,
+        "mcc": null,
+        "brier_one_hot": 1.338147,
+        "per_class": {
+          "DOWN": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 89,
+            "predicted": 0
+          },
+          "FLAT": {
+            "precision": null,
+            "recall": 0.0,
+            "support": 467,
+            "predicted": 0
+          },
+          "UP": {
+            "precision": 0.330927,
+            "recall": 1.0,
+            "support": 275,
+            "predicted": 831
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "DOWN",
+            "FLAT",
+            "UP"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              0,
+              0,
+              89
+            ],
+            [
+              0,
+              0,
+              467
+            ],
+            [
+              0,
+              0,
+              275
+            ]
+          ]
+        },
+        "note": "class(es) ['DOWN', 'FLAT'] are never predicted: their precision is null; mcc is null: undefined when the predictions (or the actual labels) are a single class; roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities; hard class predictions have no probabilities; context only, not used in ranking or approval",
+        "accuracy_ci95": {
+          "low": 0.203279,
+          "high": 0.468141,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "roc_auc_ovr": null,
+        "calibration": null,
+        "log_loss": null,
+        "brier": null,
+        "ece": null
+      },
+      "hard/momentum": {
+        "n_folds": 28,
+        "n_pooled": 831,
+        "n_effective": 27.7,
+        "accuracy": 0.376655,
+        "balanced_accuracy": 0.268803,
+        "macro_f1": 0.269207,
+        "mcc": -0.107922,
+        "brier_one_hot": 1.246691,
+        "per_class": {
+          "DOWN": {
+            "precision": 0.010989,
+            "recall": 0.011236,
+            "support": 89,
+            "predicted": 91
+          },
+          "FLAT": {
+            "precision": 0.481953,
+            "recall": 0.486081,
+            "support": 467,
+            "predicted": 471
+          },
+          "UP": {
+            "precision": 0.315985,
+            "recall": 0.309091,
+            "support": 275,
+            "predicted": 269
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "DOWN",
+            "FLAT",
+            "UP"
+          ],
+          "rows_actual_cols_predicted": [
+            [
+              1,
+              70,
+              18
+            ],
+            [
+              74,
+              227,
+              166
+            ],
+            [
+              16,
+              174,
+              85
+            ]
+          ]
+        },
+        "accuracy_ci95": {
+          "low": 0.293622,
+          "high": 0.465704,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "roc_auc_ovr": null,
+        "calibration": null,
+        "note": "roc_auc_ovr and calibration are null: baselines output hard classes, not probabilities; hard class predictions have no probabilities; context only, not used in ranking or approval",
+        "log_loss": null,
+        "brier": null,
+        "ece": null
+      }
+    }
+  },
+  "verdict": {
+    "top_config": "logreg_c0.1",
+    "approved": false,
+    "rule": "D31: paired 95% CI of logloss(prior) - logloss(top) on the last 40% is above 0 and the estimate is positive",
+    "note": "The confirmation set is small (n_effective 27.7), so 'not approved' means 'no demonstrated gain' (D29, D30), not 'no skill'."
+  },
+  "folds": [
+    {
+      "origin": 760,
+      "origin_date": "2019-10-16",
+      "train_rows": 730,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.11454
+    },
+    {
+      "origin": 790,
+      "origin_date": "2019-11-15",
+      "train_rows": 760,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.114861
+    },
+    {
+      "origin": 820,
+      "origin_date": "2019-12-15",
+      "train_rows": 790,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.117186
+    },
+    {
+      "origin": 850,
+      "origin_date": "2020-01-14",
+      "train_rows": 820,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.112635
+    },
+    {
+      "origin": 880,
+      "origin_date": "2020-02-13",
+      "train_rows": 850,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.118063
+    },
+    {
+      "origin": 910,
+      "origin_date": "2020-03-14",
+      "train_rows": 880,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.115454
+    },
+    {
+      "origin": 940,
+      "origin_date": "2020-04-13",
+      "train_rows": 910,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.119265
+    },
+    {
+      "origin": 970,
+      "origin_date": "2020-05-13",
+      "train_rows": 940,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.12164
+    },
+    {
+      "origin": 1000,
+      "origin_date": "2020-06-12",
+      "train_rows": 970,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.12164
+    },
+    {
+      "origin": 1030,
+      "origin_date": "2020-07-12",
+      "train_rows": 1000,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.115454
+    },
+    {
+      "origin": 1060,
+      "origin_date": "2020-08-11",
+      "train_rows": 1030,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.11404
+    },
+    {
+      "origin": 1090,
+      "origin_date": "2020-09-10",
+      "train_rows": 1060,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.115454
+    },
+    {
+      "origin": 1120,
+      "origin_date": "2020-10-10",
+      "train_rows": 1090,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.109869
+    },
+    {
+      "origin": 1150,
+      "origin_date": "2020-11-09",
+      "train_rows": 1120,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.110903
+    },
+    {
+      "origin": 1180,
+      "origin_date": "2020-12-09",
+      "train_rows": 1150,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.114861
+    },
+    {
+      "origin": 1210,
+      "origin_date": "2021-01-08",
+      "train_rows": 1180,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.118732
+    },
+    {
+      "origin": 1240,
+      "origin_date": "2021-02-07",
+      "train_rows": 1210,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.120613
+    },
+    {
+      "origin": 1270,
+      "origin_date": "2021-03-09",
+      "train_rows": 1240,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.123668
+    },
+    {
+      "origin": 1300,
+      "origin_date": "2021-04-08",
+      "train_rows": 1270,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.124679
+    },
+    {
+      "origin": 1330,
+      "origin_date": "2021-05-08",
+      "train_rows": 1300,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.119919
+    },
+    {
+      "origin": 1360,
+      "origin_date": "2021-06-07",
+      "train_rows": 1330,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.12164
+    },
+    {
+      "origin": 1390,
+      "origin_date": "2021-07-07",
+      "train_rows": 1360,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.120819
+    },
+    {
+      "origin": 1420,
+      "origin_date": "2021-08-06",
+      "train_rows": 1390,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.120663
+    },
+    {
+      "origin": 1450,
+      "origin_date": "2021-09-05",
+      "train_rows": 1420,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.1239
+    },
+    {
+      "origin": 1480,
+      "origin_date": "2021-10-05",
+      "train_rows": 1450,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.121436
+    },
+    {
+      "origin": 1510,
+      "origin_date": "2021-11-04",
+      "train_rows": 1480,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.124137
+    },
+    {
+      "origin": 1540,
+      "origin_date": "2021-12-04",
+      "train_rows": 1510,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.121699
+    },
+    {
+      "origin": 1570,
+      "origin_date": "2022-01-03",
+      "train_rows": 1540,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.123794
+    },
+    {
+      "origin": 1600,
+      "origin_date": "2022-02-02",
+      "train_rows": 1570,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.124325
+    },
+    {
+      "origin": 1630,
+      "origin_date": "2022-03-04",
+      "train_rows": 1600,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.121436
+    },
+    {
+      "origin": 1660,
+      "origin_date": "2022-04-03",
+      "train_rows": 1630,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.119667
+    },
+    {
+      "origin": 1690,
+      "origin_date": "2022-05-03",
+      "train_rows": 1660,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.118382
+    },
+    {
+      "origin": 1720,
+      "origin_date": "2022-06-02",
+      "train_rows": 1690,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.120663
+    },
+    {
+      "origin": 1750,
+      "origin_date": "2022-07-02",
+      "train_rows": 1720,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.121699
+    },
+    {
+      "origin": 1780,
+      "origin_date": "2022-08-01",
+      "train_rows": 1750,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.121699
+    },
+    {
+      "origin": 1810,
+      "origin_date": "2022-08-31",
+      "train_rows": 1780,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.121227
+    },
+    {
+      "origin": 1840,
+      "origin_date": "2022-09-30",
+      "train_rows": 1810,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.121042
+    },
+    {
+      "origin": 1870,
+      "origin_date": "2022-10-30",
+      "train_rows": 1840,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.118595
+    },
+    {
+      "origin": 1900,
+      "origin_date": "2022-11-29",
+      "train_rows": 1870,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.118595
+    },
+    {
+      "origin": 1930,
+      "origin_date": "2022-12-29",
+      "train_rows": 1900,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.117075
+    },
+    {
+      "origin": 1960,
+      "origin_date": "2023-01-28",
+      "train_rows": 1930,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.115754
+    },
+    {
+      "origin": 1990,
+      "origin_date": "2023-02-27",
+      "train_rows": 1960,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.115754
+    },
+    {
+      "origin": 2020,
+      "origin_date": "2023-03-29",
+      "train_rows": 1990,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.115141
+    },
+    {
+      "origin": 2050,
+      "origin_date": "2023-04-28",
+      "train_rows": 2020,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.115141
+    },
+    {
+      "origin": 2080,
+      "origin_date": "2023-05-28",
+      "train_rows": 2050,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.113379
+    },
+    {
+      "origin": 2110,
+      "origin_date": "2023-06-27",
+      "train_rows": 2080,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.110833
+    },
+    {
+      "origin": 2140,
+      "origin_date": "2023-07-27",
+      "train_rows": 2110,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.110833
+    },
+    {
+      "origin": 2170,
+      "origin_date": "2023-08-26",
+      "train_rows": 2140,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.109312
+    },
+    {
+      "origin": 2200,
+      "origin_date": "2023-09-25",
+      "train_rows": 2170,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.109216
+    },
+    {
+      "origin": 2230,
+      "origin_date": "2023-10-25",
+      "train_rows": 2200,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.107364
+    },
+    {
+      "origin": 2260,
+      "origin_date": "2023-11-24",
+      "train_rows": 2230,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.1091
+    },
+    {
+      "origin": 2290,
+      "origin_date": "2023-12-24",
+      "train_rows": 2260,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.109173
+    },
+    {
+      "origin": 2320,
+      "origin_date": "2024-01-23",
+      "train_rows": 2290,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.108422
+    },
+    {
+      "origin": 2350,
+      "origin_date": "2024-02-22",
+      "train_rows": 2320,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.106992
+    },
+    {
+      "origin": 2380,
+      "origin_date": "2024-03-23",
+      "train_rows": 2350,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.108982
+    },
+    {
+      "origin": 2410,
+      "origin_date": "2024-04-22",
+      "train_rows": 2380,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.108187
+    },
+    {
+      "origin": 2440,
+      "origin_date": "2024-05-22",
+      "train_rows": 2410,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.105805
+    },
+    {
+      "origin": 2470,
+      "origin_date": "2024-06-21",
+      "train_rows": 2440,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.103941
+    },
+    {
+      "origin": 2500,
+      "origin_date": "2024-07-21",
+      "train_rows": 2470,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.102941
+    },
+    {
+      "origin": 2530,
+      "origin_date": "2024-08-20",
+      "train_rows": 2500,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.100759
+    },
+    {
+      "origin": 2560,
+      "origin_date": "2024-09-19",
+      "train_rows": 2530,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.099884
+    },
+    {
+      "origin": 2590,
+      "origin_date": "2024-10-19",
+      "train_rows": 2560,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.099179
+    },
+    {
+      "origin": 2620,
+      "origin_date": "2024-11-18",
+      "train_rows": 2590,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.0992
+    },
+    {
+      "origin": 2650,
+      "origin_date": "2024-12-18",
+      "train_rows": 2620,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.100319
+    },
+    {
+      "origin": 2680,
+      "origin_date": "2025-01-17",
+      "train_rows": 2650,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.09885
+    },
+    {
+      "origin": 2710,
+      "origin_date": "2025-02-16",
+      "train_rows": 2680,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.097147
+    },
+    {
+      "origin": 2740,
+      "origin_date": "2025-03-18",
+      "train_rows": 2710,
+      "predict_rows": 30,
+      "direction_flat_abs_return": 0.097205
+    },
+    {
+      "origin": 2770,
+      "origin_date": "2025-04-17",
+      "train_rows": 2740,
+      "predict_rows": 21,
+      "direction_flat_abs_return": 0.096666
+    }
+  ],
+  "metadata": {
+    "asset": "btc",
+    "generated_at": "2026-10-19T15:17:28Z",
+    "git_commit": "3bd9090da3a47ba8d8101b5900820a3955e3c0b1",
+    "git_dirty": false,
+    "n_feature_rows": 3319,
+    "b2_test_start_row": 2821,
+    "rows_built": [
+      0,
+      2821
+    ],
+    "data_first_date": "2017-09-16",
+    "last_date_built": "2025-06-06",
+    "sealed_test_first_date": "2025-06-07",
+    "pooled_rows": [
+      760,
+      2791
+    ],
+    "max_label_row_reached": 2820,
+    "min_train_rows": 730,
+    "step_rows": 30,
+    "horizon_days": 30,
+    "embargo_days": 30,
+    "note": "Direction model walk-forward (D21, D25, D31). Configs and the prior fit on each fold's train rows only. Test rows [b2, n) were never built or read."
+  }
+}

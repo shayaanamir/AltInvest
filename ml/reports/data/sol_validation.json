@@ -1,0 +1,33 @@
+{
+  "asset": "sol",
+  "symbol": "SOLUSDT",
+  "source": "https://api.binance.com/api/v3/klines",
+  "fetched_at": "2026-10-18T16:21:39Z",
+  "validated_at": "2026-10-18T16:21:43Z",
+  "raw_file": "ml/data/raw/sol_1d.csv",
+  "rows": 2259,
+  "first_timestamp": "2020-08-11T00:00:00Z",
+  "last_timestamp": "2026-10-17T00:00:00Z",
+  "expected_days": 2259,
+  "missing_days_count": 0,
+  "missing_days": [],
+  "duplicate_count": 0,
+  "duplicates": [],
+  "close_min": 1.198,
+  "close_min_timestamp": "2020-12-23T00:00:00Z",
+  "close_max": 261.97,
+  "close_max_timestamp": "2025-01-18T00:00:00Z",
+  "non_positive_price_rows": 0,
+  "ohlc_inconsistent_rows": 0,
+  "n_returns": 2258,
+  "excess_kurtosis": 8.4565,
+  "abs_return_lag1_autocorr": 0.2698,
+  "checks": {
+    "excess_kurtosis_gt_1": true,
+    "abs_return_lag1_autocorr_gt_0": true,
+    "no_non_positive_prices": true,
+    "no_duplicates": true,
+    "ohlc_consistent": true
+  },
+  "passed": true
+}

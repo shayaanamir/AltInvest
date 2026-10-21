@@ -13,11 +13,11 @@
 frontend/dist
 frontend/build
 
-# ML processed/experiment data (regenerated on demand).
-# NOTE: ml/data/raw/*.csv and ml/models/artifacts/* are intentionally NOT
-# ignored - prediction_service.py reads them at runtime, not just at train time.
-ml/data/processed
-ml/experiments
+# ML v2: raw CSVs and model artifacts are never baked into the image. The ml
+# service fetches and validates its own serving data into the ml-data volume
+# (ml/data/refresh.py, D40); ml/data/raw is the evaluation snapshot (host only).
+ml/data/raw
+ml/artifacts
 
 # Git / IDE / OS
 .git
