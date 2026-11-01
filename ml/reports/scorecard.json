@@ -400,8 +400,8 @@
     "models_total": 9
   },
   "metadata": {
-    "generated_at": "2026-11-01T10:23:42Z",
-    "git_commit": "9c9caba0c5be83dae64db085a2edef3cfb19425f",
+    "generated_at": "2026-11-01T13:02:44Z",
+    "git_commit": "b24382312c6d544b3009d72e69e733a5d69924d0",
     "git_dirty": false,
     "sources": [
       "ml/reports/btc/backtest.json",
