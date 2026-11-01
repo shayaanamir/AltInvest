@@ -15,8 +15,8 @@ from ml.data import snapshot_guard
 GUARDED = ["ml.evaluation.run_backtest", "ml.evaluation.run_baselines", "ml.evaluation.run_walkforward",
            "ml.evaluation.run_walkforward_direction", "ml.evaluation.run_walkforward_price",
            "ml.evaluation.run_walkforward_risk", "ml.evaluation.power_check", "ml.evaluation.direction_mechanism",
-           "ml.evaluation.risk_mapping_check", "ml.data.dataset_summary"]
-FIRST_STEP = {"ml.evaluation.power_check": "run"}           # the others call require_validated first
+           "ml.evaluation.risk_mapping_check", "ml.data.dataset_summary", "ml.evaluation.scorecard"]
+FIRST_STEP = {"ml.evaluation.power_check": "run", "ml.evaluation.scorecard": "build"}   # others: require_validated
 
 
 class Proceeded(Exception):
