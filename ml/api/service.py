@@ -1,4 +1,5 @@
-"""ML service on :8001 (Phase 6a): /predict/{asset}, /risk/{asset}, /health, /debug/{asset}.
+"""ML service on :8001 (Phase 6a): /predict/{asset}, /risk/{asset}, /health, /debug/{asset}; Phase 6d adds
+/debug/scorecard and /debug/live-scorecard.
 
     python -m uvicorn ml.api.service:app --port 8001        (from the repo root)
 
@@ -9,12 +10,14 @@ case-insensitive; an asset not in config.ASSETS -> 404 ("not covered"); data tha
 (missing CSV or report, failed report, or a report that does not match the CSV; D40) -> 503.
 """
 
+import json
 from datetime import datetime, timezone
 
 from fastapi import FastAPI, HTTPException
 
 from ml import config
 from ml.api.contract import check
+from ml.evaluation import live_score, scorecard
 from ml.serving import responses as rs
 
 app = FastAPI(title="AltInvest ML", version="v2")
@@ -43,6 +46,20 @@ def risk(asset: str):
 @app.get("/health")
 def health():
     return {"status": "ok", "model_version": rs.model_versions(), "data_last_bar": rs.data_last_bars()}
+
+
+@app.get("/debug/scorecard")
+def debug_scorecard():
+    """The offline scorecard, ml/reports/scorecard.json (Phase 6d). Declared before /debug/{asset}."""
+    if not scorecard.OUT_JSON.exists():
+        raise HTTPException(404, "scorecard.json not written yet; run python -m ml.evaluation.scorecard")
+    return json.loads(scorecard.OUT_JSON.read_text(encoding="utf-8"))
+
+
+@app.get("/debug/live-scorecard")
+def debug_live_scorecard():
+    """Forward scores of the logged served values (Phase 6d), computed now from the serving data."""
+    return live_score.build()
 
 
 @app.get("/debug/{asset}")

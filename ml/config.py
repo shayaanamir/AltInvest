@@ -60,3 +60,7 @@ ML_VALIDATION_DIR = Path(os.environ.get("ML_VALIDATION_DIR") or EVALUATION_VALID
 
 # Daily refresh of the serving data, UTC "HH:MM" (D40).
 REFRESH_UTC = "00:05"  # D40
+
+# Live tracking (Phase 6d), files in ML_VALIDATION_DIR: what the API served each day, and how it turned out.
+PREDICTION_LOG_FILE = "prediction_log.jsonl"
+LIVE_SCORECARD_FILE = "live_scorecard.json"
