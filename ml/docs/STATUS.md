@@ -1,7 +1,64 @@
 # STATUS
 
-Current phase: 6c (hardening before the PR) DONE (2026-10-21), on top of 6b (daily refresh, serving gate, v2 Docker image and compose services). The service runs from a fresh clone with `docker compose up -d --build ml ml-refresh`.
-Next: the PR from ml-v2 into main (not pushed, not opened), then Phase 7 (backend integration, Person B).
+Current phase: 6d (scorecard, prediction log, live scorecard) DONE (2026-11-01), on branch ml-phase-7 (local, not pushed). ml-v2 was merged into main as PR #5 (e71a8b1). The service runs from a fresh clone with `docker compose up -d --build ml ml-refresh`.
+Next: Phase 7 (backend integration; Person B agreed on 2026-11-01 to minimal backend/ and frontend/ edits, each listed here).
+
+## Phase 6d: what ran (from repo root, 2026-11-01)
+
+- Commits on ml-phase-7: fb04e07 (offline scorecard), 9c9caba (prediction log, live scorecard, debug endpoints), 07573e6 (generated scorecard), b243823 (lock fix), a7f2b3b (scorecard regenerated at b243823).
+- `ml/evaluation/scorecard.py` reads only ml/reports/{asset}/walkforward_{risk,price,direction}.json, backtest.json and power_check.json. It writes `ml/reports/scorecard.json` and `ml/reports/SCORECARD.md`. Guarded by `require_snapshot` (added to test_snapshot_guard.py).
+  - Result: 1 of 9 models approved (ETH direction, log-loss gain 0.0359 [0.0035, 0.0604]); 0 served. ETH direction stays unserved (D33).
+  - Regenerating at b243823 changed only `generated_at` and `git_commit` (git diff).
+- `ml/serving/prediction_log.py`: after each refresh, `append_served` adds one JSON line per servable asset to `ML_VALIDATION_DIR/prediction_log.jsonl`. It skips an (asset, last_bar) already logged and refuses the snapshot (D40).
+- `ml/evaluation/live_score.py`: scores a line for bar t only once bar t+30 exists, through `labels.fwd_return_30d` / `fwd_vol_30d`; otherwise it is pending. `python -m ml.evaluation.live_score` refuses the snapshot.
+- `ml/api/service.py`: `/debug/scorecard` (404 if scorecard.json is missing) and `/debug/live-scorecard`, both declared before `/debug/{asset}`. /predict and /risk are unchanged.
+- Review fix (b243823): refresh_status.json and the prediction-log append now run inside the refresh lock. Before, the ml startup refresh and ml-refresh could write them at the same time.
+- Tests: `test_scorecard.py`, `test_live_tracking.py`, +1 guard case. `python -m pytest ml` -> `225 passed` (199 + 26).
+- Docker (2026-11-01): `docker compose up -d --build ml ml-refresh`. The build took about 22 min (slow apt mirror while installing git); the image is unchanged in content.
+  - Startup refresh in ml: btc/eth ok 3363 rows, sol ok 2273, last bar 2026-10-31; `prediction log: added ['btc', 'eth', 'sol']`. ml-refresh ran after it (lock): `prediction log: added nothing`, `next refresh at 2026-11-02T00:05:00Z`.
+  - `/debug/scorecard` 200 (same JSON as the file); `/debug/live-scorecard` 200: `n_logged 3, n_scored 0, n_pending 3, first_scorable 2026-11-30`. `/debug/btc` and `/predict/btc` 200.
+  - `/data/validation/prediction_log.jsonl`: 3 lines, all `"signal": "UNCERTAIN"`, `"prediction_30d": 0.0`, `"model_version": "baseline-last-value"`.
+  - Healthcheck: `unhealthy` (5 s timeout exceeded). Not caused by 6d: the host was overloaded at the time. A bare `python -c "print('hi')"` took 11 s on the host, /health took 5-21 s even outside Docker (TestClient), and an unrelated container was also unhealthy. /health code is unchanged since 6c, when the container was healthy. Re-check on an idle machine.
+  - `docker compose down`: containers removed, volume `altinvest_ml-data` kept.
+- SHA-256 of the 39 snapshot and report files under ml/data/raw and ml/reports: identical before and after. The only other two files there, scorecard.json and SCORECARD.md, were regenerated on purpose.
+- Files changed in 6d (all inside ml/; none outside): ml/api/service.py, ml/config.py, ml/data/refresh.py, ml/evaluation/live_score.py (new), ml/evaluation/scorecard.py (new), ml/serving/prediction_log.py (new), ml/reports/scorecard.json (new, generated), ml/reports/SCORECARD.md (new, generated), ml/tests/test_live_tracking.py (new), ml/tests/test_scorecard.py (new), ml/tests/test_snapshot_guard.py, ml/AGENTS.md (Docs list only), ml/docs/STATUS.md, ml/docs/GLOSSARY.md, ml/docs/phases/PHASE_6d_scorecard.md (new).
+
+## How to verify Phase 6d yourself (PowerShell, from the repo root)
+
+```powershell
+Set-Location C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest
+
+# 1. All tests, then only the 6d ones (hand-made fixtures, no network)
+python -m pytest ml -q
+python -m pytest ml/tests/test_scorecard.py ml/tests/test_live_tracking.py -q
+
+# 2. The scorecard is reproducible: regenerate, only the two metadata lines change, then undo
+python -m ml.evaluation.scorecard
+git diff -U0 ml/reports | Select-String '^[-+][^-+]'
+git checkout -- ml/reports/scorecard.json ml/reports/SCORECARD.md
+Select-String -Path ml\reports\SCORECARD.md -Pattern 'Models approved'
+
+# 3. The live scorecard refuses the evaluation snapshot on the host
+python -m ml.evaluation.live_score; "exit: $LASTEXITCODE"
+
+# 4. Docker: build, start, wait for the sidecar, call both endpoints, read the log, stop (volume kept)
+docker compose up -d --build ml ml-refresh
+while (-not ((docker logs altinvest-ml-refresh 2>&1 | Out-String) -match 'next refresh at')) { Start-Sleep -Seconds 2 }
+curl.exe -s -o NUL -w "scorecard: HTTP %{http_code}`n" http://127.0.0.1:8001/debug/scorecard
+curl.exe -s http://127.0.0.1:8001/debug/live-scorecard; ""
+docker compose exec ml cat /data/validation/prediction_log.jsonl
+docker compose down
+```
+
+Expected (observed 2026-11-01):
+
+1. `225 passed`; then the 6d tests pass (`... passed`, no failures).
+2. Six lines: the old and new `Generated ... at commit` line of SCORECARD.md, and the old and new `generated_at` and `git_commit` of scorecard.json (plus `git_dirty` if your tree has uncommitted changes). No metric line changes. Then `Models approved: 1 of 9; served: 0.`
+3. `refusing to write to the evaluation snapshot [...] (D40); set ML_RAW_DIR and ML_VALIDATION_DIR to serving directories, or pass --force`, then `exit: 1`.
+4. The build can take several minutes. Then `scorecard: HTTP 200`.
+   - `/debug/live-scorecard` shows `"n_scored":0` and `"first_scorable":"2026-11-30"` until that date. `n_logged` is 3 per day the refresh has run (3 on 2026-11-01).
+   - The log has one line per asset per last bar, with `"signal": "UNCERTAIN"`.
+   - Containers are removed; the volume is kept.
 
 ## Phase 6c: what ran (from repo root, 2026-10-21)
 

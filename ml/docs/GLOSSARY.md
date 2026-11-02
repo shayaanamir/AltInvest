@@ -111,6 +111,10 @@ Terms marked *(not used yet)* appear in the plan docs but no code uses them so f
 - **Non-overlapping windows**: evaluating 30-day periods that do not share days, because daily steps with a 30-day horizon overlap 29/30 (docs/LEARNINGS.md). Used by the Phase 3 strategy baselines.
 - **Backtest**: replaying a strategy on past data to see how it would have done. *(not used yet)*
 - **Baseline serving**: the API returns a baseline's answer (no change for price, today's volatility for risk), plus a note, because no model beat it (D27, D35).
+- **Scorecard**: one generated table of every model against its baseline, copied from the reports (ml/reports/SCORECARD.md, Phase 6d).
+- **Approved vs served**: approved means the whole 95% CI of the gain is above 0; served means the API returns it. They differ: ETH direction is approved but not served (D33).
+- **Prediction log**: one line per asset per day with what /predict and /risk served, kept in the serving data (prediction_log.jsonl, Phase 6d).
+- **Live (forward) score / pending**: scoring a logged line against what really happened 30 days later. Until bar t+30 exists the line is pending and nothing is scored.
 
 ## Engineering
 - **Unit test**: a tiny automatic check of one function using small made-up inputs (here, hand-made fixtures, not market data).

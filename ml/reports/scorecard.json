@@ -1,0 +1,422 @@
+{
+  "assets": {
+    "btc": {
+      "verdict": "BTC: risk, price and direction did not beat the baseline; the served signal made 0 trades over 68 windows (+0.00% per 30-day window vs buy-and-hold +6.23%).",
+      "models": {
+        "risk": {
+          "metric": "Spearman (rank of 30-day vol)",
+          "top_config": "ridge_all_a10",
+          "model": 0.170504,
+          "baseline_name": "persistence",
+          "baseline": 0.114303,
+          "gain_ci95": {
+            "estimate": 0.056201,
+            "low": -0.180508,
+            "high": 0.248162
+          },
+          "n_effective": 27.7,
+          "date_range": [
+            "2023-01-28",
+            "2025-05-07"
+          ],
+          "approved": false,
+          "rule": "D25: paired 95% CI of the Spearman difference vs persistence on the last 40% excludes 0 and the estimate is positive",
+          "served": false,
+          "served_reason": "not served: persistence vol_30d is served instead (D27, D36)",
+          "source": "ml/reports/btc/walkforward_risk.json"
+        },
+        "price": {
+          "metric": "MAE of 30-day return",
+          "top_config": "ridge_all_a1000",
+          "model": 0.110754,
+          "baseline_name": "last-value (no change)",
+          "baseline": 0.111809,
+          "gain_ci95": {
+            "estimate": 0.001055,
+            "low": -0.00794,
+            "high": 0.009353
+          },
+          "n_effective": 27.7,
+          "date_range": [
+            "2023-01-28",
+            "2025-05-07"
+          ],
+          "approved": false,
+          "rule": "D28: paired 95% CI of MAE(last-value) - MAE(model) of fwd_return_30d on the last 40% is above 0 (and the estimate is positive)",
+          "served": false,
+          "served_reason": "not served: the last-value baseline (0%) is served instead (D35)",
+          "source": "ml/reports/btc/walkforward_price.json"
+        },
+        "direction": {
+          "metric": "log loss (UP/DOWN/FLAT)",
+          "top_config": "logreg_c0.1",
+          "model": 1.030682,
+          "baseline_name": "class frequencies (prior)",
+          "baseline": 1.017508,
+          "gain_ci95": {
+            "estimate": -0.013174,
+            "low": -0.045709,
+            "high": 0.017069
+          },
+          "n_effective": 27.7,
+          "date_range": [
+            "2023-01-28",
+            "2025-05-07"
+          ],
+          "approved": false,
+          "rule": "D31: paired 95% CI of logloss(prior) - logloss(top) on the last 40% is above 0 and the estimate is positive",
+          "served": false,
+          "served_reason": "not served: signal UNCERTAIN, confidence null (D33)",
+          "source": "ml/reports/btc/walkforward_direction.json"
+        }
+      },
+      "backtest": {
+        "n_windows": 68,
+        "window_dates": [
+          "2019-10-16",
+          "2025-04-17"
+        ],
+        "rows": {
+          "served": {
+            "mean_window_return": 0.0,
+            "mean_window_return_ci95": {
+              "low": 0.0,
+              "high": 0.0
+            },
+            "cumulative_return": 0.0,
+            "max_drawdown": 0.0,
+            "sharpe_annualised": null,
+            "hit_rate": null,
+            "trades": 0
+          },
+          "reference": {
+            "mean_window_return": 0.022052,
+            "mean_window_return_ci95": {
+              "low": -0.014145,
+              "high": 0.067062
+            },
+            "cumulative_return": 1.108803,
+            "max_drawdown": -0.49491,
+            "sharpe_annualised": 0.447052,
+            "hit_rate": 0.666667,
+            "trades": 26
+          },
+          "buy_and_hold": {
+            "mean_window_return": 0.062288,
+            "mean_window_return_ci95": {
+              "low": 0.008794,
+              "high": 0.11655
+            },
+            "cumulative_return": 11.891251,
+            "max_drawdown": -0.732185,
+            "sharpe_annualised": 0.930386,
+            "hit_rate": 0.647059,
+            "trades": 1
+          },
+          "always_hold": {
+            "mean_window_return": 0.0,
+            "mean_window_return_ci95": {
+              "low": 0.0,
+              "high": 0.0
+            },
+            "cumulative_return": 0.0,
+            "max_drawdown": 0.0,
+            "sharpe_annualised": null,
+            "hit_rate": null,
+            "trades": 0
+          }
+        },
+        "reference_config": "logreg_c0.1",
+        "source": "ml/reports/btc/backtest.json"
+      },
+      "power_note": "Approximate. A true difference equal to the half-width is detected about 50% of the time; about 80% power needs roughly 1.43x the half-width (normal approximation). A negative verdict means 'no demonstrated gain', not 'no skill' (D29)."
+    },
+    "eth": {
+      "verdict": "ETH: direction beat its baseline in walk-forward but is not served; risk and price did not beat the baseline; the served signal made 0 trades over 68 windows (+0.00% per 30-day window vs buy-and-hold +7.55%).",
+      "models": {
+        "risk": {
+          "metric": "Spearman (rank of 30-day vol)",
+          "top_config": "hgb_d3",
+          "model": 0.31652,
+          "baseline_name": "persistence",
+          "baseline": 0.45414,
+          "gain_ci95": {
+            "estimate": -0.137621,
+            "low": -0.239995,
+            "high": 0.06522
+          },
+          "n_effective": 27.7,
+          "date_range": [
+            "2023-01-28",
+            "2025-05-07"
+          ],
+          "approved": false,
+          "rule": "D25: paired 95% CI of the Spearman difference vs persistence on the last 40% excludes 0 and the estimate is positive",
+          "served": false,
+          "served_reason": "not served: persistence vol_30d is served instead (D27, D36)",
+          "source": "ml/reports/eth/walkforward_risk.json"
+        },
+        "price": {
+          "metric": "MAE of 30-day return",
+          "top_config": "hgb_d2",
+          "model": 0.137266,
+          "baseline_name": "last-value (no change)",
+          "baseline": 0.136481,
+          "gain_ci95": {
+            "estimate": -0.000785,
+            "low": -0.010447,
+            "high": 0.008863
+          },
+          "n_effective": 27.7,
+          "date_range": [
+            "2023-01-28",
+            "2025-05-07"
+          ],
+          "approved": false,
+          "rule": "D28: paired 95% CI of MAE(last-value) - MAE(model) of fwd_return_30d on the last 40% is above 0 (and the estimate is positive)",
+          "served": false,
+          "served_reason": "not served: the last-value baseline (0%) is served instead (D35)",
+          "source": "ml/reports/eth/walkforward_price.json"
+        },
+        "direction": {
+          "metric": "log loss (UP/DOWN/FLAT)",
+          "top_config": "logreg_c0.1",
+          "model": 0.995226,
+          "baseline_name": "class frequencies (prior)",
+          "baseline": 1.03113,
+          "gain_ci95": {
+            "estimate": 0.035904,
+            "low": 0.003531,
+            "high": 0.060357
+          },
+          "n_effective": 27.7,
+          "date_range": [
+            "2023-01-28",
+            "2025-05-07"
+          ],
+          "approved": true,
+          "rule": "D31: paired 95% CI of logloss(prior) - logloss(top) on the last 40% is above 0 and the estimate is positive",
+          "served": false,
+          "served_reason": "not served: signal UNCERTAIN, confidence null (D33)",
+          "source": "ml/reports/eth/walkforward_direction.json"
+        }
+      },
+      "backtest": {
+        "n_windows": 68,
+        "window_dates": [
+          "2019-10-16",
+          "2025-04-17"
+        ],
+        "rows": {
+          "served": {
+            "mean_window_return": 0.0,
+            "mean_window_return_ci95": {
+              "low": 0.0,
+              "high": 0.0
+            },
+            "cumulative_return": 0.0,
+            "max_drawdown": 0.0,
+            "sharpe_annualised": null,
+            "hit_rate": null,
+            "trades": 0
+          },
+          "reference": {
+            "mean_window_return": 0.006082,
+            "mean_window_return_ci95": {
+              "low": -0.021465,
+              "high": 0.034607
+            },
+            "cumulative_return": -0.113371,
+            "max_drawdown": -0.544219,
+            "sharpe_annualised": 0.174753,
+            "hit_rate": 0.416667,
+            "trades": 16
+          },
+          "buy_and_hold": {
+            "mean_window_return": 0.075504,
+            "mean_window_return_ci95": {
+              "low": 0.007692,
+              "high": 0.141166
+            },
+            "cumulative_return": 13.172092,
+            "max_drawdown": -0.764578,
+            "sharpe_annualised": 0.92021,
+            "hit_rate": 0.558824,
+            "trades": 1
+          },
+          "always_hold": {
+            "mean_window_return": 0.0,
+            "mean_window_return_ci95": {
+              "low": 0.0,
+              "high": 0.0
+            },
+            "cumulative_return": 0.0,
+            "max_drawdown": 0.0,
+            "sharpe_annualised": null,
+            "hit_rate": null,
+            "trades": 0
+          }
+        },
+        "reference_config": "logreg_c0.1",
+        "source": "ml/reports/eth/backtest.json"
+      },
+      "power_note": "Approximate. A true difference equal to the half-width is detected about 50% of the time; about 80% power needs roughly 1.43x the half-width (normal approximation). A negative verdict means 'no demonstrated gain', not 'no skill' (D29)."
+    },
+    "sol": {
+      "verdict": "SOL: risk, price and direction did not beat the baseline; the served signal made 0 trades over 37 windows (+0.00% per 30-day window vs buy-and-hold +8.88%).",
+      "models": {
+        "risk": {
+          "metric": "Spearman (rank of 30-day vol)",
+          "top_config": "ridge_all_a10",
+          "model": 0.035832,
+          "baseline_name": "persistence",
+          "baseline": 0.25685,
+          "gain_ci95": {
+            "estimate": -0.221018,
+            "low": -0.460536,
+            "high": 0.014495
+          },
+          "n_effective": 14.8,
+          "date_range": [
+            "2024-07-31",
+            "2025-10-17"
+          ],
+          "approved": false,
+          "rule": "D25: paired 95% CI of the Spearman difference vs persistence on the last 40% excludes 0 and the estimate is positive",
+          "served": false,
+          "served_reason": "not served: persistence vol_30d is served instead (D27, D36)",
+          "source": "ml/reports/sol/walkforward_risk.json"
+        },
+        "price": {
+          "metric": "MAE of 30-day return",
+          "top_config": "ridge_all_a1000",
+          "model": 0.183001,
+          "baseline_name": "last-value (no change)",
+          "baseline": 0.178624,
+          "gain_ci95": {
+            "estimate": -0.004377,
+            "low": -0.023187,
+            "high": 0.020063
+          },
+          "n_effective": 14.8,
+          "date_range": [
+            "2024-07-31",
+            "2025-10-17"
+          ],
+          "approved": false,
+          "rule": "D28: paired 95% CI of MAE(last-value) - MAE(model) of fwd_return_30d on the last 40% is above 0 (and the estimate is positive)",
+          "served": false,
+          "served_reason": "not served: the last-value baseline (0%) is served instead (D35)",
+          "source": "ml/reports/sol/walkforward_price.json"
+        },
+        "direction": {
+          "metric": "log loss (UP/DOWN/FLAT)",
+          "top_config": "logreg_c0.1",
+          "model": 1.048813,
+          "baseline_name": "class frequencies (prior)",
+          "baseline": 1.055915,
+          "gain_ci95": {
+            "estimate": 0.007102,
+            "low": -0.026359,
+            "high": 0.037926
+          },
+          "n_effective": 14.8,
+          "date_range": [
+            "2024-07-31",
+            "2025-10-17"
+          ],
+          "approved": false,
+          "rule": "D31: paired 95% CI of logloss(prior) - logloss(top) on the last 40% is above 0 and the estimate is positive",
+          "served": false,
+          "served_reason": "not served: signal UNCERTAIN, confidence null (D33)",
+          "source": "ml/reports/sol/walkforward_direction.json"
+        }
+      },
+      "backtest": {
+        "n_windows": 37,
+        "window_dates": [
+          "2022-10-10",
+          "2025-09-24"
+        ],
+        "rows": {
+          "served": {
+            "mean_window_return": 0.0,
+            "mean_window_return_ci95": {
+              "low": 0.0,
+              "high": 0.0
+            },
+            "cumulative_return": 0.0,
+            "max_drawdown": 0.0,
+            "sharpe_annualised": null,
+            "hit_rate": null,
+            "trades": 0
+          },
+          "reference": {
+            "mean_window_return": 0.038024,
+            "mean_window_return_ci95": {
+              "low": -0.006143,
+              "high": 0.09219
+            },
+            "cumulative_return": 1.75352,
+            "max_drawdown": -0.273914,
+            "sharpe_annualised": 0.835992,
+            "hit_rate": 0.714286,
+            "trades": 10
+          },
+          "buy_and_hold": {
+            "mean_window_return": 0.088804,
+            "mean_window_return_ci95": {
+              "low": -0.002981,
+              "high": 0.185017
+            },
+            "cumulative_return": 5.051202,
+            "max_drawdown": -0.575206,
+            "sharpe_annualised": 1.074023,
+            "hit_rate": 0.648649,
+            "trades": 1
+          },
+          "always_hold": {
+            "mean_window_return": 0.0,
+            "mean_window_return_ci95": {
+              "low": 0.0,
+              "high": 0.0
+            },
+            "cumulative_return": 0.0,
+            "max_drawdown": 0.0,
+            "sharpe_annualised": null,
+            "hit_rate": null,
+            "trades": 0
+          }
+        },
+        "reference_config": "logreg_c0.1",
+        "source": "ml/reports/sol/backtest.json"
+      },
+      "power_note": "Approximate. A true difference equal to the half-width is detected about 50% of the time; about 80% power needs roughly 1.43x the half-width (normal approximation). A negative verdict means 'no demonstrated gain', not 'no skill' (D29)."
+    }
+  },
+  "summary": {
+    "models_approved": 1,
+    "models_served": 0,
+    "models_total": 9
+  },
+  "metadata": {
+    "generated_at": "2026-11-01T13:02:44Z",
+    "git_commit": "b24382312c6d544b3009d72e69e733a5d69924d0",
+    "git_dirty": false,
+    "sources": [
+      "ml/reports/btc/backtest.json",
+      "ml/reports/btc/walkforward_direction.json",
+      "ml/reports/btc/walkforward_price.json",
+      "ml/reports/btc/walkforward_risk.json",
+      "ml/reports/eth/backtest.json",
+      "ml/reports/eth/walkforward_direction.json",
+      "ml/reports/eth/walkforward_price.json",
+      "ml/reports/eth/walkforward_risk.json",
+      "ml/reports/sol/backtest.json",
+      "ml/reports/sol/walkforward_direction.json",
+      "ml/reports/sol/walkforward_price.json",
+      "ml/reports/sol/walkforward_risk.json"
+    ],
+    "note": "Copied from the reports; nothing recomputed. Last 40% of walk-forward folds (D25)."
+  }
+}

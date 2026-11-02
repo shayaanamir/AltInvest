@@ -11,7 +11,8 @@ have no missing day and must not be shorter or end earlier than the data it repl
 replaces the served files, each with os.replace (atomic on one filesystem). On any failure all three are restored,
 so the asset keeps serving its last good data, with the D38 staleness note once it applies. A lock file stops two
 refreshes (the ml service at startup and the ml-refresh sidecar) from running at once.
-Writes refresh_status.json (per asset: ok/failed, reason, servable, last bar, time) in ML_VALIDATION_DIR.
+Writes refresh_status.json (per asset: ok/failed, reason, servable, last bar, time) in ML_VALIDATION_DIR, then
+appends the day's served values to the prediction log (ml.serving.prediction_log, Phase 6d).
 """
 
 import argparse
@@ -31,6 +32,7 @@ from ml import config
 from ml.data import fetch, validate
 from ml.data.loader import fetch_meta_path, load_raw, raw_csv_path
 from ml.data.serving_gate import NotServable, servable_raw
+from ml.serving import prediction_log
 
 STATUS_FILE = "refresh_status.json"
 LOCK_FILE = ".refresh.lock"
@@ -200,15 +202,20 @@ def run_once(force: bool = False, lock_wait: float = LOCK_WAIT_SECONDS) -> int:
     """Refresh every asset once. 0 if every asset ends servable, else 1."""
     check_targets(force)
     try:
-        with refresh_lock(lock_wait):
+        with refresh_lock(lock_wait):            # status and log writes too: two refreshers share one volume
             assets = {a: refresh_asset(a) for a in config.ASSETS}
+            status = {"decision": "D40", "generated_at": _iso(_utc_now()), "raw_dir": str(config.ML_RAW_DIR),
+                      "validation_dir": str(config.ML_VALIDATION_DIR), "assets": assets,
+                      "all_servable": all(s["servable"] for s in assets.values())}
+            _write_status(status)
+            try:
+                logged = prediction_log.append_served(_utc_now())        # Phase 6d; never fails the refresh
+                print(f"prediction log: added {logged or 'nothing'}", flush=True)
+            except Exception as e:
+                print(f"prediction log error: {type(e).__name__}: {e}", flush=True)
     except RefreshBusy as e:
         print(f"refresh skipped: {e}", flush=True)
         return 1
-    status = {"decision": "D40", "generated_at": _iso(_utc_now()), "raw_dir": str(config.ML_RAW_DIR),
-              "validation_dir": str(config.ML_VALIDATION_DIR), "assets": assets,
-              "all_servable": all(s["servable"] for s in assets.values())}
-    _write_status(status)
     for a, s in assets.items():
         reason = "" if s["reason"] is None else f" ({s['reason']})"
         served = f"serving last bar {s['last_bar']} ({s['rows']} rows)" if s["servable"] else "NOT servable"
