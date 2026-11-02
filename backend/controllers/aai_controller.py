@@ -12,6 +12,14 @@ import logging
 from datetime import datetime, timezone
 from aai_engine.aai import compute_aai, normalise_sentiment, normalise_expected_return
 
+# ML's "no model beat no-change" fallback (ml/docs/DECISIONS.md D35): prediction_30d is 0 %.
+# Decision C5 (2026-11-02, Phase 7): keep it as a neutral pred_score of 50, and say so in the note.
+BASELINE_MODEL_VERSION = "baseline-last-value"
+BASELINE_NOTE = (
+    "The prediction part is ML's no-change baseline (prediction_30d 0 %, model_version "
+    "baseline-last-value): no model beat it, so it counts as a neutral 50, not as a forecast."
+)
+
 
 def _get_real_prediction(asset: str) -> dict | None:
     """Latest row in `predictions`, or None. Database errors propagate (503 via main.py)."""
@@ -93,6 +101,11 @@ def compute_aai_response(asset: str, sentiment: dict | None = None) -> dict:
     )
     sentiment_available = bool(sent.get("available", True))
     missing = [name for name, v in (("prediction", pred_score), ("risk score", risk_score)) if v is None]
+    notes = []
+    if missing:
+        notes.append(f"No {' or '.join(missing)} is stored for {asset} yet, so the AAI score can't be computed.")
+    if pred_score is not None and (pred or {}).get("model_version") == BASELINE_MODEL_VERSION:
+        notes.append(BASELINE_NOTE)
 
     return {
         "asset": asset,
@@ -107,9 +120,7 @@ def compute_aai_response(asset: str, sentiment: dict | None = None) -> dict:
         ),
         "risk_score": round(risk_score, 2) if risk_score is not None else None,
         "missing_inputs": missing,
-        "note": None if not missing else (
-            f"No {' or '.join(missing)} is stored for {asset} yet, so the AAI score can't be computed."
-        ),
+        "note": " ".join(notes) or None,
         "model_version": (pred or {}).get("model_version"),
         "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }

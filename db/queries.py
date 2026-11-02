@@ -46,6 +46,35 @@ def get_latest_risk(asset: str) -> dict | None:
         projection={"_id": 0}
     )
 
+# Assets the ML service (ml/, port 8001) covers. Their `predictions` and `risk_scores` rows come only
+# from backend/controllers/ml_pull_controller.py, never from a seed.
+ML_COVERED_ASSETS = ("BTC", "ETH", "SOL")
+
+
+def _upsert_ml_row(collection: str, doc: dict) -> None:
+    """
+    One row per asset per UTC day, keyed on (asset, date) like the seeds. `doc["timestamp"]` must be
+    a datetime: Mongo sorts Date above String, so a string timestamp would never be the newest row.
+    """
+    ts = doc["timestamp"]
+    if not isinstance(ts, datetime):
+        raise TypeError("ML rows need a datetime timestamp, not %s" % type(ts).__name__)
+    day = ts.astimezone(timezone.utc).strftime("%Y-%m-%dT00:00:00Z")
+    get_db()[collection].update_one(
+        {"asset": doc["asset"].upper(), "date": day},
+        {"$set": {**doc, "asset": doc["asset"].upper(), "date": day}},
+        upsert=True,
+    )
+
+
+def upsert_ml_prediction(doc: dict) -> None:
+    _upsert_ml_row("predictions", doc)
+
+
+def upsert_ml_risk(doc: dict) -> None:
+    _upsert_ml_row("risk_scores", doc)
+
+
 def get_supported_assets() -> list:
     db = get_db()
     return list(db.assets.find({}, projection={"_id": 0}))

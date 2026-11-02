@@ -44,6 +44,7 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:-}
       SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
+      ML_BASE_URL: ${ML_BASE_URL:-http://ml:8001}
     depends_on:
       mongodb:
         condition: service_healthy

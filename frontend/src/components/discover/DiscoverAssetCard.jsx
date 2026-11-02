@@ -2,11 +2,10 @@ import { useNavigate } from "react-router-dom";
 import Sparkline from "../charts/Sparkline";
 import AssetAvatar from "../shared/AssetAvatar";
 import WatchStar from "../watchlists/WatchStar";
-import { getAaiTierColor } from "../../utils/scoring";
+import { getAaiTierColor, AAI_BADGE_LABEL as SIGNAL_LABEL } from "../../utils/scoring";
 import { formatAssetPrice } from "../../utils/formatters";
 
 const SIGNAL_CLASS = { BUY: "signal-buy", HOLD: "signal-hold", SELL: "signal-sell" };
-const SIGNAL_LABEL = { BUY: "Buy", HOLD: "Hold", SELL: "Sell" };
 
 export default function DiscoverAssetCard({ item, isComparing, onToggleCompare }) {
   const isWatching = item.watching;

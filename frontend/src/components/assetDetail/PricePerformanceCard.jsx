@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useElementSize } from "../../hooks/useElementSize";
 import { deriveAaiSignal } from "../../services/assetDetailApi";
+import { isMlUncertain } from "../../utils/scoring";
 import { formatCurrencyAxis, formatAssetPrice } from "../../utils/formatters";
 
 const FILTERS = ["1D", "1W", "1M", "3M", "1Y"];
@@ -18,7 +19,7 @@ function sliceForFilter(arr, filter) {
   return arr.slice(-(FILTER_DAYS[filter] + 1));
 }
 
-export default function PricePerformanceCard({ priceHistory, forecast, forecastMeta, aaiPanel }) {
+export default function PricePerformanceCard({ priceHistory, forecast, forecastMeta, aaiPanel, mlSignal }) {
   const [mode, setMode] = useState("Price");
   const [filter, setFilter] = useState("1M");
   const [containerRef, dims] = useElementSize({ W: 900, H: 320 });
@@ -261,7 +262,7 @@ export default function PricePerformanceCard({ priceHistory, forecast, forecastM
         ) : <span />}
         {showForecast && signal && (
           <div className="adt-signal-badge">
-            Signal
+            {isMlUncertain(mlSignal) ? "AAI rating" : "Signal"}
             <span className={`adt-signal-pill ${signal.tone}`}>{signal.label.replace("Strong ", "")}</span>
             {aaiPanel?.confidence != null && (
               <span className="adt-signal-conf">{Math.round(aaiPanel.confidence * 100)}% confidence</span>

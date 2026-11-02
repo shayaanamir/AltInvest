@@ -53,6 +53,7 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
     )
     from controllers.asset_detail_controller import related_and_similar, build_forecast
     from db.mongo_connection import get_db
+    from utils.ml_rows import with_stale_note
 
     symbol = symbol.upper()
     try:
@@ -96,6 +97,7 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
             "sentiment_score": aai.get("sentiment_score"),
             "risk_score": aai.get("risk_score"),
             "model_version": aai.get("model_version"),
+            "note": aai.get("note"),
         }
 
     # Sentiment: the engine's live reading when it has one, else what aai_scores stored.
@@ -149,6 +151,11 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
         },
         "price_history": history,
         "forecast": forecast,
+        # The ML service's own signal and note (null when no prediction is stored). While ml_signal is
+        # UNCERTAIN the frontend must not present the AAI-derived BUY/HOLD/SELL as the model's call.
+        "ml_signal": (prediction or {}).get("signal"),
+        "ml_note": with_stale_note((prediction or {}).get("note"), (prediction or {}).get("timestamp"))
+        if prediction else None,
         "aai_panel": aai_panel,
         "risk_overview": risk_overview,
         "market_stats": {

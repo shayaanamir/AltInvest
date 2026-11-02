@@ -3,9 +3,9 @@ import AssetAvatar from "../shared/AssetAvatar";
 import Sparkline from "../charts/Sparkline";
 import { formatAssetPrice, formatPct } from "../../utils/formatters";
 import WatchStar from "../watchlists/WatchStar";
+import { AAI_BADGE_LABEL as SIGNAL_LABEL } from "../../utils/scoring";
 
 const SIGNAL_CLASS = { BUY: "positive", HOLD: "neutral", SELL: "negative" };
-const SIGNAL_LABEL = { BUY: "Buy", HOLD: "Hold", SELL: "Sell" };
 
 export default function SimilarAssetCard({ asset }) {
   const navigate = useNavigate();

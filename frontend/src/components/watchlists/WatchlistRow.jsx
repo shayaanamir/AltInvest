@@ -1,10 +1,9 @@
 import AssetAvatar from "../shared/AssetAvatar";
 import { IconBell, IconTrash, IconCheck } from "../icons";
-import { getAaiTierColor } from "../../utils/scoring";
+import { getAaiTierColor, AAI_BADGE_LABEL as SIGNAL_LABEL } from "../../utils/scoring";
 import { formatAssetPrice } from "../../utils/formatters";
 
 const SIGNAL_CLASS = { BUY: "signal-buy", HOLD: "signal-hold", SELL: "signal-sell" };
-const SIGNAL_LABEL = { BUY: "Buy", HOLD: "Hold", SELL: "Sell" };
 
 export default function WatchlistRow({ item, onAddToPortfolio, onSetAlert, onRemove }) {
   const positive = (item.changePct ?? 0) >= 0;
