@@ -22,6 +22,12 @@ export function getAaiSignal(score) {
   return { label: band.label, tone: band.tone };
 }
 
+// The BUY/HOLD/SELL badges are the AAI score's band, never the ML model's call. While the ML
+// service says UNCERTAIN (no proven up/down skill, ml/docs D33) they must read as an "AAI rating".
+export const ML_UNCERTAIN = "UNCERTAIN";
+export const isMlUncertain = (mlSignal) => mlSignal === ML_UNCERTAIN;
+export const AAI_BADGE_LABEL = { BUY: "AAI Buy", HOLD: "AAI Hold", SELL: "AAI Sell" };
+
 // Coarser tier used for dot/badge coloring across cards
 // (previously: aaiTier in TrendingAssetsSection/TrendingCollectionsSection at 65/45,
 // aaiDotColor in DiscoverAssetCard/WatchlistRow at 65/45, aaiColor in

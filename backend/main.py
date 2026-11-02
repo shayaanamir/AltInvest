@@ -165,6 +165,10 @@ def on_startup():
     from controllers.alert_controller import run_alert_scheduler
     threading.Thread(target=run_alert_scheduler, daemon=True, name="alerts").start()
 
+    # 7. ML service pull (/predict, /risk for BTC, ETH, SOL): at startup, then daily at 00:15 UTC.
+    from controllers.ml_pull_controller import run_ml_pull_scheduler
+    threading.Thread(target=run_ml_pull_scheduler, daemon=True, name="ml-pull").start()
+
 
 @app.get("/")
 def root():

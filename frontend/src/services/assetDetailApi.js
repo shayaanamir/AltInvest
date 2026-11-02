@@ -72,7 +72,11 @@ export const assetDetailApi = {
         score: d.aai_panel.score,
         signal: d.aai_panel.signal,
         confidence: d.aai_panel.confidence,
+        note: d.aai_panel.note ?? null,
       },
+      // The ML service's own signal and note (null when no prediction is stored).
+      mlSignal: d.ml_signal ?? null,
+      mlNote: d.ml_note ?? null,
       riskOverview: d.risk_overview,
       marketStats: buildMarketStats(d.market_stats),
       sentimentSnippet: d.sentiment && {

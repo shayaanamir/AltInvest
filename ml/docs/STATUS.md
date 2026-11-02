@@ -1,7 +1,84 @@
 # STATUS
 
-Current phase: 6d (scorecard, prediction log, live scorecard) DONE (2026-11-01), on branch ml-phase-7 (local, not pushed). ml-v2 was merged into main as PR #5 (e71a8b1). The service runs from a fresh clone with `docker compose up -d --build ml ml-refresh`.
-Next: Phase 7 (backend integration; Person B agreed on 2026-11-01 to minimal backend/ and frontend/ edits, each listed here).
+Current phase: 7 (backend integration, PLAN_NEXT.md C1-C7) DONE (2026-11-02), on branch phase-7-integration (from main a80b783, which merged ml-phase-7 as PR #6; uncommitted). No file under ml/ changed except this file and docs/phases/PHASE_7_backend_integration.md.
+Next: section A ML fixes (A0-A7) and B1 hand-over, then Phase 8 plan (D1). Person B must review the files listed under "Phase 7: files changed outside ml/".
+
+## Phase 7: what ran (2026-11-02, from repo root)
+
+- C1 `backend/controllers/ml_pull_controller.py`: a daemon thread (`ml-pull`, started in backend/main.py) pulls `/predict/{a}` and `/risk/{a}` for BTC, ETH, SOL 20 s after startup and then daily at 00:15 UTC; after a run with a failure it tries again in 15 min. Each call: 10 s timeout, 3 retries (backoff 2, 4, 8 s); 404 -> skipped, no retry; 503 / timeout / connection error / bad body -> nothing written. Rows are upserted on (asset, UTC date) by `db/queries.py upsert_ml_prediction / upsert_ml_risk`, with every response field plus `source: "ml-service"` and `pulled_at`; `timestamp` is a datetime (the upsert raises on a string). `ML_BASE_URL` (default http://ml:8001) added to the backend service in docker-compose.yml. `db.queries.ML_COVERED_ASSETS = ("BTC", "ETH", "SOL")`.
+- C2 `_map_prediction` and `_map_risk` pass `note` through. /risk for BTC/ETH/SOL no longer falls back to mock: 404 when there is no row or `risk_score` is not a number, 503 when the database is down. Other assets keep the old mock fallback.
+- C3 `backend/utils/ml_rows.py with_stale_note`: when the newest stored row is more than 36 h old, " data stale: the newest stored row is N h old (last pull ..., backend limit 36 h)." is appended to ML's note (ML's own 48 h note is kept). Used by /prediction, /risk and the asset-detail `ml_note`.
+- C4 `db/seed_predictions_risk.py` no longer writes predictions or risk_scores for BTC/ETH/SOL (the invented seed-v1 rows are gone; risk_breakdown is unchanged, it is not ML). `git grep prediction_service -- backend db` -> empty.
+- C5 decision (user, 2026-11-02): keep the neutral 50. `aai_controller.py` adds `BASELINE_NOTE` to the AAI note when `model_version == "baseline-last-value"`.
+- C6 `/assets/{symbol}/detail` adds `ml_signal`, `ml_note` and `aai_panel.note`. Frontend: new `MlNoteCard` shows the ML note under the chart ("Model forecast: no reliable direction forecast" while UNCERTAIN); the AAI badge reads "AAI rating" / "AAI RATING: BUY" while ml_signal is UNCERTAIN (PricePerformanceCard, AaiScoreCard, AboutAssetCard); Discover, Watchlist and Similar badges read "AAI Buy / AAI Hold / AAI Sell". The chart keeps "No model forecast is stored for this asset yet." (forecast is null because predicted_price is null).
+- Tests: `backend/tests/` (new; run from backend/: `python -m pytest tests -q`) -> `20 passed` (pull with a mocked HTTP client: 200, 404, 503, timeout, recovery, bad body; routes: note pass-through, no mock, null risk_score -> 404, 37 h row -> stale note, 35 h -> not stale; seed; AAI rule). `python -m pytest aai_engine -q` -> 3 passed. ML: `docker exec altinvest-ml python -m pytest ml -q` -> `225 passed` (the host Python has no pandas, so `python -m pytest ml` on this machine fails at collection; not a code change).
+- End to end: `docker compose up -d --build mongodb backend ml ml-refresh frontend`. The build finished but compose hung afterwards without starting containers; `docker compose up -d --no-build ...` started all five (ml healthy).
+  - Backend log: `[ml-pull] http://ml:8001: {'BTC': {'predict': 'stored', 'risk': 'stored'}, 'ETH': {...stored...}, 'SOL': {...stored...}}`, `next pull in 30648 s` (= 00:15 UTC).
+  - Newest BTC predictions row: `baseline-last-value UNCERTAIN datetime 2026-11-02 15:44:10 ml-service`, note set. Newest risk rows: BTC 97.795108, ETH 91.567549, SOL 87.09044.
+  - GET :8000/prediction/BTC and /risk/BTC return ML's note and the same numbers as :8001.
+  - `docker compose stop ml`, then `python -m controllers.ml_pull_controller` in the backend: every call `failed: ConnectError ...; nothing written`; the BTC row (timestamp and pulled_at 2026-11-02 15:44:10) unchanged. ml restarted.
+  - Seed re-run (user approved, 2026-11-02): `[predictions] inserted 15`, `[risk_scores] inserted 15`; the BTC prediction and risk rows unchanged.
+  - /assets/BTC/detail: `ml_signal UNCERTAIN`, `ml_note` = ML's note, `forecast null`, aai_panel score 62.82 with pred_score 50.0, risk_score 97.8, model_version baseline-last-value and the baseline note. /assets/BTC/intelligence gives the same AAI.
+  - Frontend: :5173 returns 200 and serves the new MlNoteCard module; `vite build` succeeds. The rendered BTC page was NOT looked at in a browser by the agent (login needed): step 5 of the verify block is still to do by hand.
+- Finding (Person B): the backend's `MONGO_URI` comes from the developer's .env and points to the shared MongoDB Atlas cluster (db `altinvest_db`), not the compose `mongodb` container. The pull therefore writes the real ML rows into the shared database. Before the first pull, the newest BTC aai_scores row was still built from the old seed-v1 values (risk 71.2, pred_score 74.5); the AAI refresh replaced it.
+- Not changed (rule: ml/ docs only): ml/AGENTS.md docs list and ml/docs/GLOSSARY.md. Add PHASE_7_backend_integration.md to the AGENTS.md list and "backend pull" / "stale note (36 h)" to the glossary when ML edits are allowed.
+- Pre-existing, not from Phase 7: `npx eslint` reports 3 `react-hooks/refs` errors at PricePerformanceCard.jsx:227-228 (tooltip reads `containerRef.current` during render); `vite build` succeeds. compose still warns about `version: "3.9"` (A7).
+
+### Phase 7: files changed outside ml/ (for Person B)
+
+| File | Change |
+|---|---|
+| backend/controllers/ml_pull_controller.py (new) | The daily pull (C1) |
+| backend/utils/ml_rows.py (new) | Timestamp formatting and the 36 h stale note (C3) |
+| backend/main.py | Starts the `ml-pull` thread (+4 lines) |
+| backend/routes/prediction.py | Passes `note`, stale note, docstring without prediction_service (C2-C4) |
+| backend/routes/risk.py | Passes `note`, stale note, no mock for BTC/ETH/SOL, null risk_score -> 404 (C2, C3) |
+| backend/routes/assets.py | `ml_signal`, `ml_note`, `aai_panel.note` in /assets/{symbol}/detail (C6) |
+| backend/controllers/aai_controller.py | Baseline note on the AAI (C5) |
+| backend/tests/ (new: conftest.py, test_ml_pull.py, test_ml_routes.py, test_seed_skips_ml_assets.py, test_aai_baseline.py) | 20 tests |
+| db/queries.py | `ML_COVERED_ASSETS`, `upsert_ml_prediction`, `upsert_ml_risk` (C1) |
+| db/seed_predictions_risk.py | No BTC/ETH/SOL predictions or risk_scores; no prediction_service mention (C4) |
+| docker-compose.yml | `ML_BASE_URL` on the backend service (+1 line) |
+| frontend/src/utils/scoring.js | `isMlUncertain`, `AAI_BADGE_LABEL` |
+| frontend/src/services/assetDetailApi.js | Maps `mlSignal`, `mlNote`, `aaiPanel.note` |
+| frontend/src/pages/AssetDetailPage.jsx | Renders MlNoteCard; passes mlSignal |
+| frontend/src/components/assetDetail/MlNoteCard.jsx (new) | Shows the ML note |
+| frontend/src/components/assetDetail/AaiScoreCard.jsx, AboutAssetCard.jsx, PricePerformanceCard.jsx | "AAI rating" while UNCERTAIN; AAI note |
+| frontend/src/components/assetDetail/SimilarAssetCard.jsx, discover/DiscoverAssetCard.jsx, watchlists/WatchlistRow.jsx | Badge text "AAI Buy / Hold / Sell" |
+
+### How to verify Phase 7 yourself (PowerShell, repo root, Docker running)
+
+```powershell
+# 1. Unit tests (no Docker needed)
+cd backend; python -m pytest tests -q; cd ..          # expect: 20 passed
+git grep prediction_service -- backend db              # expect: no output
+
+# 2. Start the stack (first build can take 10-25 min)
+docker compose up -d --build mongodb backend ml ml-refresh frontend
+docker compose logs backend | Select-String "ml-pull"
+# expect within ~1-3 min: {'BTC': {'predict': 'stored', 'risk': 'stored'}, 'ETH': ..., 'SOL': ...}
+#   and "next pull in N s" (N = seconds to 00:15 UTC). If ML was still starting: "failed: ...", retried in 15 min.
+
+# 3. Backend serves the ML values and note
+curl.exe -s http://127.0.0.1:8000/prediction/BTC
+# expect: "model_version":"baseline-last-value", "prediction_30d":0.0, "predicted_price":null,
+#         "signal":"UNCERTAIN", "note":"No model beats the no-change baseline (D35): ..."
+curl.exe -s http://127.0.0.1:8000/risk/BTC
+# expect: risk_score 0-100, the SAME number as curl.exe -s http://127.0.0.1:8001/risk/btc, "note":"No risk model beats persistence (D27): ..."
+curl.exe -s http://127.0.0.1:8000/assets/BTC/detail | python -c "import json,sys; d=json.load(sys.stdin); print(d['ml_signal'], d['forecast'], d['aai_panel']['model_version'])"
+# expect: UNCERTAIN None baseline-last-value   (aai_panel can lag up to 30 min after the first pull)
+
+# 4. ML down -> nothing written
+docker compose stop ml
+docker compose exec -w /app/backend backend python -m controllers.ml_pull_controller
+# expect (about 90 s): every endpoint "failed: ConnectError ...; nothing written"
+curl.exe -s http://127.0.0.1:8000/prediction/BTC     # expect: same timestamp as in step 3
+docker compose start ml
+
+# 5. Browser: http://localhost:5173 -> log in -> open BTC
+# expect: a "Model forecast: no reliable direction forecast" card with ML's note; the AAI card says "AAI RATING: ...";
+#         chart "AI Prediction" tab says "No model forecast is stored for this asset yet."
+```
 
 ## Phase 6d: what ran (from repo root, 2026-11-01)
 

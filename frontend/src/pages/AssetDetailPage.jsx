@@ -9,6 +9,7 @@ import AaiScoreCard from "../components/assetDetail/AaiScoreCard";
 import RiskOverviewCard from "../components/assetDetail/RiskOverviewCard";
 import SentimentReadCard from "../components/assetDetail/SentimentReadCard";
 import AboutAssetCard from "../components/assetDetail/AboutAssetCard";
+import MlNoteCard from "../components/assetDetail/MlNoteCard";
 import SimilarAssetsSection from "../components/assetDetail/SimilarAssetsSection";
 import { ErrorState, ErrorBoundary } from "../errors";
 import { onWatchlistsChanged } from "../services/holdingsEvents";
@@ -58,19 +59,22 @@ export default function AssetDetailPage({ onNavigate }) {
                 forecast={detail.forecast}
                 forecastMeta={detail.forecastMeta}
                 aaiPanel={detail.aaiPanel}
+                mlSignal={detail.mlSignal}
               />
             </ErrorBoundary>
+
+            <MlNoteCard mlSignal={detail.mlSignal} mlNote={detail.mlNote} />
 
             <MarketStatisticsCard marketStats={detail.marketStats} />
 
             {/* AAI Score comes first in this row, per the redesign */}
             <div className="adt-panel-row">
-              <ErrorBoundary variant="section" label="AAI score"><AaiScoreCard aaiPanel={detail.aaiPanel} /></ErrorBoundary>
+              <ErrorBoundary variant="section" label="AAI score"><AaiScoreCard aaiPanel={detail.aaiPanel} mlSignal={detail.mlSignal} /></ErrorBoundary>
               <ErrorBoundary variant="section" label="Risk overview"><RiskOverviewCard riskOverview={detail.riskOverview} /></ErrorBoundary>
               <ErrorBoundary variant="section" label="Sentiment"><SentimentReadCard sentimentSnippet={detail.sentimentSnippet} /></ErrorBoundary>
             </div>
 
-            <AboutAssetCard name={detail.header.name} about={detail.about} aaiScore={detail.aaiPanel?.score} />
+            <AboutAssetCard name={detail.header.name} about={detail.about} aaiScore={detail.aaiPanel?.score} mlSignal={detail.mlSignal} />
 
             {detail.relatedAssets.length > 0 && (
               <ErrorBoundary variant="section" label="Related assets">
