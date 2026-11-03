@@ -1,6 +1,19 @@
 # STATUS
 
-Current phase: 9 (forecasting v2, docs/PLAN_FORECAST.md version 2). Price is finished (0 of 60 approved; last value stays, D35). Steps 9.3-9.5 are done: range 0 of 12 approved, risk 4 of 12 (EWMA for BTC and ETH at h = 30 and 7), direction 0 passes. At STOP A, waiting for the planner to choose the sealed-test configs.
+Current phase: 9 (forecasting v2). The sealed test (9.6) ran once on 2026-11-03. Decision under D50: serve EWMA risk for all assets, serve no range band, keep price on D35 and direction on D33. At STOP B, waiting for the planner before 9.7.
+
+## Phase 9 step 9.6: what ran (2026-11-03, from repo root)
+
+- D50 (sealed-test configs and serving rules) was written after the 9.3-9.5 results and before the test: 92f658f.
+  - It also records the baseline band's confirmation calibration at h = 30. BTC (coverage 0.7473, upper miss 0.1949) and ETH (upper miss 0.1564) fail; SOL passes.
+- `ml/evaluation/run_sealed_test.py` and `ml/tests/test_sealed_test.py` (5 tests): ee7bcae. The runner fits nothing and refuses to run if any test_final file exists.
+- `.venv-train/Scripts/python.exe -m ml.evaluation.run_sealed_test` ran ONCE at ee7bcae (git_dirty false). It wrote `ml/reports/{btc,eth,sol}/test_final.json` and `ml/reports/test_final_summary.json`.
+  - Test rows: [b2, n - h).
+  - Risk: EWMA has the lower QLIKE than persistence for every asset and horizon tested. At h = 30 the upper CI bound is >= 0 for all 3 assets (BTC's CI includes 0), so EWMA is served for all assets.
+  - Range: the vol_30d band fails test calibration for all 3 assets (coverage 0.6987-0.7479, lower-tail misses 0.158-0.171). No band is served.
+  - Total Phase 9 trials: 102.
+- `python -m pytest ml -q` (.venv-train): `296 passed`. The 39 snapshot and report hashes are identical.
+
 
 ## Phase 9 steps 9.3-9.5: what ran (2026-11-03, from repo root)
 
