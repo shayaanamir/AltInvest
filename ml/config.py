@@ -9,8 +9,14 @@ ASSET_SYMBOLS = {"btc": "BTCUSDT", "eth": "ETHUSDT", "sol": "SOLUSDT"}
 # Assets served in phases 1-7 (docs/REQUIREMENTS.md, D4). Lowercase ids; the API uppercases them.
 ASSETS = tuple(ASSET_SYMBOLS)
 
-# Forecast horizon in daily bars (D3).
+# Forecast horizon in daily bars (D3). The served horizon, and the default of every horizon parameter.
 HORIZON_DAYS = 30
+
+# Phase 9 horizons in daily bars (D41). For each h: embargo = walk-forward step = h rows.
+FORECAST_HORIZONS = (30, 7)
+
+# EWMA (RiskMetrics) volatility decay, sigma2[t] = lambda x sigma2[t-1] + (1 - lambda) x r[t]^2 (D41).
+EWMA_LAMBDA = 0.94
 
 # Chronological split fractions of the full series (docs/DATA.md "Splits", D11, D16).
 SPLIT_FRACTIONS = {"train": 0.70, "validation": 0.15, "test": 0.15}

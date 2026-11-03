@@ -1,7 +1,8 @@
-"""Forward-looking targets and their class thresholds (D3, D9, D19).
+"""Forward-looking targets and their class thresholds (D3, D9, D19, D41).
 
-Labels look HORIZON_DAYS rows ahead, so the last HORIZON_DAYS rows are NaN.
+Labels look `horizon` rows ahead (default HORIZON_DAYS = 30), so the last `horizon` rows are NaN.
 They live only in memory and reports; they are never written to the raw CSVs.
+Class thresholds and classes are defined for the 30-day labels only (direction runs at h = 30 only, D42).
 """
 
 import numpy as np
@@ -14,19 +15,39 @@ DIRECTION_CLASSES = ("DOWN", "FLAT", "UP")
 RISK_CLASSES = ("low", "medium", "high")
 
 
+def _check_horizon(horizon: int) -> int:
+    if isinstance(horizon, bool) or not isinstance(horizon, (int, np.integer)) or horizon < 1:
+        raise ValueError(f"horizon must be a positive whole number of rows, got {horizon!r}")
+    return int(horizon)
+
+
+def fwd_return(close: pd.Series, horizon: int = H) -> pd.Series:
+    """ln(close[t+h] / close[t])."""
+    h = _check_horizon(horizon)
+    return np.log(close.shift(-h) / close)
+
+
+def fwd_vol(close: pd.Series, horizon: int = H) -> pd.Series:
+    """Std (ddof=1) of the daily log returns t+1..t+h (the h returns after t)."""
+    h = _check_horizon(horizon)
+    r = np.log(close / close.shift(1))
+    return r.rolling(h).std().shift(-h)
+
+
 def fwd_return_30d(close: pd.Series) -> pd.Series:
     """ln(close[t+30] / close[t])."""
-    return np.log(close.shift(-H) / close)
+    return fwd_return(close, H)
 
 
 def fwd_vol_30d(close: pd.Series) -> pd.Series:
     """Std of the daily log returns t+1..t+30 (the 30 returns after t)."""
-    r = np.log(close / close.shift(1))
-    return r.rolling(H).std().shift(-H)
+    return fwd_vol(close, H)
 
 
-def build_labels(close: pd.Series) -> pd.DataFrame:
-    return pd.DataFrame({"fwd_return_30d": fwd_return_30d(close), "fwd_vol_30d": fwd_vol_30d(close)})
+def build_labels(close: pd.Series, horizon: int = H) -> pd.DataFrame:
+    """Columns fwd_return_{h}d and fwd_vol_{h}d (fwd_return_30d, fwd_vol_30d by default)."""
+    h = _check_horizon(horizon)
+    return pd.DataFrame({f"fwd_return_{h}d": fwd_return(close, h), f"fwd_vol_{h}d": fwd_vol(close, h)})
 
 
 def fit_thresholds(train_labels: pd.DataFrame) -> dict:
