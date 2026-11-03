@@ -18,6 +18,13 @@ FORECAST_HORIZONS = (30, 7)
 # EWMA (RiskMetrics) volatility decay, sigma2[t] = lambda x sigma2[t-1] + (1 - lambda) x r[t]^2 (D41).
 EWMA_LAMBDA = 0.94
 
+# Range (9.3, D43, D49): an 80% interval of the h-day log return, scored with the interval (Winkler) score at
+# alpha = 1 - RANGE_COVERAGE. Pass also needs coverage within RANGE_COVERAGE_BOUNDS and each tail <= the max.
+RANGE_COVERAGE = 0.80
+RANGE_QUANTILES = (0.10, 0.90)
+RANGE_COVERAGE_BOUNDS = (0.75, 0.85)  # D44
+RANGE_TAIL_MISS_MAX = 0.15  # D44
+
 # Chronological split fractions of the full series (docs/DATA.md "Splits", D11, D16).
 SPLIT_FRACTIONS = {"train": 0.70, "validation": 0.15, "test": 0.15}
 
