@@ -1,7 +1,104 @@
 # STATUS
 
-Current phase: 7 (backend integration, PLAN_NEXT.md C1-C7) DONE (2026-11-02), on branch phase-7-integration (from main a80b783, which merged ml-phase-7 as PR #6; uncommitted). No file under ml/ changed except this file and docs/phases/PHASE_7_backend_integration.md.
-Next: section A ML fixes (A0-A7) and B1 hand-over, then Phase 8 plan (D1). Person B must review the files listed under "Phase 7: files changed outside ml/".
+Current phase: 9 (forecasting v2, docs/PLAN_FORECAST.md). Steps 9.0-9.2 approved by the planner (2026-11-03). The D48 Prophet correction and the re-run at a commit are done: no price candidate is approved, and price stays on last value (D35). Waiting for the planner's OK to start 9.3.
+
+## Phase 9 step 9.2 follow-up: D48 and the re-run at a commit (2026-11-03)
+
+- Commits on phase-9-forecasting (user approved):
+  - c102f7f: docs, the plan and D41-D47
+  - fcd1577: 9.1
+  - f164fdd: 9.2a
+  - a46f18b: 9.2 price
+  - 93286c7: D48
+  - cc531e3: corrected Prophet and `ml/evaluation/walkforward_history.py`
+  - b2054c3: training-image git fix
+  - 48a37e7: the reports
+- D48: the embargo applies to labels, not to inputs known at t.
+  - Corrected Prophet: fit on log close of rows [0, r] at refit origin r, with return = forecast(t + h) - forecast(t). The old protocol is kept as `prophet_9_2`, labelled "prophet (9.2 protocol, superseded)".
+  - GARCH (9.4) follows the same rule.
+  - Tests: `ml/tests/test_walkforward_history.py` (6), including "changing any close after t leaves the forecast for origin t unchanged" at h = 7 and h = 30.
+- Re-ran all 5 price models at cc531e3 in altinvest-ml-train: `--model ridge, lightgbm, prophet_9_2, prophet, lstm`.
+  - Wall time: 154, 215, 1289, 468 and 724 s. prophet_9_2 BTC h = 30 took 864 s against 73 s in 9.2, a host/VM stall; Docker Desktop had stopped and was restarted before the run.
+  - Ridge, LightGBM, prophet_9_2 and LSTM horizon sections are identical to 9.2 for all 3 assets (run metadata and wall times ignored).
+  - Corrected Prophet: approved nowhere.
+  - Trial count 60 in every report.
+- git_dirty = true in these reports is a false positive. The Windows CRLF checkout mounted in the container made git see 447 modified files; with core.autocrlf it sees only the untracked reports.
+  - Fixed in ml/Dockerfile.train (b2054c3). After the fix, the container reports git_dirty False at b2054c3.
+  - The report numbers were produced at cc531e3 with a clean tree.
+- Tests:
+  - altinvest-ml-train: `273 passed`. Clean serving venv: `268 passed, 5 skipped`.
+  - The host Python now fails 4 API test files at collection (`Router.__init__() got an unexpected keyword argument 'on_startup'`). Since the 9.2 run, starlette 1.10.0 is installed next to fastapi 0.115.0 (reinstalled at 19:16), not by this session. The host environment was not touched; ml/requirements.txt pins fastapi 0.115.0, which brings starlette 0.38.6.
+- The 39 snapshot and report hashes are identical.
+ Branch phase-9-forecasting, created from phase-7-integration at c59ad96 (Phase 7 is not merged into main yet; rebase onto main after the 6d and Phase 7 PRs merge, planner 2026-11-03); uncommitted.
+
+## Phase 9 step 9.2: what ran (2026-11-03, from repo root)
+
+- 9.2a, walk-forward horizon (D41):
+  - `make_splits(n, embargo=30)`: b2 is unchanged for every horizon.
+  - `run_folds(..., horizon=30)`: refuses label columns that look further ahead than h, and train rows inside the h-row embargo. D19 classes and thresholds are added at h = 30 only.
+  - `dev_data` / `load_dev(asset, horizon=30)`, `_pooled_counts(p, horizon)` (n_effective = n_pooled / h), `run_metadata(..., horizon)`. The bootstrap block = h is passed by the callers.
+  - Tests: `ml/tests/test_walkforward_horizon.py` (10).
+  - Re-ran all 10 existing report writers for all 3 assets (30 reports). Each one's content equals the committed file, with only generated_at, git_commit and git_dirty ignored; each was then restored with `git checkout`.
+- 9.2b, timing in the training image: `python -m ml.evaluation.timing_price_v2` wrote `ml/reports/timing_price_v2.json`. Projected Prophet + LSTM total: 0.58 h (upper) / 0.36 h (mean). No STOP.
+- 9.2c, the runs: `python -m ml.evaluation.run_walkforward_price_v2 --model {ridge,lightgbm,prophet,lstm}`, in that order, in altinvest-ml-train with the repo mounted. It wrote `ml/reports/{btc,eth,sol}/walkforward_price_v2.json`.
+  - Ridge at h = 30 reproduces the 4b MAEs exactly.
+  - Wall time: lightgbm 117 s, prophet 382 s, lstm 611 s (all assets, both horizons).
+  - Result: 0 of 24 (asset x horizon x model) approved. Trial count 48 (4 model types x 2 configs x 3 assets x 2 horizons). Verdict table: `verdict_table` in each report.
+  - LSTM, first run: failed (`window shape cannot be larger than input array shape`). Early BTC/ETH cutoffs give SOL fewer than 60 train rows. Fix: an asset with fewer than `lookback` train rows contributes nothing to that fit (test added). The second run passed (two-attempt rule: 1 fix).
+  - Reports record git_dirty = true (code uncommitted, at c59ad96).
+- New modules:
+  - `ml/evaluation/approval.py` (D44 rank and confirm, strongest baseline)
+  - `ml/evaluation/walkforward_pooled.py` (pooled fits by cutoff date, each asset's b2 respected)
+  - `ml/models/price_v2.py` (Ridge reference, LightGBM, Prophet, RefitEvery)
+  - `ml/models/lstm.py`
+  - `ml/evaluation/run_walkforward_price_v2.py`
+  - `ml/evaluation/timing_price_v2.py`
+  - `ml/models/price.py`: `fit(..., target="fwd_return_30d")`.
+  - Tests: `ml/tests/test_price_v2.py` (11).
+- `python -m pytest ml -q` -> `268 passed` on the host (all training libraries installed). Clean serving venv: `265 passed, 3 skipped` (the tests that need lightgbm, prophet or torch). The 39 snapshot and report hashes are identical.
+
+## Phase 9 step 9.1: what ran (2026-11-03, from repo root)
+
+- Planner answers to the 9.0 questions are folded into D41-D47, edited in place (still uncommitted):
+  - Q1/Q2 (D42): range baselines are the vol_30d and EWMA normal bands. Candidates are the EWMA empirical band (quantiles of r / sigma from fold train rows) and quantile LightGBM. Bounds are log returns; bound price = last close x exp(quantile).
+  - Q3 (D42): the same LightGBM grid for range, risk and direction.
+  - Q4 (D42): direction at h = 30 only, and why.
+  - Q5 (D42, D44): the strongest baseline is the bar. At h = 7 risk, that is persistence vol_7d, vol_30d or EWMA. Baselines are not trials.
+  - Q6 (D45): conditional Prophet-in-serving clause, refit daily.
+  - Q7 (D41): refit cadence. Prophet and LSTM refit every 28 rows at h = 7 and every fold at h = 30; the others refit every fold.
+  - Q8 (D44, D46): the sealed test uses point estimates; an ALERT needs at least 6 scored non-overlapping windows.
+- `ml/config.py`: FORECAST_HORIZONS = (30, 7), EWMA_LAMBDA = 0.94 (D41). HORIZON_DAYS = 30 unchanged.
+- `ml/labels/labels.py`: `fwd_return(close, horizon=30)`, `fwd_vol(close, horizon=30)`, `build_labels(close, horizon=30)`. The columns are fwd_return_{h}d and fwd_vol_{h}d. `fwd_return_30d` and `fwd_vol_30d` are now wrappers. Thresholds and classes still use the 30-day labels only.
+- `ml/features/features.py`: `ewma_vol(close, lam=0.94)` (D41), seeded with vol_30d at row 30, NaN before. It is not a model input: FEATURE_COLUMNS is unchanged.
+- `ml/requirements-train.txt` (new): torch 2.12.0+cpu (CPU index), prophet 1.3.0, cmdstanpy 1.3.0, lightgbm 4.7.0, arch 8.0.0, the dev-machine versions. lightgbm and arch were installed on the host for this step (the dry run showed no change to numpy, pandas or scipy).
+- `ml/Dockerfile.train` (new): serving plus training requirements, git and libgomp1. Evaluation runs with the repo mounted over /app (D40 snapshot). It is not in docker-compose.yml.
+- `ml/tests/test_horizon_labels_ewma.py` (new, 22 tests):
+  - The default horizon is unchanged.
+  - 7-day labels match the hand formula, are NaN only in the last 7 rows, and ignore rows after t+h.
+  - Bad horizons raise.
+  - The EWMA seed and recursion are correct, it is the same on a truncated series, and future prices do not change it.
+  - Bad lambda raises.
+  - Config and the serving path import in a fresh interpreter with prophet, cmdstanpy, torch, lightgbm, arch, onnx and onnxruntime blocked.
+- `ml/README.md`: one paragraph on the training requirements and image.
+- Results:
+  - Host: `python -m pytest ml -q` -> `247 passed` (225 + 22). `python -c "import ml.config"` works.
+  - Clean venv with only ml/requirements.txt (scratchpad, not in the repo): no training library is importable; `import ml.config` works; `247 passed`.
+  - `docker build -f ml/Dockerfile.train -t altinvest-ml-train .` took 6.2 min; image size 2.31 GB. In the image: torch 2.12.0+cpu, prophet 1.3.0, lightgbm 4.7.0, arch 8.0.0, numpy 2.2.6, pandas 2.3.3. `docker run --rm -v "${PWD}:/app" altinvest-ml-train python -m pytest ml -q` -> `247 passed`.
+  - Old (HEAD) vs new labels.py and features.py on the snapshot: 30-day labels, `fwd_*_30d` and `build_features` are exactly equal for btc, eth and sol.
+  - Re-ran run_walkforward_{risk,price,direction} for all 3 assets. Each report's content equals the committed file, with only generated_at, git_commit and git_dirty ignored. Each file was then restored with `git checkout`.
+  - SHA-256 of the 39 files under ml/data/raw and ml/reports/{btc,eth,sol,data}: identical to the hashes taken before step 9.0.
+- Files changed in 9.1: ml/config.py, ml/labels/labels.py, ml/features/features.py, ml/README.md, ml/docs/DECISIONS.md (D41-D47 answers), ml/docs/STATUS.md. New: ml/requirements-train.txt, ml/Dockerfile.train, ml/tests/test_horizon_labels_ewma.py. Nothing outside ml/.
+
+Phase 7 (backend integration, PLAN_NEXT.md C1-C7) DONE (2026-11-02), commit c59ad96 on phase-7-integration. Its follow-ups are still open: section A ML fixes (A0-A7), B1 hand-over, Phase 8 plan (D1); Person B must review the files listed under "Phase 7: files changed outside ml/".
+
+## Phase 9 step 9.0: what ran (2026-11-03, from repo root)
+
+- Precondition: Phase 7 is closed (Phase 7 section below). Fast-forwarded the local phase-7-integration branch to origin (c59ad96), then created phase-9-forecasting from it.
+- Before: `python -m pytest ml -q` -> `225 passed`. SHA-256 of the 39 files under ml/data/raw and ml/reports/{btc,eth,sol,data}, taken before and after the step: identical (docs-only step).
+- ml/docs/DECISIONS.md: appended D41 (horizons 30 and 7, return targets, embargo = step = h, EWMA definition), D42 (candidates and configs), D43 (metrics), D44 (approval and serving rule, sealed test once), D45 (consistency and serving rules), D46 (monitoring rule) and D47 (7-day API field pending Person B; until then 7-day results stay in reports and /debug).
+- ml/docs/PLAN.md: added the Phase 9 row.
+- Open: Person B's answer on a 7-day API field (D47). Planner questions are listed in the 9.0 checkpoint report.
+- Files changed: ml/docs/DECISIONS.md, ml/docs/PLAN.md, ml/docs/STATUS.md. ml/docs/PLAN_FORECAST.md is untracked (the plan, as handed over).
 
 ## Phase 7: what ran (2026-11-02, from repo root)
 
