@@ -1,0 +1,96 @@
+{
+  "generated_at": "2026-11-02T19:13:36Z",
+  "git_commit": "c59ad96da92da993f41e08302686ee22e1c92078",
+  "git_dirty": true,
+  "host": {
+    "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.41",
+    "cpu_count": 16,
+    "torch_threads": 4
+  },
+  "horizons": {
+    "h30": {
+      "prophet_cps005": {
+        "largest_fold_train_rows": 2740,
+        "fit_seconds": 1.3673888640005316,
+        "predict_seconds": 0.007470819000445772,
+        "n_fits": 173,
+        "refit_every_folds": 1,
+        "projected_hours_upper": 0.06606964587754696,
+        "projected_hours_mean": 0.03943801168948972
+      },
+      "prophet_cps05": {
+        "largest_fold_train_rows": 2740,
+        "fit_seconds": 0.7266498309982126,
+        "predict_seconds": 0.009033844999066787,
+        "n_fits": 173,
+        "refit_every_folds": 1,
+        "projected_hours_upper": 0.03535368776320259,
+        "projected_hours_mean": 0.021103172761904924
+      },
+      "lstm_h16": {
+        "largest_fold_pooled_rows": 7392,
+        "fit_seconds": 4.336679100000765,
+        "predict_seconds": 0.0033767999993870035,
+        "epochs": 6,
+        "n_fits": 105,
+        "refit_every_folds": 1,
+        "projected_hours_upper": 0.12658496375000444,
+        "projected_hours_mean": 0.08208027647157123
+      },
+      "lstm_h32": {
+        "largest_fold_pooled_rows": 7392,
+        "fit_seconds": 4.31390486500095,
+        "predict_seconds": 0.0069014469991088845,
+        "epochs": 11,
+        "n_fits": 105,
+        "refit_every_folds": 1,
+        "projected_hours_upper": 0.12602351743333504,
+        "projected_hours_mean": 0.0817162232101809
+      }
+    },
+    "h7": {
+      "prophet_cps005": {
+        "largest_fold_train_rows": 2802,
+        "fit_seconds": 1.1191854610005976,
+        "predict_seconds": 0.012015618998702848,
+        "n_fits": 192,
+        "refit_every_folds": 4,
+        "projected_hours_upper": 0.06033072426662935,
+        "projected_hours_mean": 0.03584828166797688
+      },
+      "prophet_cps05": {
+        "largest_fold_train_rows": 2802,
+        "fit_seconds": 0.9036207559984177,
+        "predict_seconds": 0.010071677002997603,
+        "n_fits": 192,
+        "refit_every_folds": 4,
+        "projected_hours_upper": 0.04873026309340882,
+        "projected_hours_mean": 0.028955332765554016
+      },
+      "lstm_h16": {
+        "largest_fold_pooled_rows": 7506,
+        "fit_seconds": 0.9680310929979896,
+        "predict_seconds": 0.002769130001979647,
+        "epochs": 6,
+        "n_fits": 117,
+        "refit_every_folds": 4,
+        "projected_hours_upper": 0.031551007247499,
+        "projected_hours_mean": 0.020584344723046686
+      },
+      "lstm_h32": {
+        "largest_fold_pooled_rows": 7506,
+        "fit_seconds": 2.5389511729990772,
+        "predict_seconds": 0.004024084999400657,
+        "epochs": 7,
+        "n_fits": 117,
+        "refit_every_folds": 4,
+        "projected_hours_upper": 0.08264669588495054,
+        "projected_hours_mean": 0.05391992924255942
+      }
+    }
+  },
+  "projected_total_prophet_and_lstm": {
+    "projected_hours_upper": 0.5772905053165768,
+    "projected_hours_mean": 0.3636455725322838
+  }
+}
