@@ -1,0 +1,303 @@
+{
+  "part": "direction",
+  "asset": "sol",
+  "horizon": 30,
+  "trial_count": {
+    "formula": "configs x assets x 1 horizon (h = 30 only, D42)",
+    "per_model": {
+      "logreg": 6,
+      "lightgbm": 6
+    },
+    "total": 12
+  },
+  "verdict_table": [
+    {
+      "part": "direction",
+      "asset": "sol",
+      "horizon": 30,
+      "model": "logreg",
+      "best_config": "logreg_c0.1",
+      "model_log_loss": 1.048813,
+      "baseline": "prior",
+      "baseline_log_loss": 1.055915,
+      "paired_ci": {
+        "estimate": 0.007102,
+        "low": -0.026359,
+        "high": 0.037926,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "approved": false,
+      "backtest_mean_window_return": 0.038024,
+      "buy_and_hold_mean_window_return": 0.088804,
+      "always_hold_mean_window_return": 0.0,
+      "backtest_beats": {
+        "buy_and_hold": {
+          "point": false,
+          "ci_above_0": false
+        },
+        "always_hold": {
+          "point": true,
+          "ci_above_0": false
+        }
+      },
+      "passes_point": false,
+      "passes_ci": false,
+      "trial_count": 6
+    },
+    {
+      "part": "direction",
+      "asset": "sol",
+      "horizon": 30,
+      "model": "lightgbm",
+      "best_config": "lgbm_clf_l7",
+      "model_log_loss": 1.067065,
+      "baseline": "prior",
+      "baseline_log_loss": 1.055915,
+      "paired_ci": {
+        "estimate": -0.011149,
+        "low": -0.137937,
+        "high": 0.120292,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "approved": false,
+      "backtest_mean_window_return": 0.034441,
+      "buy_and_hold_mean_window_return": 0.088804,
+      "always_hold_mean_window_return": 0.0,
+      "backtest_beats": {
+        "buy_and_hold": {
+          "point": false,
+          "ci_above_0": false
+        },
+        "always_hold": {
+          "point": true,
+          "ci_above_0": false
+        }
+      },
+      "passes_point": false,
+      "passes_ci": false,
+      "trial_count": 6
+    }
+  ],
+  "metric": "multiclass log loss (lower is better) vs the prior",
+  "rule": "D31/D49: paired 95% CI (block 30) of logloss(prior) - logloss(top) on the last 40% excludes 0 with a positive estimate; passes also needs the backtest to beat always-HOLD and buy-and-hold",
+  "declared": {
+    "logreg": {
+      "logreg_c0.1": "LogisticRegression(C=0.1, max_iter=1000)",
+      "logreg_c1": "LogisticRegression(max_iter=1000)"
+    },
+    "lightgbm": {
+      "lgbm_clf_l7": {
+        "n_estimators": 200,
+        "learning_rate": 0.03,
+        "min_child_samples": 50,
+        "random_state": 0,
+        "n_jobs": 1,
+        "deterministic": true,
+        "force_row_wise": true,
+        "verbose": -1,
+        "num_leaves": 7,
+        "objective": "multiclass"
+      },
+      "lgbm_clf_l15": {
+        "n_estimators": 200,
+        "learning_rate": 0.03,
+        "min_child_samples": 50,
+        "random_state": 0,
+        "n_jobs": 1,
+        "deterministic": true,
+        "force_row_wise": true,
+        "verbose": -1,
+        "num_leaves": 15,
+        "objective": "multiclass"
+      }
+    },
+    "baseline": "prior: train-fold class frequencies",
+    "eps": 1e-06,
+    "target": "direction class (DOWN/FLAT/UP), each fold's own D19 thresholds",
+    "horizon": 30
+  },
+  "models": {
+    "logreg": {
+      "ranking_first_60pct": {
+        "n_folds": 22,
+        "n_pooled": 660,
+        "n_effective": 22.0,
+        "date_range": [
+          "2022-10-10",
+          "2024-07-30"
+        ],
+        "order": [
+          "logreg_c0.1",
+          "logreg_c1"
+        ],
+        "mean_loss": {
+          "logreg_c0.1": 1.104681,
+          "logreg_c1": 1.117031,
+          "prior": 1.054781
+        }
+      },
+      "confirmation_last_40pct": {
+        "n_folds": 15,
+        "n_pooled": 444,
+        "n_effective": 14.8,
+        "date_range": [
+          "2024-07-31",
+          "2025-10-17"
+        ],
+        "mean_loss": {
+          "logreg_c0.1": 1.048813,
+          "logreg_c1": 1.048629,
+          "prior": 1.055915
+        }
+      },
+      "verdict": {
+        "top_config": "logreg_c0.1",
+        "baseline": "prior",
+        "model_loss": 1.048813,
+        "baseline_loss": 1.055915,
+        "paired_diff_baseline_minus_model": {
+          "estimate": 0.007102,
+          "low": -0.026359,
+          "high": 0.037926,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "approved": false,
+        "backtest_beats": {
+          "buy_and_hold": {
+            "point": false,
+            "ci_above_0": false
+          },
+          "always_hold": {
+            "point": true,
+            "ci_above_0": false
+          }
+        },
+        "passes_point": false,
+        "passes_ci": false
+      },
+      "all_folds_mean_log_loss": {
+        "logreg_c0.1": 1.082212,
+        "logreg_c1": 1.089521,
+        "prior": 1.055237
+      }
+    },
+    "lightgbm": {
+      "ranking_first_60pct": {
+        "n_folds": 22,
+        "n_pooled": 660,
+        "n_effective": 22.0,
+        "date_range": [
+          "2022-10-10",
+          "2024-07-30"
+        ],
+        "order": [
+          "lgbm_clf_l7",
+          "lgbm_clf_l15"
+        ],
+        "mean_loss": {
+          "lgbm_clf_l7": 1.442221,
+          "lgbm_clf_l15": 1.545349,
+          "prior": 1.054781
+        }
+      },
+      "confirmation_last_40pct": {
+        "n_folds": 15,
+        "n_pooled": 444,
+        "n_effective": 14.8,
+        "date_range": [
+          "2024-07-31",
+          "2025-10-17"
+        ],
+        "mean_loss": {
+          "lgbm_clf_l7": 1.067065,
+          "lgbm_clf_l15": 1.140827,
+          "prior": 1.055915
+        }
+      },
+      "verdict": {
+        "top_config": "lgbm_clf_l7",
+        "baseline": "prior",
+        "model_loss": 1.067065,
+        "baseline_loss": 1.055915,
+        "paired_diff_baseline_minus_model": {
+          "estimate": -0.011149,
+          "low": -0.137937,
+          "high": 0.120292,
+          "level": 0.95,
+          "block_size": 30,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "approved": false,
+        "backtest_beats": {
+          "buy_and_hold": {
+            "point": false,
+            "ci_above_0": false
+          },
+          "always_hold": {
+            "point": true,
+            "ci_above_0": false
+          }
+        },
+        "passes_point": false,
+        "passes_ci": false
+      },
+      "all_folds_mean_log_loss": {
+        "lgbm_clf_l7": 1.291343,
+        "lgbm_clf_l15": 1.382661,
+        "prior": 1.055237
+      }
+    }
+  },
+  "convergence_warnings": {
+    "logreg_c0.1": {
+      "folds_with_warning": 0,
+      "n_folds": 37
+    },
+    "logreg_c1": {
+      "folds_with_warning": 0,
+      "n_folds": 37
+    },
+    "lgbm_clf_l7": {
+      "folds_with_warning": 0,
+      "n_folds": 37
+    },
+    "lgbm_clf_l15": {
+      "folds_with_warning": 0,
+      "n_folds": 37
+    }
+  },
+  "metadata": {
+    "asset": "sol",
+    "generated_at": "2026-11-03T11:05:33Z",
+    "git_commit": "3ff7ad4947de17d083417efa999fe4a00e55747f",
+    "git_dirty": false,
+    "n_feature_rows": 2229,
+    "b2_test_start_row": 1894,
+    "rows_built": [
+      0,
+      1894
+    ],
+    "data_first_date": "2020-09-10",
+    "last_date_built": "2025-11-16",
+    "sealed_test_first_date": "2025-11-17",
+    "pooled_rows": [
+      760,
+      1864
+    ],
+    "max_label_row_reached": 1893,
+    "min_train_rows": 730,
+    "step_rows": 30,
+    "horizon_days": 30,
+    "embargo_days": 30
+  }
+}
