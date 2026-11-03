@@ -22,7 +22,7 @@
           "approved": false,
           "rule": "D25: paired 95% CI of the Spearman difference vs persistence on the last 40% excludes 0 and the estimate is positive",
           "served": false,
-          "served_reason": "not served: persistence vol_30d is served instead (D27, D36)",
+          "served_reason": "not served: EWMA volatility (Phase 9) is served instead (D51)",
           "source": "ml/reports/btc/walkforward_risk.json"
         },
         "price": {
@@ -129,7 +129,426 @@
         "reference_config": "logreg_c0.1",
         "source": "ml/reports/btc/backtest.json"
       },
-      "power_note": "Approximate. A true difference equal to the half-width is detected about 50% of the time; about 80% power needs roughly 1.43x the half-width (normal approximation). A negative verdict means 'no demonstrated gain', not 'no skill' (D29)."
+      "power_note": "Approximate. A true difference equal to the half-width is detected about 50% of the time; about 80% power needs roughly 1.43x the half-width (normal approximation). A negative verdict means 'no demonstrated gain', not 'no skill' (D29).",
+      "phase9": [
+        {
+          "part": "price",
+          "horizon": 30,
+          "model": "ridge",
+          "best_config": "ridge_all_a1000",
+          "metric": "MAE of h-day return",
+          "model_value": 0.110754,
+          "baseline": "last_value",
+          "baseline_value": 0.111809,
+          "gain_ci95": {
+            "estimate": 0.001055,
+            "low": -0.00794,
+            "high": 0.009353
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/btc/walkforward_price_v2.json"
+        },
+        {
+          "part": "price",
+          "horizon": 7,
+          "model": "ridge",
+          "best_config": "ridge_all_a1000",
+          "metric": "MAE of h-day return",
+          "model_value": 0.048975,
+          "baseline": "last_value",
+          "baseline_value": 0.048815,
+          "gain_ci95": {
+            "estimate": -0.00016,
+            "low": -0.00125,
+            "high": 0.001028
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/btc/walkforward_price_v2.json"
+        },
+        {
+          "part": "price",
+          "horizon": 30,
+          "model": "lightgbm",
+          "best_config": "lgbm_l7",
+          "metric": "MAE of h-day return",
+          "model_value": 0.121769,
+          "baseline": "last_value",
+          "baseline_value": 0.111809,
+          "gain_ci95": {
+            "estimate": -0.00996,
+            "low": -0.02184,
+            "high": 0.00235
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/btc/walkforward_price_v2.json"
+        },
+        {
+          "part": "price",
+          "horizon": 7,
+          "model": "lightgbm",
+          "best_config": "lgbm_l7",
+          "metric": "MAE of h-day return",
+          "model_value": 0.051519,
+          "baseline": "last_value",
+          "baseline_value": 0.048815,
+          "gain_ci95": {
+            "estimate": -0.002704,
+            "low": -0.004791,
+            "high": -0.000339
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/btc/walkforward_price_v2.json"
+        },
+        {
+          "part": "price",
+          "horizon": 30,
+          "model": "prophet (9.2 protocol, superseded)",
+          "best_config": "prophet_cps05",
+          "metric": "MAE of h-day return",
+          "model_value": 0.303767,
+          "baseline": "last_value",
+          "baseline_value": 0.111809,
+          "gain_ci95": {
+            "estimate": -0.191958,
+            "low": -0.276038,
+            "high": -0.111303
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/btc/walkforward_price_v2.json"
+        },
+        {
+          "part": "price",
+          "horizon": 7,
+          "model": "prophet (9.2 protocol, superseded)",
+          "best_config": "prophet_cps05",
+          "metric": "MAE of h-day return",
+          "model_value": 0.216727,
+          "baseline": "last_value",
+          "baseline_value": 0.048815,
+          "gain_ci95": {
+            "estimate": -0.167912,
+            "low": -0.195255,
+            "high": -0.138006
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/btc/walkforward_price_v2.json"
+        },
+        {
+          "part": "price",
+          "horizon": 30,
+          "model": "prophet",
+          "best_config": "prophet_cps05",
+          "metric": "MAE of h-day return",
+          "model_value": 0.112963,
+          "baseline": "last_value",
+          "baseline_value": 0.111809,
+          "gain_ci95": {
+            "estimate": -0.001154,
+            "low": -0.016557,
+            "high": 0.013028
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/btc/walkforward_price_v2.json"
+        },
+        {
+          "part": "price",
+          "horizon": 7,
+          "model": "prophet",
+          "best_config": "prophet_cps05",
+          "metric": "MAE of h-day return",
+          "model_value": 0.048585,
+          "baseline": "last_value",
+          "baseline_value": 0.048815,
+          "gain_ci95": {
+            "estimate": 0.00023,
+            "low": -0.001538,
+            "high": 0.00185
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/btc/walkforward_price_v2.json"
+        },
+        {
+          "part": "price",
+          "horizon": 30,
+          "model": "lstm",
+          "best_config": "lstm_h16",
+          "metric": "MAE of h-day return",
+          "model_value": 0.117928,
+          "baseline": "last_value",
+          "baseline_value": 0.111809,
+          "gain_ci95": {
+            "estimate": -0.006119,
+            "low": -0.015604,
+            "high": 0.003628
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/btc/walkforward_price_v2.json"
+        },
+        {
+          "part": "price",
+          "horizon": 7,
+          "model": "lstm",
+          "best_config": "lstm_h32",
+          "metric": "MAE of h-day return",
+          "model_value": 0.049948,
+          "baseline": "last_value",
+          "baseline_value": 0.048815,
+          "gain_ci95": {
+            "estimate": -0.001133,
+            "low": -0.002823,
+            "high": 0.0007
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/btc/walkforward_price_v2.json"
+        },
+        {
+          "part": "range",
+          "horizon": 30,
+          "model": "ewma_band",
+          "best_config": "ewma_band",
+          "metric": "interval score",
+          "model_value": 0.576765,
+          "baseline": "vol30_band",
+          "baseline_value": 0.577767,
+          "gain_ci95": {
+            "estimate": 0.001001,
+            "low": -0.010777,
+            "high": 0.01074
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/btc/walkforward_range.json"
+        },
+        {
+          "part": "range",
+          "horizon": 30,
+          "model": "qlgbm",
+          "best_config": "qlgbm_l7",
+          "metric": "interval score",
+          "model_value": 0.537953,
+          "baseline": "vol30_band",
+          "baseline_value": 0.577767,
+          "gain_ci95": {
+            "estimate": 0.039813,
+            "low": -0.062087,
+            "high": 0.179889
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/btc/walkforward_range.json"
+        },
+        {
+          "part": "range",
+          "horizon": 7,
+          "model": "ewma_band",
+          "best_config": "ewma_band",
+          "metric": "interval score",
+          "model_value": 0.253224,
+          "baseline": "vol30_band",
+          "baseline_value": 0.255983,
+          "gain_ci95": {
+            "estimate": 0.002759,
+            "low": -0.000262,
+            "high": 0.006262
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/btc/walkforward_range.json"
+        },
+        {
+          "part": "range",
+          "horizon": 7,
+          "model": "qlgbm",
+          "best_config": "qlgbm_l7",
+          "metric": "interval score",
+          "model_value": 0.259379,
+          "baseline": "vol30_band",
+          "baseline_value": 0.255983,
+          "gain_ci95": {
+            "estimate": -0.003396,
+            "low": -0.019163,
+            "high": 0.016195
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/btc/walkforward_range.json"
+        },
+        {
+          "part": "risk",
+          "horizon": 30,
+          "model": "ewma",
+          "best_config": "ewma",
+          "metric": "QLIKE",
+          "model_value": 0.253736,
+          "baseline": "persistence_vol30",
+          "baseline_value": 0.307274,
+          "gain_ci95": {
+            "estimate": 0.053537,
+            "low": 0.010648,
+            "high": 0.110228
+          },
+          "approved": true,
+          "served": true,
+          "source": "ml/reports/btc/walkforward_risk_v2.json"
+        },
+        {
+          "part": "risk",
+          "horizon": 30,
+          "model": "garch",
+          "best_config": "garch_t",
+          "metric": "QLIKE",
+          "model_value": 0.248622,
+          "baseline": "persistence_vol30",
+          "baseline_value": 0.307274,
+          "gain_ci95": {
+            "estimate": 0.058652,
+            "low": -0.05512,
+            "high": 0.190759
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/btc/walkforward_risk_v2.json"
+        },
+        {
+          "part": "risk",
+          "horizon": 7,
+          "model": "ewma",
+          "best_config": "ewma",
+          "metric": "QLIKE",
+          "model_value": 0.446323,
+          "baseline": "persistence_vol30",
+          "baseline_value": 0.50793,
+          "gain_ci95": {
+            "estimate": 0.061607,
+            "low": 0.022109,
+            "high": 0.110103
+          },
+          "approved": true,
+          "served": false,
+          "source": "ml/reports/btc/walkforward_risk_v2.json"
+        },
+        {
+          "part": "risk",
+          "horizon": 7,
+          "model": "garch",
+          "best_config": "garch_t",
+          "metric": "QLIKE",
+          "model_value": 0.429947,
+          "baseline": "persistence_vol30",
+          "baseline_value": 0.50793,
+          "gain_ci95": {
+            "estimate": 0.077983,
+            "low": -0.008643,
+            "high": 0.183325
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/btc/walkforward_risk_v2.json"
+        },
+        {
+          "part": "direction",
+          "horizon": 30,
+          "model": "logreg",
+          "best_config": "logreg_c0.1",
+          "metric": "log loss",
+          "model_value": 1.030682,
+          "baseline": "prior",
+          "baseline_value": 1.017508,
+          "gain_ci95": {
+            "estimate": -0.013174,
+            "low": -0.045709,
+            "high": 0.017069
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/btc/walkforward_direction_v2.json"
+        },
+        {
+          "part": "direction",
+          "horizon": 30,
+          "model": "lightgbm",
+          "best_config": "lgbm_clf_l7",
+          "metric": "log loss",
+          "model_value": 1.100835,
+          "baseline": "prior",
+          "baseline_value": 1.017508,
+          "gain_ci95": {
+            "estimate": -0.083327,
+            "low": -0.163497,
+            "high": 0.005805
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/btc/walkforward_direction_v2.json"
+        }
+      ],
+      "sealed_test": {
+        "risk": {
+          "h30": {
+            "qlike_ewma": 0.409288,
+            "qlike_persistence": 0.500811,
+            "not_worse": true,
+            "gain_ci95": {
+              "estimate": 0.091524,
+              "low": -0.001958,
+              "high": 0.243873
+            }
+          },
+          "h7": {
+            "qlike_ewma": 0.469943,
+            "qlike_persistence": 0.533363,
+            "not_worse": true,
+            "gain_ci95": {
+              "estimate": 0.063421,
+              "low": 0.01561,
+              "high": 0.119461
+            }
+          }
+        },
+        "range_h30": {
+          "coverage": 0.747863,
+          "lower_tail_miss": 0.17094,
+          "upper_tail_miss": 0.081197
+        },
+        "decision": {
+          "risk": {
+            "serve_ewma_for_all_assets": true,
+            "not_worse_h30": {
+              "btc": true,
+              "eth": true,
+              "sol": true
+            },
+            "otherwise": "persistence vol_30d stays (D27, D36)"
+          },
+          "range": {
+            "serve_vol30_band_h30": {
+              "btc": false,
+              "eth": false,
+              "sol": false
+            },
+            "predicted_price": "null (D35)"
+          },
+          "price": {
+            "serve": false,
+            "reason": "0 of 60 approved (D35 stays)"
+          },
+          "direction": {
+            "serve": false,
+            "reason": "nothing passes; D33 stays; ETH logreg closed (D50)"
+          }
+        },
+        "source": "ml/reports/btc/test_final.json"
+      }
     },
     "eth": {
       "verdict": "ETH: direction beat its baseline in walk-forward but is not served; risk and price did not beat the baseline; the served signal made 0 trades over 68 windows (+0.00% per 30-day window vs buy-and-hold +7.55%).",
@@ -153,7 +572,7 @@
           "approved": false,
           "rule": "D25: paired 95% CI of the Spearman difference vs persistence on the last 40% excludes 0 and the estimate is positive",
           "served": false,
-          "served_reason": "not served: persistence vol_30d is served instead (D27, D36)",
+          "served_reason": "not served: EWMA volatility (Phase 9) is served instead (D51)",
           "source": "ml/reports/eth/walkforward_risk.json"
         },
         "price": {
@@ -260,7 +679,426 @@
         "reference_config": "logreg_c0.1",
         "source": "ml/reports/eth/backtest.json"
       },
-      "power_note": "Approximate. A true difference equal to the half-width is detected about 50% of the time; about 80% power needs roughly 1.43x the half-width (normal approximation). A negative verdict means 'no demonstrated gain', not 'no skill' (D29)."
+      "power_note": "Approximate. A true difference equal to the half-width is detected about 50% of the time; about 80% power needs roughly 1.43x the half-width (normal approximation). A negative verdict means 'no demonstrated gain', not 'no skill' (D29).",
+      "phase9": [
+        {
+          "part": "price",
+          "horizon": 30,
+          "model": "ridge",
+          "best_config": "ridge_all_a1000",
+          "metric": "MAE of h-day return",
+          "model_value": 0.138177,
+          "baseline": "last_value",
+          "baseline_value": 0.136481,
+          "gain_ci95": {
+            "estimate": -0.001696,
+            "low": -0.008084,
+            "high": 0.004731
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/eth/walkforward_price_v2.json"
+        },
+        {
+          "part": "price",
+          "horizon": 7,
+          "model": "ridge",
+          "best_config": "ridge_all_a1000",
+          "metric": "MAE of h-day return",
+          "model_value": 0.063302,
+          "baseline": "last_value",
+          "baseline_value": 0.061589,
+          "gain_ci95": {
+            "estimate": -0.001713,
+            "low": -0.002856,
+            "high": -0.000462
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/eth/walkforward_price_v2.json"
+        },
+        {
+          "part": "price",
+          "horizon": 30,
+          "model": "lightgbm",
+          "best_config": "lgbm_l7",
+          "metric": "MAE of h-day return",
+          "model_value": 0.156106,
+          "baseline": "last_value",
+          "baseline_value": 0.136481,
+          "gain_ci95": {
+            "estimate": -0.019625,
+            "low": -0.038339,
+            "high": -0.001691
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/eth/walkforward_price_v2.json"
+        },
+        {
+          "part": "price",
+          "horizon": 7,
+          "model": "lightgbm",
+          "best_config": "lgbm_l7",
+          "metric": "MAE of h-day return",
+          "model_value": 0.067941,
+          "baseline": "last_value",
+          "baseline_value": 0.061589,
+          "gain_ci95": {
+            "estimate": -0.006352,
+            "low": -0.01033,
+            "high": -0.002994
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/eth/walkforward_price_v2.json"
+        },
+        {
+          "part": "price",
+          "horizon": 30,
+          "model": "prophet (9.2 protocol, superseded)",
+          "best_config": "prophet_cps05",
+          "metric": "MAE of h-day return",
+          "model_value": 0.346848,
+          "baseline": "last_value",
+          "baseline_value": 0.136481,
+          "gain_ci95": {
+            "estimate": -0.210367,
+            "low": -0.305499,
+            "high": -0.116628
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/eth/walkforward_price_v2.json"
+        },
+        {
+          "part": "price",
+          "horizon": 7,
+          "model": "prophet (9.2 protocol, superseded)",
+          "best_config": "prophet_cps05",
+          "metric": "MAE of h-day return",
+          "model_value": 0.263437,
+          "baseline": "last_value",
+          "baseline_value": 0.061589,
+          "gain_ci95": {
+            "estimate": -0.201848,
+            "low": -0.234553,
+            "high": -0.170639
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/eth/walkforward_price_v2.json"
+        },
+        {
+          "part": "price",
+          "horizon": 30,
+          "model": "prophet",
+          "best_config": "prophet_cps05",
+          "metric": "MAE of h-day return",
+          "model_value": 0.14716,
+          "baseline": "last_value",
+          "baseline_value": 0.136481,
+          "gain_ci95": {
+            "estimate": -0.010679,
+            "low": -0.021682,
+            "high": -5.2e-05
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/eth/walkforward_price_v2.json"
+        },
+        {
+          "part": "price",
+          "horizon": 7,
+          "model": "prophet",
+          "best_config": "prophet_cps05",
+          "metric": "MAE of h-day return",
+          "model_value": 0.062343,
+          "baseline": "last_value",
+          "baseline_value": 0.061589,
+          "gain_ci95": {
+            "estimate": -0.000754,
+            "low": -0.00194,
+            "high": 0.000309
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/eth/walkforward_price_v2.json"
+        },
+        {
+          "part": "price",
+          "horizon": 30,
+          "model": "lstm",
+          "best_config": "lstm_h16",
+          "metric": "MAE of h-day return",
+          "model_value": 0.142126,
+          "baseline": "last_value",
+          "baseline_value": 0.136481,
+          "gain_ci95": {
+            "estimate": -0.005645,
+            "low": -0.013936,
+            "high": 0.002133
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/eth/walkforward_price_v2.json"
+        },
+        {
+          "part": "price",
+          "horizon": 7,
+          "model": "lstm",
+          "best_config": "lstm_h32",
+          "metric": "MAE of h-day return",
+          "model_value": 0.063081,
+          "baseline": "last_value",
+          "baseline_value": 0.061589,
+          "gain_ci95": {
+            "estimate": -0.001493,
+            "low": -0.002919,
+            "high": 0.000188
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/eth/walkforward_price_v2.json"
+        },
+        {
+          "part": "range",
+          "horizon": 30,
+          "model": "ewma_band",
+          "best_config": "ewma_band",
+          "metric": "interval score",
+          "model_value": 0.637298,
+          "baseline": "vol30_band",
+          "baseline_value": 0.631353,
+          "gain_ci95": {
+            "estimate": -0.005945,
+            "low": -0.01412,
+            "high": 0.011848
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/eth/walkforward_range.json"
+        },
+        {
+          "part": "range",
+          "horizon": 30,
+          "model": "qlgbm",
+          "best_config": "qlgbm_l7",
+          "metric": "interval score",
+          "model_value": 0.774066,
+          "baseline": "vol30_band",
+          "baseline_value": 0.631353,
+          "gain_ci95": {
+            "estimate": -0.142713,
+            "low": -0.225051,
+            "high": -0.038769
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/eth/walkforward_range.json"
+        },
+        {
+          "part": "range",
+          "horizon": 7,
+          "model": "ewma_band",
+          "best_config": "ewma_band",
+          "metric": "interval score",
+          "model_value": 0.320886,
+          "baseline": "vol30_band",
+          "baseline_value": 0.323239,
+          "gain_ci95": {
+            "estimate": 0.002353,
+            "low": -0.00426,
+            "high": 0.008333
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/eth/walkforward_range.json"
+        },
+        {
+          "part": "range",
+          "horizon": 7,
+          "model": "qlgbm",
+          "best_config": "qlgbm_l7",
+          "metric": "interval score",
+          "model_value": 0.335723,
+          "baseline": "vol30_band",
+          "baseline_value": 0.323239,
+          "gain_ci95": {
+            "estimate": -0.012484,
+            "low": -0.032699,
+            "high": 0.008889
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/eth/walkforward_range.json"
+        },
+        {
+          "part": "risk",
+          "horizon": 30,
+          "model": "ewma",
+          "best_config": "ewma",
+          "metric": "QLIKE",
+          "model_value": 0.20752,
+          "baseline": "persistence_vol30",
+          "baseline_value": 0.264052,
+          "gain_ci95": {
+            "estimate": 0.056532,
+            "low": 0.00962,
+            "high": 0.126096
+          },
+          "approved": true,
+          "served": true,
+          "source": "ml/reports/eth/walkforward_risk_v2.json"
+        },
+        {
+          "part": "risk",
+          "horizon": 30,
+          "model": "garch",
+          "best_config": "garch_t",
+          "metric": "QLIKE",
+          "model_value": 0.4124,
+          "baseline": "persistence_vol30",
+          "baseline_value": 0.264052,
+          "gain_ci95": {
+            "estimate": -0.148348,
+            "low": -0.303868,
+            "high": 0.043181
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/eth/walkforward_risk_v2.json"
+        },
+        {
+          "part": "risk",
+          "horizon": 7,
+          "model": "ewma",
+          "best_config": "ewma",
+          "metric": "QLIKE",
+          "model_value": 0.487519,
+          "baseline": "persistence_vol30",
+          "baseline_value": 0.550372,
+          "gain_ci95": {
+            "estimate": 0.062853,
+            "low": 0.007768,
+            "high": 0.13088
+          },
+          "approved": true,
+          "served": false,
+          "source": "ml/reports/eth/walkforward_risk_v2.json"
+        },
+        {
+          "part": "risk",
+          "horizon": 7,
+          "model": "garch",
+          "best_config": "garch_t",
+          "metric": "QLIKE",
+          "model_value": 0.551815,
+          "baseline": "persistence_vol30",
+          "baseline_value": 0.550372,
+          "gain_ci95": {
+            "estimate": -0.001443,
+            "low": -0.121007,
+            "high": 0.122625
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/eth/walkforward_risk_v2.json"
+        },
+        {
+          "part": "direction",
+          "horizon": 30,
+          "model": "logreg",
+          "best_config": "logreg_c0.1",
+          "metric": "log loss",
+          "model_value": 0.995226,
+          "baseline": "prior",
+          "baseline_value": 1.03113,
+          "gain_ci95": {
+            "estimate": 0.035904,
+            "low": 0.003531,
+            "high": 0.060357
+          },
+          "approved": true,
+          "served": false,
+          "source": "ml/reports/eth/walkforward_direction_v2.json"
+        },
+        {
+          "part": "direction",
+          "horizon": 30,
+          "model": "lightgbm",
+          "best_config": "lgbm_clf_l7",
+          "metric": "log loss",
+          "model_value": 1.063114,
+          "baseline": "prior",
+          "baseline_value": 1.03113,
+          "gain_ci95": {
+            "estimate": -0.031984,
+            "low": -0.140914,
+            "high": 0.10546
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/eth/walkforward_direction_v2.json"
+        }
+      ],
+      "sealed_test": {
+        "risk": {
+          "h30": {
+            "qlike_ewma": 0.354467,
+            "qlike_persistence": 0.456904,
+            "not_worse": true,
+            "gain_ci95": {
+              "estimate": 0.102437,
+              "low": 0.019441,
+              "high": 0.194816
+            }
+          },
+          "h7": {
+            "qlike_ewma": 0.604658,
+            "qlike_persistence": 0.679931,
+            "not_worse": true,
+            "gain_ci95": {
+              "estimate": 0.075272,
+              "low": 0.015673,
+              "high": 0.153099
+            }
+          }
+        },
+        "range_h30": {
+          "coverage": 0.698718,
+          "lower_tail_miss": 0.15812,
+          "upper_tail_miss": 0.143162
+        },
+        "decision": {
+          "risk": {
+            "serve_ewma_for_all_assets": true,
+            "not_worse_h30": {
+              "btc": true,
+              "eth": true,
+              "sol": true
+            },
+            "otherwise": "persistence vol_30d stays (D27, D36)"
+          },
+          "range": {
+            "serve_vol30_band_h30": {
+              "btc": false,
+              "eth": false,
+              "sol": false
+            },
+            "predicted_price": "null (D35)"
+          },
+          "price": {
+            "serve": false,
+            "reason": "0 of 60 approved (D35 stays)"
+          },
+          "direction": {
+            "serve": false,
+            "reason": "nothing passes; D33 stays; ETH logreg closed (D50)"
+          }
+        },
+        "source": "ml/reports/eth/test_final.json"
+      }
     },
     "sol": {
       "verdict": "SOL: risk, price and direction did not beat the baseline; the served signal made 0 trades over 37 windows (+0.00% per 30-day window vs buy-and-hold +8.88%).",
@@ -284,7 +1122,7 @@
           "approved": false,
           "rule": "D25: paired 95% CI of the Spearman difference vs persistence on the last 40% excludes 0 and the estimate is positive",
           "served": false,
-          "served_reason": "not served: persistence vol_30d is served instead (D27, D36)",
+          "served_reason": "not served: EWMA volatility (Phase 9) is served instead (D51)",
           "source": "ml/reports/sol/walkforward_risk.json"
         },
         "price": {
@@ -391,17 +1229,429 @@
         "reference_config": "logreg_c0.1",
         "source": "ml/reports/sol/backtest.json"
       },
-      "power_note": "Approximate. A true difference equal to the half-width is detected about 50% of the time; about 80% power needs roughly 1.43x the half-width (normal approximation). A negative verdict means 'no demonstrated gain', not 'no skill' (D29)."
+      "power_note": "Approximate. A true difference equal to the half-width is detected about 50% of the time; about 80% power needs roughly 1.43x the half-width (normal approximation). A negative verdict means 'no demonstrated gain', not 'no skill' (D29).",
+      "phase9": [
+        {
+          "part": "price",
+          "horizon": 30,
+          "model": "ridge",
+          "best_config": "ridge_all_a1000",
+          "metric": "MAE of h-day return",
+          "model_value": 0.183001,
+          "baseline": "last_value",
+          "baseline_value": 0.178624,
+          "gain_ci95": {
+            "estimate": -0.004377,
+            "low": -0.023187,
+            "high": 0.020063
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/sol/walkforward_price_v2.json"
+        },
+        {
+          "part": "price",
+          "horizon": 7,
+          "model": "ridge",
+          "best_config": "ridge_all_a1000",
+          "metric": "MAE of h-day return",
+          "model_value": 0.089023,
+          "baseline": "last_value",
+          "baseline_value": 0.086594,
+          "gain_ci95": {
+            "estimate": -0.00243,
+            "low": -0.005578,
+            "high": 0.000558
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/sol/walkforward_price_v2.json"
+        },
+        {
+          "part": "price",
+          "horizon": 30,
+          "model": "lightgbm",
+          "best_config": "lgbm_l7",
+          "metric": "MAE of h-day return",
+          "model_value": 0.199025,
+          "baseline": "last_value",
+          "baseline_value": 0.178624,
+          "gain_ci95": {
+            "estimate": -0.020401,
+            "low": -0.057867,
+            "high": 0.009385
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/sol/walkforward_price_v2.json"
+        },
+        {
+          "part": "price",
+          "horizon": 7,
+          "model": "lightgbm",
+          "best_config": "lgbm_l7",
+          "metric": "MAE of h-day return",
+          "model_value": 0.095607,
+          "baseline": "last_value",
+          "baseline_value": 0.086594,
+          "gain_ci95": {
+            "estimate": -0.009013,
+            "low": -0.015278,
+            "high": -0.004301
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/sol/walkforward_price_v2.json"
+        },
+        {
+          "part": "price",
+          "horizon": 30,
+          "model": "prophet (9.2 protocol, superseded)",
+          "best_config": "prophet_cps005",
+          "metric": "MAE of h-day return",
+          "model_value": 0.369348,
+          "baseline": "last_value",
+          "baseline_value": 0.178624,
+          "gain_ci95": {
+            "estimate": -0.190724,
+            "low": -0.332124,
+            "high": -0.032565
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/sol/walkforward_price_v2.json"
+        },
+        {
+          "part": "price",
+          "horizon": 7,
+          "model": "prophet (9.2 protocol, superseded)",
+          "best_config": "prophet_cps005",
+          "metric": "MAE of h-day return",
+          "model_value": 0.258764,
+          "baseline": "last_value",
+          "baseline_value": 0.086594,
+          "gain_ci95": {
+            "estimate": -0.17217,
+            "low": -0.225871,
+            "high": -0.116707
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/sol/walkforward_price_v2.json"
+        },
+        {
+          "part": "price",
+          "horizon": 30,
+          "model": "prophet",
+          "best_config": "prophet_cps005",
+          "metric": "MAE of h-day return",
+          "model_value": 0.183238,
+          "baseline": "last_value",
+          "baseline_value": 0.178624,
+          "gain_ci95": {
+            "estimate": -0.004614,
+            "low": -0.021022,
+            "high": 0.024237
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/sol/walkforward_price_v2.json"
+        },
+        {
+          "part": "price",
+          "horizon": 7,
+          "model": "prophet",
+          "best_config": "prophet_cps005",
+          "metric": "MAE of h-day return",
+          "model_value": 0.087514,
+          "baseline": "last_value",
+          "baseline_value": 0.086594,
+          "gain_ci95": {
+            "estimate": -0.00092,
+            "low": -0.002926,
+            "high": 0.001779
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/sol/walkforward_price_v2.json"
+        },
+        {
+          "part": "price",
+          "horizon": 30,
+          "model": "lstm",
+          "best_config": "lstm_h16",
+          "metric": "MAE of h-day return",
+          "model_value": 0.182727,
+          "baseline": "last_value",
+          "baseline_value": 0.178624,
+          "gain_ci95": {
+            "estimate": -0.004103,
+            "low": -0.013469,
+            "high": 0.003239
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/sol/walkforward_price_v2.json"
+        },
+        {
+          "part": "price",
+          "horizon": 7,
+          "model": "lstm",
+          "best_config": "lstm_h16",
+          "metric": "MAE of h-day return",
+          "model_value": 0.088726,
+          "baseline": "last_value",
+          "baseline_value": 0.086594,
+          "gain_ci95": {
+            "estimate": -0.002133,
+            "low": -0.004389,
+            "high": -8.2e-05
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/sol/walkforward_price_v2.json"
+        },
+        {
+          "part": "range",
+          "horizon": 30,
+          "model": "ewma_band",
+          "best_config": "ewma_band",
+          "metric": "interval score",
+          "model_value": 0.778073,
+          "baseline": "vol30_band",
+          "baseline_value": 0.778167,
+          "gain_ci95": {
+            "estimate": 9.5e-05,
+            "low": -0.024936,
+            "high": 0.023186
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/sol/walkforward_range.json"
+        },
+        {
+          "part": "range",
+          "horizon": 30,
+          "model": "qlgbm",
+          "best_config": "qlgbm_l7",
+          "metric": "interval score",
+          "model_value": 0.865337,
+          "baseline": "vol30_band",
+          "baseline_value": 0.778167,
+          "gain_ci95": {
+            "estimate": -0.087169,
+            "low": -0.170247,
+            "high": 0.041349
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/sol/walkforward_range.json"
+        },
+        {
+          "part": "range",
+          "horizon": 7,
+          "model": "ewma_band",
+          "best_config": "ewma_band",
+          "metric": "interval score",
+          "model_value": 0.392103,
+          "baseline": "vol30_band",
+          "baseline_value": 0.389024,
+          "gain_ci95": {
+            "estimate": -0.003079,
+            "low": -0.010968,
+            "high": 0.005164
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/sol/walkforward_range.json"
+        },
+        {
+          "part": "range",
+          "horizon": 7,
+          "model": "qlgbm",
+          "best_config": "qlgbm_l7",
+          "metric": "interval score",
+          "model_value": 0.394577,
+          "baseline": "vol30_band",
+          "baseline_value": 0.389024,
+          "gain_ci95": {
+            "estimate": -0.005553,
+            "low": -0.028758,
+            "high": 0.019197
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/sol/walkforward_range.json"
+        },
+        {
+          "part": "risk",
+          "horizon": 30,
+          "model": "ewma",
+          "best_config": "ewma",
+          "metric": "QLIKE",
+          "model_value": 0.175149,
+          "baseline": "persistence_vol30",
+          "baseline_value": 0.173351,
+          "gain_ci95": {
+            "estimate": -0.001799,
+            "low": -0.026562,
+            "high": 0.024127
+          },
+          "approved": false,
+          "served": true,
+          "source": "ml/reports/sol/walkforward_risk_v2.json"
+        },
+        {
+          "part": "risk",
+          "horizon": 30,
+          "model": "garch",
+          "best_config": "garch_t",
+          "metric": "QLIKE",
+          "model_value": 0.262278,
+          "baseline": "persistence_vol30",
+          "baseline_value": 0.173351,
+          "gain_ci95": {
+            "estimate": -0.088927,
+            "low": -0.210171,
+            "high": 0.04725
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/sol/walkforward_risk_v2.json"
+        },
+        {
+          "part": "risk",
+          "horizon": 7,
+          "model": "ewma",
+          "best_config": "ewma",
+          "metric": "QLIKE",
+          "model_value": 0.365947,
+          "baseline": "persistence_vol30",
+          "baseline_value": 0.413038,
+          "gain_ci95": {
+            "estimate": 0.047091,
+            "low": -0.001217,
+            "high": 0.116889
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/sol/walkforward_risk_v2.json"
+        },
+        {
+          "part": "risk",
+          "horizon": 7,
+          "model": "garch",
+          "best_config": "garch_t",
+          "metric": "QLIKE",
+          "model_value": 0.382634,
+          "baseline": "persistence_vol30",
+          "baseline_value": 0.413038,
+          "gain_ci95": {
+            "estimate": 0.030404,
+            "low": -0.069449,
+            "high": 0.175735
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/sol/walkforward_risk_v2.json"
+        },
+        {
+          "part": "direction",
+          "horizon": 30,
+          "model": "logreg",
+          "best_config": "logreg_c0.1",
+          "metric": "log loss",
+          "model_value": 1.048813,
+          "baseline": "prior",
+          "baseline_value": 1.055915,
+          "gain_ci95": {
+            "estimate": 0.007102,
+            "low": -0.026359,
+            "high": 0.037926
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/sol/walkforward_direction_v2.json"
+        },
+        {
+          "part": "direction",
+          "horizon": 30,
+          "model": "lightgbm",
+          "best_config": "lgbm_clf_l7",
+          "metric": "log loss",
+          "model_value": 1.067065,
+          "baseline": "prior",
+          "baseline_value": 1.055915,
+          "gain_ci95": {
+            "estimate": -0.011149,
+            "low": -0.137937,
+            "high": 0.120292
+          },
+          "approved": false,
+          "served": false,
+          "source": "ml/reports/sol/walkforward_direction_v2.json"
+        }
+      ],
+      "sealed_test": {
+        "risk": {
+          "h30": {
+            "qlike_ewma": 0.372167,
+            "qlike_persistence": 0.483356,
+            "not_worse": true,
+            "gain_ci95": {
+              "estimate": 0.11119,
+              "low": 0.038002,
+              "high": 0.227334
+            }
+          }
+        },
+        "range_h30": {
+          "coverage": 0.711475,
+          "lower_tail_miss": 0.170492,
+          "upper_tail_miss": 0.118033
+        },
+        "decision": {
+          "risk": {
+            "serve_ewma_for_all_assets": true,
+            "not_worse_h30": {
+              "btc": true,
+              "eth": true,
+              "sol": true
+            },
+            "otherwise": "persistence vol_30d stays (D27, D36)"
+          },
+          "range": {
+            "serve_vol30_band_h30": {
+              "btc": false,
+              "eth": false,
+              "sol": false
+            },
+            "predicted_price": "null (D35)"
+          },
+          "price": {
+            "serve": false,
+            "reason": "0 of 60 approved (D35 stays)"
+          },
+          "direction": {
+            "serve": false,
+            "reason": "nothing passes; D33 stays; ETH logreg closed (D50)"
+          }
+        },
+        "source": "ml/reports/sol/test_final.json"
+      }
     }
   },
   "summary": {
     "models_approved": 1,
     "models_served": 0,
-    "models_total": 9
+    "models_total": 9,
+    "phase9_approved": 5,
+    "phase9_served": 3,
+    "phase9_rows": 60
   },
   "metadata": {
-    "generated_at": "2026-11-01T13:02:44Z",
-    "git_commit": "b24382312c6d544b3009d72e69e733a5d69924d0",
+    "generated_at": "2026-11-03T12:23:49Z",
+    "git_commit": "cd0c07accec2afbecc0008c908eba8ed83cd4ca1",
     "git_dirty": false,
     "sources": [
       "ml/reports/btc/backtest.json",
