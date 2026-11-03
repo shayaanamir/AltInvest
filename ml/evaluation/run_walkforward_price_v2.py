@@ -1,10 +1,11 @@
 """Phase 9 step 9.2: walk-forward of the price candidates at h = 30 and 7 vs last value, with the D44 verdict.
 
-    python -m ml.evaluation.run_walkforward_price_v2 --model ridge      (then lightgbm, prophet, lstm)
+    python -m ml.evaluation.run_walkforward_price_v2 --model ridge  (then lightgbm, prophet_9_2, prophet, lstm)
 
 One model type per run, all assets and both horizons. Its section is merged into
 ml/reports/{asset}/walkforward_price_v2.json and the verdict table is rebuilt from all sections there.
 Metric: MAE of the h-day log return. Baseline: last value (predicted return 0). Test rows are never built.
+"prophet" is the D48 protocol; "prophet_9_2" is the superseded 9.2 protocol, reported for the record only.
 """
 
 import argparse
@@ -22,10 +23,12 @@ from ml.evaluation.approval import rank_and_confirm
 from ml.evaluation.run_baselines import _clean, price_metrics
 from ml.evaluation.run_walkforward import load_dev, run_metadata
 from ml.evaluation.walkforward import make_folds, run_folds
+from ml.evaluation.walkforward_history import run_history_folds
 from ml.evaluation.walkforward_pooled import PooledSpec, asset_folds, run_pooled
 from ml.models import lstm, price_v2
 
-MODELS = ("ridge", "lightgbm", "prophet", "lstm")
+MODELS = ("ridge", "lightgbm", "prophet_9_2", "prophet", "lstm")
+LABELS = {"prophet_9_2": "prophet (9.2 protocol, superseded)"}  # D48
 BASELINE = "last_value"
 REPORT = "walkforward_price_v2.json"
 
@@ -62,15 +65,22 @@ def run_per_asset(model: str, datas: dict) -> dict:
         for asset in config.ASSETS:
             data, b2, n = datas[horizon][asset]
             folds = make_folds(len(data), b2, config.MIN_TRAIN_ROWS, horizon, horizon)
-            specs = price_v2.specs(model, horizon)
+            every = price_v2.refit_every_folds(model, horizon)
             t0 = time.perf_counter()
-            pooled, _ = run_folds(data, folds, {f"price_model/{k}": s for k, s in specs.items()}, b2, horizon)
-            wall = time.perf_counter() - t0
-            pooled = pooled.rename(columns={f"pred:price_model/{k}": f"pred:{k}" for k in specs})
+            if model in price_v2.HISTORY_MODELS:
+                specs = price_v2.history_specs(model, horizon)
+                pooled, info = run_history_folds(data, folds, specs, b2, horizon, every)
+                run = {"wall_seconds": time.perf_counter() - t0, **info}
+            else:
+                specs = price_v2.specs(model, horizon)
+                pooled, _ = run_folds(data, folds, {f"price_model/{k}": s for k, s in specs.items()}, b2, horizon)
+                pooled = pooled.rename(columns={f"pred:price_model/{k}": f"pred:{k}" for k in specs})
+                run = {"wall_seconds": time.perf_counter() - t0, "refit_every_folds": every,
+                       "n_fits": {k: s.fit.n_fits for k, s in specs.items()},
+                       "fit_seconds": {k: s.fit.fit_seconds for k, s in specs.items()}}
+            wall = run["wall_seconds"]
             section = evaluate(pooled, folds, list(specs), horizon)
-            section["run"] = {"wall_seconds": wall, "refit_every_folds": price_v2.refit_every_folds(model, horizon),
-                              "n_fits": {k: s.fit.n_fits for k, s in specs.items()},
-                              "fit_seconds": {k: s.fit.fit_seconds for k, s in specs.items()}}
+            section["run"] = run
             section["metadata"] = run_metadata(asset, data, b2, n, pooled, horizon)
             out[asset][horizon] = section
             print(f"{model} {asset} h={horizon}: {wall:.0f} s, approved {section['verdict']['approved']}", flush=True)
@@ -112,11 +122,11 @@ def verdict_table(asset: str, models: dict) -> list[dict]:
     for model in MODELS:
         for key, sec in sorted(models.get(model, {}).get("horizons", {}).items(), key=lambda kv: -int(kv[0][1:])):
             v = sec["verdict"]
-            rows.append({"part": "price", "asset": asset, "horizon": int(key[1:]), "model": model,
+            rows.append({"part": "price", "asset": asset, "horizon": int(key[1:]), "model": LABELS.get(model, model),
                          "best_config": v["top_config"], "model_mae": v["model_loss"],
                          "baseline": v["baseline"], "baseline_mae": v["baseline_loss"],
                          "paired_ci": v["paired_diff_baseline_minus_model"], "approved": v["approved"],
-                         "trial_count": models[model]["trial_count"]})
+                         "trial_count": models[model]["trial_count"], "superseded": model in LABELS})
     return rows
 
 
@@ -124,7 +134,7 @@ def write(asset: str, model: str, sections: dict) -> None:
     path = ML_ROOT / "reports" / asset / REPORT
     report = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
     models = report.get("models", {})
-    models[model] = {"declared": declared(model), "trial_count": trial_count(model),
+    models[model] = {"label": LABELS.get(model, model), "declared": declared(model), "trial_count": trial_count(model),
                      "horizons": {f"h{h}": sections[h] for h in config.FORECAST_HORIZONS}}
     report = {
         "part": "price", "asset": asset,
@@ -132,7 +142,8 @@ def write(asset: str, model: str, sections: dict) -> None:
         "baseline": "last value (predicted return 0)", "rule": "D44: rank on the first 60% of folds, confirm "
         "the top config on the last 40% with a paired block-bootstrap 95% CI (block = h) of MAE(last value) - "
         "MAE(model); approved if it excludes 0 and the estimate is positive",
-        "trial_count": {"formula": "configs x assets x horizons", "per_model": {k: v["trial_count"]
+        "trial_count": {"formula": "configs x assets x horizons; superseded protocols count (D48)",
+                        "per_model": {k: v["trial_count"]
                         for k, v in models.items()}, "total": sum(v["trial_count"] for v in models.values())},
         "verdict_table": verdict_table(asset, models),
         "models": {k: models[k] for k in MODELS if k in models},

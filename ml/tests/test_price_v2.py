@@ -105,16 +105,16 @@ def test_lightgbm_runs_at_h7():
     assert pooled[["pred:lgbm_l7", "pred:lgbm_l15"]].notna().all().all()
 
 
-def test_prophet_uses_train_closes_only_and_refits_every_4th_fold():
+def test_prophet_9_2_protocol_uses_train_closes_only_and_refits_every_4th_fold():
     pytest.importorskip("prophet")
     folds = make_folds(N, B2, MIN_TRAIN, 7, 7)[:5]
     raw = _raw()
-    specs = price_v2.specs("prophet", 7)
+    specs = price_v2.specs("prophet_9_2", 7)
     p1, _ = run_folds(_data(7, raw), folds, {"p": specs["prophet_cps005"]}, B2, horizon=7)
     assert specs["prophet_cps005"].fit.n_fits == 2                     # folds 0 and 4
     altered = raw.copy()                                               # change prices from fold 4's origin on
     altered.loc[config.WARMUP_ROWS + folds[4].origin:, ["open", "high", "low", "close"]] *= 2.0
-    p2, _ = run_folds(_data(7, altered), folds, {"p": price_v2.specs("prophet", 7)["prophet_cps005"]}, B2, 7)
+    p2, _ = run_folds(_data(7, altered), folds, {"p": price_v2.specs("prophet_9_2", 7)["prophet_cps005"]}, B2, 7)
     # forecast log prices are unchanged; only log close[t] in "forecast - log close[t]" moves, by exactly ln 2
     late = p1["origin"] == folds[4].origin
     np.testing.assert_allclose(p1.loc[late, "pred:p"] - p2.loc[late, "pred:p"], np.log(2.0), atol=1e-9)
