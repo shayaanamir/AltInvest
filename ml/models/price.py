@@ -35,12 +35,13 @@ class FittedPrice:
     model: Any
 
 
-def fit(train: pd.DataFrame, config: str) -> FittedPrice:
+def fit(train: pd.DataFrame, config: str, target: str = "fwd_return_30d") -> FittedPrice:
+    """`target` is the label column (fwd_return_7d for the Phase 9 h = 7 reference, D41)."""
     x = train[FEATURE_COLUMNS].to_numpy(dtype=float)
     mean, std = x.mean(axis=0), x.std(axis=0)
     std = np.where(std == 0, 1.0, std)                 # a constant column stays 0 after scaling
     model = CONFIGS[config]()
-    model.fit((x - mean) / std, train["fwd_return_30d"].to_numpy())
+    model.fit((x - mean) / std, train[target].to_numpy())
     return FittedPrice(config, mean, std, model)
 
 
