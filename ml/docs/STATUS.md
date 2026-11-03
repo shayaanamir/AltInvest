@@ -1,6 +1,27 @@
 # STATUS
 
-Current phase: 9 (forecasting v2, docs/PLAN_FORECAST.md). Steps 9.0-9.2 approved by the planner (2026-11-03). The D48 Prophet correction and the re-run at a commit are done: no price candidate is approved, and price stays on last value (D35). Waiting for the planner's OK to start 9.3.
+Current phase: 9 (forecasting v2, docs/PLAN_FORECAST.md version 2). Price is finished (0 of 60 approved; last value stays, D35). Steps 9.3-9.5 are done: range 0 of 12 approved, risk 4 of 12 (EWMA for BTC and ETH at h = 30 and 7), direction 0 passes. At STOP A, waiting for the planner to choose the sealed-test configs.
+
+## Phase 9 steps 9.3-9.5: what ran (2026-11-03, from repo root)
+
+- Plan v2 and D49 (scope of range, risk and direction, written before any run): 0ae1b79.
+- Evaluation venv `.venv-train` (repo root, with a `*` .gitignore inside), from `ml/requirements.txt` + `ml/requirements-train.txt`. Python 3.12.10; the training-library pins match; scipy (not pinned) resolved to 1.18.1. The pip freeze was recorded once in the STOP A report. The host Python was not used or repaired.
+- Code commits: d682c99 (9.3), 89a461a (9.4), acf6ce7 (9.5).
+  - New: `ml/evaluation/interval_metrics.py`, `part_runner.py`, `run_walkforward_range.py`, `run_walkforward_risk_v2.py`, `run_walkforward_direction_v2.py`; `ml/models/range_v2.py`, `risk_v2.py`, `direction_v2.py`.
+  - Range constants are in config.py.
+  - Tests: test_range_v2.py, test_risk_v2.py, test_direction_v2.py. Their D48 no-look-ahead tests cover the bands, EWMA and GARCH.
+- Runs (`.venv-train`, clean tree):
+  - `python -m ml.evaluation.run_walkforward_range` (445 s) wrote `ml/reports/{asset}/walkforward_range.json`. 0 of 12 approved; 18 trials.
+  - `python -m ml.evaluation.run_walkforward_risk_v2` (114 s) wrote `walkforward_risk_v2.json`. EWMA is approved and the winner for BTC and ETH at h = 30 and 7; SOL none; GARCH none; 12 trials.
+  - `python -m ml.evaluation.run_walkforward_direction_v2` (281 s) wrote `walkforward_direction_v2.json` and `backtest_v2.json`. The logreg results equal 4c exactly. ETH logreg is approved in walk-forward, but its backtest does not beat buy-and-hold. Nothing passes; 12 trials.
+- Report commits: 38cb488 (range), 3ff7ad4 (risk), db06492 (direction).
+  - The range and risk reports record git_commit acf6ce7; the direction reports record 3ff7ad4, because the earlier report commits landed during the run.
+  - `git diff 3ff7ad4 acf6ce7` outside ml/reports is empty. All record git_dirty false.
+- `.venv-train`: `python -m pytest ml -q` -> `291 passed`. The 39 snapshot and report hashes are identical.
+- Open for the planner:
+  - Risk is approved for BTC and ETH but not SOL, while D36 pools one percentile across all assets.
+  - Direction "beats" is reported as both a point estimate and a CI.
+
 
 ## Phase 9 step 9.2 follow-up: D48 and the re-run at a commit (2026-11-03)
 
