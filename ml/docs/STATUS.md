@@ -1,6 +1,79 @@
 # STATUS
 
-Current phase: 9 (forecasting v2). The sealed test (9.6) ran once on 2026-11-03. Decision under D50: serve EWMA risk for all assets, serve no range band, keep price on D35 and direction on D33. At STOP B, waiting for the planner before 9.7.
+Current phase: 9 (forecasting v2) DONE (2026-11-03), on branch phase-9-forecasting (not pushed). Served: EWMA risk for all assets (D51). Price (D35), range (none) and direction (D33) are unchanged. At STOP C, waiting for the planner's sign-off.
+Next: Person B checks the new risk_score values and note text (fields unchanged). Merge phase-7-integration, then rebase this branch onto main. The live scorecard starts scoring on 2026-11-30.
+
+## Phase 9 steps 9.7-9.8: what ran (2026-11-03, from repo root)
+
+- D51 (serve EWMA risk for all assets; no artifacts, no new dependencies, no monthly retrain): 8095de9.
+- 9.7 serving: cd0c07a.
+  - `ml/serving/responses.py`: `serving_table` adds `ewma_vol` with the same `ml.features.features.ewma_vol` as the evaluation, on the closes of the feature rows.
+    - risk_inputs serves the EWMA; volatility = EWMA x sqrt(365).
+    - risk_score = D36 percentile over the EWMA history of BTC, ETH and SOL dated <= today.
+    - New risk note. served.risk_model true; decisions_in_force gains D50 and D51 and drops D27.
+  - `ml/config.py`: MODEL_VERSION_RISK "ewma-pooled-pct", RISK_MODEL_SERVED, RISK_VOL_COLUMN, LIVE_ALERT_MIN_WINDOWS = 6.
+  - `ml/serving/prediction_log.py` also logs ewma_vol.
+  - `ml/evaluation/live_score.py` adds `risk_monitor`: EWMA vs persistence QLIKE on the scored rows. It shows "insufficient data" until an asset has >= 6 non-overlapping windows, then "ok" or "ALERT", and never switches models.
+  - `qlike` moved to `ml/evaluation/metrics.py`, so serving does not import the evaluation runners.
+  - `ml/evaluation/scorecard.py` gains a Phase 9 section; the regenerated scorecard is in 535622c. Phase 9 rows: 5 of 60 approved, served 3 (EWMA risk, h = 30, one per asset). The old 4a risk rows now say "EWMA is served instead (D51)".
+- Test expectations changed on purpose:
+  - test_serving.py: `_feats` now has `ewma_vol` (the served column) and `vol_30d` = 10 x it, so every risk number test (D36 by hand, ties, future-date leakage, Sharpe, annualisation, staleness, predict fields) now checks the EWMA column.
+  - test_serving.py: `test_check_scores_match_serving_on_that_date` now uses `rs.serving_table` and the EWMA column, rows 35+ after the warm-up.
+  - New tests:
+    - test_serving.py: the same ewma_vol function as evaluation; the note, flags, version and D50/D51.
+    - test_live_tracking.py: monitor needs 6 non-overlapping windows, then ALERT or ok; pre-EWMA rows are ignored.
+    - test_scorecard.py: only EWMA risk at h = 30 is served.
+  - test_contract.py is unchanged (it reads MODEL_VERSION_RISK from config).
+- Docker: `docker compose up -d --build ml ml-refresh` (cached build, 7 s).
+  - Startup refresh: btc and eth ok at 3365 rows, sol ok at 2275, last bar 2026-11-02.
+  - `/health`: risk "ewma-pooled-pct". `/risk/{BTC,ETH,SOL}` risk_score 97.150142, 93.637394, 82.838527; volatility 0.312892, 0.360016, 0.468358. `/predict` has the same risk_score and is otherwise unchanged.
+  - `/debug/live-scorecard`: 9 logged, 0 scored, first scorable 2026-11-30, risk_monitor "insufficient data" for all assets.
+  - Container healthy; serving image 847MB with no new dependencies. `docker compose down`; volume kept.
+- 9.8: this block, `ml/docs/phases/PHASE_9_forecasting_v2.md`, GLOSSARY terms (coverage, tail miss, interval score, pinball loss, EWMA, GARCH, QLIKE, LSTM, Prophet, trial count), AGENTS.md docs list.
+- Tests:
+  - `.venv-train`: `301 passed`.
+  - Clean serving venv (no training libraries): imports work; serving, contract, live and scorecard tests `60 passed`.
+  - The 39 snapshot and report hashes are identical.
+
+## How to verify Phase 9 yourself (PowerShell, from the repo root)
+
+```powershell
+Set-Location C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest
+# One-time setup if .venv-train is missing:
+#   python -m venv .venv-train; .\.venv-train\Scripts\python.exe -m pip install -r ml/requirements.txt -r ml/requirements-train.txt
+$py = ".\.venv-train\Scripts\python.exe"
+
+# 1. All tests
+& $py -m pytest ml -q
+
+# 2. The verdicts and the serving decision, read from the reports
+& $py -c "import json; [print(a, v['model'], v['horizon'], v['approved']) for a in ('btc','eth','sol') for v in json.load(open(f'ml/reports/{a}/walkforward_risk_v2.json'))['verdict_table'] if v['model'] == 'ewma']"
+& $py -c "import json; print(json.load(open('ml/reports/test_final_summary.json'))['decision']['risk']['serve_ewma_for_all_assets'])"
+
+# 3. The sealed test refuses a second run
+& $py -m ml.evaluation.run_sealed_test; "exit: $LASTEXITCODE"
+
+# 4. The scorecard is reproducible: only the metadata lines change, then undo
+& $py -m ml.evaluation.scorecard
+git diff -U0 ml/reports | Select-String '^[-+][^-+]'
+git checkout -- ml/reports/scorecard.json ml/reports/SCORECARD.md
+
+# 5. Docker: EWMA risk is served
+docker compose up -d --build ml ml-refresh
+while (-not ((docker logs altinvest-ml-refresh 2>&1 | Out-String) -match 'next refresh at')) { Start-Sleep -Seconds 2 }
+curl.exe -s http://127.0.0.1:8001/health; ""
+curl.exe -s http://127.0.0.1:8001/risk/BTC; ""
+docker compose down
+```
+
+Expected (observed 2026-11-03):
+
+1. `301 passed`.
+2. `btc ewma 30 True`, `btc ewma 7 True`, `eth ewma 30 True`, `eth ewma 7 True`, `sol ewma 30 False`, `sol ewma 7 False`; then `True`.
+3. `the sealed test has already been run (D44, D50: used once): [...]`, then `exit: 1`.
+4. Only the `Generated ... at commit` line of SCORECARD.md and `generated_at`, `git_commit` (and `git_dirty`) in scorecard.json change.
+5. `/health` shows `"risk":"ewma-pooled-pct"`. `/risk/BTC` has a risk_score between 0 and 100, a volatility of about 0.2-1.0, and a note starting `Risk model: EWMA volatility (lambda 0.94)`. Values change daily with the data.
+
 
 ## Phase 9 step 9.6: what ran (2026-11-03, from repo root)
 
