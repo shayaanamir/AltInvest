@@ -61,7 +61,10 @@ RANDOM_BASELINE_SEED = 0  # D34
 STALE_DATA_HOURS = 48  # CONTRACT.md 'note' rule (no D-number yet)
 SHARPE_WINDOW_DAYS = 365  # D37: trailing daily log returns used for sharpe_ratio on /risk
 MODEL_VERSION_PRICE = "baseline-last-value"  # D35: no price model approved
-MODEL_VERSION_RISK = "persistence-pooled-pct"  # D36 (persistence vol_30d, D27; pooled percentile mapping)
+MODEL_VERSION_RISK = "ewma-pooled-pct"  # D51 (EWMA vol, lambda EWMA_LAMBDA; D36 pooled percentile mapping)
+RISK_MODEL_SERVED = True  # D51: EWMA risk served for every asset (was persistence vol_30d, D27)
+RISK_VOL_COLUMN = "ewma_vol"  # D51: the served volatility measure (ml.features.features.ewma_vol)
+LIVE_ALERT_MIN_WINDOWS = 6  # D46/D51: non-overlapping scored windows per asset before live_score may ALERT
 
 # Data directories (D40). The evaluation snapshot is ml/data/raw + ml/reports/data as of 2026-10-17; splits are
 # derived from n (D16, D18), so these files must not grow. Loader, validate, the serving gate and the refresh read

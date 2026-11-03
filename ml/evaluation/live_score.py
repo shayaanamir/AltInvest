@@ -5,9 +5,10 @@
 Reads ml.serving.prediction_log rows and the servable raw bars (serving gate, D40). A row dated t is scored only
 when the bar t + HORIZON_DAYS exists; the realised values use bars t+1..t+30 only, through the label functions
 (labels.fwd_return_30d, labels.fwd_vol_30d), so no bar after t+30 is read. Until a row's horizon has passed it is
-counted as pending and nothing is scored; no number is invented. The served values equal the baselines today
-(D27, D35), so the served error IS the baseline error; once a model is served this shows the difference.
-Writes config.ML_VALIDATION_DIR / config.LIVE_SCORECARD_FILE.
+counted as pending and nothing is scored; no number is invented. Price and direction serve baselines (D33, D35).
+Risk serves EWMA (D51): risk_monitor compares its QLIKE with persistence vol_30d on the scored rows and shows
+'ALERT' only once an asset has >= LIVE_ALERT_MIN_WINDOWS non-overlapping scored 30-day windows; before that it
+shows 'insufficient data'. It never switches models (D46). Writes config.ML_VALIDATION_DIR / LIVE_SCORECARD_FILE.
 """
 
 import json
@@ -69,6 +70,36 @@ def _summary(scored: list[dict]) -> dict:
     }
 
 
+def non_overlapping(rows: list[dict]) -> list[dict]:
+    """Rows whose 30-day windows do not overlap: in date order, each at least HORIZON_DAYS after the last kept."""
+    kept, last = [], None
+    for r in sorted(rows, key=lambda r: r["last_bar"]):
+        t = pd.Timestamp(r["last_bar"])
+        if last is None or (t - last).days >= config.HORIZON_DAYS:
+            kept.append(r)
+            last = t
+    return kept
+
+
+def risk_monitor(scored: list[dict]) -> dict:
+    """D46/D51 per asset: QLIKE of the served EWMA vs persistence vol_30d on the scored rows that logged both."""
+    out = {}
+    for a in config.ASSETS:
+        rows = [r for r in scored if r["asset"] == a and r.get("ewma_vol") is not None]
+        windows = len(non_overlapping(rows))
+        res = {"n_scored": len(rows), "n_effective": len(rows) / config.HORIZON_DAYS,
+               "n_non_overlapping_windows": windows, "min_windows": config.LIVE_ALERT_MIN_WINDOWS}
+        if windows < config.LIVE_ALERT_MIN_WINDOWS:
+            out[a] = {**res, "status": "insufficient data"}
+            continue
+        real = np.array([r["realised_vol_30d"] for r in rows])
+        q_e = float(m.qlike(np.array([r["ewma_vol"] for r in rows]), real).mean())
+        q_p = float(m.qlike(np.array([r["vol_30d"] for r in rows]), real).mean())
+        out[a] = {**res, "qlike_ewma": q_e, "qlike_persistence": q_p, "status": "ALERT" if q_e > q_p else "ok"}
+    return {"per_asset": out, "rule": "D46/D51: ALERT when served EWMA QLIKE > persistence QLIKE on the scored rows, "
+            f"only with >= {config.LIVE_ALERT_MIN_WINDOWS} non-overlapping windows; never switches models"}
+
+
 def build(now: datetime | None = None) -> dict:
     now = now or datetime.now(timezone.utc)
     rows = read_log()
@@ -84,12 +115,12 @@ def build(now: datetime | None = None) -> dict:
     pending = [r for r in scored if r["status"] == "pending"]
     per_asset = {a: _summary([r for r in done if r["asset"] == a]) for a in config.ASSETS}
     note = ("No logged prediction has reached its 30-day horizon yet; nothing is scored." if not done else
-            "Served values equal the baselines (D27, D33, D35), so served error = baseline error.")
+            "Price and direction serve baselines (D33, D35); risk serves EWMA (D51), compared in risk_monitor.")
     return {
         "generated_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "n_logged": len(rows), "n_scored": len(done), "n_pending": len(pending),
         "first_scorable": min((r["scorable_from"] for r in pending), default=None),
-        "all_assets": _summary(done), "per_asset": per_asset, "note": note,
+        "all_assets": _summary(done), "per_asset": per_asset, "risk_monitor": risk_monitor(done), "note": note,
         "horizon_days": config.HORIZON_DAYS, "source": str(config.ML_VALIDATION_DIR / config.PREDICTION_LOG_FILE),
     }
 

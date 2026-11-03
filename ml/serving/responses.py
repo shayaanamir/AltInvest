@@ -1,9 +1,10 @@
 """Response bodies for /predict and /risk (Phase 6a). Pure: no FastAPI, no models, no artifacts.
 
-Reads raw rows for FEATURES only (vol_30d and ret_1d, both backward-looking): no labels are built and no
-metric is computed on any split. Nothing is approved, so baselines are served:
+Reads raw rows for FEATURES only (ewma_vol, vol_30d and ret_1d, all backward-looking): no labels are built and
+no metric is computed on any split. Served:
 - price: the last-value baseline, prediction_30d = 0 and no predicted price or interval (D35);
-- risk: persistence vol_30d (D27), mapped to risk_score by the pooled percentile (D36); sharpe per D37;
+- risk: EWMA volatility (D51; the same ml.features.features.ewma_vol as the Phase 9 evaluation), mapped to
+  risk_score by the pooled percentile over the EWMA history of all assets (D36); sharpe per D37;
 - signal and confidence: ml.signal.signal_logic.generate_signal (D33).
 Staleness is measured from the latest bar's close (its open time + 1 day), when its data became complete (D38).
 Every asset passes the serving gate first (D40): its CSV must match a passed validation report, else NotServable.
@@ -21,23 +22,32 @@ from ml.data.loader import load_raw
 from ml.data.serving_gate import NotServable, servable_raw
 from ml.evaluation import metrics as m
 from ml.evaluation.backtest import percentile_rank
-from ml.features.features import build_features
+from ml.features.features import build_features, ewma_vol
 from ml.signal.signal_logic import generate_signal
 
 BAR = pd.Timedelta(days=1)
-DECISIONS_IN_FORCE = ("D6", "D27", "D33", "D35", "D36", "D37", "D38", "D40")
+DECISIONS_IN_FORCE = ("D6", "D33", "D35", "D36", "D37", "D38", "D40", "D50", "D51")
 NOTE_PRICE = ("No model beats the no-change baseline (D35): prediction_30d is the last-value baseline (0%); "
               "no predicted price or interval.")
 
 
+def serving_table(raw: pd.DataFrame) -> pd.DataFrame:
+    """Feature table plus ewma_vol, computed exactly as in the Phase 9 evaluation: ewma_vol of the closes of the
+    feature rows (run_walkforward.dev_data aligns close to the feature index). Trailing: closes <= t only."""
+    feats = build_features(raw)
+    close = raw.sort_values("timestamp").set_index("timestamp")["close"].loc[feats.index]
+    feats[config.RISK_VOL_COLUMN] = ewma_vol(close).to_numpy()
+    return feats
+
+
 def feature_tables(assets=config.ASSETS) -> dict[str, pd.DataFrame]:
-    """Feature table of every pooled asset (D36). Refuses all of them if any one fails the serving gate (D40)
+    """Serving table of every pooled asset (D36). Refuses all of them if any one fails the serving gate (D40)
     or has a gap in its bars (build_features refuses gaps)."""
     out = {}
     for a in assets:
         raw = servable_raw(a)
         try:
-            out[a] = build_features(raw)
+            out[a] = serving_table(raw)
         except ValueError as e:
             raise NotServable(f"{a}: bars cannot be served ({e})") from None
     return out
@@ -57,8 +67,10 @@ def pooled_risk_score(x: float, pool) -> tuple[float, float]:
 
 
 def pool_values(feats: Mapping[str, pd.DataFrame], today: pd.Timestamp) -> np.ndarray:
-    """vol_30d of every asset in `feats` on all dates <= today (D36). Later rows never enter the pool."""
-    return np.concatenate([f.loc[f.index <= today, "vol_30d"].to_numpy() for f in feats.values()])
+    """The served vol (EWMA, D51) of every asset in `feats` on all dates <= today (D36). Later rows never enter
+    the pool; the warm-up rows without an EWMA value are left out."""
+    vals = np.concatenate([f.loc[f.index <= today, config.RISK_VOL_COLUMN].to_numpy() for f in feats.values()])
+    return vals[~np.isnan(vals)]
 
 
 def sharpe_trailing(ret_1d: pd.Series) -> float | None:
@@ -79,7 +91,7 @@ def risk_inputs(asset: str, now: datetime, feats: Mapping[str, pd.DataFrame] | N
     feats = feature_tables() if feats is None else feats
     own = feats[asset]
     today = own.index[-1]
-    vol = float(own["vol_30d"].iloc[-1])
+    vol = float(own[config.RISK_VOL_COLUMN].iloc[-1])
     pool = pool_values(feats, today)
     score, p = pooled_risk_score(vol, pool)
     age = bar_age_hours(today, now)
@@ -88,7 +100,8 @@ def risk_inputs(asset: str, now: datetime, feats: Mapping[str, pd.DataFrame] | N
         "last_bar": today.strftime("%Y-%m-%d"), "last_bar_close": iso_utc(today + BAR),
         "age_hours": age, "stale": stale,
         "stale_note": f"data stale: last bar {today.strftime('%Y-%m-%d')}" if stale else None,
-        "vol_30d": vol, "volatility": vol * math.sqrt(config.ANNUALISATION_DAYS),
+        "ewma_vol": vol, "vol_30d": float(own["vol_30d"].iloc[-1]),       # vol_30d: the D46 monitoring baseline
+        "volatility": vol * math.sqrt(config.ANNUALISATION_DAYS),
         "sharpe_ratio": sharpe_trailing(own["ret_1d"]), "returns_available": len(own),
         "pool_assets": list(feats), "pool_size": len(pool), "p": p, "risk_score": score,
     }
@@ -100,8 +113,9 @@ def _note(*parts: str | None) -> str:
 
 def _risk_note(feats_assets) -> str:
     names = ", ".join(a.upper() for a in feats_assets)
-    return (f"No risk model beats persistence (D27): risk_score is the percentile of today's 30-day volatility "
-            f"among {names} up to today (D36), higher = safer.")
+    return (f"Risk model: EWMA volatility (lambda {config.EWMA_LAMBDA}), which beat 30-day persistence in "
+            f"walk-forward and was not worse on the sealed test (D50, D51). risk_score is the percentile of today's "
+            f"EWMA volatility among {names} up to today (D36), higher = safer.")
 
 
 def risk(asset: str, now: datetime, feats: Mapping[str, pd.DataFrame] | None = None) -> dict:
@@ -154,7 +168,8 @@ def debug(asset: str, now: datetime, feats: Mapping[str, pd.DataFrame] | None = 
         "inputs": {k: v for k, v in x.items() if k != "stale_note"},
         "stale_after_hours": config.STALE_DATA_HOURS,
         "sharpe_window_days": config.SHARPE_WINDOW_DAYS,
-        "served": {"price_model": False, "risk_model": False, "direction": config.DIRECTION_SERVED[asset]},
+        "served": {"price_model": False, "risk_model": config.RISK_MODEL_SERVED,
+                   "direction": config.DIRECTION_SERVED[asset]},
         "model_version": model_versions(),
         "decisions_in_force": list(DECISIONS_IN_FORCE),
     }

@@ -15,16 +15,12 @@ from ml import config
 from ml.data.snapshot_guard import require_snapshot
 from ml.evaluation import part_runner as pr
 from ml.evaluation.approval import rank_and_confirm
+from ml.evaluation.metrics import qlike
 from ml.evaluation.run_baselines import ranking_metrics
 from ml.models import risk_v2
 
 REPORT = "walkforward_risk_v2.json"
 BASE = risk_v2.BASELINE
-
-
-def qlike(pred_vol, actual_vol) -> np.ndarray:
-    ratio = np.asarray(actual_vol, dtype=float) ** 2 / np.asarray(pred_vol, dtype=float) ** 2
-    return ratio - np.log(ratio) - 1
 
 
 def _spearman(pred, actual, horizon: int) -> dict:
