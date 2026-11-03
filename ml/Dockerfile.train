@@ -23,6 +23,10 @@ WORKDIR /app
 COPY ml/requirements.txt ml/requirements-train.txt ml/
 RUN pip install --no-cache-dir --timeout 1000 --retries 10 -r ml/requirements.txt -r ml/requirements-train.txt
 
+# A Windows checkout mounted over /app has CRLF files; without this, git in the container sees every tracked
+# file as modified and reports record git_dirty = true on a clean tree (found in step 9.2).
+RUN git config --system core.autocrlf true
+
 COPY ml/ ml/
 
 ENV PYTHONUNBUFFERED=1
