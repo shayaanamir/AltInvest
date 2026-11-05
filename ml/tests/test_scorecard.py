@@ -74,3 +74,14 @@ def test_debug_scorecard_endpoint_serves_the_file_not_an_asset():
     r = TestClient(app).get("/debug/scorecard")
     assert r.status_code == 200
     assert r.json() == json.loads(sc.OUT_JSON.read_text(encoding="utf-8"))
+
+
+def test_phase9_only_ewma_risk_at_30_days_is_served(card):
+    """D51: the scorecard shows risk served = yes (EWMA, h = 30) and every other Phase 9 row not served."""
+    for a, x in card["assets"].items():
+        served = [(r["part"], r["model"], r["horizon"]) for r in x["phase9"] if r["served"]]
+        assert served == [("risk", "ewma", 30)]
+        src = {(v["model"], v["horizon"]): v for v in _report(a, "walkforward_risk_v2")["verdict_table"]}
+        row = next(r for r in x["phase9"] if r["part"] == "risk" and r["model"] == "ewma" and r["horizon"] == 30)
+        assert row["model_value"] == src[("ewma", 30)]["model_qlike"]
+    assert card["summary"]["phase9_served"] == len(config.ASSETS)

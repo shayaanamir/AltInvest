@@ -1,0 +1,40 @@
+{
+  "generated_at": "2026-11-03T11:21:05Z",
+  "git_commit": "ee7bcae4f2e3ccf0cfb2f7009c950dbf5be3b2d4",
+  "git_dirty": false,
+  "decision_rule": "D50",
+  "total_trials_phase_9": {
+    "price": 60,
+    "range": 18,
+    "risk": 12,
+    "direction": 12,
+    "total": 102
+  },
+  "decision": {
+    "risk": {
+      "serve_ewma_for_all_assets": true,
+      "not_worse_h30": {
+        "btc": true,
+        "eth": true,
+        "sol": true
+      },
+      "otherwise": "persistence vol_30d stays (D27, D36)"
+    },
+    "range": {
+      "serve_vol30_band_h30": {
+        "btc": false,
+        "eth": false,
+        "sol": false
+      },
+      "predicted_price": "null (D35)"
+    },
+    "price": {
+      "serve": false,
+      "reason": "0 of 60 approved (D35 stays)"
+    },
+    "direction": {
+      "serve": false,
+      "reason": "nothing passes; D33 stays; ETH logreg closed (D50)"
+    }
+  }
+}

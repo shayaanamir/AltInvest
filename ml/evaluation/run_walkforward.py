@@ -31,29 +31,33 @@ from ml.labels.labels import DIRECTION_CLASSES, RISK_CLASSES, build_labels
 H = config.HORIZON_DAYS
 
 
-def dev_data(raw_dev: pd.DataFrame) -> pd.DataFrame:
-    """Features, close and labels for the pre-test raw rows. close_fwd_30d is a label (never an input)."""
+def dev_data(raw_dev: pd.DataFrame, horizon: int = H) -> pd.DataFrame:
+    """Features, close and the labels of `horizon` for the pre-test raw rows (fwd_return_{h}d, fwd_vol_{h}d,
+    close_fwd_{h}d; h = 30 by default). close_fwd_{h}d is a label (never an input)."""
     feats = build_features(raw_dev)
     close = raw_dev.set_index("timestamp")["close"]
-    data = feats.join(build_labels(close).loc[feats.index])
+    data = feats.join(build_labels(close, horizon).loc[feats.index])
     data["close"] = close.loc[feats.index]
-    data["close_fwd_30d"] = close.shift(-H).loc[feats.index]
+    data[f"close_fwd_{horizon}d"] = close.shift(-horizon).loc[feats.index]
     return data
 
 
-def load_dev(asset: str) -> tuple[pd.DataFrame, int, int]:
-    """(data for feature rows [0, b2), b2, n). Test rows are dropped before anything is computed."""
+def load_dev(asset: str, horizon: int = H) -> tuple[pd.DataFrame, int, int]:
+    """(data for feature rows [0, b2), b2, n). Test rows are dropped before anything is computed.
+    b2 depends on n only, so it is the same for every horizon (D41)."""
     raw = load_raw(asset)
     n = len(raw) - config.WARMUP_ROWS
-    b2 = make_splits(n)["test"].start
-    data = dev_data(raw.iloc[:config.WARMUP_ROWS + b2].copy())
+    b2 = make_splits(n, embargo=horizon)["test"].start
+    data = dev_data(raw.iloc[:config.WARMUP_ROWS + b2].copy(), horizon)
     del raw
     assert len(data) == b2
     return data, b2, n
 
 
-def _pooled_counts(pooled: pd.DataFrame) -> dict:
-    return {"n_folds": int(pooled["origin"].nunique()), "n_pooled": len(pooled), "n_effective": len(pooled) / H}
+def _pooled_counts(pooled: pd.DataFrame, horizon: int = H) -> dict:
+    """n_effective = n_pooled / h: neighbouring rows share h - 1 of their h daily returns (D21, D41)."""
+    return {"n_folds": int(pooled["origin"].nunique()), "n_pooled": len(pooled),
+            "n_effective": len(pooled) / horizon}
 
 
 def sections(p: pd.DataFrame, block_size: int) -> dict:
@@ -105,8 +109,9 @@ def run(asset: str) -> dict:
     return _clean(report)
 
 
-def run_metadata(asset: str, data: pd.DataFrame, b2: int, n: int, pooled: pd.DataFrame) -> dict:
-    """Git state, data range and the evidence that the test split stayed sealed. Shared by walk-forward runners."""
+def run_metadata(asset: str, data: pd.DataFrame, b2: int, n: int, pooled: pd.DataFrame, horizon: int = H) -> dict:
+    """Git state, data range and the evidence that the test split stayed sealed. Shared by walk-forward runners.
+    At the default h = 30 the keys and values are those of the phase 4-5 reports."""
     max_row = int(pooled["row"].max())
     return {
         "asset": asset,
@@ -119,11 +124,11 @@ def run_metadata(asset: str, data: pd.DataFrame, b2: int, n: int, pooled: pd.Dat
         "last_date_built": data.index[-1].strftime("%Y-%m-%d"),
         "sealed_test_first_date": (data.index[-1] + pd.Timedelta(days=1)).strftime("%Y-%m-%d"),
         "pooled_rows": [int(pooled["row"].min()), max_row + 1],
-        "max_label_row_reached": max_row + H,
+        "max_label_row_reached": max_row + horizon,
         "min_train_rows": config.MIN_TRAIN_ROWS,
-        "step_rows": config.WALKFORWARD_STEP,
-        "horizon_days": H,
-        "embargo_days": config.EMBARGO_DAYS,
+        "step_rows": config.WALKFORWARD_STEP if horizon == H else horizon,
+        "horizon_days": horizon,
+        "embargo_days": config.EMBARGO_DAYS if horizon == H else horizon,
     }
 
 

@@ -9,8 +9,21 @@ ASSET_SYMBOLS = {"btc": "BTCUSDT", "eth": "ETHUSDT", "sol": "SOLUSDT"}
 # Assets served in phases 1-7 (docs/REQUIREMENTS.md, D4). Lowercase ids; the API uppercases them.
 ASSETS = tuple(ASSET_SYMBOLS)
 
-# Forecast horizon in daily bars (D3).
+# Forecast horizon in daily bars (D3). The served horizon, and the default of every horizon parameter.
 HORIZON_DAYS = 30
+
+# Phase 9 horizons in daily bars (D41). For each h: embargo = walk-forward step = h rows.
+FORECAST_HORIZONS = (30, 7)
+
+# EWMA (RiskMetrics) volatility decay, sigma2[t] = lambda x sigma2[t-1] + (1 - lambda) x r[t]^2 (D41).
+EWMA_LAMBDA = 0.94
+
+# Range (9.3, D43, D49): an 80% interval of the h-day log return, scored with the interval (Winkler) score at
+# alpha = 1 - RANGE_COVERAGE. Pass also needs coverage within RANGE_COVERAGE_BOUNDS and each tail <= the max.
+RANGE_COVERAGE = 0.80
+RANGE_QUANTILES = (0.10, 0.90)
+RANGE_COVERAGE_BOUNDS = (0.75, 0.85)  # D44
+RANGE_TAIL_MISS_MAX = 0.15  # D44
 
 # Chronological split fractions of the full series (docs/DATA.md "Splits", D11, D16).
 SPLIT_FRACTIONS = {"train": 0.70, "validation": 0.15, "test": 0.15}
@@ -48,7 +61,10 @@ RANDOM_BASELINE_SEED = 0  # D34
 STALE_DATA_HOURS = 48  # CONTRACT.md 'note' rule (no D-number yet)
 SHARPE_WINDOW_DAYS = 365  # D37: trailing daily log returns used for sharpe_ratio on /risk
 MODEL_VERSION_PRICE = "baseline-last-value"  # D35: no price model approved
-MODEL_VERSION_RISK = "persistence-pooled-pct"  # D36 (persistence vol_30d, D27; pooled percentile mapping)
+MODEL_VERSION_RISK = "ewma-pooled-pct"  # D51 (EWMA vol, lambda EWMA_LAMBDA; D36 pooled percentile mapping)
+RISK_MODEL_SERVED = True  # D51: EWMA risk served for every asset (was persistence vol_30d, D27)
+RISK_VOL_COLUMN = "ewma_vol"  # D51: the served volatility measure (ml.features.features.ewma_vol)
+LIVE_ALERT_MIN_WINDOWS = 6  # D46/D51: non-overlapping scored windows per asset before live_score may ALERT
 
 # Data directories (D40). The evaluation snapshot is ml/data/raw + ml/reports/data as of 2026-10-17; splits are
 # derived from n (D16, D18), so these files must not grow. Loader, validate, the serving gate and the refresh read

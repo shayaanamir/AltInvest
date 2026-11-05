@@ -14,6 +14,7 @@
 | 6 | FastAPI :8001 (/predict, /risk, /health, /debug/...) | contract test validates real responses against CONTRACT.md schemas for all assets | 6a: "How to verify Phase 6a yourself" in docs/STATUS.md. 6b (Docker/compose, daily refresh): filled in when completed |
 | 7 | Backend integration (Person B) | backend calls ML over HTTP end to end | Filled in docs/STATUS.md when the phase is completed (AGENTS rule 15) |
 | 8 | NFTs | separate PLAN_NFT.md, started only after 7 | Filled in docs/STATUS.md when the phase is completed (AGENTS rule 15) |
+| 9 | Forecasting v2 (price, price range, risk, direction at 30 and 7 days; D41-D47): steps 9.0-9.8 in docs/PLAN_FORECAST.md, each with a planner checkpoint | Every part has a walk-forward report with a D44 verdict; the sealed test ran once (test_final.json); served fields pass the contract test; parts that lost keep their baselines | "How to verify Phase 9 yourself" in docs/STATUS.md (step 9.8) |
 
 ## Order rationale
 Evaluation before models, so every model is judged against baselines from day one.

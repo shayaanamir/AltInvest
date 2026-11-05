@@ -123,3 +123,27 @@ def test_log_rows_are_json_lines(dirs, monkeypatch):
     refresh.run_once()
     lines = prediction_log.log_path().read_text(encoding="utf-8").splitlines()
     assert all(json.loads(x)["model_version"] == config.MODEL_VERSION_PRICE for x in lines)
+
+
+def _scored(asset, days, ewma, persistence, realised):
+    """Hand-made scored rows (not market data), one per day offset in `days`."""
+    return [{"asset": asset, "last_bar": (DAY0 + pd.Timedelta(days=d)).strftime("%Y-%m-%d"), "ewma_vol": ewma,
+             "vol_30d": persistence, "realised_vol_30d": realised, "status": "scored"} for d in days]
+
+
+def test_risk_monitor_needs_6_non_overlapping_windows_then_alerts():
+    daily = _scored("btc", range(0, 151), 0.02, 0.03, 0.02)           # 151 daily rows -> windows at 0, 30, ..., 150
+    assert len(live_score.non_overlapping(daily)) == 6
+    few = live_score.risk_monitor(daily[:150])                          # windows at 0..120: only 5
+    assert few["per_asset"]["btc"]["status"] == "insufficient data" and "qlike_ewma" not in few["per_asset"]["btc"]
+    ok = live_score.risk_monitor(daily)["per_asset"]["btc"]
+    assert ok["status"] == "ok" and ok["qlike_ewma"] < ok["qlike_persistence"]     # EWMA = realised here
+    worse = live_score.risk_monitor(_scored("btc", range(0, 151), 0.05, 0.02, 0.02))["per_asset"]["btc"]
+    assert worse["status"] == "ALERT" and worse["n_non_overlapping_windows"] == 6
+    assert live_score.risk_monitor(daily)["per_asset"]["eth"]["status"] == "insufficient data"   # no rows
+
+
+def test_risk_monitor_ignores_rows_logged_before_ewma():
+    old = [{k: v for k, v in r.items() if k != "ewma_vol"} for r in _scored("sol", range(0, 400), 0.02, 0.03, 0.02)]
+    res = live_score.risk_monitor(old)["per_asset"]["sol"]
+    assert res["n_scored"] == 0 and res["status"] == "insufficient data"

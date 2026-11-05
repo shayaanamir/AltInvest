@@ -66,7 +66,16 @@ Terms marked *(not used yet)* appear in the plan docs but no code uses them so f
 - **ROC-AUC**: chance a model scores a random positive above a random negative; 0.5 is chance. Needs probabilities. *(not used yet)*
 - **Calibration**: whether "70% likely" events happen about 70% of the time. *(not used yet)*
 - **Spearman correlation**: correlation of ranks: +1 means the predicted order matches the actual order perfectly.
-- **Coverage / interval width**: share of actual values inside a predicted range, and how wide the range is. *(not used yet)*
+- **Coverage / interval width**: share of actual values inside a predicted range, and how wide the range is. An 80% range should cover about 80% (Phase 9 accepts 75-85%).
+- **Tail miss**: a value below the range (lower tail) or above it (upper tail). An 80% range should miss about 10% on each side; Phase 9 allows at most 15% per side (D44).
+- **Interval (Winkler) score**: width of the range plus a penalty of 2/alpha (10 for an 80% range) per unit the actual value lands outside it. Lower is better; it rewards narrow ranges that still hold the value. Related to the pinball (quantile) loss used to train quantile models.
+- **Pinball / quantile loss**: the loss that teaches a model to predict a chosen quantile (for example the 10th percentile) instead of the mean.
+- **EWMA (exponentially weighted moving average) volatility**: today's variance = 0.94 x yesterday's variance + 0.06 x today's squared return (RiskMetrics). Recent days weigh more than in a plain 30-day window. Served for risk since D51.
+- **GARCH(1,1)**: a volatility model like EWMA whose weights are fitted to the data (omega, alpha, beta); Student-t errors allow fat tails. Tested in Phase 9, not approved.
+- **QLIKE**: a score for volatility forecasts, s/p - ln(s/p) - 1 with s = actual and p = predicted variance. 0 is perfect; under-forecasting is punished more than over-forecasting.
+- **LSTM (long short-term memory)**: a neural network that reads a sequence (here the last 60 days of features). Tested for price in Phase 9, not approved.
+- **Prophet**: Facebook's trend-plus-seasonality forecasting library. Tested for price in Phase 9, not approved; about level with last value after the D48 fix.
+- **Trial count**: how many configs x assets x horizons were tested. More trials make a lucky win more likely, so every report records it (102 in Phase 9).
 - **n_effective**: labelled rows / 30. Rough count of independent observations, since neighbouring 30-day labels overlap (D20).
 - **Bootstrap / confidence interval (CI)**: resampling the data many times to see how much a number could vary; the 95% CI is the range it falls in 95% of the time.
 - **Moving-block bootstrap**: a bootstrap that resamples runs of 30 neighbouring rows together, so overlapping labels stay together.

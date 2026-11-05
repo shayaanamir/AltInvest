@@ -1,7 +1,211 @@
 # STATUS
 
-Current phase: 7 (backend integration, PLAN_NEXT.md C1-C7) DONE (2026-11-02), on branch phase-7-integration (from main a80b783, which merged ml-phase-7 as PR #6; uncommitted). No file under ml/ changed except this file and docs/phases/PHASE_7_backend_integration.md.
-Next: section A ML fixes (A0-A7) and B1 hand-over, then Phase 8 plan (D1). Person B must review the files listed under "Phase 7: files changed outside ml/".
+Current phase: 9 (forecasting v2) DONE (2026-11-03), on branch phase-9-forecasting (not pushed). Served: EWMA risk for all assets (D51). Price (D35), range (none) and direction (D33) are unchanged. At STOP C, waiting for the planner's sign-off.
+Next: Person B checks the new risk_score values and note text (fields unchanged). Merge phase-7-integration, then rebase this branch onto main. The live scorecard starts scoring on 2026-11-30.
+
+## Phase 9 steps 9.7-9.8: what ran (2026-11-03, from repo root)
+
+- D51 (serve EWMA risk for all assets; no artifacts, no new dependencies, no monthly retrain): 8095de9.
+- 9.7 serving: cd0c07a.
+  - `ml/serving/responses.py`: `serving_table` adds `ewma_vol` with the same `ml.features.features.ewma_vol` as the evaluation, on the closes of the feature rows.
+    - risk_inputs serves the EWMA; volatility = EWMA x sqrt(365).
+    - risk_score = D36 percentile over the EWMA history of BTC, ETH and SOL dated <= today.
+    - New risk note. served.risk_model true; decisions_in_force gains D50 and D51 and drops D27.
+  - `ml/config.py`: MODEL_VERSION_RISK "ewma-pooled-pct", RISK_MODEL_SERVED, RISK_VOL_COLUMN, LIVE_ALERT_MIN_WINDOWS = 6.
+  - `ml/serving/prediction_log.py` also logs ewma_vol.
+  - `ml/evaluation/live_score.py` adds `risk_monitor`: EWMA vs persistence QLIKE on the scored rows. It shows "insufficient data" until an asset has >= 6 non-overlapping windows, then "ok" or "ALERT", and never switches models.
+  - `qlike` moved to `ml/evaluation/metrics.py`, so serving does not import the evaluation runners.
+  - `ml/evaluation/scorecard.py` gains a Phase 9 section; the regenerated scorecard is in 535622c. Phase 9 rows: 5 of 60 approved, served 3 (EWMA risk, h = 30, one per asset). The old 4a risk rows now say "EWMA is served instead (D51)".
+- Test expectations changed on purpose:
+  - test_serving.py: `_feats` now has `ewma_vol` (the served column) and `vol_30d` = 10 x it, so every risk number test (D36 by hand, ties, future-date leakage, Sharpe, annualisation, staleness, predict fields) now checks the EWMA column.
+  - test_serving.py: `test_check_scores_match_serving_on_that_date` now uses `rs.serving_table` and the EWMA column, rows 35+ after the warm-up.
+  - New tests:
+    - test_serving.py: the same ewma_vol function as evaluation; the note, flags, version and D50/D51.
+    - test_live_tracking.py: monitor needs 6 non-overlapping windows, then ALERT or ok; pre-EWMA rows are ignored.
+    - test_scorecard.py: only EWMA risk at h = 30 is served.
+  - test_contract.py is unchanged (it reads MODEL_VERSION_RISK from config).
+- Docker: `docker compose up -d --build ml ml-refresh` (cached build, 7 s).
+  - Startup refresh: btc and eth ok at 3365 rows, sol ok at 2275, last bar 2026-11-02.
+  - `/health`: risk "ewma-pooled-pct". `/risk/{BTC,ETH,SOL}` risk_score 97.150142, 93.637394, 82.838527; volatility 0.312892, 0.360016, 0.468358. `/predict` has the same risk_score and is otherwise unchanged.
+  - `/debug/live-scorecard`: 9 logged, 0 scored, first scorable 2026-11-30, risk_monitor "insufficient data" for all assets.
+  - Container healthy; serving image 847MB with no new dependencies. `docker compose down`; volume kept.
+- 9.8: this block, `ml/docs/phases/PHASE_9_forecasting_v2.md`, GLOSSARY terms (coverage, tail miss, interval score, pinball loss, EWMA, GARCH, QLIKE, LSTM, Prophet, trial count), AGENTS.md docs list.
+- Tests:
+  - `.venv-train`: `301 passed`.
+  - Clean serving venv (no training libraries): imports work; serving, contract, live and scorecard tests `60 passed`.
+  - The 39 snapshot and report hashes are identical.
+
+## How to verify Phase 9 yourself (PowerShell, from the repo root)
+
+```powershell
+Set-Location C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest
+# One-time setup if .venv-train is missing:
+#   python -m venv .venv-train; .\.venv-train\Scripts\python.exe -m pip install -r ml/requirements.txt -r ml/requirements-train.txt
+$py = ".\.venv-train\Scripts\python.exe"
+
+# 1. All tests
+& $py -m pytest ml -q
+
+# 2. The verdicts and the serving decision, read from the reports
+& $py -c "import json; [print(a, v['model'], v['horizon'], v['approved']) for a in ('btc','eth','sol') for v in json.load(open(f'ml/reports/{a}/walkforward_risk_v2.json'))['verdict_table'] if v['model'] == 'ewma']"
+& $py -c "import json; print(json.load(open('ml/reports/test_final_summary.json'))['decision']['risk']['serve_ewma_for_all_assets'])"
+
+# 3. The sealed test refuses a second run
+& $py -m ml.evaluation.run_sealed_test; "exit: $LASTEXITCODE"
+
+# 4. The scorecard is reproducible: only the metadata lines change, then undo
+& $py -m ml.evaluation.scorecard
+git diff -U0 ml/reports | Select-String '^[-+][^-+]'
+git checkout -- ml/reports/scorecard.json ml/reports/SCORECARD.md
+
+# 5. Docker: EWMA risk is served
+docker compose up -d --build ml ml-refresh
+while (-not ((docker logs altinvest-ml-refresh 2>&1 | Out-String) -match 'next refresh at')) { Start-Sleep -Seconds 2 }
+curl.exe -s http://127.0.0.1:8001/health; ""
+curl.exe -s http://127.0.0.1:8001/risk/BTC; ""
+docker compose down
+```
+
+Expected (observed 2026-11-03):
+
+1. `301 passed`.
+2. `btc ewma 30 True`, `btc ewma 7 True`, `eth ewma 30 True`, `eth ewma 7 True`, `sol ewma 30 False`, `sol ewma 7 False`; then `True`.
+3. `the sealed test has already been run (D44, D50: used once): [...]`, then `exit: 1`.
+4. Only the `Generated ... at commit` line of SCORECARD.md and `generated_at`, `git_commit` (and `git_dirty`) in scorecard.json change.
+5. `/health` shows `"risk":"ewma-pooled-pct"`. `/risk/BTC` has a risk_score between 0 and 100, a volatility of about 0.2-1.0, and a note starting `Risk model: EWMA volatility (lambda 0.94)`. Values change daily with the data.
+
+
+## Phase 9 step 9.6: what ran (2026-11-03, from repo root)
+
+- D50 (sealed-test configs and serving rules) was written after the 9.3-9.5 results and before the test: 92f658f.
+  - It also records the baseline band's confirmation calibration at h = 30. BTC (coverage 0.7473, upper miss 0.1949) and ETH (upper miss 0.1564) fail; SOL passes.
+- `ml/evaluation/run_sealed_test.py` and `ml/tests/test_sealed_test.py` (5 tests): ee7bcae. The runner fits nothing and refuses to run if any test_final file exists.
+- `.venv-train/Scripts/python.exe -m ml.evaluation.run_sealed_test` ran ONCE at ee7bcae (git_dirty false). It wrote `ml/reports/{btc,eth,sol}/test_final.json` and `ml/reports/test_final_summary.json`.
+  - Test rows: [b2, n - h).
+  - Risk: EWMA has the lower QLIKE than persistence for every asset and horizon tested. At h = 30 the upper CI bound is >= 0 for all 3 assets (BTC's CI includes 0), so EWMA is served for all assets.
+  - Range: the vol_30d band fails test calibration for all 3 assets (coverage 0.6987-0.7479, lower-tail misses 0.158-0.171). No band is served.
+  - Total Phase 9 trials: 102.
+- `python -m pytest ml -q` (.venv-train): `296 passed`. The 39 snapshot and report hashes are identical.
+
+
+## Phase 9 steps 9.3-9.5: what ran (2026-11-03, from repo root)
+
+- Plan v2 and D49 (scope of range, risk and direction, written before any run): 0ae1b79.
+- Evaluation venv `.venv-train` (repo root, with a `*` .gitignore inside), from `ml/requirements.txt` + `ml/requirements-train.txt`. Python 3.12.10; the training-library pins match; scipy (not pinned) resolved to 1.18.1. The pip freeze was recorded once in the STOP A report. The host Python was not used or repaired.
+- Code commits: d682c99 (9.3), 89a461a (9.4), acf6ce7 (9.5).
+  - New: `ml/evaluation/interval_metrics.py`, `part_runner.py`, `run_walkforward_range.py`, `run_walkforward_risk_v2.py`, `run_walkforward_direction_v2.py`; `ml/models/range_v2.py`, `risk_v2.py`, `direction_v2.py`.
+  - Range constants are in config.py.
+  - Tests: test_range_v2.py, test_risk_v2.py, test_direction_v2.py. Their D48 no-look-ahead tests cover the bands, EWMA and GARCH.
+- Runs (`.venv-train`, clean tree):
+  - `python -m ml.evaluation.run_walkforward_range` (445 s) wrote `ml/reports/{asset}/walkforward_range.json`. 0 of 12 approved; 18 trials.
+  - `python -m ml.evaluation.run_walkforward_risk_v2` (114 s) wrote `walkforward_risk_v2.json`. EWMA is approved and the winner for BTC and ETH at h = 30 and 7; SOL none; GARCH none; 12 trials.
+  - `python -m ml.evaluation.run_walkforward_direction_v2` (281 s) wrote `walkforward_direction_v2.json` and `backtest_v2.json`. The logreg results equal 4c exactly. ETH logreg is approved in walk-forward, but its backtest does not beat buy-and-hold. Nothing passes; 12 trials.
+- Report commits: 38cb488 (range), 3ff7ad4 (risk), db06492 (direction).
+  - The range and risk reports record git_commit acf6ce7; the direction reports record 3ff7ad4, because the earlier report commits landed during the run.
+  - `git diff 3ff7ad4 acf6ce7` outside ml/reports is empty. All record git_dirty false.
+- `.venv-train`: `python -m pytest ml -q` -> `291 passed`. The 39 snapshot and report hashes are identical.
+- Open for the planner:
+  - Risk is approved for BTC and ETH but not SOL, while D36 pools one percentile across all assets.
+  - Direction "beats" is reported as both a point estimate and a CI.
+
+
+## Phase 9 step 9.2 follow-up: D48 and the re-run at a commit (2026-11-03)
+
+- Commits on phase-9-forecasting (user approved):
+  - c102f7f: docs, the plan and D41-D47
+  - fcd1577: 9.1
+  - f164fdd: 9.2a
+  - a46f18b: 9.2 price
+  - 93286c7: D48
+  - cc531e3: corrected Prophet and `ml/evaluation/walkforward_history.py`
+  - b2054c3: training-image git fix
+  - 48a37e7: the reports
+- D48: the embargo applies to labels, not to inputs known at t.
+  - Corrected Prophet: fit on log close of rows [0, r] at refit origin r, with return = forecast(t + h) - forecast(t). The old protocol is kept as `prophet_9_2`, labelled "prophet (9.2 protocol, superseded)".
+  - GARCH (9.4) follows the same rule.
+  - Tests: `ml/tests/test_walkforward_history.py` (6), including "changing any close after t leaves the forecast for origin t unchanged" at h = 7 and h = 30.
+- Re-ran all 5 price models at cc531e3 in altinvest-ml-train: `--model ridge, lightgbm, prophet_9_2, prophet, lstm`.
+  - Wall time: 154, 215, 1289, 468 and 724 s. prophet_9_2 BTC h = 30 took 864 s against 73 s in 9.2, a host/VM stall; Docker Desktop had stopped and was restarted before the run.
+  - Ridge, LightGBM, prophet_9_2 and LSTM horizon sections are identical to 9.2 for all 3 assets (run metadata and wall times ignored).
+  - Corrected Prophet: approved nowhere.
+  - Trial count 60 in every report.
+- git_dirty = true in these reports is a false positive. The Windows CRLF checkout mounted in the container made git see 447 modified files; with core.autocrlf it sees only the untracked reports.
+  - Fixed in ml/Dockerfile.train (b2054c3). After the fix, the container reports git_dirty False at b2054c3.
+  - The report numbers were produced at cc531e3 with a clean tree.
+- Tests:
+  - altinvest-ml-train: `273 passed`. Clean serving venv: `268 passed, 5 skipped`.
+  - The host Python now fails 4 API test files at collection (`Router.__init__() got an unexpected keyword argument 'on_startup'`). Since the 9.2 run, starlette 1.10.0 is installed next to fastapi 0.115.0 (reinstalled at 19:16), not by this session. The host environment was not touched; ml/requirements.txt pins fastapi 0.115.0, which brings starlette 0.38.6.
+- The 39 snapshot and report hashes are identical.
+ Branch phase-9-forecasting, created from phase-7-integration at c59ad96 (Phase 7 is not merged into main yet; rebase onto main after the 6d and Phase 7 PRs merge, planner 2026-11-03); uncommitted.
+
+## Phase 9 step 9.2: what ran (2026-11-03, from repo root)
+
+- 9.2a, walk-forward horizon (D41):
+  - `make_splits(n, embargo=30)`: b2 is unchanged for every horizon.
+  - `run_folds(..., horizon=30)`: refuses label columns that look further ahead than h, and train rows inside the h-row embargo. D19 classes and thresholds are added at h = 30 only.
+  - `dev_data` / `load_dev(asset, horizon=30)`, `_pooled_counts(p, horizon)` (n_effective = n_pooled / h), `run_metadata(..., horizon)`. The bootstrap block = h is passed by the callers.
+  - Tests: `ml/tests/test_walkforward_horizon.py` (10).
+  - Re-ran all 10 existing report writers for all 3 assets (30 reports). Each one's content equals the committed file, with only generated_at, git_commit and git_dirty ignored; each was then restored with `git checkout`.
+- 9.2b, timing in the training image: `python -m ml.evaluation.timing_price_v2` wrote `ml/reports/timing_price_v2.json`. Projected Prophet + LSTM total: 0.58 h (upper) / 0.36 h (mean). No STOP.
+- 9.2c, the runs: `python -m ml.evaluation.run_walkforward_price_v2 --model {ridge,lightgbm,prophet,lstm}`, in that order, in altinvest-ml-train with the repo mounted. It wrote `ml/reports/{btc,eth,sol}/walkforward_price_v2.json`.
+  - Ridge at h = 30 reproduces the 4b MAEs exactly.
+  - Wall time: lightgbm 117 s, prophet 382 s, lstm 611 s (all assets, both horizons).
+  - Result: 0 of 24 (asset x horizon x model) approved. Trial count 48 (4 model types x 2 configs x 3 assets x 2 horizons). Verdict table: `verdict_table` in each report.
+  - LSTM, first run: failed (`window shape cannot be larger than input array shape`). Early BTC/ETH cutoffs give SOL fewer than 60 train rows. Fix: an asset with fewer than `lookback` train rows contributes nothing to that fit (test added). The second run passed (two-attempt rule: 1 fix).
+  - Reports record git_dirty = true (code uncommitted, at c59ad96).
+- New modules:
+  - `ml/evaluation/approval.py` (D44 rank and confirm, strongest baseline)
+  - `ml/evaluation/walkforward_pooled.py` (pooled fits by cutoff date, each asset's b2 respected)
+  - `ml/models/price_v2.py` (Ridge reference, LightGBM, Prophet, RefitEvery)
+  - `ml/models/lstm.py`
+  - `ml/evaluation/run_walkforward_price_v2.py`
+  - `ml/evaluation/timing_price_v2.py`
+  - `ml/models/price.py`: `fit(..., target="fwd_return_30d")`.
+  - Tests: `ml/tests/test_price_v2.py` (11).
+- `python -m pytest ml -q` -> `268 passed` on the host (all training libraries installed). Clean serving venv: `265 passed, 3 skipped` (the tests that need lightgbm, prophet or torch). The 39 snapshot and report hashes are identical.
+
+## Phase 9 step 9.1: what ran (2026-11-03, from repo root)
+
+- Planner answers to the 9.0 questions are folded into D41-D47, edited in place (still uncommitted):
+  - Q1/Q2 (D42): range baselines are the vol_30d and EWMA normal bands. Candidates are the EWMA empirical band (quantiles of r / sigma from fold train rows) and quantile LightGBM. Bounds are log returns; bound price = last close x exp(quantile).
+  - Q3 (D42): the same LightGBM grid for range, risk and direction.
+  - Q4 (D42): direction at h = 30 only, and why.
+  - Q5 (D42, D44): the strongest baseline is the bar. At h = 7 risk, that is persistence vol_7d, vol_30d or EWMA. Baselines are not trials.
+  - Q6 (D45): conditional Prophet-in-serving clause, refit daily.
+  - Q7 (D41): refit cadence. Prophet and LSTM refit every 28 rows at h = 7 and every fold at h = 30; the others refit every fold.
+  - Q8 (D44, D46): the sealed test uses point estimates; an ALERT needs at least 6 scored non-overlapping windows.
+- `ml/config.py`: FORECAST_HORIZONS = (30, 7), EWMA_LAMBDA = 0.94 (D41). HORIZON_DAYS = 30 unchanged.
+- `ml/labels/labels.py`: `fwd_return(close, horizon=30)`, `fwd_vol(close, horizon=30)`, `build_labels(close, horizon=30)`. The columns are fwd_return_{h}d and fwd_vol_{h}d. `fwd_return_30d` and `fwd_vol_30d` are now wrappers. Thresholds and classes still use the 30-day labels only.
+- `ml/features/features.py`: `ewma_vol(close, lam=0.94)` (D41), seeded with vol_30d at row 30, NaN before. It is not a model input: FEATURE_COLUMNS is unchanged.
+- `ml/requirements-train.txt` (new): torch 2.12.0+cpu (CPU index), prophet 1.3.0, cmdstanpy 1.3.0, lightgbm 4.7.0, arch 8.0.0, the dev-machine versions. lightgbm and arch were installed on the host for this step (the dry run showed no change to numpy, pandas or scipy).
+- `ml/Dockerfile.train` (new): serving plus training requirements, git and libgomp1. Evaluation runs with the repo mounted over /app (D40 snapshot). It is not in docker-compose.yml.
+- `ml/tests/test_horizon_labels_ewma.py` (new, 22 tests):
+  - The default horizon is unchanged.
+  - 7-day labels match the hand formula, are NaN only in the last 7 rows, and ignore rows after t+h.
+  - Bad horizons raise.
+  - The EWMA seed and recursion are correct, it is the same on a truncated series, and future prices do not change it.
+  - Bad lambda raises.
+  - Config and the serving path import in a fresh interpreter with prophet, cmdstanpy, torch, lightgbm, arch, onnx and onnxruntime blocked.
+- `ml/README.md`: one paragraph on the training requirements and image.
+- Results:
+  - Host: `python -m pytest ml -q` -> `247 passed` (225 + 22). `python -c "import ml.config"` works.
+  - Clean venv with only ml/requirements.txt (scratchpad, not in the repo): no training library is importable; `import ml.config` works; `247 passed`.
+  - `docker build -f ml/Dockerfile.train -t altinvest-ml-train .` took 6.2 min; image size 2.31 GB. In the image: torch 2.12.0+cpu, prophet 1.3.0, lightgbm 4.7.0, arch 8.0.0, numpy 2.2.6, pandas 2.3.3. `docker run --rm -v "${PWD}:/app" altinvest-ml-train python -m pytest ml -q` -> `247 passed`.
+  - Old (HEAD) vs new labels.py and features.py on the snapshot: 30-day labels, `fwd_*_30d` and `build_features` are exactly equal for btc, eth and sol.
+  - Re-ran run_walkforward_{risk,price,direction} for all 3 assets. Each report's content equals the committed file, with only generated_at, git_commit and git_dirty ignored. Each file was then restored with `git checkout`.
+  - SHA-256 of the 39 files under ml/data/raw and ml/reports/{btc,eth,sol,data}: identical to the hashes taken before step 9.0.
+- Files changed in 9.1: ml/config.py, ml/labels/labels.py, ml/features/features.py, ml/README.md, ml/docs/DECISIONS.md (D41-D47 answers), ml/docs/STATUS.md. New: ml/requirements-train.txt, ml/Dockerfile.train, ml/tests/test_horizon_labels_ewma.py. Nothing outside ml/.
+
+Phase 7 (backend integration, PLAN_NEXT.md C1-C7) DONE (2026-11-02), commit c59ad96 on phase-7-integration. Its follow-ups are still open: section A ML fixes (A0-A7), B1 hand-over, Phase 8 plan (D1); Person B must review the files listed under "Phase 7: files changed outside ml/".
+
+## Phase 9 step 9.0: what ran (2026-11-03, from repo root)
+
+- Precondition: Phase 7 is closed (Phase 7 section below). Fast-forwarded the local phase-7-integration branch to origin (c59ad96), then created phase-9-forecasting from it.
+- Before: `python -m pytest ml -q` -> `225 passed`. SHA-256 of the 39 files under ml/data/raw and ml/reports/{btc,eth,sol,data}, taken before and after the step: identical (docs-only step).
+- ml/docs/DECISIONS.md: appended D41 (horizons 30 and 7, return targets, embargo = step = h, EWMA definition), D42 (candidates and configs), D43 (metrics), D44 (approval and serving rule, sealed test once), D45 (consistency and serving rules), D46 (monitoring rule) and D47 (7-day API field pending Person B; until then 7-day results stay in reports and /debug).
+- ml/docs/PLAN.md: added the Phase 9 row.
+- Open: Person B's answer on a 7-day API field (D47). Planner questions are listed in the 9.0 checkpoint report.
+- Files changed: ml/docs/DECISIONS.md, ml/docs/PLAN.md, ml/docs/STATUS.md. ml/docs/PLAN_FORECAST.md is untracked (the plan, as handed over).
 
 ## Phase 7: what ran (2026-11-02, from repo root)
 

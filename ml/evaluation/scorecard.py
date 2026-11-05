@@ -2,10 +2,11 @@
 
     python -m ml.evaluation.scorecard          (from the repo root)
 
-Reads ONLY ml/reports/{asset}/walkforward_{risk,price,direction}.json, backtest.json and power_check.json; trains
-nothing and reads no data (AGENTS rules 5, 8). Writes ml/reports/scorecard.json and ml/reports/SCORECARD.md, both
-generated, never hand-typed. Every number is copied from a source report; `gain` is the paired difference signed so
-that > 0 means the model beat its baseline (D25, D28, D31). Served comes from config and D27, D33, D35, D36.
+Reads ONLY ml/reports/{asset}/walkforward_{risk,price,direction}.json, backtest.json, power_check.json and the
+Phase 9 reports (walkforward_{price_v2,range,risk_v2,direction_v2}.json, test_final.json); trains nothing and reads
+no data (AGENTS rules 5, 8). Writes ml/reports/scorecard.json and ml/reports/SCORECARD.md, both generated, never
+hand-typed. Every number is copied from a source report; `gain` is the paired difference signed so that > 0 means
+the model beat its baseline (D25, D28, D31, D44). Served comes from config and D33, D35, D36, D51.
 """
 
 import json
@@ -30,7 +31,7 @@ MODELS = {
                   "logloss_prior", "paired_diff_logloss_prior_minus_top", False),
 }
 SERVED_REASON = {
-    "risk": "not served: persistence vol_30d is served instead (D27, D36)",
+    "risk": "not served: EWMA volatility (Phase 9) is served instead (D51)",
     "price": "not served: the last-value baseline (0%) is served instead (D35)",
     "direction": "not served: signal UNCERTAIN, confidence null (D33)",
 }
@@ -62,6 +63,39 @@ def model_row(asset: str, model: str) -> dict:
         "served": served, "served_reason": "served" if served else SERVED_REASON[model],
         "source": f"ml/reports/{asset}/{report}.json",
     }
+
+
+PHASE9 = {  # part -> (report, metric label, model field, baseline field)
+    "price": ("walkforward_price_v2", "MAE of h-day return", "model_mae", "baseline_mae"),
+    "range": ("walkforward_range", "interval score", "model_interval_score", "baseline_interval_score"),
+    "risk": ("walkforward_risk_v2", "QLIKE", "model_qlike", "baseline_qlike"),
+    "direction": ("walkforward_direction_v2", "log loss", "model_log_loss", "baseline_log_loss"),
+}
+
+
+def phase9_served(part: str, model: str, horizon: int) -> bool:
+    """D51: only EWMA risk at h = 30 is served; range, price and direction keep their baselines."""
+    return part == "risk" and model == "ewma" and horizon == config.HORIZON_DAYS and config.RISK_MODEL_SERVED
+
+
+def phase9_rows(asset: str) -> list[dict]:
+    rows = []
+    for part, (report, metric, mfield, bfield) in PHASE9.items():
+        for v in _load(asset, report)["verdict_table"]:
+            served = phase9_served(part, v["model"], v["horizon"])
+            rows.append({"part": part, "horizon": v["horizon"], "model": v["model"], "best_config": v["best_config"],
+                         "metric": metric, "model_value": v[mfield], "baseline": v["baseline"],
+                         "baseline_value": v[bfield], "gain_ci95": _ci(v["paired_ci"]), "approved": v["approved"],
+                         "served": served, "source": f"ml/reports/{asset}/{report}.json"})
+    return rows
+
+
+def sealed_test(asset: str) -> dict:
+    t = _load(asset, "test_final")
+    return {"risk": {h: {k: r[k] for k in ("qlike_ewma", "qlike_persistence", "not_worse")}
+                     | {"gain_ci95": _ci(r["paired_diff_persistence_minus_ewma"])} for h, r in t["risk"].items()},
+            "range_h30": {k: t["range_h30"]["test"][k] for k in ("coverage", "lower_tail_miss", "upper_tail_miss")},
+            "decision": t["decision"], "source": f"ml/reports/{asset}/test_final.json"}
 
 
 def backtest_rows(asset: str) -> dict:
@@ -104,11 +138,14 @@ def build(assets=config.ASSETS) -> dict:
         bt = backtest_rows(a)
         power = _load(a, "power_check")
         out["assets"][a] = {"verdict": verdict(a, models, bt), "models": models, "backtest": bt,
-                            "power_note": power["note"]}
+                            "power_note": power["note"], "phase9": phase9_rows(a), "sealed_test": sealed_test(a)}
     out["summary"] = {
         "models_approved": sum(r["approved"] for x in out["assets"].values() for r in x["models"].values()),
         "models_served": sum(r["served"] for x in out["assets"].values() for r in x["models"].values()),
         "models_total": len(assets) * len(MODELS),
+        "phase9_approved": sum(r["approved"] for x in out["assets"].values() for r in x["phase9"]),
+        "phase9_served": sum(r["served"] for x in out["assets"].values() for r in x["phase9"]),
+        "phase9_rows": sum(len(x["phase9"]) for x in out["assets"].values()),
     }
     out["metadata"] = {"generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                        **git_metadata(),
@@ -128,7 +165,9 @@ def markdown(card: dict) -> str:
     s = card["summary"]
     lines = ["# SCORECARD (generated by `python -m ml.evaluation.scorecard`; do not edit)", "",
              f"Generated {card['metadata']['generated_at']} at commit `{card['metadata']['git_commit']}`. "
-             f"Models approved: {s['models_approved']} of {s['models_total']}; served: {s['models_served']}.", "",
+             f"Models approved: {s['models_approved']} of {s['models_total']}; served: {s['models_served']}. "
+             f"Phase 9 rows approved: {s['phase9_approved']} of {s['phase9_rows']}; served: {s['phase9_served']} "
+             "(EWMA risk, D51).", "",
              "Gain = paired 95% CI of (baseline - model) for losses, (model - baseline) for Spearman: "
              "> 0 means the model is better. Approved only if the whole CI is above 0.", ""]
     for a, x in card["assets"].items():
@@ -153,7 +192,20 @@ def markdown(card: dict) -> str:
                          f"{_f(ci['high'], True)}] | {_f(r['cumulative_return'], True)} | "
                          f"{_f(r['max_drawdown'], True)} | {_f(r['sharpe_annualised'])} | "
                          f"{'n/a' if r['trades'] is None else r['trades']} |")
-        lines += ["", f"Power: {x['power_note']}", ""]
+        lines += ["", f"Power: {x['power_note']}", "", f"### {a.upper()} Phase 9 (walk-forward, last 40% of folds)", "",
+                  "| Part | h | Model | Best config | Metric | Model | Baseline | Gain [95% CI] | Approved | Served |",
+                  "|---|---|---|---|---|---|---|---|---|---|"]
+        for r in x["phase9"]:
+            g = r["gain_ci95"]
+            lines.append(f"| {r['part']} | {r['horizon']} | {r['model']} | {r['best_config']} | {r['metric']} | "
+                         f"{_f(r['model_value'])} | {_f(r['baseline_value'])} ({r['baseline']}) | {_f(g['estimate'])} "
+                         f"[{_f(g['low'])}, {_f(g['high'])}] | {'yes' if r['approved'] else 'no'} | "
+                         f"{'yes' if r['served'] else 'no'} |")
+        st = x["sealed_test"]
+        lines += ["", "Sealed test (D50): " + "; ".join(
+            f"risk {h}: QLIKE EWMA {_f(r['qlike_ewma'])} vs persistence {_f(r['qlike_persistence'])}, gain "
+            f"{_f(r['gain_ci95']['estimate'])} [{_f(r['gain_ci95']['low'])}, {_f(r['gain_ci95']['high'])}]"
+            for h, r in st["risk"].items()) + f"; vol_30d band coverage {_f(st['range_h30']['coverage'])}.", ""]
     return "\n".join(lines)
 
 

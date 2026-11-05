@@ -55,3 +55,23 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
         "hl_range_7d": np.log(df["high"] / df["low"]).rolling(7).mean(),
     }, index=df.index)
     return feats[FEATURE_COLUMNS].iloc[config.WARMUP_ROWS:]
+
+
+def ewma_vol(close: pd.Series, lam: float = config.EWMA_LAMBDA) -> pd.Series:
+    """EWMA (RiskMetrics) daily volatility (D41), same index as `close`, same daily units as vol_30d.
+
+    sigma2[t] = lam x sigma2[t-1] + (1 - lam) x r[t]^2, r = daily log return. Seeded at row WARMUP_ROWS with
+    vol_30d^2 of that row; NaN before it. Uses only returns at or before t. Not a model input (FEATURE_COLUMNS
+    is unchanged); Phase 9 uses it as a baseline and in range bands.
+    """
+    if not 0.0 < lam < 1.0:
+        raise ValueError(f"lam must be in (0, 1), got {lam!r}")
+    r = np.log(close).diff()
+    r2 = (r * r).to_numpy(dtype=float)
+    out = np.full(len(r2), np.nan)
+    start = config.WARMUP_ROWS
+    if len(r2) > start:
+        out[start] = r.rolling(30).std().iloc[start] ** 2
+        for t in range(start + 1, len(r2)):
+            out[t] = lam * out[t - 1] + (1.0 - lam) * r2[t]
+    return pd.Series(np.sqrt(out), index=close.index, name="ewma_vol")

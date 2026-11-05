@@ -268,3 +268,9 @@ def paired_bootstrap_ci(a, b, stat_fn, block_size: int = 30, n_boot: int = 1000,
     return {"estimate": float(stat_fn(a) - stat_fn(b)),
             "low": float(np.quantile(diffs, alpha)), "high": float(np.quantile(diffs, 1 - alpha)),
             "level": level, "block_size": block_size, "n_boot": n_boot, "seed": seed}
+
+
+def qlike(pred_vol, actual_vol) -> np.ndarray:
+    """Per-row QLIKE on variance (D43): s / p - log(s / p) - 1, s = actual vol^2, p = predicted vol^2. Lower is better."""
+    ratio = np.asarray(actual_vol, dtype=float) ** 2 / np.asarray(pred_vol, dtype=float) ** 2
+    return ratio - np.log(ratio) - 1

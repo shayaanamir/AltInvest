@@ -1,7 +1,8 @@
-"""Tests for the serving layer (Phase 6a; D27, D33, D35, D36, D37).
+"""Tests for the serving layer (Phase 6a; D33, D35, D36, D37; risk = EWMA since D51).
 
 All fixtures below are small HAND-MADE numbers, NOT market data. No network calls. Feature tables are built
-by hand (only vol_30d and ret_1d are read); the loading tests write hand-made raw bars and matching
+by hand (only ewma_vol, vol_30d and ret_1d are read; vol_30d is set to 10x ewma_vol so a test fails if serving
+read the old persistence column); the loading tests write hand-made raw bars and matching
 validation reports into temporary serving directories (config.ML_RAW_DIR, config.ML_VALIDATION_DIR; D40).
 """
 
@@ -16,7 +17,7 @@ from fastapi.testclient import TestClient
 from ml import config
 from ml.api.service import app
 from ml.evaluation.risk_mapping_check import historical_scores
-from ml.features.features import build_features
+from ml.features.features import build_features, ewma_vol
 from ml.labels import labels
 from ml.serving import responses as rs
 from ml.signal.signal_logic import NOTE_NOT_SERVED
@@ -26,9 +27,10 @@ HOUR = pd.Timedelta(hours=1)
 
 
 def _feats(vols, rets=None, start=DAY0) -> pd.DataFrame:
-    """Hand-made feature table: one row per day from `start`."""
+    """Hand-made serving table: one row per day from `start`. `vols` is the served EWMA vol (D51)."""
     idx = start + pd.to_timedelta(np.arange(len(vols)), unit="D")
-    return pd.DataFrame({"vol_30d": vols, "ret_1d": rets if rets is not None else np.zeros(len(vols))}, index=idx)
+    return pd.DataFrame({"ewma_vol": vols, "vol_30d": 10 * np.asarray(vols, dtype=float),
+                         "ret_1d": rets if rets is not None else np.zeros(len(vols))}, index=idx)
 
 
 def _now(feats: pd.DataFrame, hours_after_close: float = 1) -> pd.Timestamp:
@@ -188,13 +190,35 @@ def test_no_label_is_built_when_serving(monkeypatch):
 
 
 def test_check_scores_match_serving_on_that_date():
-    """The read-only check (ml.evaluation.risk_mapping_check) uses the served D36 mapping, cut at each row's date."""
-    fa, fb = build_features(_raw("aaa")), build_features(_raw("bbb", 380))
+    """The D36 mapping in ml.evaluation.risk_mapping_check, cut at each row's date, equals serving on the served
+    EWMA column (D51; rows from 35 on, after the EWMA warm-up)."""
+    fa, fb = rs.serving_table(_raw("aaa")), rs.serving_table(_raw("bbb", 380))
     fb = fb * 1.3
-    pool = {"aaa": fa["vol_30d"], "bbb": fb["vol_30d"]}
-    for r in (5, 200, len(fb) - 1, len(fa) - 1):
+    pool = {"aaa": fa["ewma_vol"].dropna(), "bbb": fb["ewma_vol"].dropna()}
+    for r in (35, 200, len(fb) - 1, len(fa) - 1):
         served = rs.risk_inputs("aaa", _now(fa.iloc[:r + 1]), {"aaa": fa.iloc[:r + 1], "bbb": fb})
-        assert historical_scores(fa["vol_30d"], pool, range(r, r + 1))[0] == pytest.approx(served["risk_score"])
+        assert historical_scores(fa["ewma_vol"], pool, range(r, r + 1))[0] == pytest.approx(served["risk_score"])
+
+
+def test_d51_serving_uses_the_evaluation_ewma_function():
+    """The served ewma_vol is ml.features.features.ewma_vol of the feature rows' closes, as in the evaluation."""
+    raw = _raw("aaa")
+    table = rs.serving_table(raw)
+    close = raw.set_index("timestamp")["close"].loc[table.index]
+    np.testing.assert_array_equal(table["ewma_vol"].to_numpy(), ewma_vol(close).to_numpy())
+    assert rs.ewma_vol is ewma_vol                                   # one function, imported, not copied
+    pd.testing.assert_frame_equal(table.drop(columns="ewma_vol"), build_features(raw), check_exact=True)
+
+
+@pytest.mark.usefixtures("served_fixture_assets")
+def test_d51_note_flags_and_model_version():
+    feats = _two_assets()
+    now = _now(feats["aaa"])
+    r, d = rs.risk("aaa", now, feats), rs.debug("aaa", now, feats)
+    assert "EWMA volatility" in r["note"] and "D51" in r["note"] and "No risk model" not in r["note"]
+    assert d["served"]["risk_model"] is True and d["model_version"]["risk"] == "ewma-pooled-pct"
+    assert {"D50", "D51"} <= set(d["decisions_in_force"])
+    assert d["inputs"]["ewma_vol"] == 0.02 and d["inputs"]["vol_30d"] == pytest.approx(0.2)
 
 
 def _set_report(path, **changes):
