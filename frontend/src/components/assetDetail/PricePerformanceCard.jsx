@@ -3,6 +3,7 @@ import { useElementSize } from "../../hooks/useElementSize";
 import { deriveAaiSignal } from "../../services/assetDetailApi";
 import { isMlUncertain } from "../../utils/scoring";
 import { formatCurrencyAxis, formatAssetPrice } from "../../utils/formatters";
+import { CONE_CAPTION, CONE_DAYS, chartLayers } from "../../utils/volCone";
 
 const FILTERS = ["1D", "1W", "1M", "3M", "1Y"];
 const DAY_MS = 86400000;
@@ -19,121 +20,91 @@ function sliceForFilter(arr, filter) {
   return arr.slice(-(FILTER_DAYS[filter] + 1));
 }
 
-export default function PricePerformanceCard({ priceHistory, forecast, forecastMeta, aaiPanel, mlSignal }) {
-  const [mode, setMode] = useState("Price");
+const fmtPath = (pts) => pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(" ");
+
+// History line, then (when the served EWMA volatility allows it) an illustrative 30-day volatility cone (D52).
+// There is no forecast or center line: no price model is approved, and lower/upper bounds stay null.
+export default function PricePerformanceCard({ priceHistory, risk, aaiPanel, mlSignal }) {
   const [filter, setFilter] = useState("1M");
   const [containerRef, dims] = useElementSize({ W: 900, H: 320 });
 
   const history = useMemo(() => sliceForFilter(priceHistory, filter), [priceHistory, filter]);
-  const safeForecast = forecast || [];
-  const showForecast = mode === "AI Prediction" && safeForecast.length > 0 && history?.length > 1;
+  const { layers, cone } = useMemo(() => chartLayers(history, risk), [history, risk]);
 
   const chart = useMemo(() => {
-    if (!history || history.length < 2) return null;
+    if (!layers.includes("history")) return null;
 
-    const { W, H } = dims;
+    // A minimum drawing width keeps the plot area positive in very narrow containers; the SVG then scales down.
+    const W = Math.max(dims.W, 300);
+    const H = dims.H;
+    const narrow = W < 520;
     const PAD_L = 58, PAD_R = 16, PAD_T = 18, PAD_B = 28;
     const plotW = W - PAD_L - PAD_R;
     const plotH = H - PAD_T - PAD_B;
 
-    const historyShare = showForecast ? 0.66 : 1;
-    const lastDate = history[history.length - 1].date;
+    // One linear time axis: history days, then CONE_DAYS more when the cone is drawn.
     const firstDate = history[0].date;
-    const totalSpan = Math.max(1, daysApart(lastDate, firstDate));
-    const forecastSpan = showForecast
-      ? Math.max(1, daysApart(safeForecast[safeForecast.length - 1].date, lastDate))
-      : 1;
+    const lastDate = history[history.length - 1].date;
+    const histSpan = Math.max(1, daysApart(lastDate, firstDate));
+    const span = histSpan + (cone ? CONE_DAYS : 0);
+    const xForDay = (dayFromFirst) => PAD_L + (plotW * dayFromFirst) / span;
 
-    const band = showForecast && forecastMeta?.lower != null && forecastMeta?.upper != null ? forecastMeta : null;
-    const values = [
-      ...history.map((d) => d.price),
-      ...(showForecast ? safeForecast.map((d) => d.price) : []),
-      ...(band ? [band.lower, band.upper] : []),
-    ];
+    const values = [...history.map((d) => d.price), ...(cone ? cone.flatMap((c) => [c.outer.lower, c.outer.upper]) : [])];
     const minV = Math.min(...values) * 0.985;
     const maxV = Math.max(...values) * 1.015;
     const vRange = Math.max(1e-9, maxV - minV);
-
     const yFor = (v) => PAD_T + plotH - ((v - minV) / vRange) * plotH;
-    const xForHistory = (date) => {
-      const agoDays = daysApart(lastDate, date);
-      const t = totalSpan === 0 ? 1 : 1 - agoDays / totalSpan;
-      return PAD_L + plotW * historyShare * t;
-    };
-    const xForForecast = (date) => {
-      const aheadDays = daysApart(date, lastDate);
-      const t = Math.min(1, aheadDays / forecastSpan);
-      return PAD_L + plotW * historyShare + plotW * (1 - historyShare) * t;
-    };
 
-    const histPts = history.map((d) => ({ x: xForHistory(d.date), y: yFor(d.price), date: d.date }));
+    const histPts = history.map((d) => ({ x: xForDay(daysApart(d.date, firstDate)), y: yFor(d.price), date: d.date, price: d.price }));
     const last = histPts[histPts.length - 1];
-    const linePath = histPts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
+    const linePath = fmtPath(histPts.map((p) => [p.x, p.y]));
     const areaPath = `${linePath} L ${last.x.toFixed(1)} ${PAD_T + plotH} L ${histPts[0].x.toFixed(1)} ${PAD_T + plotH} Z`;
 
-    let forecastPath = "";
-    let forecastPts = [];
-    if (showForecast) {
-      forecastPts = safeForecast.map((d) => ({ x: xForForecast(d.date), y: yFor(d.price), date: d.date }));
-      const pts = [{ x: last.x, y: last.y }, ...forecastPts];
-      forecastPath = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
-    }
-    // The model's range at the target date: a shaded wedge from today's price out to lower..upper.
-    let bandPath = "";
-    if (band && forecastPts.length) {
-      const tx = forecastPts[forecastPts.length - 1].x;
-      bandPath = `M ${last.x.toFixed(1)} ${last.y.toFixed(1)} L ${tx.toFixed(1)} ${yFor(band.upper).toFixed(1)} L ${tx.toFixed(1)} ${yFor(band.lower).toFixed(1)} Z`;
-    }
+    // Each band: its upper edge forward in time, then its lower edge back to the start (a closed shape).
+    const bandPath = (key) => {
+      if (!cone) return "";
+      const fwd = cone.map((c) => [xForDay(histSpan + c.d), yFor(c[key].upper)]);
+      const back = [...cone].reverse().map((c) => [xForDay(histSpan + c.d), yFor(c[key].lower)]);
+      return `${fmtPath([...fwd, ...back])} Z`;
+    };
+    const conePts = cone
+      ? cone.filter((c) => c.d > 0).map((c) => ({ x: xForDay(histSpan + c.d), y: yFor(c.outer.upper), date: c.date, cone: c }))
+      : [];
 
     const yTicks = [0, 1, 2, 3].map((i) => minV + (vRange * i) / 3);
-    // At most ~6 axis labels however many daily points the range holds.
-    const labelEvery = Math.max(1, Math.ceil(histPts.length / 6));
+    // At most ~6 history labels (3 when narrow); the last history point is "Today".
+    const labelEvery = Math.max(1, Math.ceil(histPts.length / (narrow ? 3 : 6)));
     const xLabels = histPts
-      .map((p, i) => {
-        const ago = daysApart(lastDate, p.date);
-        // The last historical point is labelled "Today".
-        if (i === histPts.length - 1) return { x: p.x, label: "Today", i };
-        return { x: p.x, label: `${ago}d`, i };
-      })
+      .map((p, i) => ({ x: p.x, label: i === histPts.length - 1 ? "Today" : `${daysApart(lastDate, p.date)}d`, i }))
       .filter((l) => l.i === histPts.length - 1 || ((histPts.length - 1 - l.i) % labelEvery === 0 && histPts.length - 1 - l.i >= labelEvery));
-    const forecastLabels = forecastPts
-      .filter((p) => daysApart(p.date, lastDate) > 0)
-      .map((p) => ({
-        x: p.x,
-        label: `+${daysApart(p.date, lastDate)}d`,
-      }));
+    const futureLabels = cone ? (narrow ? [30] : [10, 20, 30]).map((d) => ({ x: xForDay(histSpan + d), label: `+${d}d` })) : [];
 
-    return {
-      bandPath, W, H, PAD_L, PAD_R, PAD_T, plotH, linePath, areaPath, forecastPath, last, yTicks, yFor, xLabels, forecastLabels, histPts, forecastPts };
-  }, [history, dims, showForecast, safeForecast, forecastMeta]);
+    return { W, H, PAD_L, PAD_R, PAD_T, plotH, linePath, areaPath, outerPath: bandPath("outer"), innerPath: bandPath("inner"),
+      last, yTicks, yFor, xLabels, futureLabels, histPts, conePts };
+  }, [history, cone, layers, dims]);
 
   const signal = aaiPanel ? deriveAaiSignal(aaiPanel.score) : null;
   const [hoverPt, setHoverPt] = useState(null);
 
-  const handleMouseMove = (e) => {
-    if (!chart || !history?.length) return;
+  const handlePointerMove = (e) => {
+    if (!chart) return;
     const rect = containerRef.current.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const scaleX = chart.W / rect.width;
-    const svgX = mouseX * scaleX;
-
-    const allPts = [
-      ...chart.histPts.map((pt, i) => ({ ...pt, price: history[i]?.price })),
-      ...(showForecast && chart.forecastPts
-        ? chart.forecastPts.map((pt, i) => ({ ...pt, price: safeForecast[i]?.price, isForecast: true }))
-        : []),
-    ];
-
+    const svgX = (e.clientX - rect.left) * (chart.W / rect.width);
     let closest = null;
     let minDiff = Infinity;
-    allPts.forEach((pt) => {
+    [...chart.histPts, ...chart.conePts].forEach((pt) => {
       const diff = Math.abs(pt.x - svgX);
       if (diff < minDiff) {
         minDiff = diff;
         closest = pt;
       }
     });
-    setHoverPt(closest);
+    if (!closest) return setHoverPt(null);
+    // Tooltip position in container pixels, computed here (not during render) from the container's size.
+    const w = containerRef.current.clientWidth, h = containerRef.current.clientHeight;
+    const left = Math.max(6, Math.min((closest.x / chart.W) * w - 70, w - (closest.cone ? 200 : 130)));
+    const top = Math.max(6, (closest.y / chart.H) * h - 60);
+    setHoverPt({ ...closest, left, top });
   };
 
   return (
@@ -141,19 +112,9 @@ export default function PricePerformanceCard({ priceHistory, forecast, forecastM
       <div className="adt-chart-head">
         <div>
           <div className="sv2-card-title">Price performance</div>
-          {showForecast && (
-            <div className="adt-chart-sub">Dashed line is the model's forward path, branching from today</div>
-          )}
-          {mode === "AI Prediction" && safeForecast.length === 0 && (
-            <div className="adt-chart-sub">No model forecast is stored for this asset yet.</div>
-          )}
+          {cone && <div className="adt-chart-sub">Shaded area: the next {CONE_DAYS} days' likely range from recent volatility</div>}
         </div>
         <div className="adt-chart-controls">
-          <div className="sv2-segmented">
-            {["Price", "AI Prediction"].map((m) => (
-              <button key={m} className={mode === m ? "active" : ""} onClick={() => setMode(m)}>{m}</button>
-            ))}
-          </div>
           <div className="sv2-segmented">
             {FILTERS.map((f) => (
               <button key={f} className={filter === f ? "active" : ""} onClick={() => setFilter(f)}>{f}</button>
@@ -165,15 +126,16 @@ export default function PricePerformanceCard({ priceHistory, forecast, forecastM
       <div
         className="adt-chart-body"
         ref={containerRef}
-        style={{ position: "relative", cursor: "crosshair" }}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={() => setHoverPt(null)}
+        style={{ position: "relative", cursor: "crosshair", touchAction: "pan-y" }}
+        onPointerMove={handlePointerMove}
+        onPointerLeave={() => setHoverPt(null)}
       >
         {!chart ? (
           <div className="adt-chart-empty">Not enough price data yet.</div>
         ) : (
           <>
-            <svg width="100%" height="100%" viewBox={`0 0 ${chart.W} ${chart.H}`} style={{ overflow: "visible" }}>
+            <svg width="100%" height="100%" viewBox={`0 0 ${chart.W} ${chart.H}`} style={{ overflow: "visible" }}
+              data-layers={layers.join(" ")}>
               <defs>
                 <linearGradient id="adtPriceGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="var(--sv2-accent)" stopOpacity="0.22" />
@@ -194,27 +156,28 @@ export default function PricePerformanceCard({ priceHistory, forecast, forecastM
               {chart.xLabels.map((l, i) => (
                 <text key={i} x={l.x} y={chart.H - 8} fontSize="10" fill="var(--sv2-text-mute)" textAnchor="middle">{l.label}</text>
               ))}
-              {chart.forecastLabels.map((l, i) => (
+              {chart.futureLabels.map((l, i) => (
                 <text key={`f${i}`} x={l.x} y={chart.H - 8} fontSize="10" fill="var(--sv2-text-mute)" textAnchor="middle">{l.label}</text>
               ))}
 
-              <path d={chart.areaPath} fill="url(#adtPriceGrad)" />
-              <path d={chart.linePath} fill="none" stroke="var(--sv2-accent)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-
-              {showForecast && (
-                <>
-                  <line x1={chart.last.x} y1={chart.PAD_T} x2={chart.last.x} y2={chart.PAD_T + chart.plotH} stroke="var(--sv2-border-strong)" strokeWidth="1" strokeDasharray="3,3" />
-                  {chart.bandPath && <path d={chart.bandPath} fill="var(--sv2-accent)" opacity="0.1" />}
-                  <path d={chart.forecastPath} fill="none" stroke="var(--sv2-accent)" strokeWidth="2" strokeDasharray="6,5" strokeLinecap="round" />
-                  <circle cx={chart.last.x} cy={chart.last.y} r="3.5" fill="var(--sv2-accent)" />
-                </>
+              {layers.includes("cone-outer") && (
+                <line x1={chart.last.x} y1={chart.PAD_T} x2={chart.last.x} y2={chart.PAD_T + chart.plotH} stroke="var(--sv2-border-strong)" strokeWidth="1" strokeDasharray="3,3" />
               )}
+              {layers.includes("cone-outer") && <path d={chart.outerPath} fill="var(--sv2-accent)" opacity="0.14" data-layer="cone-outer" />}
+              {layers.includes("cone-inner") && <path d={chart.innerPath} fill="var(--sv2-accent)" opacity="0.22" data-layer="cone-inner" />}
+
+              <path d={chart.areaPath} fill="url(#adtPriceGrad)" />
+              <path d={chart.linePath} fill="none" stroke="var(--sv2-accent)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" data-layer="history" />
 
               {hoverPt && (
                 <g>
                   <line x1={hoverPt.x} y1={chart.PAD_T} x2={hoverPt.x} y2={chart.H - 24} stroke="var(--sv2-accent)" strokeWidth="1" strokeDasharray="3,3" opacity="0.75" />
-                  <circle cx={hoverPt.x} cy={hoverPt.y} r="7" fill="var(--sv2-accent)" opacity="0.25" />
-                  <circle cx={hoverPt.x} cy={hoverPt.y} r="4" fill="var(--sv2-accent)" stroke="#fff" strokeWidth="2" />
+                  {!hoverPt.cone && (
+                    <>
+                      <circle cx={hoverPt.x} cy={hoverPt.y} r="7" fill="var(--sv2-accent)" opacity="0.25" />
+                      <circle cx={hoverPt.x} cy={hoverPt.y} r="4" fill="var(--sv2-accent)" stroke="#fff" strokeWidth="2" />
+                    </>
+                  )}
                 </g>
               )}
             </svg>
@@ -223,8 +186,8 @@ export default function PricePerformanceCard({ priceHistory, forecast, forecastM
               <div
                 style={{
                   position: "absolute",
-                  left: Math.min(Math.max((hoverPt.x / chart.W) * containerRef.current.clientWidth - 55, 10), containerRef.current.clientWidth - 130),
-                  top: Math.max(10, (hoverPt.y / chart.H) * containerRef.current.clientHeight - 52),
+                  left: hoverPt.left,
+                  top: hoverPt.top,
                   background: "var(--sv2-card)",
                   border: "1px solid var(--sv2-border)",
                   borderRadius: 8,
@@ -235,10 +198,19 @@ export default function PricePerformanceCard({ priceHistory, forecast, forecastM
                   whiteSpace: "nowrap",
                 }}
               >
-                <div style={{ fontSize: 10, color: hoverPt.isForecast ? "var(--sv2-accent)" : "var(--sv2-text-mute)", fontWeight: 600 }}>
-                  {hoverPt.date} {hoverPt.isForecast ? "· Model AI" : ""}
-                </div>
-                <div style={{ fontSize: 12.5, color: "var(--sv2-text)", fontWeight: 800 }}>{formatAssetPrice(hoverPt.price)}</div>
+                <div style={{ fontSize: 10, color: "var(--sv2-text-mute)", fontWeight: 600 }}>{hoverPt.date}</div>
+                {hoverPt.cone ? (
+                  <>
+                    <div style={{ fontSize: 11.5, color: "var(--sv2-text)" }}>
+                      50% range: <b>{formatAssetPrice(hoverPt.cone.inner.lower)}–{formatAssetPrice(hoverPt.cone.inner.upper)}</b>
+                    </div>
+                    <div style={{ fontSize: 11.5, color: "var(--sv2-text)" }}>
+                      80% range: <b>{formatAssetPrice(hoverPt.cone.outer.lower)}–{formatAssetPrice(hoverPt.cone.outer.upper)}</b>
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ fontSize: 12.5, color: "var(--sv2-text)", fontWeight: 800 }}>{formatAssetPrice(hoverPt.price)}</div>
+                )}
               </div>
             )}
           </>
@@ -246,21 +218,14 @@ export default function PricePerformanceCard({ priceHistory, forecast, forecastM
       </div>
 
       <div className="adt-chart-foot">
-        {showForecast ? (
+        {cone ? (
           <div className="adt-legend">
             <span><span className="adt-legend-swatch solid" /> Actual</span>
-            <span><span className="adt-legend-swatch dashed" /> Predicted</span>
-            {forecastMeta?.lower != null && forecastMeta?.upper != null && (
-              <span>Range {formatAssetPrice(forecastMeta.lower)}–{formatAssetPrice(forecastMeta.upper)}</span>
-            )}
-            {forecastMeta?.meanAbsErrorPct != null && (
-              <span title="How far past 30-day forecasts were from the actual price on their target date">
-                Past accuracy: off by {forecastMeta.meanAbsErrorPct}% on average ({forecastMeta.scoredRuns} run{forecastMeta.scoredRuns === 1 ? "" : "s"})
-              </span>
-            )}
+            <span><span className="adt-legend-swatch band inner" /> 50% range</span>
+            <span><span className="adt-legend-swatch band outer" /> 80% range</span>
           </div>
         ) : <span />}
-        {showForecast && signal && (
+        {signal && (
           <div className="adt-signal-badge">
             {isMlUncertain(mlSignal) ? "AAI rating" : "Signal"}
             <span className={`adt-signal-pill ${signal.tone}`}>{signal.label.replace("Strong ", "")}</span>
@@ -270,6 +235,7 @@ export default function PricePerformanceCard({ priceHistory, forecast, forecastM
           </div>
         )}
       </div>
+      <div className="adt-chart-caption">{CONE_CAPTION}</div>
     </div>
   );
 }

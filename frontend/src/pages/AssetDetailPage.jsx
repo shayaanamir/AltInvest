@@ -56,8 +56,7 @@ export default function AssetDetailPage({ onNavigate }) {
             <ErrorBoundary variant="section" label="Price chart">
               <PricePerformanceCard
                 priceHistory={detail.priceHistory}
-                forecast={detail.forecast}
-                forecastMeta={detail.forecastMeta}
+                risk={detail.risk}
                 aaiPanel={detail.aaiPanel}
                 mlSignal={detail.mlSignal}
               />

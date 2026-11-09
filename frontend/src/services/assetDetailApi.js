@@ -32,6 +32,9 @@ function sentimentLabel(score) {
 export const assetDetailApi = {
   /** Resolves to null when the backend has no such asset (404); throws on any other failure. */
   getAssetDetail: async (symbol) => {
+    // The served risk (annualised EWMA volatility and its note, D51) feeds the chart's volatility cone (D52).
+    // Any failure here only hides the cone; it never breaks the page.
+    const riskPromise = apiFetch(`/risk/${encodeURIComponent(symbol)}`).catch(() => null);
     let d;
     try {
       d = await apiFetch(`/assets/${encodeURIComponent(symbol)}/detail`);
@@ -39,6 +42,7 @@ export const assetDetailApi = {
       if (e.status === 404) return null;
       throw e;
     }
+    const risk = await riskPromise;
 
     const h = d.header;
     return {
@@ -56,18 +60,8 @@ export const assetDetailApi = {
         watching: h.watching,
       },
       priceHistory: d.price_history,
-      // Only the model's target point; the chart draws the branch from the last actual price.
-      forecast: d.forecast ? d.forecast.points.slice(1) : null,
-      // The target's band and how earlier runs turned out (runs whose target date has passed).
-      forecastMeta: d.forecast && {
-        lower: d.forecast.lower_bound,
-        upper: d.forecast.upper_bound,
-        changePct: d.forecast.change_30d_pct,
-        confidence: d.forecast.confidence,
-        modelVersion: d.forecast.model_version,
-        meanAbsErrorPct: d.forecast.mean_abs_error_pct,
-        scoredRuns: (d.forecast.runs || []).filter((x) => x.error_pct != null).length,
-      },
+      // No forecast line is drawn (no price model is approved); the chart shows a volatility cone instead (D52).
+      risk: risk && { volatility: risk.volatility ?? null, note: risk.note ?? null, timestamp: risk.timestamp ?? null },
       aaiPanel: d.aai_panel && {
         score: d.aai_panel.score,
         signal: d.aai_panel.signal,

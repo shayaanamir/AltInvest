@@ -55,6 +55,16 @@
 .adt-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .adt-legend-swatch { width: 16px; height: 0; border-top: 2px solid var(--sv2-accent); display: inline-block; }
 .adt-legend-swatch.dashed { border-top: 2px dashed var(--sv2-text-soft); }
+/* Volatility cone (D52): same hue as the history line, inner band darker than the outer one. */
+.adt-legend-swatch.band { height: 10px; border: 0; border-radius: 2px; background: var(--sv2-accent); }
+.adt-legend-swatch.band.inner { opacity: 0.32; }
+.adt-legend-swatch.band.outer { opacity: 0.14; }
+.adt-chart-caption { font-size: 11.5px; color: var(--sv2-text-soft); margin-top: 8px; line-height: 1.4; }
+@media (max-width: 560px) {
+  .adt-chart-card { padding: 16px; }
+  .adt-chart-body { height: 260px; }
+  .adt-legend { gap: 12px; flex-wrap: wrap; }
+}
 .adt-signal-badge { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--sv2-text-soft); font-weight: 600; }
 .adt-signal-pill { font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 20px; }
 .adt-signal-pill.positive { color: var(--sv2-green); background: var(--sv2-green-soft); }

@@ -1,7 +1,22 @@
 # STATUS
 
-Current phase: 9 (forecasting v2) DONE (2026-11-03), on branch phase-9-forecasting (not pushed). Served: EWMA risk for all assets (D51). Price (D35), range (none) and direction (D33) are unchanged. At STOP C, waiting for the planner's sign-off.
+Current phase: 9 (forecasting v2) DONE and merged into main as PR #8. Served: EWMA risk for all assets (D51). Follow-up on branch phase-9-vol-cone (2026-11-10): frontend volatility cone (D52), waiting for review.
 Next: Person B checks the new risk_score values and note text (fields unchanged). Merge phase-7-integration, then rebase this branch onto main. The live scorecard starts scoring on 2026-11-30.
+
+## Phase 9 follow-up: frontend 30-day volatility cone (2026-11-10, branch phase-9-vol-cone)
+
+- D52 written and committed before coding (f6ef802). Outside ml/, changes are in frontend/ only, at the user's request. No ML, backend or contract change.
+- `frontend/src/utils/volCone.js` (new): cone math from the served /risk `volatility`.
+  - sd = volatility / sqrt(365), where 365 is ml/config.py ANNUALISATION_DAYS, the factor serving uses.
+  - Bands: last close x exp(+/- z x sd x sqrt(d)) for d = 0..30, with z = 0.6745 and 1.2816.
+  - Hidden when volatility is null or missing, when the note is not the ML EWMA model, or when the data is stale.
+- `PricePerformanceCard.jsx`: the forecast line and the Price / AI Prediction toggle are removed. The history line continues into two shaded bands on one linear time axis to +30d, with a tooltip showing the 50% and 80% ranges and an always-visible caption. A minimum drawing width keeps narrow layouts from inverting.
+- `assetDetailApi.js` also fetches the backend `/risk/{symbol}`; a failure only hides the cone. `AssetDetailPage.jsx` passes `risk`. `assetDetail.css`: band swatches, caption, phone padding.
+- Tests:
+  - `frontend/src/utils/volCone.test.js` (5 tests, `npm test`, node --test, no new dependency): width 0 at d = 0; symmetric in log space; widens with sqrt(d); uses ml/config.py's factor; hidden for null, mock or stale; no forecast layer.
+  - eslint is clean on the changed files; `npm run build` passes.
+  - ML: `301 passed` (.venv-train), unchanged.
+- Screenshots: local docker stack. Prices are real Binance daily closes from the ML serving CSVs, loaded into the local dev Mongo; assets and the demo user come from the team's seed scripts.
 
 ## Phase 9 steps 9.7-9.8: what ran (2026-11-03, from repo root)
 
