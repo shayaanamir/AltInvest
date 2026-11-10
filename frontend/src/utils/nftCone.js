@@ -1,17 +1,19 @@
 // NFT collection floor chart: the same 30-day volatility cone as crypto (utils/volCone.js, D52), with the NFT hide
-// rules of ml/docs/DECISIONS.md D52 (amended 2026-11-10) and D67. Pure functions, tested with `node --test`.
+// rules of ml/docs/DECISIONS.md D52 (amended 2026-11-10) and D67 (revised 2026-11-11). Pure functions, tested with
+// `node --test`.
 //
-// The cone uses whichever floor volatility the ML service serves (EWMA if approved in step 10.3, otherwise the
-// 30-day persistence vol). It is hidden when that volatility is missing or not positive, when the risk data is
-// stale (ML 48 h or backend 36 h note), when the value is not from the ML NFT model, or when the collection is
-// illiquid. It is NOT hidden just because EWMA was not approved.
+// The cone uses whichever floor volatility the ML service serves (today persistence vol_30d, D73). It is hidden
+// when that volatility is missing or not positive, when the risk data is stale (ML 48 h or backend 36 h note), when
+// the value is not from the ML NFT service, or when the collection is illiquid. The served volatility is of the ETH
+// floor, so the cone is only ever drawn in ETH: the USD view shows the USD history and a separate ETH-only cone.
 import { CONE_DAYS, coneFromVol, shortDate } from "./volCone.js";
 
 export const NFT_CONE_CAPTION = "Likely floor range based on recent volatility, not a price prediction.";
 export const NFT_RISK_RELATIVE_NOTE =
   "This risk score is relative to the other NFT collections tracked here. It is not comparable to crypto risk scores.";
-export const NFT_USD_CONE_NOTE =
-  "In USD the range is the ETH range at the last ETH price; it does not include future ETH-USD moves.";
+export const NFT_ETH_ONLY_CONE_NOTE = "This range is in ETH. ETH price moves are not included.";
+export const STALE_POINT_HOURS = 72; // D67h: a floor point more than 3 days old
+export const ETH_CONE_HISTORY_DAYS = 30;
 
 /** 'Last floor, 10 Nov' */
 export function nftConeStartLabel(isoDate) {
@@ -38,13 +40,31 @@ export function floorPoints(history, currency) {
 }
 
 /**
- * The layers the floor chart draws: "history" (at least 2 points), plus the two cone bands when allowed.
- * Never a forecast or center line. In USD the cone starts at the last USD floor; since the bands are
- * multiplicative this equals the ETH cone converted at the last date's ETH-USD (D67).
+ * The layers the main floor chart draws: "history" (at least 2 points), plus the two cone bands only in the ETH
+ * view. Never a forecast or center line, and never a cone in USD (D67 revised).
  */
-export function nftChartLayers(points, risk) {
+export function nftChartLayers(points, risk, currency = "ETH") {
   if (!points || points.length < 2) return { layers: [], cone: null, hidden: "not enough floor history" };
+  if (currency !== "ETH") return { layers: ["history"], cone: null, hidden: "usd view" };
   const hidden = nftConeHiddenReason(risk);
   const cone = hidden ? null : coneFromVol(points[points.length - 1], risk.volatility, CONE_DAYS);
   return { layers: cone ? ["history", "cone-outer", "cone-inner"] : ["history"], cone, hidden };
+}
+
+/** The separate ETH-only cone shown in the USD view: the last 30 days of the ETH floor and its cone. */
+export function ethOnlyCone(history, risk) {
+  return nftChartLayers(floorPoints(history, "ETH").slice(-(ETH_CONE_HISTORY_DAYS + 1)), risk, "ETH");
+}
+
+/**
+ * D67h: {stale, latestAgeDays, staleDaysInRange}. Stale when the newest row's OpenSea point is more than 3 days old
+ * or the newest floor is missing. staleDaysInRange counts rows of `rows` whose point was more than 3 days old.
+ */
+export function floorStaleness(history, rows = history) {
+  const last = (history || [])[history?.length - 1];
+  if (!last) return { stale: false, latestAgeDays: null, staleDaysInRange: 0 };
+  const age = typeof last.floor_age_hours === "number" ? last.floor_age_hours : null;
+  const stale = (age != null && age > STALE_POINT_HOURS) || !(typeof last.floor_eth === "number" && last.floor_eth > 0);
+  const staleDaysInRange = (rows || []).filter((r) => typeof r.floor_age_hours === "number" && r.floor_age_hours > STALE_POINT_HOURS).length;
+  return { stale, latestAgeDays: age == null ? null : age / 24, staleDaysInRange };
 }

@@ -27,3 +27,8 @@
   .nft-chart-controls { width: 100%; }
   .nft-big-number { font-size: 24px; }
 }
+
+/* D67 revised: the ETH-only cone under the USD view, and the stale note */
+.nft-eth-cone { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--sv2-border); }
+.nft-eth-cone .adt-chart-body { height: 200px; }
+.nft-stale-text { color: var(--sv2-red); }

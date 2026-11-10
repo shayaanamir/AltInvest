@@ -3,7 +3,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { Z_OUTER, buildCone, coneFromVol, dailyVol } from "./volCone.js";
 import {
-  NFT_CONE_CAPTION, NFT_RISK_RELATIVE_NOTE, floorPoints, nftChartLayers, nftConeHiddenReason, nftConeStartLabel,
+  NFT_CONE_CAPTION, NFT_ETH_ONLY_CONE_NOTE, NFT_RISK_RELATIVE_NOTE, ethOnlyCone, floorPoints, floorStaleness,
+  nftChartLayers, nftConeHiddenReason, nftConeStartLabel,
 } from "./nftCone.js";
 
 const NOTE = "Risk model: EWMA floor volatility (lambda 0.94) ... not comparable to crypto risk scores.";
@@ -44,21 +45,36 @@ test("hides the cone when the data is stale (ML 48 h or backend 36 h note) or th
   assert.deepEqual(nftChartLayers(floorPoints(history, "ETH"), risk({ isIlliquid: true })).layers, ["history"]);
 });
 
-test("does NOT hide just because EWMA was not approved: a served persistence vol also draws (D52 amended)", () => {
+test("does NOT hide just because EWMA was not approved: the served persistence vol draws (D52 amended, D73)", () => {
   const persistence = risk({ modelVersion: "nft-persistence-pooled-pct", note: "Risk model: 30-day floor volatility (persistence)." });
   assert.equal(nftConeHiddenReason(persistence), null);
   assert.equal(buildCone({ date: "2026-11-10", price: 1 }, { volatility: 0.9, note: persistence.note }), null); // crypto gate differs
   assert.equal(nftConeHiddenReason(risk({ modelVersion: "seed-v1" })), "not an ML NFT value");
 });
 
-test("USD cone equals the ETH cone converted at the last date's ETH price", () => {
-  const eth = nftChartLayers(floorPoints(history, "ETH"), risk()).cone;
-  const usd = nftChartLayers(floorPoints(history, "USD"), risk()).cone;
-  const rate = 956.5 / 0.45;
-  for (const d of [0, 7, 30]) {
-    close(usd[d].outer.lower, eth[d].outer.lower * rate);
-    close(usd[d].inner.upper, eth[d].inner.upper * rate);
-  }
+test("the USD view never draws a cone; a separate ETH-only cone is shown instead (D67 revised)", () => {
+  const usd = nftChartLayers(floorPoints(history, "USD"), risk(), "USD");
+  assert.deepEqual(usd.layers, ["history"]);
+  assert.equal(usd.cone, null);
+  const eth = ethOnlyCone(history, risk());
+  assert.deepEqual(eth.layers, ["history", "cone-outer", "cone-inner"]);
+  close(eth.cone[0].outer.upper, 0.45);                                       // starts at the last ETH floor
+  assert.equal(NFT_ETH_ONLY_CONE_NOTE, "This range is in ETH. ETH price moves are not included.");
+  const long = Array.from({ length: 60 }, (_, i) => ({ date: `2026-09-${String((i % 28) + 1).padStart(2, "0")}`, floor_eth: 1 }));
+  assert.equal(ethOnlyCone(long, risk()).cone.length, 31);
+});
+
+test("stale indicator: the newest floor point is more than 3 days old, or the newest floor is missing (D67h)", () => {
+  const rows = [
+    { date: "2026-11-08", floor_eth: 0.46, floor_age_hours: 10 },
+    { date: "2026-11-09", floor_eth: null, floor_age_hours: 80 },
+    { date: "2026-11-10", floor_eth: 0.45, floor_age_hours: 9 },
+  ];
+  assert.deepEqual(floorStaleness(rows), { stale: false, latestAgeDays: 9 / 24, staleDaysInRange: 1 });
+  assert.equal(floorStaleness([...rows.slice(0, 2), { date: "2026-11-10", floor_eth: 0.45, floor_age_hours: 73 }]).stale, true);
+  assert.equal(floorStaleness([{ date: "2026-11-10", floor_eth: null, floor_age_hours: 49 }]).stale, true);
+  assert.equal(floorStaleness([{ date: "2026-11-10", floor_eth: 0.4, floor_age_hours: 72 }]).stale, false);
+  assert.deepEqual(floorStaleness([]), { stale: false, latestAgeDays: null, staleDaysInRange: 0 });
 });
 
 test("never a forecast or center line, and the labels and captions the plan requires", () => {
