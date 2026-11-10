@@ -1,0 +1,5 @@
+fd146bb backend: store and return floor_age_hours with the NFT floor history (D67h)
+68c1df7 backend: seeds refuse non-local MongoDB without --allow-remote; compose backend defaults to local Mongo (D69)
+7351e3c backend: real NFT seed (7 collections, idempotent), no made-up NFT AAI, real demo NFT holdings (D67)
+eca725c backend: collection detail returns floor history and ML NFT risk; dashboard counts real NFT scores (D67)
+a9edff3 backend: pull the ML NFT endpoints daily into the existing nft_* tables (D61, D67)

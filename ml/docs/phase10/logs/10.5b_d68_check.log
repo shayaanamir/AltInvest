@@ -1,4 +1,3 @@
 WARNING: uncommitted changes outside ml/reports/; git_commit does not fully describe this run
 wrote C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest\ml\reports\nft\d68_check.json
-{'sample': 200, 'answered': 200, 'tokens_disagreeing': 0, 'token_disagreement_rate': 0.0, 'differing_trait_entries': 0, 'git_dirty': True}
-by slug: Counter()
+{'sample': 200, 'answered': 200, 'tokens_disagreeing': 0, 'token_disagreement_rate': 0.0, 'differing_trait_entries': 0, 'git_commit': '80ee58c0abe0aa335a1451643d0831783051d174', 'git_dirty': True}
