@@ -1,7 +1,21 @@
 # STATUS
 
-Current phase: 10 (NFTs, docs/PLAN_NFT.md) at checkpoint 10.5, branch phase-10-nft (pushed, not merged). Next: 10.6 fair value (another session). Previously: 9 (forecasting v2) DONE and merged into main as PR #8. Served: EWMA risk for all assets (D51). Follow-up on branch phase-9-vol-cone (2026-11-10): frontend volatility cone (D52), reviewed twice, PR open against main.
+Current phase: 10 (NFTs, docs/PLAN_NFT.md) at checkpoint 10.5b, branch phase-10-nft (pushed, not merged). Next: 10.6 fair value (another session). Previously: 9 (forecasting v2) DONE and merged into main as PR #8. Served: EWMA risk for all assets (D51). Follow-up on branch phase-9-vol-cone (2026-11-10): frontend volatility cone (D52), reviewed twice, PR open against main.
 Next: Person B checks the new risk_score values and note text (fields unchanged). Merge phase-7-integration, then rebase this branch onto main. The live scorecard starts scoring on 2026-11-30.
+
+## Phase 10 step 10.5b: review fixes (2026-11-11, ml/docs/phase10/checkpoint_10.5b.md)
+
+- D69: the backend compose service defaults to local Mongo, and seeds refuse remote hosts without `--allow-remote`. Confirmed that the NFT pull and seed only ever wrote to the local container.
+- D66 guard: causal on all 7 collections. The D72 sales check (rule fixed in advance) supported the raw floor on 4 of 10 days, so the EWMA approval is withdrawn (D73). NFT risk now serves persistence vol_30d of the raw floor, and the cone uses it.
+- D70/D71: item snapshot v2 `2026-11-10-items-v2`:
+  - floor point strictly before each sale;
+  - C1-C3 cleaning and W1/W2 flags;
+  - sale_type not a feature;
+  - milady `Number` excluded as ID-like.
+  - Fair-value sealed cutoff T = 2026-02-01 with a 7-day embargo. `ml.nft.item_data.load_dev` / `load_sealed("10.8")`.
+- Frontend: no USD cone (a separate ETH-only cone instead) and a floor stale indicator (D67 revised).
+- Tests: ML `383 passed`, frontend `14 passed`, backend `38 passed, 1 skipped` (in its container).
+- Next: 10.6 (fair value), from the handoff at the end of checkpoint_10.5b.md.
 
 ## Phase 10 steps 10.2-10.5 (2026-11-10 to 11, branch phase-10-nft, autonomous mode)
 
