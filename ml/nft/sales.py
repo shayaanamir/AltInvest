@@ -5,7 +5,8 @@ with the first rule that removes it:
   R1 buyer == seller
   R2 round trip: a sale A->B of token t with a sale B->A of the same token within 30 days before or after
      (both legs are marked). This looks ahead: a cleaning rule on stored data, never a feature (D57).
-  R3 price below 0.10x or above 20x the collection floor of the sale's UTC date (floor_eth_model, D66; as of
+  R3 price below 0.10x or above 20x the collection floor of the sale's UTC date (config.NFT_MODEL_FLOOR_COLUMN,
+     D73; as of
      00:00 UTC, so nothing from later that day is used).
 """
 
@@ -69,18 +70,19 @@ def round_trips(sales: pd.DataFrame) -> np.ndarray:
     return out
 
 
-def wash_filter(sales: pd.DataFrame, floor: pd.DataFrame) -> pd.DataFrame:
-    """`sales` plus floor_eth_model (the floor of the sale's date) and wash_rule ('' = kept, else R1/R2/R3).
-
-    `floor`: slug, date, floor_eth_model. A sale whose date has no floor row raises: every sale needs a floor.
+def wash_filter(sales: pd.DataFrame, floor: pd.DataFrame, column: str | None = None) -> pd.DataFrame:
+    """`sales` plus the floor of the sale's date (`column`, default config.NFT_MODEL_FLOOR_COLUMN) and wash_rule
+    ('' = kept, else R1/R2/R3). A sale whose date has no floor row raises: every sale needs a floor.
+    The frozen 2026-11-10 snapshot was built with floor_eth_model (D66, since withdrawn by D73).
     """
-    s = sales.merge(floor[["slug", "date", "floor_eth_model"]], on=["slug", "date"], how="left")
-    if s["floor_eth_model"].isna().any():
-        bad = s[s["floor_eth_model"].isna()]
+    column = column or config.NFT_MODEL_FLOOR_COLUMN
+    s = sales.merge(floor[["slug", "date", column]], on=["slug", "date"], how="left")
+    if s[column].isna().any():
+        bad = s[s[column].isna()]
         raise ValueError(f"{len(bad)} sale(s) have no floor for their date, first {bad.iloc[0]['slug']} "
                          f"{bad.iloc[0]['date']}")
     lo, hi = config.NFT_WASH_PRICE_BOUNDS
-    ratio = s["price_eth"] / s["floor_eth_model"]
+    ratio = s["price_eth"] / s[column]
     r1 = (s["buyer"] == s["seller"]).to_numpy()
     r2 = round_trips(s)
     r3 = ((ratio < lo) | (ratio > hi)).to_numpy()

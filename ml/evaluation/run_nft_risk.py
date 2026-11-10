@@ -126,10 +126,15 @@ def build(floor, column: str = risk_data.COLUMN) -> dict:
     }
 
 
-def main() -> None:
+def main(argv=None) -> None:
+    import argparse
     manifest_sha = snapshot.require_snapshot("floor")           # D62: frozen snapshot only
+    parser = argparse.ArgumentParser(description="NFT floor-volatility walk-forward (10.3)")
+    parser.add_argument("--floor-column", default=risk_data.COLUMN,
+                        help="floor_eth_model reproduces 10.3; the declared re-run (D65h) uses floor_eth_asof")
+    column = parser.parse_args(argv).floor_column
     floor = snapshot.load("floor")
-    report = build(floor)
+    report = build(floor, column=column)
     sens = build(floor, column=SENSITIVITY_COLUMN)
     report["sensitivity_unguarded_floor"] = {
         "floor_column": SENSITIVITY_COLUMN,

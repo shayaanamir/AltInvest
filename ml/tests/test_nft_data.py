@@ -120,7 +120,7 @@ def _sale(token, day, price, seller, buyer, tx):
 
 def _floor_rows(n=80, value=1.0):
     dates = pd.date_range("2025-01-01", periods=n, freq="D").strftime("%Y-%m-%d")
-    return pd.DataFrame({"slug": "c", "date": dates, "floor_eth_model": value})
+    return pd.DataFrame({"slug": "c", "date": dates, "floor_eth_model": value, "floor_eth_asof": value})
 
 
 def test_wash_rules_mark_the_first_matching_rule():
@@ -144,7 +144,7 @@ def test_wash_rules_mark_the_first_matching_rule():
 
 def test_price_rule_uses_the_floor_of_the_sale_date_and_every_sale_needs_a_floor():
     floor = _floor_rows()
-    floor.loc[floor["date"] == "2025-01-03", "floor_eth_model"] = 100.0
+    floor.loc[floor["date"] == "2025-01-03", config.NFT_MODEL_FLOOR_COLUMN] = 100.0
     s = pd.DataFrame([_sale("1", 1, 5.0, "a", "b", "t1"), _sale("2", 2, 5.0, "a", "b", "t2")])
     assert sl.wash_filter(s, floor)["wash_rule"].tolist() == ["", "R3"]       # 5 < 0.10 x 100 on 3 Jan only
     with pytest.raises(ValueError, match="no floor for their date"):
@@ -263,7 +263,7 @@ def test_build_gives_every_day_and_every_sale_a_floor_and_never_a_future_date(tm
     f = out["floor"]
     assert not f.duplicated(["slug", "date"]).any() and f["date"].max() == "2025-01-15"
     assert (f["floor_usd"] == f["floor_eth"] * f["eth_usd"]).all()
-    assert out["sales_marked"]["floor_eth_model"].notna().all()
+    assert out["sales_marked"][config.NFT_MODEL_FLOOR_COLUMN].notna().all()
     assert f.loc[f["date"] < "2024-12-10", "liquidity_score"].isna().all()       # 30-day window not complete
     assert f.loc[f["date"] >= "2024-12-10", "liquidity_score"].notna().all()
     assert set(out["tokens"].columns) >= {"rarity_rank", "rarity_score", "rarity_pct"}

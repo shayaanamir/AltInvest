@@ -33,7 +33,7 @@ def floor_table(points: pd.DataFrame, eth: pd.DataFrame, last_day: str) -> pd.Da
 
 
 def mark_sales(sales_raw: pd.DataFrame, floor: pd.DataFrame, last_day: str) -> pd.DataFrame:
-    """Sales up to the end of `last_day` with floor_eth_model and wash_rule. Later sales have no floor yet."""
+    """Sales up to the end of `last_day` with the D73 floor column and wash_rule. Later sales have no floor yet."""
     s = sales_raw[sales_raw["date"] <= last_day]
     return sl.wash_filter(sl.dedupe(s), floor)
 

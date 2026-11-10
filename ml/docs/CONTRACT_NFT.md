@@ -61,6 +61,7 @@ The ML service (:8001) validates every NFT response against these schemas before
         "floor_usd": {"type": ["number", "null"]},
         "eth_usd": {"type": ["number", "null"], "description": "ETH-USD at 00:00 UTC of the date (D55)"},
         "floor_source": {"type": "string"},
+        "floor_age_hours": {"type": ["number", "null"], "description": "Age at 00:00 UTC of the OpenSea floor point behind this day (D67h)"},
         "floor_intraday_median_eth": {"type": ["number", "null"], "description": "Display only; collected live (D55)"}
       },
       "additionalProperties": false

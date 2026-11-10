@@ -87,15 +87,17 @@ def test_every_response_validates_and_unknown_or_missing_give_404_and_503(monkey
 
 
 @pytest.mark.usefixtures("live")
-def test_served_volatility_is_the_evaluation_ewma_on_the_same_rows():
+def test_served_volatility_is_the_evaluation_persistence_on_the_raw_floor():
     floor = nr.tables()["floor"]
     g = floor[floor["slug"] == "aa"]
-    hist = risk_data.features(risk_data.floor_series(g))
-    expected = risk_v2.ewma_predict(None, hist, range(len(hist)))         # the 10.3 evaluation predictor
+    hist = risk_data.features(risk_data.floor_series(g, "floor_eth_asof"))
+    expected = risk_v2.persistence_predict(None, hist, range(len(hist)))  # the 10.3 evaluation baseline
     np.testing.assert_allclose(nr.served_vol(g).to_numpy(), expected, equal_nan=True)
     body = nr.risk("aa", NOW)
     assert body["volatility"] == pytest.approx(expected[-1] * math.sqrt(365), rel=1e-6)
-    assert config.NFT_RISK_VOL_COLUMN == "ewma_vol" and body["model_version"] == config.MODEL_VERSION_NFT_RISK
+    assert config.NFT_RISK_VOL_COLUMN == "vol_30d" and config.NFT_MODEL_FLOOR_COLUMN == "floor_eth_asof"
+    assert body["model_version"] == config.MODEL_VERSION_NFT_RISK == "nft-persistence-pooled-pct"
+    assert "No model is served" in body["note"] and "D73" in body["note"]
 
 
 @pytest.mark.usefixtures("live")
@@ -145,10 +147,13 @@ def test_floor_and_sales_rows_and_the_cache_follow_the_files():
     assert nr.tables() is not first and nr.collections(NOW)["collections"][0]["name"] == "AAX"
 
 
-def test_served_measure_matches_the_10_3_report():
+def test_served_measure_follows_the_10_3_report_and_the_d72_check():
     report = ML_ROOT / "reports" / "nft" / "walkforward_risk.json"
     served = json.loads(report.read_text(encoding="utf-8"))["served_volatility"]
-    assert {"ewma": "ewma_vol", "persistence_vol30": "vol_30d"}[served] == config.NFT_RISK_VOL_COLUMN
+    check = json.loads((ML_ROOT / "reports" / "nft" / "item_data_v2.json").read_text(encoding="utf-8"))
+    withdrawn = check["d66_sales_check"]["ewma_approval_withdrawn"]
+    expected = "vol_30d" if withdrawn else {"ewma": "ewma_vol", "persistence_vol30": "vol_30d"}[served]
+    assert expected == config.NFT_RISK_VOL_COLUMN                          # D73
 
 
 @pytest.mark.skipif(not (config.ML_NFT_DIR / "floor_points.csv").exists(), reason="no live NFT data (git-ignored)")

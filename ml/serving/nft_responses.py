@@ -3,9 +3,9 @@
 Reads the live/serving NFT directory (config.ML_NFT_DIR) through ml.nft.build, the same builder the frozen
 snapshot used, so serving and evaluation share every definition. Served:
 - floor: the D55 daily floor in ETH and USD (null on gap days), plus the display-only intraday median;
-- risk: the volatility approved in step 10.3 (EWMA of the D66 floor series, through the same
-  ml.features.features.ewma_vol and ml.nft.risk_data rows as the evaluation) x sqrt(365), and risk_score = the
-  D59 pooled percentile of today's value among the 7 NFT collections' history (a separate NFT pool);
+- risk: the served floor volatility, persistence vol_30d of the raw floor (D73: the 10.3 EWMA approval was
+  withdrawn), from the same ml.nft.risk_data rows as the evaluation, x sqrt(365); risk_score = the D59 pooled
+  percentile of today's value among the 7 NFT collections' history (a separate NFT pool);
 - liquidity: the D58 rule-based fields as of the last floor date 00:00 UTC;
 - sales: wash-filtered sales (D57).
 Staleness (D38 applied to the floor): the note says 'data stale' when the last floor date's 00:00 UTC is more
@@ -44,7 +44,7 @@ def _signature() -> tuple:
 def served_vol(floor_one: pd.DataFrame) -> pd.Series:
     """The served daily volatility per date for one collection: exactly the evaluation's rows (risk_data) and
     EWMA function; NaN during the warm-up."""
-    feats = risk_data.features(risk_data.floor_series(floor_one))
+    feats = risk_data.features(risk_data.floor_series(floor_one, config.NFT_MODEL_FLOOR_COLUMN))
     if config.NFT_RISK_VOL_COLUMN == "ewma_vol":
         vol = ewma_vol(feats["close"])
     else:
@@ -135,6 +135,7 @@ def floor(slug: str, now: datetime, days: int = 365) -> dict:
     g = _own(tables(), slug).tail(max(1, min(int(days), 2000)))
     rows = [{"date": r["date"], "floor_eth": _num(r["floor_eth"]), "floor_usd": _num(r["floor_usd"], 2),
              "eth_usd": _num(r["eth_usd"], 2), "floor_source": r["floor_source"],
+             "floor_age_hours": _num(r["floor_age_hours"], 2),
              "floor_intraday_median_eth": _num(r.get("floor_intraday_median_eth"))} for _, r in g.iterrows()]
     return {"slug": slug, "rows": rows, "timestamp": iso_utc(now),
             "note": stale_note(g["date"].iloc[-1], now)}
@@ -177,11 +178,13 @@ def risk_inputs(slug: str, now: datetime) -> dict:
 def _risk_note(served: bool) -> str:
     if not served:
         return "No floor volatility: fewer than 60 days of floor history."
-    model = (f"EWMA floor volatility (lambda {config.EWMA_LAMBDA})" if config.NFT_RISK_VOL_COLUMN == "ewma_vol"
-             else "30-day floor volatility (persistence)")
-    return (f"Risk model: {model} of the daily floor in ETH, approved pooled over the tracked NFT collections in "
-            "walk-forward (D59, D66). risk_score is relative to the other tracked NFT collections (higher = safer) "
-            "and is not comparable to crypto risk scores.")
+    relative = ("risk_score is relative to the other tracked NFT collections (higher = safer) and is not "
+                "comparable to crypto risk scores.")
+    if config.NFT_RISK_VOL_COLUMN == "ewma_vol":
+        return (f"Risk model: EWMA floor volatility (lambda {config.EWMA_LAMBDA}) of the daily floor in ETH, approved "
+                f"pooled over the tracked NFT collections in walk-forward (D59). {relative}")
+    return ("Risk measure: 30-day volatility of the daily floor in ETH (persistence). No model is served: the EWMA "
+            f"walk-forward approval was withdrawn after a check against sale prices (D72, D73). {relative}")
 
 
 def risk(slug: str, now: datetime) -> dict:
