@@ -18,6 +18,19 @@ class AlchemyError(RuntimeError):
     pass
 
 
+def contract_metadata(contract: str, key: str | None = None, session: requests.Session | None = None) -> dict:
+    """getContractMetadata: name, symbol, totalSupply of the contract. {} if the call fails."""
+    key = key or env_value("ALCHEMY_API_KEY")
+    if not key:
+        raise AlchemyError("ALCHEMY_API_KEY is not set (environment or .env)")
+    try:
+        r = (session or requests).get(f"https://eth-mainnet.g.alchemy.com/nft/v3/{key}/getContractMetadata",
+                                      params={"contractAddress": contract}, timeout=30)
+        return r.json() if r.status_code == 200 else {}
+    except (requests.RequestException, ValueError):
+        return {}
+
+
 def contract_nfts(contract: str, key: str | None = None, session: requests.Session | None = None,
                   sleep=time.sleep, start_key: str | None = None) -> Iterator[tuple[list[dict], str | None]]:
     """Yields (tokens of one page, the next pageKey or None)."""

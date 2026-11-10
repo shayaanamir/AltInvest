@@ -99,6 +99,8 @@ NFT_ILLIQUID_MIN_SALES_7D = 10  # D58: illiquid if fewer wash-filtered sales in 
 NFT_LIQUIDITY_LABEL_BOUNDS = (33.0, 67.0)  # D58: Low < 33 <= Medium < 67 <= High
 NFT_MIN_TRAIN_ROWS = 180  # D59: MIN_TRAIN_ROWS = 730 is longer than the floor history (786 days)
 NFT_MIN_CONE_DAYS = 60  # D55: fewer days of floor history than this and no volatility is served
+NFT_RISK_VOL_COLUMN = "ewma_vol"  # D59/D65d: the volatility served for NFT risk (10.3: EWMA approved pooled)
+MODEL_VERSION_NFT_RISK = "nft-ewma-pooled-pct"  # D59: EWMA floor vol, separate NFT pooled percentile
 NFT_REFRESH_UTC = "00:10"  # after the price refresh (00:05), before the backend pull (00:15, D61)
 
 # NFT data directories (D62). Evaluation reads only the frozen snapshot under NFT_SNAPSHOT_ROOT; collectors,

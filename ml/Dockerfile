@@ -23,6 +23,7 @@ COPY ml/ ml/
 # Serving data directories (D40); never the evaluation snapshot under ml/.
 ENV ML_RAW_DIR=/data/raw \
     ML_VALIDATION_DIR=/data/validation \
+    ML_NFT_DIR=/data/nft \
     PYTHONUNBUFFERED=1
 
 EXPOSE 8001

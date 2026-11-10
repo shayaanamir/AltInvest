@@ -18,6 +18,7 @@ from fastapi import FastAPI, HTTPException
 from ml import config
 from ml.api.contract import check
 from ml.evaluation import live_score, scorecard
+from ml.serving import nft_responses as nft
 from ml.serving import responses as rs
 
 app = FastAPI(title="AltInvest ML", version="v2")
@@ -60,6 +61,36 @@ def debug_scorecard():
 def debug_live_scorecard():
     """Forward scores of the logged served values (Phase 6d), computed now from the serving data."""
     return live_score.build()
+
+
+def _serve_nft(build, *args):
+    """NFT endpoints (Phase 10, D61): unknown slug -> 404, missing or unusable NFT data -> 503."""
+    try:
+        return build(*args)
+    except KeyError as e:
+        raise HTTPException(404, str(e.args[0])) from None
+    except rs.NotServable as e:
+        raise HTTPException(503, str(e)) from None
+
+
+@app.get("/nft/collections")
+def nft_collections():
+    return check("NftCollectionsResponse", _serve_nft(lambda: nft.collections(datetime.now(timezone.utc))))
+
+
+@app.get("/nft/{slug}/floor")
+def nft_floor(slug: str, days: int = 365):
+    return check("NftFloorResponse", _serve_nft(nft.floor, slug, datetime.now(timezone.utc), days))
+
+
+@app.get("/nft/{slug}/risk")
+def nft_risk(slug: str):
+    return check("NftRiskResponse", _serve_nft(nft.risk, slug, datetime.now(timezone.utc)))
+
+
+@app.get("/nft/{slug}/sales")
+def nft_sales(slug: str, days: int = 30):
+    return check("NftSalesResponse", _serve_nft(nft.sales, slug, datetime.now(timezone.utc), days))
 
 
 @app.get("/debug/{asset}")

@@ -44,6 +44,8 @@ def collect_meta(client: Client) -> dict:
                      "total_supply": c.get("total_supply"), "image_url": c.get("image_url") or "",
                      "description": (c.get("description") or "").strip(),
                      "verified": c.get("safelist_status") == "verified", "created_date": c.get("created_date")}
+        if out[slug]["contract"]:
+            out[slug]["symbol"] = alchemy.contract_metadata(out[slug]["contract"]).get("symbol")
     path = config.ML_NFT_DIR / "collections.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(out, indent=2), encoding="utf-8")

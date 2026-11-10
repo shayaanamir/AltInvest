@@ -98,6 +98,26 @@ services:
     networks:
       - altinvest
 
+  # Daily NFT data refresh for ml (Phase 10, ml/docs/DECISIONS.md D65e, D67): OpenSea floor and sales,
+  # Alchemy traits and Binance ETH-USD into /data/nft on the same volume, at 00:10 UTC. The keys come
+  # from the developer's .env through compose; they are never written to the volume or the image.
+  ml-nft-refresh:
+    image: altinvest-ml
+    container_name: altinvest-ml-nft-refresh
+    restart: unless-stopped
+    command: python -m ml.nft.refresh --loop
+    environment:
+      OPENSEA_API_KEY: ${OPENSEA_API_KEY:-}
+      ALCHEMY_API_KEY: ${ALCHEMY_API_KEY:-}
+    volumes:
+      - ml-data:/data
+    healthcheck:
+      disable: true
+    depends_on:
+      - ml
+    networks:
+      - altinvest
+
   frontend:
     build:
       context: ./frontend
