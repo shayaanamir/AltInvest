@@ -8,3 +8,4 @@ prophet==1.3.0
 cmdstanpy==1.3.0
 lightgbm==4.7.0
 arch==8.0.0
+pyarrow==26.0.1            # Phase 10: parquet files of the frozen NFT snapshot (D62)

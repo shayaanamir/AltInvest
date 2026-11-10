@@ -17,6 +17,7 @@ frontend/build
 # service fetches and validates its own serving data into the ml-data volume
 # (ml/data/refresh.py, D40); ml/data/raw is the evaluation snapshot (host only).
 ml/data/raw
+ml/data/nft
 ml/artifacts
 
 # Git / IDE / OS

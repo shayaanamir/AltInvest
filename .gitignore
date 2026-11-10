@@ -112,3 +112,11 @@ docs/
 ml/artifacts/*/*
 !ml/artifacts/*/metadata.json
 PLANNER.md
+
+# Phase 10 NFT data (D62, D64): the live/serving directory is never tracked
+ml/data/nft/live/
+# item-level snapshot files are large; their hashes are in the tracked manifest.json (D64)
+ml/data/nft/snapshots/*/sales_raw.parquet
+ml/data/nft/snapshots/*/sales_filtered.parquet
+ml/data/nft/snapshots/*/traits.parquet
+ml/data/nft/snapshots/*/tokens.parquet

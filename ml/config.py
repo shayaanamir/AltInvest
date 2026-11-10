@@ -80,3 +80,29 @@ REFRESH_UTC = "00:05"  # D40
 # Live tracking (Phase 6d), files in ML_VALIDATION_DIR: what the API served each day, and how it turned out.
 PREDICTION_LOG_FILE = "prediction_log.jsonl"
 LIVE_SCORECARD_FILE = "live_scorecard.json"
+
+# ---- Phase 10: NFT collections (docs/PLAN_NFT.md, D53-D62) ----
+# OpenSea slugs, all ERC-721 on Ethereum (D54). Changing the list changes every pooled score: new D-number.
+NFT_SLUGS = ("boredapeyachtclub", "mutant-ape-yacht-club", "pudgypenguins", "lilpudgys", "azuki",
+             "doodles-official", "milady")
+NFT_FLOOR_MAX_AGE_HOURS = 48  # D55: the as-of 00:00 UTC floor point may be at most this old, else the day is a gap
+NFT_SALES_START = "2024-11-10"  # D56: sales window starts here (24 months before the 10.0 investigation)
+NFT_PAYMENT_SYMBOLS = ("ETH", "WETH", "BETH")  # D56: other payment tokens are dropped and counted
+NFT_SEAPORT_ADDRESSES = (  # D56: protocol_address of an OpenSea (Seaport 1.1, 1.4, 1.5, 1.6) sale
+    "0x00000000006c3852cbef3e08e8df289169ede581", "0x00000000000001ad428e4906ae43d8f9852d0dd6",
+    "0x00000000000000adc04c56bf30ac9d3c0aaf14dc", "0x0000000000000068f116a894984e2db1123eb395")
+NFT_MARKETPLACES_LABEL = "Sales on OpenSea and Blur, as reported by OpenSea"  # D56 (A10)
+NFT_WASH_ROUNDTRIP_DAYS = 30  # D57 R2
+NFT_WASH_PRICE_BOUNDS = (0.10, 20.0)  # D57 R3: allowed sale price as a multiple of the floor of the sale date
+NFT_ILLIQUID_MIN_SALES_7D = 10  # D58: illiquid if fewer wash-filtered sales in the last 7 days
+NFT_LIQUIDITY_LABEL_BOUNDS = (33.0, 67.0)  # D58: Low < 33 <= Medium < 67 <= High
+NFT_MIN_TRAIN_ROWS = 180  # D59: MIN_TRAIN_ROWS = 730 is longer than the floor history (786 days)
+NFT_MIN_CONE_DAYS = 60  # D55: fewer days of floor history than this and no volatility is served
+NFT_REFRESH_UTC = "00:10"  # after the price refresh (00:05), before the backend pull (00:15, D61)
+
+# NFT data directories (D62). Evaluation reads only the frozen snapshot under NFT_SNAPSHOT_ROOT; collectors,
+# the refresh and serving read and write ML_NFT_DIR (the env var in Docker, ml/data/nft/live on the host).
+NFT_DATA_DIR = Path(__file__).resolve().parent / "data" / "nft"
+NFT_SNAPSHOT_ROOT = NFT_DATA_DIR / "snapshots"
+NFT_SNAPSHOT_DATE = "2026-11-10"  # D64: the frozen evaluation snapshot (its last floor date); never rewritten
+ML_NFT_DIR = Path(os.environ.get("ML_NFT_DIR") or NFT_DATA_DIR / "live")
