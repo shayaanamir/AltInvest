@@ -1,0 +1,16 @@
+........................................................................ [ 20%]
+........................................................................ [ 41%]
+........................................................................ [ 62%]
+........................................................................ [ 83%]
+........................................................                 [100%]
+============================== warnings summary ===============================
+.venv-train\Lib\site-packages\starlette\testclient.py:40
+  C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest\.venv-train\Lib\site-packages\starlette\testclient.py:40: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = typing.Callable[[], typing.ContextManager[anyio.abc.BlockingPortal]]
+
+tests/test_nft_items.py::test_checks_count_each_problem_and_pass_on_clean_data
+  C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest\ml\nft\item_summary.py:47: FutureWarning: Downcasting object dtype arrays on .fillna, .ffill, .bfill is deprecated and will change in a future version. Call result.infer_objects(copy=False) instead. To opt-in to the future behavior, set `pd.set_option('future.no_silent_downcasting', True)`
+    "sold_tokens_without_traits": int(known["traits_missing"].fillna(False).astype(bool).sum()),
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+344 passed, 2 warnings in 61.08s (0:01:01)

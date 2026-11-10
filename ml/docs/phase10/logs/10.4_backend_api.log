@@ -1,0 +1,5 @@
+history 365 2025-11-11 {'date': '2026-11-10', 'floor_eth': 0.447949, 'floor_usd': 956.48}
+vol 1.120375 risk 18.059113 nft-ewma-pooled-pct 2026-11-10 2026-11-10T20:14:36Z
+note isk_score is relative to the other tracked NFT collections (higher = safer) and is not comparable to crypto risk scores.
+liq {'label': 'Low', 'is_illiquid': False, 'sales_7d': 55.0, 'liquidity_score': 12.595541} | market {'date': '2026-11-10', 'floor_eth': 0.447949, 'change_24h': -1.528, 'volume_24h_eth': 3.604292} | sales 10
+[('boredapeyachtclub', 5.6, -1.5817), ('pudgypenguins', 2.066, 0.7805), ('mutant-ape-yacht-club', 0.79, -2.4691), ('milady', 0.657767, -0.14), ('azuki', 0.447949, -1.528), ('doodles-official', 0.24, -2.0408), ('lilpudgys', 0.183899, 2.1661)]

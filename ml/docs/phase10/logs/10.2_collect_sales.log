@@ -1,0 +1,20 @@
+C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest\ml\nft\collect.py:101: FutureWarning: The behavior of DataFrame concatenation with empty or all-NA entries is deprecated. In a future version, this will no longer exclude empty or all-NA columns when determining the result dtypes. To retain the old behavior, exclude the relevant entries before the concat operation.
+  have = sl.dedupe(pd.concat([have, pd.DataFrame(rows, columns=sl.SALE_COLUMNS)], ignore_index=True))
+[nft-collect] sales boredapeyachtclub: +9620 (dropped events seen: 9; calls so far 62)
+[nft-collect] sales mutant-ape-yacht-club: +29268 (dropped events seen: 3; calls so far 223)
+[nft-collect] sales pudgypenguins: +22780 (dropped events seen: 14; calls so far 349)
+[nft-collect] sales lilpudgys: +67319 (dropped events seen: 3; calls so far 710)
+[nft-collect] sales azuki: +23736 (dropped events seen: 1; calls so far 851)
+[nft-collect] sales doodles-official: +27641 (dropped events seen: 0; calls so far 1014)
+[nft-collect] sales milady: +18184 (dropped events seen: 0; calls so far 1126)
+{
+ "sales_added": {
+  "boredapeyachtclub": 9620,
+  "mutant-ape-yacht-club": 29268,
+  "pudgypenguins": 22780,
+  "lilpudgys": 67319,
+  "azuki": 23736,
+  "doodles-official": 27641,
+  "milady": 18184
+ }
+}

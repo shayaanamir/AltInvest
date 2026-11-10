@@ -1,0 +1,8 @@
+.......................                                                  [100%]
+============================== warnings summary ===============================
+tests/test_nft_items.py::test_checks_count_each_problem_and_pass_on_clean_data
+  C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest\ml\..\ml\nft\item_summary.py:47: FutureWarning: Downcasting object dtype arrays on .fillna, .ffill, .bfill is deprecated and will change in a future version. Call result.infer_objects(copy=False) instead. To opt-in to the future behavior, set `pd.set_option('future.no_silent_downcasting', True)`
+    "sold_tokens_without_traits": int(known["traits_missing"].fillna(False).astype(bool).sum()),
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+23 passed, 1 warning in 1.82s

@@ -1,0 +1,2 @@
+nodes: ('mongodb', 27017) db: aaip_db
+nft rows from ml-service: 2800

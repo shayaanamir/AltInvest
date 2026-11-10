@@ -1,0 +1,8 @@
+rows 5485 | >5% vs floor-date ETH: 526 | of those, >5% vs point-date ETH: 93
+implied ETH-USD on big rows: median 2588.6 | Binance on those dates: median 2768.7
+big rows per year-month (top 6): {'2025-12': 45, '2025-08': 44, '2026-02': 40, '2024-11': 38, '2025-05': 38, '2025-03': 36}
+big-row dates where all 7 collections are off together: 45 of 98
+                 slug       date point_date  implied  eth_usd  dev_floor_date  dev_point_date
+    boredapeyachtclub 2025-05-09 2025-05-08  1810.85  2207.39           0.219           0.000
+mutant-ape-yacht-club 2025-05-09 2025-05-08  1810.81  2207.39           0.219           0.000
+    boredapeyachtclub 2025-02-04 2025-02-03  2338.38  2879.89           0.232           0.227

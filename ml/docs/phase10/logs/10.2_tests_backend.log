@@ -1,0 +1,73 @@
+
+=================================== ERRORS ====================================
+_________________ ERROR collecting tests/test_aai_baseline.py _________________
+ImportError while importing test module 'C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest\backend\tests\test_aai_baseline.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+C:\Users\Shail\AppData\Local\Programs\Python\Python312\Lib\importlib\__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_aai_baseline.py:5: in <module>
+    from tests.test_ml_pull import PREDICT_BTC, RISK_BTC
+tests\test_ml_pull.py:7: in <module>
+    import db.queries as queries
+..\db\queries.py:2: in <module>
+    from db.mongo_connection import get_db
+..\db\mongo_connection.py:2: in <module>
+    from pymongo import MongoClient
+E   ModuleNotFoundError: No module named 'pymongo'
+___________________ ERROR collecting tests/test_ml_pull.py ____________________
+ImportError while importing test module 'C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest\backend\tests\test_ml_pull.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+C:\Users\Shail\AppData\Local\Programs\Python\Python312\Lib\importlib\__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_ml_pull.py:7: in <module>
+    import db.queries as queries
+..\db\queries.py:2: in <module>
+    from db.mongo_connection import get_db
+..\db\mongo_connection.py:2: in <module>
+    from pymongo import MongoClient
+E   ModuleNotFoundError: No module named 'pymongo'
+__________________ ERROR collecting tests/test_ml_routes.py ___________________
+ImportError while importing test module 'C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest\backend\tests\test_ml_routes.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+C:\Users\Shail\AppData\Local\Programs\Python\Python312\Lib\importlib\__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_ml_routes.py:8: in <module>
+    import db.queries as queries
+..\db\queries.py:2: in <module>
+    from db.mongo_connection import get_db
+..\db\mongo_connection.py:2: in <module>
+    from pymongo import MongoClient
+E   ModuleNotFoundError: No module named 'pymongo'
+_____________ ERROR collecting tests/test_seed_skips_ml_assets.py _____________
+ImportError while importing test module 'C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest\backend\tests\test_seed_skips_ml_assets.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+C:\Users\Shail\AppData\Local\Programs\Python\Python312\Lib\importlib\__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_seed_skips_ml_assets.py:2: in <module>
+    from db import seed_predictions_risk as seed
+..\db\seed_predictions_risk.py:13: in <module>
+    from db.mongo_connection import get_db
+..\db\mongo_connection.py:2: in <module>
+    from pymongo import MongoClient
+E   ModuleNotFoundError: No module named 'pymongo'
+============================== warnings summary ===============================
+..\.venv-train\Lib\site-packages\starlette\testclient.py:40
+  C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest\.venv-train\Lib\site-packages\starlette\testclient.py:40: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = typing.Callable[[], typing.ContextManager[anyio.abc.BlockingPortal]]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+ERROR tests/test_aai_baseline.py
+ERROR tests/test_ml_pull.py
+ERROR tests/test_ml_routes.py
+ERROR tests/test_seed_skips_ml_assets.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 4 errors during collection !!!!!!!!!!!!!!!!!!!
+1 warning, 4 errors in 0.93s

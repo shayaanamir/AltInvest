@@ -1,0 +1,79 @@
+
+> frontend@0.0.0 test
+> node --test "src/**/*.test.js"
+
+TAP version 13
+# Subtest: draws the cone for a served NFT volatility, from the last floor, with the same math as crypto
+ok 1 - draws the cone for a served NFT volatility, from the last floor, with the same math as crypto
+  ---
+  duration_ms: 3.7721
+  ...
+# Subtest: hides the cone when the volatility is missing, null, zero or not a number
+ok 2 - hides the cone when the volatility is missing, null, zero or not a number
+  ---
+  duration_ms: 0.2735
+  ...
+# Subtest: hides the cone when the data is stale (ML 48 h or backend 36 h note) or the collection is illiquid
+ok 3 - hides the cone when the data is stale (ML 48 h or backend 36 h note) or the collection is illiquid
+  ---
+  duration_ms: 0.2397
+  ...
+# Subtest: does NOT hide just because EWMA was not approved: a served persistence vol also draws (D52 amended)
+ok 4 - does NOT hide just because EWMA was not approved: a served persistence vol also draws (D52 amended)
+  ---
+  duration_ms: 0.203
+  ...
+# Subtest: USD cone equals the ETH cone converted at the last date's ETH price
+ok 5 - USD cone equals the ETH cone converted at the last date's ETH price
+  ---
+  duration_ms: 0.4557
+  ...
+# Subtest: never a forecast or center line, and the labels and captions the plan requires
+ok 6 - never a forecast or center line, and the labels and captions the plan requires
+  ---
+  duration_ms: 0.4671
+  ...
+# Subtest: uses the annualisation factor serving uses (ml/config.py)
+ok 7 - uses the annualisation factor serving uses (ml/config.py)
+  ---
+  duration_ms: 2.9509
+  ...
+# Subtest: width is 0 at d = 0, so the cone joins the history line
+ok 8 - width is 0 at d = 0, so the cone joins the history line
+  ---
+  duration_ms: 0.2703
+  ...
+# Subtest: symmetric in log space and widens with sqrt(d)
+ok 9 - symmetric in log space and widens with sqrt(d)
+  ---
+  duration_ms: 0.3526
+  ...
+# Subtest: cone is hidden when volatility is missing, null, not positive, not the EWMA model, or stale
+ok 10 - cone is hidden when volatility is missing, null, not positive, not the EWMA model, or stale
+  ---
+  duration_ms: 0.9949
+  ...
+# Subtest: no forecast or center line is ever a chart layer
+ok 11 - no forecast or center line is ever a chart layer
+  ---
+  duration_ms: 0.7712
+  ...
+# Subtest: future section: true time share, but at least 15% of the width
+ok 12 - future section: true time share, but at least 15% of the width
+  ---
+  duration_ms: 0.6003
+  ...
+# Subtest: the cone's start is labelled as the last daily close
+ok 13 - the cone's start is labelled as the last daily close
+  ---
+  duration_ms: 0.5686
+  ...
+1..13
+# tests 13
+# suites 0
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 115.2914
