@@ -107,6 +107,8 @@ NFT_REFRESH_UTC = "00:10"  # after the price refresh (00:05), before the backend
 # the refresh and serving read and write ML_NFT_DIR (the env var in Docker, ml/data/nft/live on the host).
 NFT_DATA_DIR = Path(__file__).resolve().parent / "data" / "nft"
 NFT_SNAPSHOT_ROOT = NFT_DATA_DIR / "snapshots"
-NFT_SNAPSHOT_DATE = "2026-11-10"
-NFT_ITEM_SNAPSHOT = "2026-11-10-items"  # D68: traits and tokens with the missing metadata filled; never rewritten  # D64: the frozen evaluation snapshot (its last floor date); never rewritten
+NFT_SNAPSHOT_DATE = "2026-11-10"  # D64: the frozen evaluation snapshot (its last floor date); never rewritten
+NFT_ITEM_SNAPSHOT = "2026-11-10-items"  # D68: traits and tokens with the missing metadata filled; never rewritten
 ML_NFT_DIR = Path(os.environ.get("ML_NFT_DIR") or NFT_DATA_DIR / "live")
+NFT_ITEM_SNAPSHOT_V2 = "2026-11-10-items-v2"  # D70: cleaned item sales, floor point before each sale; never rewritten
+NFT_FV_SEALED_START = "2026-02-01"  # D71: sealed cutoff T for fair value (computed from the clean sales; freeze checks it)
