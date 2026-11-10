@@ -1,0 +1,18 @@
+[tx-payments] 2634 transactions to read (0 stored)
+[tx-payments] batch 0: HTTP 429; retry 1
+[tx-payments] batch 1: HTTP 429; retry 1
+[tx-payments] 200 stored, 0 not returned
+[tx-payments] 400 stored, 0 not returned
+[tx-payments] 600 stored, 0 not returned
+[tx-payments] 800 stored, 0 not returned
+[tx-payments] 1000 stored, 0 not returned
+[tx-payments] 1200 stored, 0 not returned
+[tx-payments] 1400 stored, 0 not returned
+[tx-payments] 1600 stored, 0 not returned
+[tx-payments] 1800 stored, 0 not returned
+[tx-payments] 2000 stored, 0 not returned
+[tx-payments] 2200 stored, 0 not returned
+[tx-payments] 2400 stored, 0 not returned
+[tx-payments] 2600 stored, 0 not returned
+[tx-payments] 2634 stored, 0 not returned
+[tx-payments] 0 transactions to read (2634 stored)
