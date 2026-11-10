@@ -87,6 +87,11 @@ class Client:
                 return
             params = {**params, "next": body["next"]}
 
+    def nft(self, contract: str, token_id: str) -> dict | None:
+        """One item's metadata (name, image_url, traits) on Ethereum; None if OpenSea does not know it."""
+        body = self.get(f"/chain/ethereum/contract/{contract}/nfts/{token_id}", allow_404=True)
+        return (body or {}).get("nft")
+
     def best_listing_eth(self, slug: str, token_id: str) -> float | None:
         """Price in ETH of the item's best active listing; None if it is not listed or not priced in ETH."""
         body = self.get(f"/listings/collection/{slug}/nfts/{token_id}/best", allow_404=True)

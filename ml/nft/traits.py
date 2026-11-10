@@ -14,6 +14,13 @@ TRAIT_COLUMNS = ["slug", "token_id", "trait_type", "value"]
 TOKEN_COLUMNS = ["slug", "token_id", "name", "image_url", "n_traits"]
 
 
+def from_opensea(nft: dict) -> dict:
+    """An OpenSea item (GET .../nfts/{id}) in the Alchemy shape parse_token reads (D68)."""
+    return {"tokenId": str(nft["identifier"]), "name": nft.get("name") or "",
+            "image": {"originalUrl": nft.get("image_url") or ""},
+            "raw": {"metadata": {"traits": nft.get("traits") or []}}}
+
+
 def parse_token(nft: dict, slug: str) -> tuple[dict, list[dict]]:
     """(token row, trait rows) from one Alchemy getNFTsForContract item. The metadata's trait list is under
     'attributes' (ERC-721 metadata) or 'traits' (OpenSea-style metadata)."""
@@ -54,9 +61,17 @@ def rarity(tokens: pd.DataFrame, traits: pd.DataFrame) -> pd.DataFrame:
                          "rarity_rank": rank.to_numpy(), "rarity_pct": 100 * rank.to_numpy() / len(score)})
 
 
-def rarity_all(tokens: pd.DataFrame, traits: pd.DataFrame) -> pd.DataFrame:
-    """rarity() for every collection, with the slug."""
+def rarity_all(tokens: pd.DataFrame, traits: pd.DataFrame, known_only: bool = False) -> pd.DataFrame:
+    """rarity() for every collection, with the slug. known_only (D68): only tokens with at least one trait row
+    are ranked (shares over those tokens); the others get null rarity instead of counting as all 'none'."""
     parts = []
     for slug, tk in tokens.groupby("slug", sort=True):
-        parts.append(rarity(tk, traits[traits["slug"] == slug]).assign(slug=slug))
-    return pd.concat(parts, ignore_index=True)[["slug", "token_id", "rarity_score", "rarity_rank", "rarity_pct"]]
+        tr = traits[traits["slug"] == slug]
+        if known_only:
+            tk = tk[tk["token_id"].isin(tr["token_id"])]
+        parts.append(rarity(tk, tr).assign(slug=slug))
+    out = pd.concat(parts, ignore_index=True)[["slug", "token_id", "rarity_score", "rarity_rank", "rarity_pct"]]
+    if known_only:
+        out = tokens[["slug", "token_id"]].merge(out, on=["slug", "token_id"], how="left")
+        out["rarity_rank"] = out["rarity_rank"].astype("Int64")
+    return out

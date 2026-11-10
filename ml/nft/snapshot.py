@@ -108,9 +108,10 @@ def require_snapshot(*tables: str) -> str:
     return sha256(snapshot_dir() / MANIFEST)
 
 
-def load(name: str) -> pd.DataFrame:
-    """One snapshot table. The only way evaluation code reads NFT data."""
-    return pd.read_parquet(snapshot_dir() / f"{name}.parquet")
+def load(name: str, date: str | None = None) -> pd.DataFrame:
+    """One snapshot table. The only way evaluation code reads NFT data. `date` selects another frozen snapshot
+    directory (the D68 item snapshot)."""
+    return pd.read_parquet(snapshot_dir(date) / f"{name}.parquet")
 
 
 def main() -> None:
