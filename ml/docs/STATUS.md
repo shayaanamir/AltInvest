@@ -1,7 +1,14 @@
 # STATUS
 
-Current phase: 9 (forecasting v2) DONE and merged into main as PR #8. Served: EWMA risk for all assets (D51). Follow-up on branch phase-9-vol-cone (2026-11-10): frontend volatility cone (D52), reviewed twice, PR open against main.
+Current phase: 10 (NFTs, docs/PLAN_NFT.md) at checkpoint 10.1, branch phase-10-nft. Previously: 9 (forecasting v2) DONE and merged into main as PR #8. Served: EWMA risk for all assets (D51). Follow-up on branch phase-9-vol-cone (2026-11-10): frontend volatility cone (D52), reviewed twice, PR open against main.
 Next: Person B checks the new risk_score values and note text (fields unchanged). Merge phase-7-integration, then rebase this branch onto main. The live scorecard starts scoring on 2026-11-30.
+
+## Phase 10 steps 10.0-10.1: NFT investigation and decisions (2026-11-10, branch phase-10-nft)
+
+- 10.0 (read-only): report and A1 addendum in ml/docs/phase10/checkpoint_10.0.md. All 7 collections have 786 days of OpenSea floor history (2024-09-16 to 2026-11-10).
+- Planner review amendments A1-A10 accepted. 10.1: D53-D62 written in DECISIONS.md, AGENTS.md line 3 amended (D53), Phase 10 row added to PLAN.md.
+- No code, collectors, tables or models yet. No backend/ or db/ change: D61 is a proposal waiting for Person B.
+- Next: planner OK on checkpoint 10.1 (ml/docs/phase10/checkpoint_10.1.md), then 10.2 collection data.
 
 ## Phase 9 follow-up: frontend 30-day volatility cone (2026-11-10, branch phase-9-vol-cone)
 

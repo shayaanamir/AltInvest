@@ -15,6 +15,7 @@
 | 7 | Backend integration (Person B) | backend calls ML over HTTP end to end | Filled in docs/STATUS.md when the phase is completed (AGENTS rule 15) |
 | 8 | NFTs | separate PLAN_NFT.md, started only after 7 | Filled in docs/STATUS.md when the phase is completed (AGENTS rule 15) |
 | 9 | Forecasting v2 (price, price range, risk, direction at 30 and 7 days; D41-D47): steps 9.0-9.8 in docs/PLAN_FORECAST.md, each with a planner checkpoint | Every part has a walk-forward report with a D44 verdict; the sealed test ran once (test_final.json); served fields pass the contract test; parts that lost keep their baselines | "How to verify Phase 9 yourself" in docs/STATUS.md (step 9.8) |
+| 10 | NFTs (Phase 8 plan, run as Phase 10): collection floor history and volatility cone, liquidity, collection risk, item fair value; steps 10.0-10.9 in docs/PLAN_NFT.md with review amendments A1-A10 (D53-D62), each with a planner checkpoint | Every part has a walk-forward report with a D44-style verdict (D59, D60); the sealed test ran once (10.8); snapshots are hashed (D62); NFT endpoints validate against CONTRACT.md | "How to verify Phase 10 yourself" in docs/STATUS.md (step 10.9) |
 
 ## Order rationale
 Evaluation before models, so every model is judged against baselines from day one.
