@@ -30,8 +30,11 @@ services:
     ports:
       - "8000:8000"
     environment:
-      MONGO_URI: ${MONGO_URI:-mongodb://mongodb:27017}
-      MONGO_DB_NAME: ${MONGO_DB_NAME:-aaip_db}
+      # Dev default: the local mongodb container (ml/docs/DECISIONS.md D69). The developer's .env MONGO_URI (for
+      # host-side scripts, possibly the shared Atlas cluster) is NOT passed in; set BACKEND_MONGO_URI to point
+      # the container somewhere else on purpose.
+      MONGO_URI: ${BACKEND_MONGO_URI:-mongodb://mongodb:27017}
+      MONGO_DB_NAME: ${BACKEND_MONGO_DB_NAME:-aaip_db}
 
       MONGO_DB: altinvest
       CMC_API_KEY: ${CMC_API_KEY:-}

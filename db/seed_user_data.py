@@ -174,4 +174,6 @@ def seed():
 
 
 if __name__ == "__main__":
+    from db.seed_guard import require_local_target
+    require_local_target()          # local MongoDB only, unless --allow-remote (D69)
     seed()
