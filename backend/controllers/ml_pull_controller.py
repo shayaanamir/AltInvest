@@ -2,7 +2,8 @@
 backend/controllers/ml_pull_controller.py
 
 Daily pull of the ML service (ml/, port 8001) into MongoDB: GET /predict/{asset} -> `predictions`,
-GET /risk/{asset} -> `risk_scores`, for the assets in db.queries.ML_COVERED_ASSETS.
+GET /risk/{asset} -> `risk_scores`, for the assets in db.queries.ML_COVERED_ASSETS; and, from Phase 10,
+the NFT endpoints into the nft_* tables (controllers/nft_pull.py).
 Responses follow ml/docs/CONTRACT.md and are stored field for field (including `note` and `signal`).
 
 Rules (ml/docs/PLAN_NEXT.md, task C1):
@@ -122,10 +123,14 @@ def pull_all(client: httpx.Client | None = None, sleep=time.sleep) -> dict:
     """Pulls every covered asset. Returns {asset: {endpoint: outcome}}. Never raises for HTTP errors."""
     from db.queries import ML_COVERED_ASSETS
 
+    from controllers.nft_pull import pull_nft
+
     own = client is None
     client = client or httpx.Client()
     try:
-        return {a: pull_asset(client, a, sleep=sleep) for a in ML_COVERED_ASSETS}
+        result = {a: pull_asset(client, a, sleep=sleep) for a in ML_COVERED_ASSETS}
+        result["NFT"] = pull_nft(client, fetch, sleep)          # Phase 10 (ml/docs/DECISIONS.md D61, D67)
+        return result
     finally:
         if own:
             client.close()

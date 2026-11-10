@@ -834,3 +834,51 @@ def delete_user_account(user_id: ObjectId) -> dict:
         deleted[name] = db[name].delete_many({"user_id": user_id}).deleted_count
     deleted["users"] = db.users.delete_one({"_id": user_id}).deleted_count
     return deleted
+
+
+# ── Phase 10: NFT rows pulled from the ML service (ml/docs/DECISIONS.md D61, D67) ─────────────────
+
+def _bulk_upsert(collection: str, keys: tuple, docs: list) -> int:
+    """Upserts each doc on its `keys` fields in one bulk write. Returns how many docs were sent."""
+    from pymongo import UpdateOne
+    if not docs:
+        return 0
+    get_db()[collection].bulk_write([UpdateOne({k: d[k] for k in keys}, {"$set": d}, upsert=True) for d in docs],
+                                    ordered=False)
+    return len(docs)
+
+
+def upsert_nft_collection_meta(slug: str, fields: dict, static_defaults: dict) -> None:
+    """ML metadata ($set) plus defaults kept from the seed ($setOnInsert: subcategory, banner_color)."""
+    get_db().nft_collections.update_one({"slug": slug}, {"$set": {**fields, "slug": slug},
+                                                         "$setOnInsert": static_defaults}, upsert=True)
+
+
+def upsert_nft_market_rows(rows: list) -> int:
+    return _bulk_upsert("nft_market_data", ("slug", "date"), rows)
+
+
+def upsert_nft_liquidity_row(row: dict) -> int:
+    return _bulk_upsert("nft_liquidity", ("slug", "date"), [row])
+
+
+def upsert_nft_risk_row(row: dict) -> int:
+    return _bulk_upsert("nft_risk_breakdown", ("slug", "date"), [row])
+
+
+def upsert_nft_sale_rows(rows: list) -> int:
+    return _bulk_upsert("nft_sales", ("slug", "tx", "token_id", "seller", "buyer"), rows)
+
+
+def get_nft_floor_history(slug: str, days: int = 365) -> list:
+    """Daily ML floor rows (date, floor_eth, floor_usd), oldest first; the newest `days` rows."""
+    cursor = get_db().nft_market_data.find(
+        {"slug": slug, "source": "ml-service"},
+        projection={"_id": 0, "date": 1, "floor_eth": 1, "floor_usd": 1},
+    ).sort("timestamp", -1).limit(days)
+    return list(cursor)[::-1]
+
+
+def get_all_latest_nft_risk() -> dict:
+    """{slug: newest nft_risk_breakdown row}."""
+    return _latest_per_key("nft_risk_breakdown", "slug")

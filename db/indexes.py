@@ -57,8 +57,9 @@ INDEXES = {
         ([("title", "text"), ("summary", "text")], {"weights": {"title": 3, "summary": 1}, "name": "insights_text"}),
     ],
     "nft_collections": [([("slug", ASC)], {"unique": True})],
-    "nft_market_data": [([("slug", ASC), ("timestamp", DESC)], {})],
-    "nft_sales": [([("slug", ASC), ("timestamp", DESC)], {})],
+    "nft_market_data": [([("slug", ASC), ("timestamp", DESC)], {}), ([("slug", ASC), ("date", ASC)], {})],   # D67: upsert key
+    "nft_sales": [([("slug", ASC), ("timestamp", DESC)], {}),
+                  ([("slug", ASC), ("tx", ASC), ("token_id", ASC), ("seller", ASC), ("buyer", ASC)], {})],   # D67
     "nft_holder_stats": [([("slug", ASC), ("timestamp", DESC)], {})],
     "nft_liquidity": [([("slug", ASC), ("timestamp", DESC)], {})],
     "nft_risk_breakdown": [([("slug", ASC), ("timestamp", DESC)], {})],
