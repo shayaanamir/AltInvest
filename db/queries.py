@@ -874,7 +874,7 @@ def get_nft_floor_history(slug: str, days: int = 365) -> list:
     """Daily ML floor rows (date, floor_eth, floor_usd), oldest first; the newest `days` rows."""
     cursor = get_db().nft_market_data.find(
         {"slug": slug, "source": "ml-service"},
-        projection={"_id": 0, "date": 1, "floor_eth": 1, "floor_usd": 1},
+        projection={"_id": 0, "date": 1, "floor_eth": 1, "floor_usd": 1, "floor_age_hours": 1},
     ).sort("timestamp", -1).limit(days)
     return list(cursor)[::-1]
 

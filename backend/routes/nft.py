@@ -97,7 +97,8 @@ def get_nft_collection_detail(slug: str):
     traits = get_nft_traits(slug) or {}
     sales = [_serialize_ts(s) for s in get_nft_sales(slug, limit=10)]
     aai = get_latest_aai_score("nft", slug)
-    history = [{"date": r["date"], "floor_eth": r.get("floor_eth"), "floor_usd": r.get("floor_usd")}
+    history = [{"date": r["date"], "floor_eth": r.get("floor_eth"), "floor_usd": r.get("floor_usd"),
+                "floor_age_hours": r.get("floor_age_hours")}
                for r in get_nft_floor_history(slug)]
     # ML risk (Phase 10, ml/docs/DECISIONS.md D59, D67): the stored row's note plus the backend's 36 h stale note.
     ml_risk = risk_breakdown if (risk_breakdown or {}).get("source") == "ml-service" else None

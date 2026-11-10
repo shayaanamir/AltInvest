@@ -23,7 +23,8 @@ LISTING = {"collections": [{"slug": "azuki", "name": "Azuki", "symbol": "AZUKI",
            "timestamp": "2026-11-11T00:16:00Z"}
 FLOOR = {"slug": "azuki", "timestamp": "2026-11-11T00:16:00Z", "note": None, "rows": [
     {"date": f"2026-11-{d:02d}", "floor_eth": 0.40 + 0.01 * d, "floor_usd": 2000 * (0.40 + 0.01 * d), "eth_usd": 2000.0,
-     "floor_source": "opensea_floor", "floor_intraday_median_eth": None} for d in range(1, 12)]}
+     "floor_source": "opensea_floor", "floor_age_hours": 9.5, "floor_intraday_median_eth": None}
+    for d in range(1, 12)]}
 RISK = {"slug": "azuki", "volatility": 1.12, "risk_score": 18.06, "as_of": "2026-11-11",
         "liquidity": {"sales_7d": 55.0, "sales_30d": 525.0, "volume_7d_eth": 29.6, "volume_30d_eth": 307.4,
                       "liquidity_score": 12.6, "label": "Low", "is_illiquid": False, "wash_removed_share_30d": 0.02,
@@ -72,7 +73,7 @@ def test_pull_writes_every_table_with_the_right_keys(stored):
     assert m[-1]["timestamp"] == datetime(2026, 11, 11, tzinfo=timezone.utc) and m[-1]["source"] == "ml-service"
     assert m[-1]["change_24h"] == pytest.approx((0.51 / 0.50 - 1) * 100, abs=1e-4)
     assert m[-1]["change_7d"] == pytest.approx((0.51 / 0.44 - 1) * 100, abs=1e-4) and m[0]["change_24h"] is None
-    assert m[-1]["volume_24h_eth"] == 3.5 and "volume_24h_eth" not in m[0]
+    assert m[-1]["volume_24h_eth"] == 3.5 and "volume_24h_eth" not in m[0] and m[0]["floor_age_hours"] == 9.5
     liq, risk = stored["liq"][0], stored["risk"][0]
     assert liq["date"] == risk["date"] == "2026-11-11" and liq["sell_through_rate"] == 0.0525
     assert risk["risk_score"] == 18.06 and risk["floor_volatility_30d"] == 1.12 and risk["holder_concentration"] is None
@@ -105,7 +106,8 @@ def _detail_client(monkeypatch, risk_age_hours: float):
            "get_nft_liquidity": lambda s: None, "get_nft_risk_breakdown": lambda s: dict(risk_row),
            "get_nft_traits": lambda s: None, "get_nft_sales": lambda s, limit=10: [],
            "get_latest_aai_score": lambda t, s: None,
-           "get_nft_floor_history": lambda s: [{"date": "2026-11-10", "floor_eth": 0.45, "floor_usd": 960.0}]}
+           "get_nft_floor_history": lambda s: [{"date": "2026-11-10", "floor_eth": 0.45, "floor_usd": 960.0,
+                                                "floor_age_hours": 80.0}]}
     for name, fn in fns.items():
         monkeypatch.setattr(nft_route, name, fn)
     app = FastAPI()
@@ -115,7 +117,7 @@ def _detail_client(monkeypatch, risk_age_hours: float):
 
 def test_detail_returns_floor_history_and_ml_risk(monkeypatch):
     d = _detail_client(monkeypatch, 1).get("/nft/collections/azuki").json()
-    assert d["floor_history"] == [{"date": "2026-11-10", "floor_eth": 0.45, "floor_usd": 960.0}]
+    assert d["floor_history"] == [{"date": "2026-11-10", "floor_eth": 0.45, "floor_usd": 960.0, "floor_age_hours": 80.0}]
     assert d["volatility"] == 1.12 and d["risk_score"] == 18.06 and d["risk_model_version"] == "nft-ewma-pooled-pct"
     assert d["risk_as_of"] == "2026-11-11" and "not comparable to crypto" in d["risk_note"]
     assert "data stale" not in d["risk_note"] and d["last_updated"].endswith("Z")

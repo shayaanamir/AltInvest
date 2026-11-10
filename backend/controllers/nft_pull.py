@@ -46,6 +46,7 @@ def market_rows(slug: str, floor: dict, latest: dict, now: datetime) -> list:
         out.append({"slug": slug, "date": r["date"], "timestamp": d, "floor_eth": r.get("floor_eth"),
                     "floor_usd": r.get("floor_usd"), "eth_usd": r.get("eth_usd"), "floor_source": r.get("floor_source"),
                     "floor_intraday_median_eth": r.get("floor_intraday_median_eth"),
+                    "floor_age_hours": r.get("floor_age_hours"),            # D67h: age of the OpenSea point
                     "change_24h": _pct(r.get("floor_eth"), prev), "change_7d": _pct(r.get("floor_eth"), week),
                     "holders_count": None, "source": "ml-service", "pulled_at": now})
     out[-1].update({"volume_24h_eth": latest.get("volume_1d_eth"), "sales_24h": latest.get("sales_1d")})
