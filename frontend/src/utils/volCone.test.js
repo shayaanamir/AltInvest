@@ -4,8 +4,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
-  ANNUALISATION_DAYS, CONE_CAPTION, CONE_DAYS, Z_INNER, Z_OUTER,
-  buildCone, chartLayers, coneBand, coneVolatility, dailyVol,
+  ANNUALISATION_DAYS, CONE_CAPTION, CONE_DAYS, MIN_FUTURE_SHARE, Z_INNER, Z_OUTER,
+  buildCone, chartLayers, coneBand, coneStartLabel, coneVolatility, dailyVol, futureShare, shortDate,
 } from "./volCone.js";
 
 const EWMA_NOTE = "Risk model: EWMA volatility (lambda 0.94), which beat 30-day persistence (D50, D51).";
@@ -71,4 +71,24 @@ test("no forecast or center line is ever a chart layer", () => {
   assert.match(src, /chartLayers\(/);
   assert.ok(src.includes("{CONE_CAPTION}"));
   assert.equal(CONE_CAPTION, "Likely price range based on recent volatility, not a price prediction.");
+});
+
+test("future section: true time share, but at least 15% of the width", () => {
+  assert.equal(MIN_FUTURE_SHARE, 0.15);
+  assert.equal(futureShare(30), 0.5);                                   // 1M: 30 of 60 days, to scale
+  assert.equal(futureShare(90), 0.25);                                  // 3M: to scale
+  assert.equal(futureShare(365), 0.15);                                 // 1Y: 30 / 395 = 7.6% -> raised to 15%
+  const src = readFileSync(new URL("../components/assetDetail/PricePerformanceCard.jsx", import.meta.url), "utf8");
+  assert.match(src, /futureShare\(histSpan\)/);
+});
+
+test("the cone's start is labelled as the last daily close", () => {
+  assert.equal(shortDate("2026-11-08"), "8 Nov");
+  assert.equal(shortDate("2026-01-31"), "31 Jan");
+  assert.equal(coneStartLabel("2026-11-08"), "Last close, 8 Nov");
+  const cone = buildCone(history[1], risk(0.5));
+  assert.equal(cone[0].inner.lower, history[1].price);                  // the cone starts at the last close itself
+  const src = readFileSync(new URL("../components/assetDetail/PricePerformanceCard.jsx", import.meta.url), "utf8");
+  assert.match(src, /coneStartLabel\(lastDate\)/);
+  assert.match(src, /data-role="cone-start"/);
 });

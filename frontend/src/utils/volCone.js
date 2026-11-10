@@ -12,7 +12,31 @@ export const Z_INNER = 0.6745; // inner 50% band (normal 25th / 75th percentile)
 export const Z_OUTER = 1.2816; // outer 80% band (normal 10th / 90th percentile)
 export const CONE_CAPTION = "Likely price range based on recent volatility, not a price prediction.";
 
+// The future section gets its true share of the time axis, but never less than this share of the plot width,
+// so the 30-day cone stays readable next to a long history (1Y: 30 / 395 days would be about 7.6%).
+export const MIN_FUTURE_SHARE = 0.15;
+
 const DAY_MS = 86400000;
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** Share of the plot width for the cone's days after `histSpanDays` of history. */
+export function futureShare(histSpanDays, coneDays = CONE_DAYS) {
+  return Math.max(coneDays / (Math.max(1, histSpanDays) + coneDays), MIN_FUTURE_SHARE);
+}
+
+/** 'YYYY-MM-DD' -> '8 Nov' (UTC, as the daily closes are). */
+export function shortDate(isoDate) {
+  const d = new Date(`${isoDate}T00:00:00Z`);
+  return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
+}
+
+/**
+ * Label for the cone's start point. The cone starts at the last daily close, not at the page header price
+ * (that comes from asset_market_data, which is demo seed data, not a market price), so the chart says which.
+ */
+export function coneStartLabel(isoDate) {
+  return `Last close, ${shortDate(isoDate)}`;
+}
 
 /** Daily vol from the served annualised vol. */
 export function dailyVol(annualVol, n = ANNUALISATION_DAYS) {

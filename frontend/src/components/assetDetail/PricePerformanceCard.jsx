@@ -3,7 +3,7 @@ import { useElementSize } from "../../hooks/useElementSize";
 import { deriveAaiSignal } from "../../services/assetDetailApi";
 import { isMlUncertain } from "../../utils/scoring";
 import { formatCurrencyAxis, formatAssetPrice } from "../../utils/formatters";
-import { CONE_CAPTION, CONE_DAYS, chartLayers } from "../../utils/volCone";
+import { CONE_CAPTION, CONE_DAYS, chartLayers, coneStartLabel, futureShare, shortDate } from "../../utils/volCone";
 
 const FILTERS = ["1D", "1W", "1M", "3M", "1Y"];
 const DAY_MS = 86400000;
@@ -42,12 +42,16 @@ export default function PricePerformanceCard({ priceHistory, risk, aaiPanel, mlS
     const plotW = W - PAD_L - PAD_R;
     const plotH = H - PAD_T - PAD_B;
 
-    // One linear time axis: history days, then CONE_DAYS more when the cone is drawn.
+    // Time axis: history days, then CONE_DAYS more when the cone is drawn. Each section is linear; the future one
+    // gets its true time share but at least MIN_FUTURE_SHARE of the width (D52), so it stays readable at 1Y.
     const firstDate = history[0].date;
     const lastDate = history[history.length - 1].date;
     const histSpan = Math.max(1, daysApart(lastDate, firstDate));
-    const span = histSpan + (cone ? CONE_DAYS : 0);
-    const xForDay = (dayFromFirst) => PAD_L + (plotW * dayFromFirst) / span;
+    const futW = cone ? plotW * futureShare(histSpan) : 0;
+    const histW = plotW - futW;
+    const xForDay = (day) => (day <= histSpan
+      ? PAD_L + (histW * day) / histSpan
+      : PAD_L + histW + (futW * (day - histSpan)) / CONE_DAYS);
 
     const values = [...history.map((d) => d.price), ...(cone ? cone.flatMap((c) => [c.outer.lower, c.outer.upper]) : [])];
     const minV = Math.min(...values) * 0.985;
@@ -72,15 +76,20 @@ export default function PricePerformanceCard({ priceHistory, risk, aaiPanel, mlS
       : [];
 
     const yTicks = [0, 1, 2, 3].map((i) => minV + (vRange * i) / 3);
-    // At most ~6 history labels (3 when narrow); the last history point is "Today".
+    // At most ~6 history labels (3 when narrow), in days before the last close; the last one is its date (the
+    // last daily close, which is not necessarily today).
     const labelEvery = Math.max(1, Math.ceil(histPts.length / (narrow ? 3 : 6)));
     const xLabels = histPts
-      .map((p, i) => ({ x: p.x, label: i === histPts.length - 1 ? "Today" : `${daysApart(lastDate, p.date)}d`, i }))
+      .map((p, i) => ({ x: p.x, label: i === histPts.length - 1 ? shortDate(lastDate) : `${daysApart(lastDate, p.date)}d`, i }))
       .filter((l) => l.i === histPts.length - 1 || ((histPts.length - 1 - l.i) % labelEvery === 0 && histPts.length - 1 - l.i >= labelEvery));
-    const futureLabels = cone ? (narrow ? [30] : [10, 20, 30]).map((d) => ({ x: xForDay(histSpan + d), label: `+${d}d` })) : [];
+    const futureLabels = cone
+      ? (narrow || futW < 160 ? [30] : [10, 20, 30]).map((d) => ({ x: xForDay(histSpan + d), label: `+${d}d` }))
+      : [];
+    // The cone's start label sits at the top of the divider: inside the future section when it has room, else left of it.
+    const startLabel = cone && { text: coneStartLabel(lastDate), right: futW >= 100 };
 
     return { W, H, PAD_L, PAD_R, PAD_T, plotH, linePath, areaPath, outerPath: bandPath("outer"), innerPath: bandPath("inner"),
-      last, yTicks, yFor, xLabels, futureLabels, histPts, conePts };
+      last, yTicks, yFor, xLabels, futureLabels, startLabel, histPts, conePts };
   }, [history, cone, layers, dims]);
 
   const signal = aaiPanel ? deriveAaiSignal(aaiPanel.score) : null;
@@ -168,6 +177,16 @@ export default function PricePerformanceCard({ priceHistory, risk, aaiPanel, mlS
 
               <path d={chart.areaPath} fill="url(#adtPriceGrad)" />
               <path d={chart.linePath} fill="none" stroke="var(--sv2-accent)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" data-layer="history" />
+
+              {chart.startLabel && (
+                <g>
+                  <circle cx={chart.last.x} cy={chart.last.y} r="3.5" fill="var(--sv2-accent)" stroke="var(--sv2-card)" strokeWidth="1.5" />
+                  <text x={chart.last.x + (chart.startLabel.right ? 6 : -6)} y={chart.PAD_T + 10} fontSize="10.5"
+                    fill="var(--sv2-text-mute)" textAnchor={chart.startLabel.right ? "start" : "end"} data-role="cone-start">
+                    {chart.startLabel.text}
+                  </text>
+                </g>
+              )}
 
               {hoverPt && (
                 <g>
