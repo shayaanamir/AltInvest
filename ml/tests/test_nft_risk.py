@@ -153,3 +153,25 @@ def test_runner_refuses_a_snapshot_that_does_not_match_its_manifest(monkeypatch)
     monkeypatch.setattr(snapshot, "mismatches", lambda date=None, tables=(): ["floor.parquet"])
     with pytest.raises(SystemExit, match=r"does not match its manifest \(D62\)"):
         run_nft_risk.main()
+
+
+def test_top_only_protocol_ranks_all_candidates_together_and_confirms_only_the_top():
+    rows = {s: _rows(0.0, seed=k) for k, s in enumerate(("a", "b"))}
+    for r in rows.values():                      # model "g" ranks best (lower loss) but is worse on confirmation
+        base = r["losses"]["base"]
+        r["losses"]["g"] = np.where(r["in_rank"], base - 0.3, base + 0.1)
+        r["losses"]["e"] = base - 0.1
+    out = ap.pooled_top_only(rows, {"ewma": ["e"], "garch": ["g"]}, "base", 30)
+    assert out["ranking_order_all_candidates"] == ["g", "e"] and out["top_model"] == "garch"
+    assert not out["approved"] and out["winner"] is None          # e would pass alone, but it is never confirmed
+    assert ap.pooled_rank_and_confirm(rows, ["e"], "base", 30)["verdict"]["approved"]
+
+
+def test_top_only_on_the_10_3_report_approves_nothing():
+    import json
+    from ml.data.validate import ML_ROOT
+    r = json.loads((ML_ROOT / "reports" / "nft" / "walkforward_risk.json").read_text(encoding="utf-8"))
+    rank = {m: p["ranking_first_60pct"]["mean_loss"][p["verdict"]["top_config"]] for m, p in r["pooled"].items()}
+    top = min(rank, key=rank.get)
+    assert top == "garch" and rank["garch"] < rank["ewma"]
+    assert r["pooled"][top]["verdict"]["approved"] is False       # so under D25/D44 as written: nothing approved

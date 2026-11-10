@@ -1,4 +1,4 @@
-"""Item-level sale cleaning for fair value (D70). Pure functions, no I/O.
+"""Item-level sale cleaning for fair value (D70; C2 revised by D74, currency by D75). Pure functions, no I/O.
 
 Order: C1 collapse pass-throughs, C2 drop bundles, floor join, C3 drop price < 1% of the floor, then flags W1 and
 W2. Dropped rows leave the table; flagged rows stay with wash_flag set. clean = not flagged. Every count is per
@@ -13,7 +13,9 @@ from ml import config
 FLOOR_FRACTION_MIN = 0.01                   # C3
 RETURN_WINDOW_DAYS = config.NFT_WASH_ROUNDTRIP_DAYS   # W2: 30 days
 ID_LIKE_SHARE = 0.5                         # D70: distinct values > 50% of tokens
-NOT_FEATURES = ("sale_type", "buyer", "seller", "tx", "marketplace", "payment_symbol", "protocol_address",
+ATTRIBUTION_TOLERANCE = 1.01                 # D74: rows may sum to at most 1% more than the tx paid
+NOT_FEATURES = ("sale_type", "payment_currency", "marketplace", "payment_symbol", "buyer", "seller", "tx",
+                "protocol_address",
                 "wash_flag", "clean")       # D70: never model inputs
 
 
@@ -35,7 +37,7 @@ def collapse_passthroughs(s: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
 
 
 def drop_bundles(s: pd.DataFrame) -> tuple[pd.DataFrame, int]:
-    """C2: a tx with >= 2 distinct tokens of one collection between the same seller and buyer."""
+    """Original D70 C2, kept only so the frozen v2 snapshot stays reproducible (superseded by D74): a tx with >= 2 distinct tokens of one collection between the same seller and buyer."""
     n = s.groupby(["slug", "tx", "seller", "buyer"])["token_id"].transform("nunique")
     return s[n < 2].copy(), int((n >= 2).sum())
 
@@ -86,13 +88,55 @@ def sale_type(symbol: pd.Series) -> pd.Series:
     return symbol.map({"WETH": "bid_accept", "BETH": "bid_accept", "ETH": "listing_fill"}).fillna("unknown")
 
 
-def clean(sales: pd.DataFrame, points: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
-    """(rows after C1-C3 with floor_point_eth, wash_flag (''/W1/W2), clean, sale_type; counts per collection)."""
-    counts, out = {}, []
+def payment_currency(symbol: pd.Series) -> pd.Series:
+    """D75: ETH, WETH and BETH are the same currency, 1:1. NOT a model feature."""
+    return symbol.map({"ETH": "ETH", "WETH": "ETH", "BETH": "ETH"})
+
+
+def classify_multi_token(s: pd.DataFrame, all_rows: pd.DataFrame, payments: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
+    """D74 (replaces C2): keep a multi-token group (one tx, seller, buyer, >= 2 tokens) when its prices are per-token,
+    i.e. S <= 1.01 x P for its payment token, where P = what the transaction paid in that token (payments: tx, ok,
+    value_eth, weth, beth) and S = the sum of ALL rows of that transaction (all_rows, every collection) in that token.
+    Otherwise drop it as a true bundle / not attributable; a transaction without a payment record is dropped too."""
+    key = ["slug", "tx", "seller", "buyer"]
+    multi = (s.groupby(key)["token_id"].transform("nunique") >= 2).to_numpy()
+    sums = all_rows.groupby(["tx", "payment_symbol"])["price_eth"].sum().rename("tx_rows_sum").reset_index()
+    m = s.loc[multi, key + ["payment_symbol", "price_eth"]].reset_index()
+    m = m.merge(sums, on=["tx", "payment_symbol"], how="left").merge(payments, on="tx", how="left")
+    paid = np.select([m["payment_symbol"] == "ETH", m["payment_symbol"] == "WETH", m["payment_symbol"] == "BETH"],
+                     [m["value_eth"], m["weth"], m["beth"]], np.nan).astype(float)
+    ok = m["ok"].fillna(False).astype(bool).to_numpy()
+    row_status = np.where(~ok, "rpc_missing", np.where(m["tx_rows_sum"].to_numpy() <= ATTRIBUTION_TOLERANCE * paid,
+                                                        "attributable", "not_attributable"))
+    m["status"] = row_status
+    order = {"attributable": 0, "not_attributable": 1, "rpc_missing": 2}
+    m["rank"] = m["status"].map(order)
+    m["group_status"] = m.groupby(key)["rank"].transform("max").map({v: k for k, v in order.items()})
+    drop_idx = m.loc[m["group_status"] != "attributable", "index"]
+    counts = {}
+    for status in order:
+        sub = m[m["group_status"] == status]
+        counts[f"C2_{status}_groups"] = int(sub[key].drop_duplicates().shape[0])
+        counts[f"C2_{status}_rows"] = len(sub)
+    return s.drop(index=drop_idx), counts
+
+
+def clean(sales: pd.DataFrame, points: pd.DataFrame, payments: pd.DataFrame | None = None) -> tuple[pd.DataFrame, dict]:
+    """(rows after C1-C3 with floor_point_eth, wash_flag (''/W1/W2), clean, sale_type, payment_currency; counts per
+    collection). With `payments` (v3), C2 is the D74 classification; without them, the original D70 C2 (v2)."""
+    counts, collapsed = {}, {}
     for slug, g in sales.groupby("slug", sort=True):
-        g0, c1 = collapse_passthroughs(g)
+        collapsed[slug], c1 = collapse_passthroughs(g)
         counts[slug] = {"before": len(g), **c1}
-        g1, n_b = drop_bundles(g0)
+    all_rows = pd.concat(collapsed.values(), ignore_index=True)
+    out = []
+    for slug, g0 in collapsed.items():
+        if payments is None:
+            g1, n_b = drop_bundles(g0)
+            counts[slug]["C2_bundle_rows_dropped"] = n_b
+        else:
+            g1, c2 = classify_multi_token(g0, all_rows, payments)
+            counts[slug].update(c2)
         g2 = join_floor_point(g1, points)
         g3, n_c3 = drop_below_floor(g2)
         g3 = g3.sort_values(["slug", "token_id", "timestamp"]).reset_index(drop=True)
@@ -101,9 +145,10 @@ def clean(sales: pd.DataFrame, points: pd.DataFrame) -> tuple[pd.DataFrame, dict
         g3["wash_flag"] = np.select([w1, w2], ["W1", "W2"], "")
         g3["clean"] = g3["wash_flag"] == ""
         g3["sale_type"] = sale_type(g3["payment_symbol"])
-        counts[slug].update({"C2_bundle_rows_dropped": n_b, "C3_below_1pct_floor_dropped": n_c3,
-                             "W1_flagged": int(w1.sum()), "W2_flagged": int((w2 & ~w1).sum()),
-                             "clean": int(g3["clean"].sum())})
+        if payments is not None:
+            g3["payment_currency"] = payment_currency(g3["payment_symbol"])
+        counts[slug].update({"C3_below_1pct_floor_dropped": n_c3, "W1_flagged": int(w1.sum()),
+                             "W2_flagged": int((w2 & ~w1).sum()), "clean": int(g3["clean"].sum())})
         out.append(g3)
     rows = pd.concat(out, ignore_index=True).sort_values(["slug", "timestamp", "tx", "token_id"])
     return rows.reset_index(drop=True), counts

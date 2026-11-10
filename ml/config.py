@@ -112,4 +112,5 @@ NFT_SNAPSHOT_DATE = "2026-11-10"  # D64: the frozen evaluation snapshot (its las
 NFT_ITEM_SNAPSHOT = "2026-11-10-items"  # D68: traits and tokens with the missing metadata filled; never rewritten
 ML_NFT_DIR = Path(os.environ.get("ML_NFT_DIR") or NFT_DATA_DIR / "live")
 NFT_ITEM_SNAPSHOT_V2 = "2026-11-10-items-v2"  # D70: cleaned item sales, floor point before each sale; never rewritten
+NFT_ITEM_SNAPSHOT_V3 = "2026-11-10-items-v3"  # D74, D75: v2 with the payment-based multi-token rule; used by 10.6
 NFT_FV_SEALED_START = "2026-02-01"  # D71: sealed cutoff T for fair value (computed from the clean sales; freeze checks it)

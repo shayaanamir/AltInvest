@@ -27,7 +27,7 @@ from ml.data.validate import ML_ROOT
 from ml.evaluation import part_runner as pr
 from ml.evaluation.approval import rank_and_confirm
 from ml.evaluation.metrics import qlike, spearman
-from ml.evaluation.nft_approval import pooled_rank_and_confirm
+from ml.evaluation.nft_approval import pooled_rank_and_confirm, pooled_top_only
 from ml.evaluation.run_baselines import _clean
 from ml.evaluation.walkforward import make_folds
 from ml.evaluation.walkforward_history import run_history_folds
@@ -94,13 +94,18 @@ def verdict_rows(pooled_results: dict, sections: dict, winner: str | None) -> li
     return rows
 
 
-def build(floor, column: str = risk_data.COLUMN) -> dict:
+def build(floor, column: str = risk_data.COLUMN, protocol: str = "per-model-type") -> dict:
+    """protocol 'per-model-type' (what 10.3 ran: each model type confirmed, D49 practice) or 'top-only' (D25/D44 as
+    written: all candidates ranked together, only the top one confirmed; declared for the re-evaluation, D65i)."""
     runs = {slug: run_collection(f, column) for slug, f in floor.groupby("slug", sort=True)}
     rows = {slug: {"dates": r["pooled"].index.strftime("%Y-%m-%d").to_numpy(), "in_rank": r["in_rank"],
                    "losses": r["losses"]} for slug, r in runs.items()}
     pooled_results = {m: pooled_rank_and_confirm(rows, cs, BASE, H) for m, cs in nft_risk.MODEL_CONFIGS.items()}
     approved = {m: r["verdict"]["model_loss"] for m, r in pooled_results.items() if r["verdict"]["approved"]}
     winner = min(approved, key=approved.get) if approved else None
+    top_only = pooled_top_only(rows, nft_risk.MODEL_CONFIGS, BASE, H)
+    if protocol == "top-only":
+        winner = top_only["winner"]
     sections = {slug: collection_section(r) for slug, r in runs.items()}
     n_trials = {m: len(cs) for m, cs in nft_risk.MODEL_CONFIGS.items()}
     return {
@@ -117,7 +122,7 @@ def build(floor, column: str = risk_data.COLUMN) -> dict:
                         "per_model": n_trials, "total": sum(n_trials.values()),
                         "collection_level_rows_reported": sum(n_trials.values()) * len(runs),
                         "sensitivity_runs_reported_not_approvals": sum(n_trials.values())},
-        "pooled": pooled_results, "winner": winner,
+        "protocol": protocol, "pooled": pooled_results, "top_only": top_only, "winner": winner,
         "served_volatility": winner or BASE,
         "served_note": "the cone uses whichever volatility is served (D52 amended): the winner, or persistence "
                        "vol_30d when no model is approved",
@@ -132,9 +137,12 @@ def main(argv=None) -> None:
     parser = argparse.ArgumentParser(description="NFT floor-volatility walk-forward (10.3)")
     parser.add_argument("--floor-column", default=risk_data.COLUMN,
                         help="floor_eth_model reproduces 10.3; the declared re-run (D65h) uses floor_eth_asof")
-    column = parser.parse_args(argv).floor_column
+    parser.add_argument("--protocol", choices=("per-model-type", "top-only"), default="per-model-type",
+                        help="per-model-type reproduces 10.3; the declared re-run (D65i) uses top-only")
+    args = parser.parse_args(argv)
+    column, protocol = args.floor_column, args.protocol
     floor = snapshot.load("floor")
-    report = build(floor, column=column)
+    report = build(floor, column=column, protocol=protocol)
     sens = build(floor, column=SENSITIVITY_COLUMN)
     report["sensitivity_unguarded_floor"] = {
         "floor_column": SENSITIVITY_COLUMN,

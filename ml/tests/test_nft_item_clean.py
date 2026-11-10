@@ -107,8 +107,8 @@ def test_dev_loader_never_returns_a_date_at_or_after_t_minus_7_and_the_sealed_lo
     assert config.NFT_FV_SEALED_START == "2026-02-01"
     with pytest.raises(PermissionError, match="10.8"):
         idt.load_sealed("10.6")
-    if not (snapshot.snapshot_dir(config.NFT_ITEM_SNAPSHOT_V2) / "sales.parquet").exists():
-        pytest.skip("v2 item snapshot files are local only (D64)")
+    if not (snapshot.snapshot_dir(config.NFT_ITEM_SNAPSHOT_V3) / "sales.parquet").exists():
+        pytest.skip("v3 item snapshot files are local only (D64)")
     dev = idt.load_dev()
     assert dev["sales"]["date"].max() < idt.embargo_start(config.NFT_FV_SEALED_START) == "2026-01-25"
     assert dev["sales"]["clean"].all() and dev["sales"]["price_usd"].notna().all()

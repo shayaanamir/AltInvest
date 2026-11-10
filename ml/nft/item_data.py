@@ -1,11 +1,12 @@
-"""Fair-value item data (D70, D71): the frozen v2 item snapshot and its ONLY loaders.
+"""Fair-value item data (D70, D71, D74, D75): the frozen v3 item snapshot and its ONLY loaders.
 
-    python -m ml.nft.item_data --freeze        (writes ml/data/nft/snapshots/<NFT_ITEM_SNAPSHOT_V2>/, once)
-    python -m ml.nft.item_data --verify
+    python -m ml.nft.item_data --freeze        (writes ml/data/nft/snapshots/<NFT_ITEM_SNAPSHOT_V3>/, once)
+    python -m ml.nft.item_data --verify        (v2 and v3)
 
-v2 = base snapshot sales (sales_raw) cleaned by ml.nft.item_clean with the floor point strictly before each sale,
-plus the D68 traits with ID-like categories marked, and rarity recomputed without them (known traits only).
-Sealed cutoff T (D71) is config.NFT_FV_SEALED_START; freezing refuses if the data gives another T.
+v3 = base snapshot sales (sales_raw) cleaned by ml.nft.item_clean with the floor point strictly before each sale and
+the D74 multi-token rule (transaction payments frozen as tx_payments.parquet), payment_currency (D75), plus the D68
+traits with ID-like categories marked and rarity recomputed without them (known traits only). v2 (D70) stays frozen.
+Sealed cutoff T (D71) is config.NFT_FV_SEALED_START, computed once on v2 and NOT recomputed for v3 (D75).
   load_dev()      clean sales dated before T - 7 days (the only loader for development, tested)
   load_sealed()   clean sales dated on or after T, ONLY for step 10.8 (refuses otherwise)
 The embargo [T - 7, T) is in neither.
@@ -20,7 +21,7 @@ import pandas as pd
 
 from ml import config
 from ml.gitinfo import git_metadata
-from ml.nft import item_clean as ic, item_snapshot, snapshot, traits as tr
+from ml.nft import item_clean as ic, item_snapshot, snapshot, store, traits as tr, tx_payments
 
 EMBARGO_DAYS = 7
 SEALED_SHARE = 0.20
@@ -48,34 +49,56 @@ def split(sales: pd.DataFrame, t: str) -> dict[str, pd.DataFrame]:
             "sealed": sales[sales["date"] >= t]}
 
 
-def tables_v2() -> tuple[dict, dict]:
-    """(tables, facts) for the v2 item snapshot, from the base and D68 item snapshots."""
-    snapshot.require_snapshot("sales_raw", "floor_points", "eth_usd")
-    item_snapshot.require_item_snapshot()
-    sales, counts = ic.clean(snapshot.load("sales_raw"), snapshot.load("floor_points"))
-    tokens = snapshot.load("tokens", config.NFT_ITEM_SNAPSHOT)
-    traits = snapshot.load("traits", config.NFT_ITEM_SNAPSHOT)
+def _items(tokens: pd.DataFrame, traits: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
     id_like = ic.id_like_categories(tokens, traits)
     traits = traits.assign(id_like=[c in id_like.get(s, []) for s, c in zip(traits["slug"], traits["trait_type"])])
     base_tokens = tokens[tr.TOKEN_COLUMNS + ["traits_missing"]]
     tokens = base_tokens.merge(tr.rarity_all(base_tokens, traits[~traits["id_like"]], known_only=True),
                                on=["slug", "token_id"], how="left")
-    t = sealed_cutoff(sales.loc[sales["clean"], "date"])
+    return traits, tokens, id_like
+
+
+def rows_by_split(sales: pd.DataFrame, t: str) -> dict:
     parts = split(sales[sales["clean"]], t)
-    rows = {k: {s: int(n) for s, n in v.groupby("slug").size().items()} | {"all": len(v)} for k, v in parts.items()}
-    return ({"sales": sales, "traits": traits, "tokens": tokens},
+    out = {k: {s: int(n) for s, n in v.groupby("slug").size().items()} | {"all": len(v)} for k, v in parts.items()}
+    total = sum(out[k]["all"] for k in ("dev", "embargo", "sealed"))
+    return {**out, "sealed_share_of_clean": out["sealed"]["all"] / total if total else None}
+
+
+def payments() -> pd.DataFrame:
+    """The D74 transaction payments read by ml.nft.tx_payments; refuses if any multi-token transaction is missing."""
+    path = config.ML_NFT_DIR / tx_payments.OUT
+    pay = store.read_csv(path) if path.exists() else pd.DataFrame(columns=tx_payments.COLUMNS)
+    pay = pay.drop_duplicates("tx", keep="last").copy()
+    pay["ok"] = pay["ok"].astype(str).str.lower().isin(("true", "1"))
+    need = set(tx_payments.multi_token_txs(snapshot.load("sales_raw")))
+    missing = need - set(pay["tx"])
+    if missing:
+        sys.exit(f"payments missing for {len(missing)} multi-token transactions; run python -m ml.nft.tx_payments")
+    return pay[pay["tx"].isin(need)].reset_index(drop=True)
+
+
+def tables_v3() -> tuple[dict, dict]:
+    """(tables, facts) for the v3 item snapshot. T comes from config (not recomputed, D75)."""
+    snapshot.require_snapshot("sales_raw", "floor_points", "eth_usd")
+    item_snapshot.require_item_snapshot()
+    pay = payments()
+    sales, counts = ic.clean(snapshot.load("sales_raw"), snapshot.load("floor_points"), pay)
+    traits, tokens, id_like = _items(snapshot.load("tokens", config.NFT_ITEM_SNAPSHOT),
+                                     snapshot.load("traits", config.NFT_ITEM_SNAPSHOT))
+    t = config.NFT_FV_SEALED_START
+    return ({"sales": sales, "traits": traits, "tokens": tokens, "tx_payments": pay},
             {"cleaning_counts": counts, "id_like_categories": id_like, "sealed_start_T": t,
-             "embargo": [embargo_start(t), t], "clean_rows_by_split": rows})
+             "sealed_start_T_source": "config.NFT_FV_SEALED_START, computed on v2 (D71); not recomputed (D75)",
+             "embargo": [embargo_start(t), t], "clean_rows_by_split": rows_by_split(sales, t)})
 
 
 def freeze() -> str:
-    out = snapshot.snapshot_dir(config.NFT_ITEM_SNAPSHOT_V2)
+    out = snapshot.snapshot_dir(config.NFT_ITEM_SNAPSHOT_V3)
     if out.exists():
         sys.exit(f"snapshot {out} already exists; snapshot files are never rewritten (D62)")
     git = git_metadata()
-    tables, facts = tables_v2()
-    if facts["sealed_start_T"] != config.NFT_FV_SEALED_START:
-        sys.exit(f"the data gives T = {facts['sealed_start_T']}, config says {config.NFT_FV_SEALED_START} (D71)")
+    tables, facts = tables_v3()
     out.mkdir(parents=True)
     files = {}
     for name, df in tables.items():
@@ -84,40 +107,43 @@ def freeze() -> str:
         files[path.name] = {"sha256": snapshot.sha256(path), "rows": len(df), "bytes": path.stat().st_size,
                             "range": [df["date"].min(), df["date"].max()] if "date" in df else None,
                             "columns": list(df.columns)}
-    manifest = {"snapshot": config.NFT_ITEM_SNAPSHOT_V2,
+    manifest = {"snapshot": config.NFT_ITEM_SNAPSHOT_V3,
                 "created_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), **git,
                 "parents": {config.NFT_SNAPSHOT_DATE: snapshot.sha256(snapshot.snapshot_dir() / snapshot.MANIFEST),
                             config.NFT_ITEM_SNAPSHOT: item_snapshot.require_item_snapshot()},
-                "rules": "D70 (cleaning, floor point strictly before the sale, sale_type not a feature, ID-like "
-                         "categories), D71 (sealed cutoff)", "not_model_features": list(ic.NOT_FEATURES),
-                **facts, "files": files}
+                "rules": "D70 (cleaning, floor point strictly before the sale, ID-like categories) with C2 replaced by "
+                         "D74 (transaction payments), D75 (currency), D71 (sealed cutoff, not recomputed)",
+                "not_model_features": list(ic.NOT_FEATURES), **facts, "files": files}
     (out / snapshot.MANIFEST).write_text(json.dumps(manifest, indent=1), encoding="utf-8")
     return str(out)
 
 
-def require_v2() -> str:
-    bad = snapshot.mismatches(config.NFT_ITEM_SNAPSHOT_V2)
+def require(version: str = config.NFT_ITEM_SNAPSHOT_V3) -> str:
+    bad = snapshot.mismatches(version)
     if bad:
-        sys.exit(f"refusing to evaluate: NFT item snapshot v2 does not match its manifest (D62, D70): {bad}")
-    return snapshot.sha256(snapshot.snapshot_dir(config.NFT_ITEM_SNAPSHOT_V2) / snapshot.MANIFEST)
+        sys.exit(f"refusing to evaluate: NFT item snapshot {version} does not match its manifest (D62): {bad}")
+    return snapshot.sha256(snapshot.snapshot_dir(version) / snapshot.MANIFEST)
+
+
+def require_v2() -> str:
+    return require(config.NFT_ITEM_SNAPSHOT_V2)
 
 
 def _load(part: str) -> dict:
-    require_v2()
+    v = config.NFT_ITEM_SNAPSHOT_V3
+    require(v)
     snapshot.require_snapshot("eth_usd")
-    sales = snapshot.load("sales", config.NFT_ITEM_SNAPSHOT_V2)
+    sales = snapshot.load("sales", v)
     sales = split(sales[sales["clean"]], config.NFT_FV_SEALED_START)[part]
     eth = snapshot.load("eth_usd")
     sales = sales.merge(eth[["date", "eth_usd"]], on="date", how="left")
     sales["price_usd"] = sales["price_eth"] * sales["eth_usd"]
-    return {"sales": sales.reset_index(drop=True),
-            "tokens": snapshot.load("tokens", config.NFT_ITEM_SNAPSHOT_V2),
-            "traits": snapshot.load("traits", config.NFT_ITEM_SNAPSHOT_V2),
-            "not_model_features": ic.NOT_FEATURES}
+    return {"sales": sales.reset_index(drop=True), "tokens": snapshot.load("tokens", v),
+            "traits": snapshot.load("traits", v), "not_model_features": ic.NOT_FEATURES}
 
 
 def load_dev() -> dict:
-    """Development data for 10.6: clean sales dated before T - 7 days, tokens and traits (id_like marked)."""
+    """Development data for 10.6: clean v3 sales dated before T - 7 days, tokens and traits (id_like marked)."""
     out = _load("dev")
     assert out["sales"].empty or out["sales"]["date"].max() < embargo_start(config.NFT_FV_SEALED_START)
     return out
@@ -131,22 +157,22 @@ def load_sealed(step: str) -> dict:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Freeze or verify the v2 NFT item snapshot (D70, D71)")
+    parser = argparse.ArgumentParser(description="Freeze or verify the v3 NFT item snapshot (D74, D75)")
     g = parser.add_mutually_exclusive_group(required=True)
     g.add_argument("--freeze", action="store_true")
     g.add_argument("--verify", action="store_true")
-    g.add_argument("--dry-run", action="store_true", help="compute T and the counts without writing")
+    g.add_argument("--dry-run", action="store_true", help="the v3 counts without writing")
     args = parser.parse_args()
     if args.dry_run:
-        _, facts = tables_v2()
-        print(json.dumps({k: facts[k] for k in ("sealed_start_T", "embargo", "clean_rows_by_split",
-                                                 "id_like_categories")}, indent=1))
+        _, facts = tables_v3()
+        print(json.dumps({k: facts[k] for k in ("cleaning_counts", "clean_rows_by_split")}, indent=1))
     elif args.freeze:
         print(f"wrote {freeze()}")
     else:
-        bad = snapshot.mismatches(config.NFT_ITEM_SNAPSHOT_V2)
-        print(f"{snapshot.snapshot_dir(config.NFT_ITEM_SNAPSHOT_V2)}: {'OK, all hashes match' if not bad else f'MISMATCH {bad}'}")
-        sys.exit(1 if bad else 0)
+        bad = {v: snapshot.mismatches(v) for v in (config.NFT_ITEM_SNAPSHOT_V2, config.NFT_ITEM_SNAPSHOT_V3)}
+        for v, b in bad.items():
+            print(f"{snapshot.snapshot_dir(v)}: {'OK, all hashes match' if not b else f'MISMATCH {b}'}")
+        sys.exit(1 if any(bad.values()) else 0)
 
 
 if __name__ == "__main__":

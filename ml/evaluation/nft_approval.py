@@ -71,3 +71,17 @@ def pooled_rank_and_confirm(rows: dict, configs: list[str], baseline: str, block
                     "pooled_ci_excludes_0": ci_ok, "per_collection_baseline_minus_model": per,
                     "every_collection_not_worse": none_worse, "approved": bool(ci_ok and none_worse)},
     }
+
+
+def pooled_top_only(rows: dict, model_configs: dict, baseline: str, block: int) -> dict:
+    """D25/D44 as written (D65i): rank ALL candidates of every model type together on the ranking rows; only the
+    top-ranked candidate is confirmed (with the same pooled rule as pooled_rank_and_confirm)."""
+    configs = [c for cs in model_configs.values() for c in cs]
+    rank = {c: float(np.concatenate([r["losses"][c][r["in_rank"]] for r in rows.values()]).mean()) for c in configs}
+    order = sorted(configs, key=rank.get)
+    top = order[0]
+    model = next(m for m, cs in model_configs.items() if top in cs)
+    confirmed = pooled_rank_and_confirm(rows, [top], baseline, block)
+    return {"protocol": "top-only (D25/D44 as written, D65i)", "ranking_order_all_candidates": order,
+            "ranking_mean_loss": rank, "top_candidate": top, "top_model": model, "confirmation": confirmed,
+            "approved": confirmed["verdict"]["approved"], "winner": model if confirmed["verdict"]["approved"] else None}
