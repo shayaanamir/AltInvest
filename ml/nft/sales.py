@@ -5,8 +5,8 @@ with the first rule that removes it:
   R1 buyer == seller
   R2 round trip: a sale A->B of token t with a sale B->A of the same token within 30 days before or after
      (both legs are marked). This looks ahead: a cleaning rule on stored data, never a feature (D57).
-  R3 price below 0.10x or above 20x the collection floor of the sale's UTC date (as of 00:00 UTC, so nothing
-     from later that day is used).
+  R3 price below 0.10x or above 20x the collection floor of the sale's UTC date (floor_eth_model, D66; as of
+     00:00 UTC, so nothing from later that day is used).
 """
 
 import numpy as np
@@ -70,17 +70,17 @@ def round_trips(sales: pd.DataFrame) -> np.ndarray:
 
 
 def wash_filter(sales: pd.DataFrame, floor: pd.DataFrame) -> pd.DataFrame:
-    """`sales` plus floor_eth_asof (the floor of the sale's date) and wash_rule ('' = kept, else R1/R2/R3).
+    """`sales` plus floor_eth_model (the floor of the sale's date) and wash_rule ('' = kept, else R1/R2/R3).
 
-    `floor`: slug, date, floor_eth_asof. A sale whose date has no floor row raises: every sale needs a floor.
+    `floor`: slug, date, floor_eth_model. A sale whose date has no floor row raises: every sale needs a floor.
     """
-    s = sales.merge(floor[["slug", "date", "floor_eth_asof"]], on=["slug", "date"], how="left")
-    if s["floor_eth_asof"].isna().any():
-        bad = s[s["floor_eth_asof"].isna()]
+    s = sales.merge(floor[["slug", "date", "floor_eth_model"]], on=["slug", "date"], how="left")
+    if s["floor_eth_model"].isna().any():
+        bad = s[s["floor_eth_model"].isna()]
         raise ValueError(f"{len(bad)} sale(s) have no floor for their date, first {bad.iloc[0]['slug']} "
                          f"{bad.iloc[0]['date']}")
     lo, hi = config.NFT_WASH_PRICE_BOUNDS
-    ratio = s["price_eth"] / s["floor_eth_asof"]
+    ratio = s["price_eth"] / s["floor_eth_model"]
     r1 = (s["buyer"] == s["seller"]).to_numpy()
     r2 = round_trips(s)
     r3 = ((ratio < lo) | (ratio > hi)).to_numpy()

@@ -23,14 +23,15 @@ def _floor(n=420, seed=0, slug="c"):
     rng = np.random.default_rng(seed)
     r = rng.normal(0, 1, n) * np.where(np.arange(n) < n // 2, 0.02, 0.06)
     dates = pd.date_range("2024-09-17", periods=n, freq="D").strftime("%Y-%m-%d")
-    return pd.DataFrame({"slug": slug, "date": dates, "floor_eth_asof": 5.0 * np.exp(np.cumsum(r))})
+    v = 5.0 * np.exp(np.cumsum(r))
+    return pd.DataFrame({"slug": slug, "date": dates, "floor_eth_model": v, "floor_eth_asof": v})
 
 
 def test_features_match_the_hand_formulas_and_drop_the_warm_up():
     f = _floor()
     close = risk_data.floor_series(f)
     feats = risk_data.features(close)
-    r = np.log(f["floor_eth_asof"]).diff().to_numpy()
+    r = np.log(f["floor_eth_model"]).diff().to_numpy()
     assert len(feats) == len(f) - config.WARMUP_ROWS and feats.index[0] == close.index[config.WARMUP_ROWS]
     assert feats["ret_1d"].iloc[0] == pytest.approx(r[30])
     assert feats["vol_30d"].iloc[5] == pytest.approx(np.std(r[6:36], ddof=1))
@@ -44,7 +45,7 @@ def test_floor_series_refuses_gaps_duplicates_and_missing_floors():
     with pytest.raises(ValueError, match="consecutive calendar days"):
         risk_data.floor_series(pd.concat([f, f.iloc[[5]]]))
     bad = f.copy()
-    bad.loc[7, "floor_eth_asof"] = np.nan
+    bad.loc[7, "floor_eth_model"] = np.nan
     with pytest.raises(ValueError, match="positive number"):
         risk_data.floor_series(bad)
 
@@ -58,7 +59,7 @@ def test_dev_frame_never_contains_or_depends_on_a_sealed_test_row():
     assert data.index[-1].strftime("%Y-%m-%d") < test_start
     assert data["fwd_vol_30d"].iloc[-H:].isna().all()             # labels that would need test floors do not exist
     changed = f.copy()
-    changed.loc[changed["date"] >= test_start, "floor_eth_asof"] *= 7.0
+    changed.loc[changed["date"] >= test_start, "floor_eth_model"] *= 7.0
     pd.testing.assert_frame_equal(data, risk_data.dev_frame(changed)[0])
     test, b2_t, _ = risk_data.test_frame(f)
     assert b2_t == b2 and test.index[0].strftime("%Y-%m-%d") == test_start and len(test) == n - b2 - H
@@ -82,7 +83,7 @@ def test_no_prediction_uses_a_floor_after_its_own_row():
     hist = data[risk_data.FEATURES + ["close"]]
     rows = range(250, 260)
     later = _floor().copy()
-    later.loc[later.index > config.WARMUP_ROWS + 259, "floor_eth_asof"] *= 3.0     # only floors after row 259
+    later.loc[later.index > config.WARMUP_ROWS + 259, "floor_eth_model"] *= 3.0     # only floors after row 259
     hist2 = risk_data.dev_frame(later)[0][risk_data.FEATURES + ["close"]]
     assert not hist2.iloc[260:].equals(hist.iloc[260:])
     for name, spec in nft_risk.specs().items():

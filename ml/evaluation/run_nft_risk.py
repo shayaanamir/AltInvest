@@ -10,6 +10,10 @@ of every collection's folds together, with a date-block bootstrap; it must also 
 in every collection. If both pass, the lower pooled confirmation QLIKE wins (D49). The served volatility is
 the winner, or persistence vol_30d when nothing is approved; either way it feeds the cone (D52 as amended).
 Sealed test rows are never built (ml.nft.risk_data.dev_frame).
+
+The floor series is floor_eth_model (D66: one-day spikes held back). The same run on the unguarded
+floor_eth_asof is written as `sensitivity_unguarded_floor`; it was declared before the run (D66), is reported
+for the planner's review and takes no part in the approval.
 """
 
 import json
@@ -34,12 +38,13 @@ from ml.nft import risk_data, snapshot
 REPORT = ML_ROOT / "reports" / "nft" / "walkforward_risk.json"
 H = config.HORIZON_DAYS
 BASE = nft_risk.BASELINE
+SENSITIVITY_COLUMN = "floor_eth_asof"       # D66: the unguarded series, reported only
 CONFIGS = [c for cs in nft_risk.MODEL_CONFIGS.values() for c in cs]
 
 
-def run_collection(floor_one) -> dict:
+def run_collection(floor_one, column: str = risk_data.COLUMN) -> dict:
     """Walk-forward of every spec on one collection's pre-test rows."""
-    data, b2, n = risk_data.dev_frame(floor_one)
+    data, b2, n = risk_data.dev_frame(floor_one, column=column)
     folds = make_folds(len(data), b2, config.NFT_MIN_TRAIN_ROWS, H, H)
     t0 = time.perf_counter()
     pooled, info = run_history_folds(data, folds, nft_risk.specs(H), b2, H, every=1,
@@ -89,8 +94,8 @@ def verdict_rows(pooled_results: dict, sections: dict, winner: str | None) -> li
     return rows
 
 
-def build(floor) -> dict:
-    runs = {slug: run_collection(f) for slug, f in floor.groupby("slug", sort=True)}
+def build(floor, column: str = risk_data.COLUMN) -> dict:
+    runs = {slug: run_collection(f, column) for slug, f in floor.groupby("slug", sort=True)}
     rows = {slug: {"dates": r["pooled"].index.strftime("%Y-%m-%d").to_numpy(), "in_rank": r["in_rank"],
                    "losses": r["losses"]} for slug, r in runs.items()}
     pooled_results = {m: pooled_rank_and_confirm(rows, cs, BASE, H) for m, cs in nft_risk.MODEL_CONFIGS.items()}
@@ -99,7 +104,8 @@ def build(floor) -> dict:
     sections = {slug: collection_section(r) for slug, r in runs.items()}
     n_trials = {m: len(cs) for m, cs in nft_risk.MODEL_CONFIGS.items()}
     return {
-        "part": "nft_risk", "target": "fwd_vol_30d of the daily floor log returns in ETH (floor_eth_asof, D59, D63)",
+        "part": "nft_risk", "floor_column": column,
+        "target": f"fwd_vol_30d of the daily floor log returns in ETH ({column}; D59, D63, D66)",
         "metric": "QLIKE on variance (primary, lower is better); Spearman (secondary)",
         "baseline": "persistence vol_30d of the floor",
         "rule": "D59 (amended 2026-11-10) with D44: pooled paired 95% CI (date blocks of 30) of QLIKE(persistence) "
@@ -109,7 +115,8 @@ def build(floor) -> dict:
         "trial_count": {"formula": "configs x 1 pooled test x 1 horizon (baselines are not trials); the per-"
                                    "collection rows are reported, not separate approvals",
                         "per_model": n_trials, "total": sum(n_trials.values()),
-                        "collection_level_rows_reported": sum(n_trials.values()) * len(runs)},
+                        "collection_level_rows_reported": sum(n_trials.values()) * len(runs),
+                        "sensitivity_runs_reported_not_approvals": sum(n_trials.values())},
         "pooled": pooled_results, "winner": winner,
         "served_volatility": winner or BASE,
         "served_note": "the cone uses whichever volatility is served (D52 amended): the winner, or persistence "
@@ -121,7 +128,15 @@ def build(floor) -> dict:
 
 def main() -> None:
     manifest_sha = snapshot.require_snapshot("floor")           # D62: frozen snapshot only
-    report = build(snapshot.load("floor"))
+    floor = snapshot.load("floor")
+    report = build(floor)
+    sens = build(floor, column=SENSITIVITY_COLUMN)
+    report["sensitivity_unguarded_floor"] = {
+        "floor_column": SENSITIVITY_COLUMN,
+        "note": "D66: the same run without the spike guard. Reported only; not an approval and not served.",
+        "pooled_verdicts": {m: r["verdict"] for m, r in sens["pooled"].items()},
+        "would_serve": sens["served_volatility"],
+        "all_folds_mean_qlike": {s: c["all_folds_mean_qlike"] for s, c in sens["collections"].items()}}
     report["metadata"] = {"generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                           **git_metadata(), "snapshot": config.NFT_SNAPSHOT_DATE,
                           "snapshot_manifest_sha256": manifest_sha, "collections": list(report["collections"])}

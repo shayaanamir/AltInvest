@@ -44,6 +44,25 @@ def test_floor_older_than_48h_is_a_gap_but_the_asof_series_keeps_the_last_value(
     assert f["floor_age_hours"].iloc[:3].tolist() == [1.0, 25.0, 49.0]       # from 31 Dec 23:00
 
 
+def test_spike_guard_holds_back_one_day_spikes_and_accepts_a_level_confirmed_by_a_second_day():
+    x = np.array([3.0, 3.1, 1.0, 3.05, 2.9, 1.4, 1.0, 1.1, 2.3, 0.3, 0.1, 0.11])
+    model, held = fl.guard_spikes(x)
+    # day 2: 1.0 / 3.1 = 0.32, held (a dip; back at 3.05 the next day). day 5: 1.4 / 2.9 = 0.483 is outside the
+    # 2x band and equal to the ratio to the day before, so held. day 6: 1.0 / 1.4 = 0.71 confirms the new level,
+    # accepted. day 8: 2.3 / 1.1 = 2.09, held. days 9-10: 0.3 and 0.1 disagree with 1.1 and with the day before,
+    # held. day 11: 0.11 / 0.1 = 1.1 confirms, accepted.
+    assert model.tolist() == [3.0, 3.1, 3.1, 3.05, 2.9, 2.9, 1.0, 1.1, 1.1, 1.1, 1.1, 0.11]
+    assert held.tolist() == [False, False, True, False, False, True, False, False, True, True, True, False]
+    assert set(model) <= set(x)                                   # every value is one that was reported
+    longer, _ = fl.guard_spikes(np.r_[x, [50.0, 0.001]])
+    assert longer[:len(x)].tolist() == model.tolist()            # later days never change earlier ones
+    assert config.NFT_FLOOR_SPIKE_FACTOR == 2.0
+    f = fl.daily_floor(_points([(T0 - 9, 3.0, "1"), (T0 + DAY - 9, 0.3, "1"), (T0 + 2 * DAY - 9, 2.9, "1")]),
+                       "2025-01-03")
+    assert f["floor_eth_asof"].tolist() == [3.0, 0.3, 2.9] and f["floor_eth_model"].tolist() == [3.0, 3.0, 2.9]
+    assert f["floor_spike"].tolist() == [False, True, False] and f["floor_eth"].tolist() == [3.0, 0.3, 2.9]
+
+
 def test_floor_rows_do_not_change_when_later_points_change():
     base = [(T0 - 3600, 5.0, "1"), (T0 + DAY - 10, 5.5, "1"), (T0 + 2 * DAY - 10, 6.0, "1")]
     a = fl.daily_floor(_points(base), "2025-01-02")
@@ -101,7 +120,7 @@ def _sale(token, day, price, seller, buyer, tx):
 
 def _floor_rows(n=80, value=1.0):
     dates = pd.date_range("2025-01-01", periods=n, freq="D").strftime("%Y-%m-%d")
-    return pd.DataFrame({"slug": "c", "date": dates, "floor_eth_asof": value})
+    return pd.DataFrame({"slug": "c", "date": dates, "floor_eth_model": value})
 
 
 def test_wash_rules_mark_the_first_matching_rule():
@@ -125,7 +144,7 @@ def test_wash_rules_mark_the_first_matching_rule():
 
 def test_price_rule_uses_the_floor_of_the_sale_date_and_every_sale_needs_a_floor():
     floor = _floor_rows()
-    floor.loc[floor["date"] == "2025-01-03", "floor_eth_asof"] = 100.0
+    floor.loc[floor["date"] == "2025-01-03", "floor_eth_model"] = 100.0
     s = pd.DataFrame([_sale("1", 1, 5.0, "a", "b", "t1"), _sale("2", 2, 5.0, "a", "b", "t2")])
     assert sl.wash_filter(s, floor)["wash_rule"].tolist() == ["", "R3"]       # 5 < 0.10 x 100 on 3 Jan only
     with pytest.raises(ValueError, match="no floor for their date"):
@@ -244,7 +263,7 @@ def test_build_gives_every_day_and_every_sale_a_floor_and_never_a_future_date(tm
     f = out["floor"]
     assert not f.duplicated(["slug", "date"]).any() and f["date"].max() == "2025-01-15"
     assert (f["floor_usd"] == f["floor_eth"] * f["eth_usd"]).all()
-    assert out["sales_marked"]["floor_eth_asof"].notna().all()
+    assert out["sales_marked"]["floor_eth_model"].notna().all()
     assert f.loc[f["date"] < "2024-12-10", "liquidity_score"].isna().all()       # 30-day window not complete
     assert f.loc[f["date"] >= "2024-12-10", "liquidity_score"].notna().all()
     assert set(out["tokens"].columns) >= {"rarity_rank", "rarity_score", "rarity_pct"}

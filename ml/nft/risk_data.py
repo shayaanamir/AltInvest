@@ -1,6 +1,7 @@
 """Floor-volatility rows for one collection (D59), built like the crypto feature table (D18, D24).
 
-close = floor_eth_asof (D63: the as-of floor with no age limit, so the series has a value every day).
+close = floor_eth_model by default (D63, D66: the as-of floor with one-day spikes held back; a value every
+day). `column` selects another floor column for the declared sensitivity run only.
 ret_1d = daily log return, vol_30d = std of the last 30 returns; the first WARMUP_ROWS rows are dropped.
 Labels come from ml.labels.labels.build_labels (fwd_vol_30d = std of the 30 returns after t).
 dev_frame cuts the series before the first sealed test row BEFORE anything is computed, so no test floor
@@ -18,16 +19,19 @@ FEATURES = ["ret_1d", "vol_30d"]
 H = config.HORIZON_DAYS
 
 
-def floor_series(floor_one: pd.DataFrame) -> pd.Series:
-    """floor_eth_asof indexed by UTC date. Refuses gaps or duplicates in the dates and non-positive floors."""
+COLUMN = "floor_eth_model"
+
+
+def floor_series(floor_one: pd.DataFrame, column: str = COLUMN) -> pd.Series:
+    """The floor column indexed by UTC date. Refuses gaps or duplicates in the dates and non-positive floors."""
     f = floor_one.sort_values("date")
     idx = pd.to_datetime(f["date"], utc=True)
     if not (idx.diff().dropna() == pd.Timedelta(days=1)).all():
         raise ValueError("floor dates must be consecutive calendar days with no gaps or duplicates")
-    close = pd.Series(f["floor_eth_asof"].to_numpy(dtype=float), index=pd.DatetimeIndex(idx, name="timestamp"),
+    close = pd.Series(f[column].to_numpy(dtype=float), index=pd.DatetimeIndex(idx, name="timestamp"),
                       name="close")
     if close.isna().any() or (close <= 0).any():
-        raise ValueError("floor_eth_asof must be a positive number on every date")
+        raise ValueError(f"{column} must be a positive number on every date")
     return close
 
 
@@ -49,9 +53,9 @@ def with_labels(close: pd.Series, horizon: int = H) -> pd.DataFrame:
     return feats.join(build_labels(close, horizon).loc[feats.index])
 
 
-def dev_frame(floor_one: pd.DataFrame, horizon: int = H) -> tuple[pd.DataFrame, int, int]:
+def dev_frame(floor_one: pd.DataFrame, horizon: int = H, column: str = COLUMN) -> tuple[pd.DataFrame, int, int]:
     """(feature and label rows [0, b2), b2, n). Test rows are cut off first."""
-    close = floor_series(floor_one)
+    close = floor_series(floor_one, column)
     b2, n = split_point(len(close), horizon)
     data = with_labels(close.iloc[:config.WARMUP_ROWS + b2], horizon)
     assert len(data) == b2

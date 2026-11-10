@@ -86,6 +86,7 @@ LIVE_SCORECARD_FILE = "live_scorecard.json"
 NFT_SLUGS = ("boredapeyachtclub", "mutant-ape-yacht-club", "pudgypenguins", "lilpudgys", "azuki",
              "doodles-official", "milady")
 NFT_FLOOR_MAX_AGE_HOURS = 48  # D55: the as-of 00:00 UTC floor point may be at most this old, else the day is a gap
+NFT_FLOOR_SPIKE_FACTOR = 2.0  # D66: a floor more than this factor away from the last accepted floor needs a second day
 NFT_SALES_START = "2024-11-10"  # D56: sales window starts here (24 months before the 10.0 investigation)
 NFT_PAYMENT_SYMBOLS = ("ETH", "WETH", "BETH")  # D56: other payment tokens are dropped and counted
 NFT_SEAPORT_ADDRESSES = (  # D56: protocol_address of an OpenSea (Seaport 1.1, 1.4, 1.5, 1.6) sale
