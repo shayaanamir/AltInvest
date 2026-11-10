@@ -78,8 +78,11 @@ test("future section: true time share, but at least 15% of the width", () => {
   assert.equal(futureShare(30), 0.5);                                   // 1M: 30 of 60 days, to scale
   assert.equal(futureShare(90), 0.25);                                  // 3M: to scale
   assert.equal(futureShare(365), 0.15);                                 // 1Y: 30 / 395 = 7.6% -> raised to 15%
-  const src = readFileSync(new URL("../components/assetDetail/PricePerformanceCard.jsx", import.meta.url), "utf8");
-  assert.match(src, /futureShare\(histSpan\)/);
+  // The drawing moved into the shared ConeChart (Phase 10); the price card renders it.
+  const card = readFileSync(new URL("../components/assetDetail/PricePerformanceCard.jsx", import.meta.url), "utf8");
+  const chart = readFileSync(new URL("../components/charts/ConeChart.jsx", import.meta.url), "utf8");
+  assert.match(card, /<ConeChart /);
+  assert.match(chart, /futureShare\(histSpan\)/);
 });
 
 test("the cone's start is labelled as the last daily close", () => {
@@ -88,7 +91,9 @@ test("the cone's start is labelled as the last daily close", () => {
   assert.equal(coneStartLabel("2026-11-08"), "Last close, 8 Nov");
   const cone = buildCone(history[1], risk(0.5));
   assert.equal(cone[0].inner.lower, history[1].price);                  // the cone starts at the last close itself
-  const src = readFileSync(new URL("../components/assetDetail/PricePerformanceCard.jsx", import.meta.url), "utf8");
-  assert.match(src, /coneStartLabel\(lastDate\)/);
-  assert.match(src, /data-role="cone-start"/);
+  const card = readFileSync(new URL("../components/assetDetail/PricePerformanceCard.jsx", import.meta.url), "utf8");
+  const chart = readFileSync(new URL("../components/charts/ConeChart.jsx", import.meta.url), "utf8");
+  assert.match(card, /startText=\{coneStartLabel\}/);                 // the price card labels it "Last close, ..."
+  assert.match(chart, /startText\(lastDate\)/);
+  assert.match(chart, /data-role="cone-start"/);
 });

@@ -46,7 +46,7 @@ export default function AssetDetailPage({ onNavigate }) {
           <>
             <button className="adt-back-btn" onClick={handleBack}>Back</button>
             <div className="sv2-muted sv2-small">
-              {symbol ? `No asset "${symbol}" in the database.` : "No asset selected."} Crypto assets only for now — NFT collections don't have a detail page yet.
+              {symbol ? `No asset "${symbol}" in the database.` : "No asset selected."} NFT collections have their own page: open them from Discover or the dashboard.
             </div>
           </>
         ) : (

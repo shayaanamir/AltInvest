@@ -73,8 +73,16 @@ function addDays(isoDate, d) {
  * Returns null when the cone must be hidden (see coneVolatility) or there is no last close.
  */
 export function buildCone(lastPoint, risk, days = CONE_DAYS) {
-  const annual = coneVolatility(risk);
-  if (annual == null || !lastPoint || !(lastPoint.price > 0)) return null;
+  return coneFromVol(lastPoint, coneVolatility(risk), days);
+}
+
+/**
+ * Cone points from an annualised vol that the caller has already checked (NFT collection pages apply their own
+ * hide rules, utils/nftCone.js, D52 amended). Null when the vol or the last point is unusable.
+ */
+export function coneFromVol(lastPoint, annual, days = CONE_DAYS) {
+  if (typeof annual !== "number" || !Number.isFinite(annual) || annual <= 0) return null;
+  if (!lastPoint || !(lastPoint.price > 0)) return null;
   const sd = dailyVol(annual);
   return Array.from({ length: days + 1 }, (_, d) => ({
     d,

@@ -62,6 +62,8 @@ export function notificationHref(n) {
       if (link.symbol) return `/asset-detail?symbol=${encodeURIComponent(link.symbol)}`;
       break;
     case "NFTCollectionDetail":
+      if (link.slug) return `/nft-collection?slug=${encodeURIComponent(link.slug)}`;
+      return "/discover?category=nft";
     case "Discover":
       return "/discover?category=nft";
     case "Portfolio":
