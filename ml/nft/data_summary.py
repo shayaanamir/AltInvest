@@ -83,7 +83,7 @@ def liquidity_report(man: dict) -> dict:
         f = f.sort_values("date")
         scored = f[f["liquidity_score"].notna()]
         last = f.iloc[-1]
-        out[slug] = {"as_of": last["date"], **{c: last[c] for c in cols},
+        out[slug] = {"as_of": last["date"], **{c: last[c] for c in cols}, "is_illiquid": bool(last["is_illiquid"]),
                      "days_scored": len(scored), "first_scored_date": scored["date"].iloc[0],
                      "days_illiquid": int(scored["is_illiquid"].sum()),
                      "label_days": scored["liquidity_label"].value_counts().to_dict()}

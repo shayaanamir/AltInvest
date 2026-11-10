@@ -68,6 +68,7 @@ def freeze(date: str, live: Path | None = None) -> Path:
     out = snapshot_dir(date)
     if out.exists():
         sys.exit(f"snapshot {out} already exists; snapshot files are never rewritten (D62)")
+    git = git_metadata()                       # before any snapshot file exists, or they make the tree look dirty
     tables, facts = tables_for_snapshot(Path(live or config.ML_NFT_DIR), date)
     out.mkdir(parents=True)
     files = {}
@@ -77,7 +78,7 @@ def freeze(date: str, live: Path | None = None) -> Path:
         files[path.name] = {"sha256": sha256(path), "rows": len(tables[name]), "bytes": path.stat().st_size,
                             "range": _range(tables[name]), "columns": list(tables[name].columns)}
     manifest = {"snapshot": date, "created_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                **git_metadata(), "sources": "OpenSea API v2 (floor, sales), Alchemy NFT API v3 (traits), "
+                **git, "sources": "OpenSea API v2 (floor, sales), Alchemy NFT API v3 (traits), "
                 "Binance ETHUSDT daily bars (D54)", "files": files, **facts}
     (out / MANIFEST).write_text(json.dumps(manifest, indent=1), encoding="utf-8")
     return out
