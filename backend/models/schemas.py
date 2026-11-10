@@ -374,6 +374,15 @@ class NFTCollectionDetail(BaseModel):
     trait_categories: List[str] = []
     recent_sales: List[Dict] = []
     aai_score: Optional[float] = None
+    # Phase 10 (ml/docs/DECISIONS.md D61, D67): from the ML pull. risk_score is relative to the tracked NFT
+    # collections only and is not comparable to crypto risk scores (D59).
+    floor_history: List[Dict] = []
+    volatility: Optional[float] = None
+    risk_score: Optional[float] = None
+    risk_note: Optional[str] = None
+    risk_model_version: Optional[str] = None
+    risk_as_of: Optional[str] = None
+    last_updated: Optional[str] = None
 
 
 class NFTTokenTrait(BaseModel):

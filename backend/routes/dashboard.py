@@ -23,6 +23,7 @@ from db.queries import (
     get_market_insights,
     get_nft_collections,
     get_nft_market_data_all_latest,
+    get_all_latest_nft_risk,
     get_price_sparklines,
     get_supported_assets,
     get_user_flags,
@@ -50,6 +51,7 @@ def get_dashboard_stats(user_id: ObjectId = Depends(get_current_user_id)):
         nft_market = get_nft_market_data_all_latest()
         crypto_aai = get_all_latest_aai_scores("crypto")
         nft_aai = get_all_latest_aai_scores("nft")
+        nft_risk = get_all_latest_nft_risk()
     except Exception as exc:
         raise db_unavailable(exc)
 
@@ -86,7 +88,8 @@ def get_dashboard_stats(user_id: ObjectId = Depends(get_current_user_id)):
         assets_count=len(market_latest),
         collections_count=len(nft_market),
         crypto_score_count=len(crypto_aai),
-        nft_score_count=len(nft_aai),
+        # No NFT AAI exists yet (ml/docs/DECISIONS.md D67): count collections with an ML NFT risk score.
+        nft_score_count=len(nft_aai) or sum(isinstance(r.get("risk_score"), (int, float)) for r in nft_risk.values()),
         market_mood_confidence=round(sum(confidences) / len(confidences) * 100, 1) if confidences else None,
         sentiment_asset_count=len(sentiment_scores),
         unpriced_holding_count=unpriced_holdings,
