@@ -1,6 +1,6 @@
 # STATUS
 
-Current phase: 9 (forecasting v2) DONE and merged into main as PR #8. Served: EWMA risk for all assets (D51). Follow-up on branch phase-9-vol-cone (2026-11-10): frontend volatility cone (D52), waiting for review.
+Current phase: 9 (forecasting v2) DONE and merged into main as PR #8. Served: EWMA risk for all assets (D51). Follow-up on branch phase-9-vol-cone (2026-11-10): frontend volatility cone (D52), reviewed twice, PR open against main.
 Next: Person B checks the new risk_score values and note text (fields unchanged). Merge phase-7-integration, then rebase this branch onto main. The live scorecard starts scoring on 2026-11-30.
 
 ## Phase 9 follow-up: frontend 30-day volatility cone (2026-11-10, branch phase-9-vol-cone)
@@ -26,6 +26,12 @@ Next: Person B checks the new risk_score values and note text (fields unchanged)
   - Backend: `GET /settings` returns 404 for the demo user (seen in the browser network log; unrelated to the cone).
   - Next contract change (ML + Person B): add a model field to /risk (for example `model_version.risk`) and gate the cone on it instead of the note text; then drop the note-wording test.
   - Backend: its own stale note (backend/utils/ml_rows.py, "data stale: ...") is also read by the cone but has no test tying it to the frontend; needs Person B's OK to add one.
+- Screenshot review round 2 (2026-11-10):
+  - Header price vs cone start: the header price ($71,450.30 for BTC) is `asset_market_data.price`, written only by db/seed_assets.py (hard-coded demo values; ETH $3,845.60 vs a real close near $2,100). Nothing in the repo updates it from a market feed. The cone therefore keeps starting at the last real daily close, and the chart now labels that point "Last close, 8 Nov"; the last x-axis label is that date instead of "Today".
+  - 1Y view: the future section was 7.6% of the plot width (30 of 395 days) and its axis labels overlapped. It now gets its true share but at least 15% (`MIN_FUTURE_SHARE`); 1M (50%) and 3M (25%) are unchanged, to scale. Only +30d is labelled when the section is under 160 px.
+  - AAI badge in the chart card: always "AAI rating (composite score)" (was "AAI rating" or "Signal" by ML signal); rating logic unchanged; separate commit b32bd8a for Person B. The page also has a full AaiScoreCard, so removing the badge from the chart card is an option for them.
+  - D52 amended (4d30277): the effective stale threshold is 36 h (backend note) before ML's 48 h; the start label; the 15% minimum.
+  - Tests: `npm test` 7 passed (2 new: future share, start label); eslint clean; `npm run build` passes; ML `302 passed`; evaluation snapshot hashes unchanged (57 files).
 
 ## Phase 9 steps 9.7-9.8: what ran (2026-11-03, from repo root)
 
