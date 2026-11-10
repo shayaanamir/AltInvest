@@ -87,10 +87,16 @@ def seed():
         {"user_id": user_id, "asset_type": "crypto", "symbol": "ETH",
          "quantity": 6.8420, "avg_buy_price_usd": 2890.00, "cost_basis_usd": 19773.38,
          "date_added": datetime(2026, 5, 19, 9, 40, tzinfo=timezone.utc), "updated_at": NOW},
-        {"user_id": user_id, "asset_type": "nft", "nft_collection_slug": "boredapeyachtclub",
-         "nft_token_id": "4271", "quantity": 1, "avg_buy_price_eth": 11.5,
-         "avg_buy_eth_usd_rate": 2100.00, "cost_basis_usd": 24150.00,
-         "date_added": datetime(2026, 6, 2, 14, 15, tzinfo=timezone.utc), "updated_at": NOW},
+        # NFT holdings (ml/docs/DECISIONS.md D67): real tokens at the price, time and ETH-USD of a real
+        # wash-filtered sale of that token (ml/docs/phase10/logs/10.4_demo_holding_sales.log).
+        {"user_id": user_id, "asset_type": "nft", "nft_collection_slug": "pudgypenguins",
+         "nft_token_id": "7862", "quantity": 1, "avg_buy_price_eth": 4.32,
+         "avg_buy_eth_usd_rate": 2007.02, "cost_basis_usd": round(4.32 * 2007.02, 2),
+         "date_added": datetime(2026, 6, 1, 2, 48, 23, tzinfo=timezone.utc), "updated_at": NOW},
+        {"user_id": user_id, "asset_type": "nft", "nft_collection_slug": "azuki",
+         "nft_token_id": "8604", "quantity": 1, "avg_buy_price_eth": 0.84,
+         "avg_buy_eth_usd_rate": 2007.02, "cost_basis_usd": round(0.84 * 2007.02, 2),
+         "date_added": datetime(2026, 6, 1, 2, 53, 23, tzinfo=timezone.utc), "updated_at": NOW},
     ]
     db.portfolio_holdings.insert_many(holdings)
     print(f"[portfolio_holdings] inserted {len(holdings)}")
@@ -102,12 +108,12 @@ def seed():
          "items": [
              {"type": "crypto", "symbol_or_slug": "SOL", "added_at": NOW},
              {"type": "crypto", "symbol_or_slug": "DOGE", "added_at": NOW},
-             {"type": "nft", "symbol_or_slug": "genesispunks", "added_at": NOW},
+             {"type": "nft", "symbol_or_slug": "milady", "added_at": NOW},
          ]},
         {"user_id": user_id, "name": "Core Watch", "created_at": datetime(2026, 6, 20, 8, 30, tzinfo=timezone.utc),
          "items": [
              {"type": "crypto", "symbol_or_slug": "LINK", "added_at": NOW},
-             {"type": "nft", "symbol_or_slug": "astralcats", "added_at": NOW},
+             {"type": "nft", "symbol_or_slug": "doodles-official", "added_at": NOW},
          ]},
     ]
     db.watchlists.insert_many(watchlists)
@@ -145,8 +151,8 @@ def seed():
          "read": True, "timestamp": datetime(2026, 8, 26, 9, 14, tzinfo=timezone.utc),
          "deep_link": {"page": "AssetDetail", "symbol": "SOL", "slug": None}},
         {"user_id": user_id, "type": "market_event",
-         "title": "BAYC floor price fell 4.5% in 24h",
-         "message": "Liquidity across blue-chip NFT collections thinned this week, pressuring BAYC's floor toward 14.2 ETH.",
+         "title": "NFT collection pages are live",
+         "message": "Bored Ape Yacht Club now shows its daily floor history, liquidity and a 30-day volatility range.",
          "read": False, "timestamp": datetime(2026, 8, 28, 2, 50, tzinfo=timezone.utc),
          "deep_link": {"page": "NFTCollectionDetail", "symbol": None, "slug": "boredapeyachtclub"}},
         {"user_id": user_id, "type": "system",

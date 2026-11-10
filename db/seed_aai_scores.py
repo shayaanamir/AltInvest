@@ -56,12 +56,9 @@ def seed():
         comps = (detail.get(a["symbol"]) or {}).get("aaiPanel", {}).get("componentScores")
         upsert_aai_score_generalized("crypto", a["symbol"], _doc("crypto", a["symbol"], a, comps))
         n_crypto += 1
-    for c in _load("nftCollections.json")["collections"]:
-        if c["slug"] not in slugs:
-            print(f"[aai_scores] skip {c['slug']} (not in `nft_collections` collection)")
-            continue
-        upsert_aai_score_generalized("nft", c["slug"], _doc("nft", c["slug"], c, None))
-        n_nft += 1
+    # No AAI rows for NFT collections (ml/docs/DECISIONS.md D67): the old seed's NFT AAI values were made up.
+    # AAI for NFTs is future backend work; the collections' ML risk and liquidity come from the ML pull.
+    del slugs
 
     db.aai_scores.create_index([("target_type", 1), ("target_id", 1), ("timestamp", -1)])
     print(f"[aai_scores] upserted {n_crypto} crypto + {n_nft} nft. Indexes ensured.")
