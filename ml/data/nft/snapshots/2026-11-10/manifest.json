@@ -1,0 +1,303 @@
+{
+ "snapshot": "2026-11-10",
+ "created_at": "2026-11-10T19:50:08Z",
+ "git_commit": "262dfe977ef5e85e4aa4908b62c58effe6da81c4",
+ "git_dirty": true,
+ "sources": "OpenSea API v2 (floor, sales), Alchemy NFT API v3 (traits), Binance ETHUSDT daily bars (D54)",
+ "files": {
+  "floor.parquet": {
+   "sha256": "4f0062e1e494feef6c8ad390f2c4e648eb596692166cea13d328355fb9488343",
+   "rows": 5495,
+   "bytes": 678834,
+   "range": [
+    "2024-09-17",
+    "2026-11-10"
+   ],
+   "columns": [
+    "date",
+    "floor_eth",
+    "floor_eth_asof",
+    "floor_eth_model",
+    "floor_spike",
+    "floor_usd_source",
+    "floor_point_time",
+    "floor_age_hours",
+    "floor_source",
+    "eth_usd",
+    "eth_usd_source",
+    "floor_usd",
+    "slug",
+    "floor_intraday_median_eth",
+    "sales_count",
+    "volume_eth",
+    "volume_usd",
+    "sales_7d",
+    "volume_7d_eth",
+    "volume_7d_usd",
+    "sales_30d",
+    "volume_30d_eth",
+    "volume_30d_usd",
+    "liquidity_score",
+    "is_illiquid",
+    "liquidity_label"
+   ]
+  },
+  "floor_points.parquet": {
+   "sha256": "9de584897f4b4fd1117c68f4555577d31b20e23cb56b1c4e6e5b7e8f56506622",
+   "rows": 5483,
+   "bytes": 136712,
+   "range": [
+    "2024-09-16T02:52:47Z",
+    "2026-11-10T15:43:47Z"
+   ],
+   "columns": [
+    "slug",
+    "time",
+    "token_unit",
+    "usd_price"
+   ]
+  },
+  "eth_usd.parquet": {
+   "sha256": "0cf7bfa97fd450a04cba4ff17b64d50259ecf9a4e0b6e87fca00345f240f4962",
+   "rows": 3373,
+   "bytes": 27086,
+   "range": [
+    "2017-08-17",
+    "2026-11-10"
+   ],
+   "columns": [
+    "date",
+    "eth_usd",
+    "eth_usd_source"
+   ]
+  },
+  "sales_raw.parquet": {
+   "sha256": "70a751c76ad9be057d5360cee37e1a749a98b4d67314e97404231f23a4a9e0ed",
+   "rows": 198548,
+   "bytes": 10103940,
+   "range": [
+    "2024-11-10",
+    "2026-11-10"
+   ],
+   "columns": [
+    "slug",
+    "token_id",
+    "timestamp",
+    "date",
+    "price_eth",
+    "payment_symbol",
+    "buyer",
+    "seller",
+    "tx",
+    "protocol_address",
+    "marketplace"
+   ]
+  },
+  "sales_filtered.parquet": {
+   "sha256": "3872160c0042c9a92ab78c85f7617f10ad6fb34de59aa0c9114d1235bb861048",
+   "rows": 194198,
+   "bytes": 9976657,
+   "range": [
+    "2024-11-10",
+    "2026-11-10"
+   ],
+   "columns": [
+    "slug",
+    "token_id",
+    "timestamp",
+    "date",
+    "price_eth",
+    "payment_symbol",
+    "buyer",
+    "seller",
+    "tx",
+    "protocol_address",
+    "marketplace",
+    "floor_eth_model",
+    "wash_rule"
+   ]
+  },
+  "traits.parquet": {
+   "sha256": "b523224a9c4a84a0ac25dfb07652a2f523e442098ab77b14a059dd606e77499a",
+   "rows": 616987,
+   "bytes": 1639579,
+   "range": null,
+   "columns": [
+    "slug",
+    "token_id",
+    "trait_type",
+    "value"
+   ]
+  },
+  "tokens.parquet": {
+   "sha256": "5cac082dcc88f884196dfec334bc9f1ccc704559d70c03615e85baca30d02130",
+   "rows": 90395,
+   "bytes": 3615183,
+   "range": null,
+   "columns": [
+    "slug",
+    "token_id",
+    "name",
+    "image_url",
+    "n_traits",
+    "rarity_score",
+    "rarity_rank",
+    "rarity_pct"
+   ]
+  }
+ },
+ "last_floor_date": "2026-11-10",
+ "wash_filter": {
+  "azuki": {
+   "before": 23736,
+   "R1": 28,
+   "R2": 391,
+   "R3": 21,
+   "kept": 23296
+  },
+  "boredapeyachtclub": {
+   "before": 9620,
+   "R1": 41,
+   "R2": 156,
+   "R3": 6,
+   "kept": 9417
+  },
+  "doodles-official": {
+   "before": 27641,
+   "R1": 43,
+   "R2": 529,
+   "R3": 29,
+   "kept": 27040
+  },
+  "lilpudgys": {
+   "before": 67319,
+   "R1": 75,
+   "R2": 1445,
+   "R3": 14,
+   "kept": 65785
+  },
+  "milady": {
+   "before": 18184,
+   "R1": 26,
+   "R2": 275,
+   "R3": 7,
+   "kept": 17876
+  },
+  "mutant-ape-yacht-club": {
+   "before": 29268,
+   "R1": 56,
+   "R2": 642,
+   "R3": 11,
+   "kept": 28559
+  },
+  "pudgypenguins": {
+   "before": 22780,
+   "R1": 42,
+   "R2": 509,
+   "R3": 4,
+   "kept": 22225
+  }
+ },
+ "dropped_events": {
+  "azuki": {
+   "payment_token": 1
+  },
+  "boredapeyachtclub": {
+   "payment_token": 9
+  },
+  "lilpudgys": {
+   "payment_token": 2
+  },
+  "mutant-ape-yacht-club": {
+   "payment_token": 3
+  },
+  "pudgypenguins": {
+   "payment_token": 14
+  }
+ },
+ "floor_gaps": {
+  "azuki": [],
+  "boredapeyachtclub": [],
+  "doodles-official": [
+   "2026-04-01",
+   "2026-04-02"
+  ],
+  "lilpudgys": [],
+  "milady": [],
+  "mutant-ape-yacht-club": [
+   "2024-11-11",
+   "2024-11-12",
+   "2024-11-13"
+  ],
+  "pudgypenguins": [
+   "2024-10-23",
+   "2024-11-18",
+   "2024-11-19"
+  ]
+ },
+ "collections": {
+  "boredapeyachtclub": {
+   "name": "Bored Ape Yacht Club",
+   "contract": "0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d",
+   "total_supply": 9996,
+   "image_url": "https://i2c.seadn.io/collection/boredapeyachtclub/image/1a09c26b1c30427b26944c47fc7bb9/d81a09c26b1c30427b26944c47fc7bb9.png",
+   "description": "The Bored Ape Yacht Club is a collection of 10,000 unique Bored Ape NFTs\u2014 unique digital collectibles living on the Ethereum blockchain. Your Bored Ape doubles as your Yacht Club membership card, and grants access to members-only benefits, the first of which is access to THE BATHROOM, a collaborative graffiti board. Future areas and perks can be unlocked by the community through roadmap activation. Visit www.BoredApeYachtClub.com for more details.",
+   "verified": true,
+   "created_date": "2021-04-22"
+  },
+  "mutant-ape-yacht-club": {
+   "name": "Mutant Ape Yacht Club",
+   "contract": "0x60e4d786628fea6478f785a6d7e704777c86a7c6",
+   "total_supply": 19571,
+   "image_url": "https://i2c.seadn.io/collection/mutant-ape-yacht-club/image/33dcf5ce12bc4760bf912a5b3f5979/f033dcf5ce12bc4760bf912a5b3f5979.png",
+   "description": "The MUTANT APE YACHT CLUB is a collection of up to 20,000 Mutant Apes that can only be created by exposing an existing Bored Ape to a vial of MUTANT SERUM or by minting a Mutant Ape in the public sale.",
+   "verified": true,
+   "created_date": "2021-08-29"
+  },
+  "pudgypenguins": {
+   "name": "Pudgy Penguins",
+   "contract": "0xbd3531da5cf5857e7cfaa92426877b022e612cf8",
+   "total_supply": 8888,
+   "image_url": "https://i2c.seadn.io/collection/pudgypenguins/image/f489fb69fd11886b468c0f7ff1376c/cdf489fb69fd11886b468c0f7ff1376c.png",
+   "description": "Pudgy Penguins is a collection of 8,888 NFT\u2019s, accelerating Web3 innovation through IP utilization and community empowerment. Embodying love, empathy, & compassion, the Pudgy Penguins are a beacon of good vibes & positivity for everyone. Each holder receives exclusive access to experiences, events, IP licensing opportunities and more. Let\u2019s break through the boundaries of Web3 together.\r\n\r\nPudgy Collections:\r\n[Lil Pudgys](https://opensea.io/collection/lilpudgys) | [Pudgy Rods](https://opensea.io/collection/pudgyrods)",
+   "verified": true,
+   "created_date": "2021-07-22"
+  },
+  "lilpudgys": {
+   "name": "Lil Pudgys",
+   "contract": "0x524cab2ec69124574082676e6f654a18df49a048",
+   "total_supply": 21932,
+   "image_url": "https://i2c.seadn.io/collection/lilpudgys/image/9289b91d3d0cefccfe6b9c7f83f471/649289b91d3d0cefccfe6b9c7f83f471.png",
+   "description": "Lil Pudgys is a collection of 22,222 NFTs originating from Pudgy Penguins. Don\u2019t let their small stature fool you, Lil Pudgys are an integral piece of the Pudgy Penguins history. Their story began during the most frigid of winters. In the midst of adversity, the birth of the Lil Pudgys helped spark new-life into the Pudgy Penguins community. \r\n\r\nWith their unique traits and personalities, there\u2019s a Lil Pudgy for everyone. Lil Pudgy holders receive exclusive access to experiences, events, IP licensing opportunities and more. \r\n\r\nPudgy Collections:\r\n[Pudgy Penguins](https://opensea.io/collection/pudgypenguins) | [Pudgy Rods](https://opensea.io/collection/pudgyrods)\r\n\r\nCrosschain Lil Pudgys:\r\n[Bridge](https://bridge.pudgypenguins.com) | [Polygon](https://opensea.io/collection//lilpudgys-polygon) | [Binance](https://opensea.io/collection//lilpudgys-binance) | [Arbitrum](https://opensea.io/collection//lilpudgys-arbitrum)",
+   "verified": true,
+   "created_date": "2021-12-19"
+  },
+  "azuki": {
+   "name": "Azuki",
+   "contract": "0xed5af388653567af2f388e6224dc7c4b3241c544",
+   "total_supply": 10000,
+   "image_url": "https://i2c.seadn.io/collection/azuki/image/d62d4b9df96c961712b03f41c4231c/4dd62d4b9df96c961712b03f41c4231c.jpeg",
+   "description": "Take the red bean to join the garden. View the collection at\u00a0[azuki.com/gallery](https://azuki.com/gallery).\r\n\r\nAzuki starts with a collection of 10,000 avatars that give you membership access to The Garden: a corner of the internet where artists, builders, and web3 enthusiasts meet to create a decentralized future. Azuki holders receive access to exclusive drops, experiences, and more. Visit [azuki.com](https://azuki.com) for more details.\r\n\r\nWe rise together. We build together. We grow together.",
+   "verified": true,
+   "created_date": "2022-01-12"
+  },
+  "doodles-official": {
+   "name": "Doodles",
+   "contract": "0x8a90cab2b38dba80c64b7734e58ee1db38b8992e",
+   "total_supply": 9998,
+   "image_url": "https://i2c.seadn.io/collection/doodles-official/image/63a85a2900fdd4bfe8f34a444b72d3/e663a85a2900fdd4bfe8f34a444b72d3.jpeg",
+   "description": "The collectibles that started it all. Doodles Original Collection features 10,000 characters created by Co-Founder and renowned artist, Burnt Toast. The generative art was designed with a joyful range of colors, traits and personalities, with 32 hand-drawn, unique, 1 of 1\u2019s to round out the set.",
+   "verified": true,
+   "created_date": "2021-10-17"
+  },
+  "milady": {
+   "name": "Milady Maker",
+   "contract": "0x5af0d9827e0c53e4799bb226655a1de152a425a5",
+   "total_supply": 9976,
+   "image_url": "https://i2c.seadn.io/collection/milady/image/d4499e2e55f5e85ead4b0eb7f7dad7/90d4499e2e55f5e85ead4b0eb7f7dad7.jpeg",
+   "description": "Milady Maker is a collection of 10,000 generative pfpNFT's in a neochibi aesthetic inspired by street style tribes.",
+   "verified": true,
+   "created_date": "2021-08-24"
+  }
+ }
+}
