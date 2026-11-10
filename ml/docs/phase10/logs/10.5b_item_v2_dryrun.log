@@ -1,0 +1,50 @@
+{
+ "sealed_start_T": "2026-02-01",
+ "embargo": [
+  "2026-01-25",
+  "2026-02-01"
+ ],
+ "clean_rows_by_split": {
+  "dev": {
+   "azuki": 17626,
+   "boredapeyachtclub": 6108,
+   "doodles-official": 20565,
+   "lilpudgys": 48049,
+   "milady": 13035,
+   "mutant-ape-yacht-club": 18306,
+   "pudgypenguins": 15649,
+   "all": 139338
+  },
+  "embargo": {
+   "azuki": 93,
+   "boredapeyachtclub": 94,
+   "doodles-official": 139,
+   "lilpudgys": 490,
+   "milady": 138,
+   "mutant-ape-yacht-club": 269,
+   "pudgypenguins": 248,
+   "all": 1471
+  },
+  "sealed": {
+   "azuki": 3600,
+   "boredapeyachtclub": 2835,
+   "doodles-official": 4013,
+   "lilpudgys": 11179,
+   "milady": 3430,
+   "mutant-ape-yacht-club": 7714,
+   "pudgypenguins": 5201,
+   "all": 37972
+  }
+ },
+ "id_like_categories": {
+  "azuki": [],
+  "boredapeyachtclub": [],
+  "doodles-official": [],
+  "lilpudgys": [],
+  "milady": [
+   "Number"
+  ],
+  "mutant-ape-yacht-club": [],
+  "pudgypenguins": []
+ }
+}

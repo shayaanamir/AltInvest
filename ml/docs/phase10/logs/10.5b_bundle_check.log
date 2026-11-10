@@ -1,0 +1,4 @@
+dev bundle groups: 2443 rows: 6167
+groups where every row has the same price: 1935 | groups with different prices: 508
+by payment symbol (rows): {'BETH': 2865, 'ETH': 2205, 'WETH': 1097}
+group size distribution: {2: 1816, 3: 368, 4: 113, 5: 72, 6: 30, 7: 21, 8: 7, 9: 2}
