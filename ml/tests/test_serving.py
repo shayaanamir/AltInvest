@@ -221,6 +221,18 @@ def test_d51_note_flags_and_model_version():
     assert d["inputs"]["ewma_vol"] == 0.02 and d["inputs"]["vol_30d"] == pytest.approx(0.2)
 
 
+@pytest.mark.usefixtures("served_fixture_assets")
+def test_d52_risk_note_wording_the_frontend_cone_depends_on():
+    """The frontend volatility cone (D52, frontend/src/utils/volCone.js coneVolatility) shows only when the /risk
+    note contains "EWMA volatility" and hides when it contains "data stale". Rewording either phrase here would make
+    the cone silently disappear (or stop hiding), so change both sides together. Until /risk carries a model field."""
+    feats = _two_assets()
+    fresh, stale = rs.risk("aaa", _now(feats["aaa"], 1), feats), rs.risk("aaa", _now(feats["aaa"], 49), feats)
+    assert "EWMA volatility" in fresh["note"] and "data stale" not in fresh["note"]
+    assert "EWMA volatility" in stale["note"] and "data stale" in stale["note"]
+    assert fresh["volatility"] > 0
+
+
 def _set_report(path, **changes):
     path.write_text(json.dumps({**json.loads(path.read_text(encoding="utf-8")), **changes}), encoding="utf-8")
 

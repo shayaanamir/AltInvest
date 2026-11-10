@@ -17,6 +17,15 @@ Next: Person B checks the new risk_score values and note text (fields unchanged)
   - eslint is clean on the changed files; `npm run build` passes.
   - ML: `301 passed` (.venv-train), unchanged.
 - Screenshots: local docker stack. Prices are real Binance daily closes from the ML serving CSVs, loaded into the local dev Mongo; assets and the demo user come from the team's seed scripts.
+- Planner review (2026-11-10), answers to the open questions:
+  - Note-text gate accepted for now. Added `test_d52_risk_note_wording_the_frontend_cone_depends_on` (ml/tests/test_serving.py): a fresh /risk note must contain "EWMA volatility" and not "data stale"; a stale note must contain both. Checked by rewording each phrase in ml/serving/responses.py: the test fails, the file is restored. ML: `302 passed`.
+  - No rendered-page test (no vitest); the layer-logic test plus the screenshots are enough.
+  - AAI badge now always visible: Person B to confirm the placement (AAI is theirs; its scores moved with EWMA).
+- Backlog (owners outside ML unless stated):
+  - HIGH, frontend: the app shell's 230 px sidebar does not collapse at phone width, leaving about 160 px for the page; pages are basically unusable on phones until the user collapses it.
+  - Backend: `GET /settings` returns 404 for the demo user (seen in the browser network log; unrelated to the cone).
+  - Next contract change (ML + Person B): add a model field to /risk (for example `model_version.risk`) and gate the cone on it instead of the note text; then drop the note-wording test.
+  - Backend: its own stale note (backend/utils/ml_rows.py, "data stale: ...") is also read by the cone but has no test tying it to the frontend; needs Person B's OK to add one.
 
 ## Phase 9 steps 9.7-9.8: what ran (2026-11-03, from repo root)
 
