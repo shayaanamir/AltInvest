@@ -1,7 +1,24 @@
 # STATUS
 
-Current phase: 10 (NFTs, docs/PLAN_NFT.md) at checkpoint 10.1, branch phase-10-nft. Previously: 9 (forecasting v2) DONE and merged into main as PR #8. Served: EWMA risk for all assets (D51). Follow-up on branch phase-9-vol-cone (2026-11-10): frontend volatility cone (D52), reviewed twice, PR open against main.
+Current phase: 10 (NFTs, docs/PLAN_NFT.md) at checkpoint 10.5, branch phase-10-nft (pushed, not merged). Next: 10.6 fair value (another session). Previously: 9 (forecasting v2) DONE and merged into main as PR #8. Served: EWMA risk for all assets (D51). Follow-up on branch phase-9-vol-cone (2026-11-10): frontend volatility cone (D52), reviewed twice, PR open against main.
 Next: Person B checks the new risk_score values and note text (fields unchanged). Merge phase-7-integration, then rebase this branch onto main. The live scorecard starts scoring on 2026-11-30.
+
+## Phase 10 steps 10.2-10.5 (2026-11-10 to 11, branch phase-10-nft, autonomous mode)
+
+- The approved 10.1 changes were added to D52, D55, D59, D61 and D62. Autonomous decisions D63-D68 are each marked "AUTONOMOUS, needs review".
+- 10.2 (ml/docs/phase10/checkpoint_10.2.md):
+  - `ml/nft/` collectors and the daily refresh.
+  - Frozen snapshot `ml/data/nft/snapshots/2026-11-10/`. The manifest and the collection-level parquet files are tracked; the item files stay local and are hashed in the manifest.
+  - Reports: `ml/reports/nft/data_summary.json` and `liquidity.json`.
+  - D66 spike guard on the modelling floor.
+- 10.3 (checkpoint_10.3.md): EWMA floor volatility is approved, pooled over 7 collections: QLIKE 0.6929 vs 0.9333, CI [0.0668, 0.5855]. GARCH is not approved. The approval depends on D66 (on the unguarded floor nothing is approved). Report: `ml/reports/nft/walkforward_risk.json`.
+- 10.4 (checkpoint_10.4.md):
+  - ML: `/nft/collections`, `/nft/{slug}/floor`, `/nft/{slug}/risk` and `/nft/{slug}/sales` (ml/docs/CONTRACT_NFT.md), plus the `ml-nft-refresh` sidecar.
+  - Backend commits are prefixed `backend:`.
+  - Frontend: the NFT collection page with the cone, and screenshots in ml/docs/phase10/screenshots/.
+- 10.5 (checkpoint_10.5.md): the item data checks all pass (`ml/reports/nft/item_data.json`). The D68 item snapshot `2026-11-10-items` fills 348 failed metadata reads.
+- Tests: ML `344 passed`, frontend `13 passed`, backend `26 passed` (in its container).
+- Local Docker note: recreate only the ML services (`docker compose up -d --build --no-deps ml ml-refresh ml-nft-refresh`). Recreating the backend makes compose read the Atlas `MONGO_URI` from `.env`.
 
 ## Phase 10 steps 10.0-10.1: NFT investigation and decisions (2026-11-10, branch phase-10-nft)
 
