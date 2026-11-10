@@ -112,3 +112,17 @@ def test_dev_loader_never_returns_a_date_at_or_after_t_minus_7_and_the_sealed_lo
     dev = idt.load_dev()
     assert dev["sales"]["date"].max() < idt.embargo_start(config.NFT_FV_SEALED_START) == "2026-01-25"
     assert dev["sales"]["clean"].all() and dev["sales"]["price_usd"].notna().all()
+
+
+def test_d72_sales_check_rule_and_withdrawal_threshold():
+    from ml.nft import item_report as ir
+    floor = pd.DataFrame({"slug": "c", "date": ["2025-01-01", "2025-01-02", "2025-01-03", "2025-01-04", "2025-03-01"],
+                          "floor_eth_asof": [0.1, 0.1, 0.1, 1.0, 0.1], "floor_eth_model": [1.0, 1.0, 1.0, 1.0, 1.0]})
+    sales = pd.DataFrame({"slug": "c", "date": ["2025-01-01", "2025-01-01", "2025-01-02", "2025-03-01"],
+                          "price_eth": [0.9, 1.2, 0.12, 0.1]})
+    r = ir.d66_sales_check(floor, sales, before="2025-02-01")       # 2025-03-01 is after the cut: never looked at
+    assert r["per_collection"]["c"] == {"guarded_days": 3, "no_evidence": 1, "supports_raw": 1, "supports_guarded": 1}
+    assert [d["verdict"] for d in r["days"]] == ["supports guarded", "supports raw", "no evidence"]
+    assert r["days"][0]["p_min"] == 0.9 and r["evidence_days"] == 2 and r["ewma_approval_withdrawn"]   # 1/2 > 1/3
+    sales2 = sales.assign(price_eth=[0.9, 1.2, 0.9, 0.1])
+    assert not ir.d66_sales_check(floor, sales2, before="2025-02-01")["ewma_approval_withdrawn"]       # 0/2
