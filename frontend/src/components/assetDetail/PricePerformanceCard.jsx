@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import { useElementSize } from "../../hooks/useElementSize";
 import { deriveAaiSignal } from "../../services/assetDetailApi";
-import { isMlUncertain } from "../../utils/scoring";
 import { formatCurrencyAxis, formatAssetPrice } from "../../utils/formatters";
 import { CONE_CAPTION, CONE_DAYS, chartLayers, coneStartLabel, futureShare, shortDate } from "../../utils/volCone";
 
@@ -24,7 +23,7 @@ const fmtPath = (pts) => pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p[0].toFixe
 
 // History line, then (when the served EWMA volatility allows it) an illustrative 30-day volatility cone (D52).
 // There is no forecast or center line: no price model is approved, and lower/upper bounds stay null.
-export default function PricePerformanceCard({ priceHistory, risk, aaiPanel, mlSignal }) {
+export default function PricePerformanceCard({ priceHistory, risk, aaiPanel }) {
   const [filter, setFilter] = useState("1M");
   const [containerRef, dims] = useElementSize({ W: 900, H: 320 });
 
@@ -246,7 +245,8 @@ export default function PricePerformanceCard({ priceHistory, risk, aaiPanel, mlS
         ) : <span />}
         {signal && (
           <div className="adt-signal-badge">
-            {isMlUncertain(mlSignal) ? "AAI rating" : "Signal"}
+            {/* A composite rating of the asset, not a price forecast; the chart above says it is not a prediction. */}
+            AAI rating (composite score)
             <span className={`adt-signal-pill ${signal.tone}`}>{signal.label.replace("Strong ", "")}</span>
             {aaiPanel?.confidence != null && (
               <span className="adt-signal-conf">{Math.round(aaiPanel.confidence * 100)}% confidence</span>
