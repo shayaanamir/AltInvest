@@ -22,6 +22,7 @@ Next: Person B checks the new risk_score values and note text (fields unchanged)
   - No rendered-page test (no vitest); the layer-logic test plus the screenshots are enough.
   - AAI badge now always visible: Person B to confirm the placement (AAI is theirs; its scores moved with EWMA).
 - Backlog (owners outside ML unless stated):
+  - HIGH, backend / Person B: Asset prices are hardcoded seed data and never update; ETH is ~80% off. Findings, the affected places and a proposed fix are in ml/docs/PRICE_SEED_ISSUE.md (branch price-seed-issue).
   - HIGH, frontend: the app shell's 230 px sidebar does not collapse at phone width, leaving about 160 px for the page; pages are basically unusable on phones until the user collapses it.
   - Backend: `GET /settings` returns 404 for the demo user (seen in the browser network log; unrelated to the cone).
   - Next contract change (ML + Person B): add a model field to /risk (for example `model_version.risk`) and gate the cone on it instead of the note text; then drop the note-wording test.
