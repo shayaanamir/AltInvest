@@ -1,0 +1,152 @@
+{
+  "rule": "D58: illiquid if sales_7d < 10; liquidity_score = 100 x mean pooled percentile of sales_7d, sales_30d, volume_7d_usd, volume_30d_usd among all collections on all dates <= D; wash-filtered sales (D57) in the 7 / 30 days ending at D 00:00 UTC",
+  "marketplaces_counted": "Sales on OpenSea and Blur, as reported by OpenSea",
+  "model": "none (rule-based)",
+  "collections": {
+    "azuki": {
+      "as_of": "2026-11-10",
+      "sales_7d": 55.0,
+      "sales_30d": 525.0,
+      "volume_7d_eth": 29.571842,
+      "volume_30d_eth": 307.426179,
+      "volume_7d_usd": 67411.547823,
+      "volume_30d_usd": 731890.57266,
+      "liquidity_score": 12.595541,
+      "is_illiquid": false,
+      "liquidity_label": "Low",
+      "days_scored": 701,
+      "first_scored_date": "2024-12-10",
+      "days_illiquid": 0,
+      "label_days": {
+        "Low": 528,
+        "Medium": 118,
+        "High": 55
+      }
+    },
+    "boredapeyachtclub": {
+      "as_of": "2026-11-10",
+      "sales_7d": 96.0,
+      "sales_30d": 347.0,
+      "volume_7d_eth": 661.568489,
+      "volume_30d_eth": 2227.247841,
+      "volume_7d_usd": 1491613.461219,
+      "volume_30d_usd": 5245869.035783,
+      "liquidity_score": 38.300884,
+      "is_illiquid": false,
+      "liquidity_label": "Medium",
+      "days_scored": 701,
+      "first_scored_date": "2024-12-10",
+      "days_illiquid": 0,
+      "label_days": {
+        "Low": 464,
+        "Medium": 237
+      }
+    },
+    "doodles-official": {
+      "as_of": "2026-11-10",
+      "sales_7d": 39.0,
+      "sales_30d": 357.0,
+      "volume_7d_eth": 12.429836,
+      "volume_30d_eth": 96.832696,
+      "volume_7d_usd": 28538.965527,
+      "volume_30d_usd": 231236.578242,
+      "liquidity_score": 3.643839,
+      "is_illiquid": false,
+      "liquidity_label": "Low",
+      "days_scored": 701,
+      "first_scored_date": "2024-12-10",
+      "days_illiquid": 0,
+      "label_days": {
+        "Low": 492,
+        "Medium": 177,
+        "High": 32
+      }
+    },
+    "lilpudgys": {
+      "as_of": "2026-11-10",
+      "sales_7d": 234.0,
+      "sales_30d": 1359.0,
+      "volume_7d_eth": 49.309219,
+      "volume_30d_eth": 318.764739,
+      "volume_7d_usd": 110405.979901,
+      "volume_30d_usd": 764560.012776,
+      "liquidity_score": 40.130101,
+      "is_illiquid": false,
+      "liquidity_label": "Medium",
+      "days_scored": 701,
+      "first_scored_date": "2024-12-10",
+      "days_illiquid": 0,
+      "label_days": {
+        "Medium": 448,
+        "High": 147,
+        "Low": 106
+      }
+    },
+    "milady": {
+      "as_of": "2026-11-10",
+      "sales_7d": 50.0,
+      "sales_30d": 352.0,
+      "volume_7d_eth": 35.425555,
+      "volume_30d_eth": 274.828539,
+      "volume_7d_usd": 79900.038285,
+      "volume_30d_usd": 656743.325591,
+      "liquidity_score": 6.83062,
+      "is_illiquid": false,
+      "liquidity_label": "Low",
+      "days_scored": 701,
+      "first_scored_date": "2024-12-10",
+      "days_illiquid": 0,
+      "label_days": {
+        "Low": 548,
+        "Medium": 145,
+        "High": 8
+      }
+    },
+    "mutant-ape-yacht-club": {
+      "as_of": "2026-11-10",
+      "sales_7d": 125.0,
+      "sales_30d": 810.0,
+      "volume_7d_eth": 117.617511,
+      "volume_30d_eth": 746.794381,
+      "volume_7d_usd": 268039.352826,
+      "volume_30d_usd": 1769771.276598,
+      "liquidity_score": 34.199083,
+      "is_illiquid": false,
+      "liquidity_label": "Medium",
+      "days_scored": 701,
+      "first_scored_date": "2024-12-10",
+      "days_illiquid": 0,
+      "label_days": {
+        "Medium": 371,
+        "Low": 319,
+        "High": 11
+      }
+    },
+    "pudgypenguins": {
+      "as_of": "2026-11-10",
+      "sales_7d": 68.0,
+      "sales_30d": 756.0,
+      "volume_7d_eth": 153.237771,
+      "volume_30d_eth": 1968.595117,
+      "volume_7d_usd": 341922.392057,
+      "volume_30d_usd": 4815951.09429,
+      "liquidity_score": 34.749834,
+      "is_illiquid": false,
+      "liquidity_label": "Medium",
+      "days_scored": 701,
+      "first_scored_date": "2024-12-10",
+      "days_illiquid": 0,
+      "label_days": {
+        "Medium": 396,
+        "Low": 195,
+        "High": 110
+      }
+    }
+  },
+  "metadata": {
+    "generated_at": "2026-11-10T19:51:17Z",
+    "git_commit": "b9a56e67bed6ffd0be0ce97fcb48bbd0e495d15b",
+    "git_dirty": false,
+    "snapshot_manifest_sha256": "90e74e885eee75336e7a9b46bb9f718a4a9757802234fc197053901f3d27d7af"
+  }
+}

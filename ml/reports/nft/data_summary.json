@@ -1,0 +1,498 @@
+{
+  "snapshot": "2026-11-10",
+  "snapshot_created_at": "2026-11-10T19:50:08Z",
+  "files": {
+    "floor.parquet": {
+      "sha256": "4f0062e1e494feef6c8ad390f2c4e648eb596692166cea13d328355fb9488343",
+      "rows": 5495,
+      "bytes": 678834,
+      "range": [
+        "2024-09-17",
+        "2026-11-10"
+      ]
+    },
+    "floor_points.parquet": {
+      "sha256": "9de584897f4b4fd1117c68f4555577d31b20e23cb56b1c4e6e5b7e8f56506622",
+      "rows": 5483,
+      "bytes": 136712,
+      "range": [
+        "2024-09-16T02:52:47Z",
+        "2026-11-10T15:43:47Z"
+      ]
+    },
+    "eth_usd.parquet": {
+      "sha256": "0cf7bfa97fd450a04cba4ff17b64d50259ecf9a4e0b6e87fca00345f240f4962",
+      "rows": 3373,
+      "bytes": 27086,
+      "range": [
+        "2017-08-17",
+        "2026-11-10"
+      ]
+    },
+    "sales_raw.parquet": {
+      "sha256": "70a751c76ad9be057d5360cee37e1a749a98b4d67314e97404231f23a4a9e0ed",
+      "rows": 198548,
+      "bytes": 10103940,
+      "range": [
+        "2024-11-10",
+        "2026-11-10"
+      ]
+    },
+    "sales_filtered.parquet": {
+      "sha256": "3872160c0042c9a92ab78c85f7617f10ad6fb34de59aa0c9114d1235bb861048",
+      "rows": 194198,
+      "bytes": 9976657,
+      "range": [
+        "2024-11-10",
+        "2026-11-10"
+      ]
+    },
+    "traits.parquet": {
+      "sha256": "b523224a9c4a84a0ac25dfb07652a2f523e442098ab77b14a059dd606e77499a",
+      "rows": 616987,
+      "bytes": 1639579,
+      "range": null
+    },
+    "tokens.parquet": {
+      "sha256": "5cac082dcc88f884196dfec334bc9f1ccc704559d70c03615e85baca30d02130",
+      "rows": 90395,
+      "bytes": 3615183,
+      "range": null
+    }
+  },
+  "eth_usd": {
+    "rows": 3373,
+    "range": [
+      "2017-08-17",
+      "2026-11-10"
+    ],
+    "sources": {
+      "open": 3372,
+      "prev_close": 1
+    }
+  },
+  "future_dates": 0,
+  "collections": {
+    "azuki": {
+      "floor_days": 785,
+      "floor_first_date": "2024-09-17",
+      "floor_last_date": "2026-11-10",
+      "duplicate_days": 0,
+      "gap_days_floor_null": 0,
+      "gap_dates": [],
+      "floor_age_hours": {
+        "median": 9.585278,
+        "max": 31.60506
+      },
+      "floor_eth_first_last": [
+        5.5,
+        0.447949
+      ],
+      "spike_days_held_back": 3,
+      "spike_dates": [
+        "2025-01-24",
+        "2025-02-15",
+        "2025-12-30"
+      ],
+      "zero_return_days_model_series": 18,
+      "usd_consistency": {
+        "days_compared": 784,
+        "days_source_usd_missing_or_zero": 1,
+        "median_abs_deviation": 0.01077,
+        "max_abs_deviation": 0.218227,
+        "days_over_tolerance": 74,
+        "tolerance": 0.05
+      },
+      "sealed_test_first_date": "2026-07-20",
+      "sales_raw": 23736,
+      "sales_after_wash_filter": 23296,
+      "sales_first": "2024-11-10",
+      "sales_last": "2026-11-10",
+      "sales_per_month_after_filter": 931.84,
+      "marketplaces": {
+        "unknown": 13661,
+        "blur": 9979,
+        "opensea": 96
+      },
+      "payment_symbols": {
+        "BETH": 9979,
+        "ETH": 9254,
+        "WETH": 4503
+      },
+      "wash_filter": {
+        "before": 23736,
+        "R1": 28,
+        "R2": 391,
+        "R3": 21,
+        "kept": 23296
+      },
+      "dropped_events": {
+        "payment_token": 1
+      },
+      "tokens": 10000,
+      "tokens_without_traits": 40,
+      "supply_reported": 10000
+    },
+    "boredapeyachtclub": {
+      "floor_days": 785,
+      "floor_first_date": "2024-09-17",
+      "floor_last_date": "2026-11-10",
+      "duplicate_days": 0,
+      "gap_days_floor_null": 0,
+      "gap_dates": [],
+      "floor_age_hours": {
+        "median": 9.014269,
+        "max": 44.076788
+      },
+      "floor_eth_first_last": [
+        12.376699,
+        5.6
+      ],
+      "spike_days_held_back": 0,
+      "spike_dates": [],
+      "zero_return_days_model_series": 18,
+      "usd_consistency": {
+        "days_compared": 785,
+        "days_source_usd_missing_or_zero": 0,
+        "median_abs_deviation": 0.010359,
+        "max_abs_deviation": 0.231575,
+        "days_over_tolerance": 68,
+        "tolerance": 0.05
+      },
+      "sealed_test_first_date": "2026-07-20",
+      "sales_raw": 9620,
+      "sales_after_wash_filter": 9417,
+      "sales_first": "2024-11-10",
+      "sales_last": "2026-11-10",
+      "sales_per_month_after_filter": 376.68,
+      "marketplaces": {
+        "unknown": 6428,
+        "blur": 3086,
+        "opensea": 106
+      },
+      "payment_symbols": {
+        "ETH": 4315,
+        "BETH": 3086,
+        "WETH": 2219
+      },
+      "wash_filter": {
+        "before": 9620,
+        "R1": 41,
+        "R2": 156,
+        "R3": 6,
+        "kept": 9417
+      },
+      "dropped_events": {
+        "payment_token": 9
+      },
+      "tokens": 10000,
+      "tokens_without_traits": 42,
+      "supply_reported": 9996
+    },
+    "doodles-official": {
+      "floor_days": 785,
+      "floor_first_date": "2024-09-17",
+      "floor_last_date": "2026-11-10",
+      "duplicate_days": 0,
+      "gap_days_floor_null": 2,
+      "gap_dates": [
+        "2026-04-01",
+        "2026-04-02"
+      ],
+      "floor_age_hours": {
+        "median": 9.333985,
+        "max": 81.543289
+      },
+      "floor_eth_first_last": [
+        1.899999,
+        0.24
+      ],
+      "spike_days_held_back": 2,
+      "spike_dates": [
+        "2024-12-21",
+        "2025-05-10"
+      ],
+      "zero_return_days_model_series": 27,
+      "usd_consistency": {
+        "days_compared": 783,
+        "days_source_usd_missing_or_zero": 0,
+        "median_abs_deviation": 0.009254,
+        "max_abs_deviation": 0.218872,
+        "days_over_tolerance": 75,
+        "tolerance": 0.05
+      },
+      "sealed_test_first_date": "2026-07-20",
+      "sales_raw": 27641,
+      "sales_after_wash_filter": 27040,
+      "sales_first": "2024-11-10",
+      "sales_last": "2026-11-10",
+      "sales_per_month_after_filter": 1081.6,
+      "marketplaces": {
+        "unknown": 19539,
+        "blur": 8051,
+        "opensea": 51
+      },
+      "payment_symbols": {
+        "ETH": 12145,
+        "BETH": 8051,
+        "WETH": 7445
+      },
+      "wash_filter": {
+        "before": 27641,
+        "R1": 43,
+        "R2": 529,
+        "R3": 29,
+        "kept": 27040
+      },
+      "dropped_events": {},
+      "tokens": 10000,
+      "tokens_without_traits": 181,
+      "supply_reported": 9998
+    },
+    "lilpudgys": {
+      "floor_days": 785,
+      "floor_first_date": "2024-09-17",
+      "floor_last_date": "2026-11-10",
+      "duplicate_days": 0,
+      "gap_days_floor_null": 0,
+      "gap_dates": [],
+      "floor_age_hours": {
+        "median": 9.180707,
+        "max": 46.721481
+      },
+      "floor_eth_first_last": [
+        0.905,
+        0.183899
+      ],
+      "spike_days_held_back": 6,
+      "spike_dates": [
+        "2024-12-18",
+        "2025-01-04",
+        "2025-01-29",
+        "2025-02-15",
+        "2025-07-19",
+        "2026-03-11"
+      ],
+      "zero_return_days_model_series": 18,
+      "usd_consistency": {
+        "days_compared": 784,
+        "days_source_usd_missing_or_zero": 1,
+        "median_abs_deviation": 0.011636,
+        "max_abs_deviation": 0.207062,
+        "days_over_tolerance": 81,
+        "tolerance": 0.05
+      },
+      "sealed_test_first_date": "2026-07-20",
+      "sales_raw": 67319,
+      "sales_after_wash_filter": 65785,
+      "sales_first": "2024-11-10",
+      "sales_last": "2026-11-10",
+      "sales_per_month_after_filter": 2631.4,
+      "marketplaces": {
+        "unknown": 47384,
+        "blur": 19601,
+        "opensea": 334
+      },
+      "payment_symbols": {
+        "ETH": 31677,
+        "BETH": 19601,
+        "WETH": 16041
+      },
+      "wash_filter": {
+        "before": 67319,
+        "R1": 75,
+        "R2": 1445,
+        "R3": 14,
+        "kept": 65785
+      },
+      "dropped_events": {
+        "payment_token": 2
+      },
+      "tokens": 21935,
+      "tokens_without_traits": 24,
+      "supply_reported": 21932
+    },
+    "milady": {
+      "floor_days": 785,
+      "floor_first_date": "2024-09-17",
+      "floor_last_date": "2026-11-10",
+      "duplicate_days": 0,
+      "gap_days_floor_null": 0,
+      "gap_dates": [],
+      "floor_age_hours": {
+        "median": 9.511446,
+        "max": 23.994554
+      },
+      "floor_eth_first_last": [
+        3.579849,
+        0.657767
+      ],
+      "spike_days_held_back": 0,
+      "spike_dates": [],
+      "zero_return_days_model_series": 10,
+      "usd_consistency": {
+        "days_compared": 785,
+        "days_source_usd_missing_or_zero": 0,
+        "median_abs_deviation": 0.010692,
+        "max_abs_deviation": 0.214339,
+        "days_over_tolerance": 72,
+        "tolerance": 0.05
+      },
+      "sealed_test_first_date": "2026-07-20",
+      "sales_raw": 18184,
+      "sales_after_wash_filter": 17876,
+      "sales_first": "2024-11-10",
+      "sales_last": "2026-11-10",
+      "sales_per_month_after_filter": 715.04,
+      "marketplaces": {
+        "unknown": 10865,
+        "blur": 7246,
+        "opensea": 73
+      },
+      "payment_symbols": {
+        "BETH": 7246,
+        "ETH": 7170,
+        "WETH": 3768
+      },
+      "wash_filter": {
+        "before": 18184,
+        "R1": 26,
+        "R2": 275,
+        "R3": 7,
+        "kept": 17876
+      },
+      "dropped_events": {},
+      "tokens": 10000,
+      "tokens_without_traits": 0,
+      "supply_reported": 9976
+    },
+    "mutant-ape-yacht-club": {
+      "floor_days": 785,
+      "floor_first_date": "2024-09-17",
+      "floor_last_date": "2026-11-10",
+      "duplicate_days": 0,
+      "gap_days_floor_null": 3,
+      "gap_dates": [
+        "2024-11-11",
+        "2024-11-12",
+        "2024-11-13"
+      ],
+      "floor_age_hours": {
+        "median": 8.810134,
+        "max": 116.353456
+      },
+      "floor_eth_first_last": [
+        2.0451,
+        0.79
+      ],
+      "spike_days_held_back": 1,
+      "spike_dates": [
+        "2024-11-06"
+      ],
+      "zero_return_days_model_series": 13,
+      "usd_consistency": {
+        "days_compared": 782,
+        "days_source_usd_missing_or_zero": 0,
+        "median_abs_deviation": 0.010565,
+        "max_abs_deviation": 0.219007,
+        "days_over_tolerance": 75,
+        "tolerance": 0.05
+      },
+      "sealed_test_first_date": "2026-07-20",
+      "sales_raw": 29268,
+      "sales_after_wash_filter": 28559,
+      "sales_first": "2024-11-10",
+      "sales_last": "2026-11-10",
+      "sales_per_month_after_filter": 1142.36,
+      "marketplaces": {
+        "unknown": 20802,
+        "blur": 8268,
+        "opensea": 198
+      },
+      "payment_symbols": {
+        "ETH": 13765,
+        "BETH": 8268,
+        "WETH": 7235
+      },
+      "wash_filter": {
+        "before": 29268,
+        "R1": 56,
+        "R2": 642,
+        "R3": 11,
+        "kept": 28559
+      },
+      "dropped_events": {
+        "payment_token": 3
+      },
+      "tokens": 19572,
+      "tokens_without_traits": 3,
+      "supply_reported": 19571
+    },
+    "pudgypenguins": {
+      "floor_days": 785,
+      "floor_first_date": "2024-09-17",
+      "floor_last_date": "2026-11-10",
+      "duplicate_days": 0,
+      "gap_days_floor_null": 3,
+      "gap_dates": [
+        "2024-10-23",
+        "2024-11-18",
+        "2024-11-19"
+      ],
+      "floor_age_hours": {
+        "median": 9.352068,
+        "max": 90.889606
+      },
+      "floor_eth_first_last": [
+        11.1649,
+        2.066
+      ],
+      "spike_days_held_back": 0,
+      "spike_dates": [],
+      "zero_return_days_model_series": 12,
+      "usd_consistency": {
+        "days_compared": 782,
+        "days_source_usd_missing_or_zero": 0,
+        "median_abs_deviation": 0.011974,
+        "max_abs_deviation": 0.216883,
+        "days_over_tolerance": 81,
+        "tolerance": 0.05
+      },
+      "sealed_test_first_date": "2026-07-20",
+      "sales_raw": 22780,
+      "sales_after_wash_filter": 22225,
+      "sales_first": "2024-11-10",
+      "sales_last": "2026-11-10",
+      "sales_per_month_after_filter": 889.0,
+      "marketplaces": {
+        "unknown": 11902,
+        "blur": 10810,
+        "opensea": 68
+      },
+      "payment_symbols": {
+        "BETH": 10810,
+        "ETH": 8010,
+        "WETH": 3960
+      },
+      "wash_filter": {
+        "before": 22780,
+        "R1": 42,
+        "R2": 509,
+        "R3": 4,
+        "kept": 22225
+      },
+      "dropped_events": {
+        "payment_token": 14
+      },
+      "tokens": 8888,
+      "tokens_without_traits": 58,
+      "supply_reported": 8888
+    }
+  },
+  "metadata": {
+    "generated_at": "2026-11-10T19:51:17Z",
+    "git_commit": "b9a56e67bed6ffd0be0ce97fcb48bbd0e495d15b",
+    "git_dirty": false,
+    "snapshot_manifest_sha256": "90e74e885eee75336e7a9b46bb9f718a4a9757802234fc197053901f3d27d7af"
+  }
+}
