@@ -120,3 +120,4 @@ ml/data/nft/snapshots/*/sales_raw.parquet
 ml/data/nft/snapshots/*/sales_filtered.parquet
 ml/data/nft/snapshots/*/traits.parquet
 ml/data/nft/snapshots/*/tokens.parquet
+ml/data/nft/snapshots/*/sales.parquet
