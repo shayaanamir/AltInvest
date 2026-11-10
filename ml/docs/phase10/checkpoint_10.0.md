@@ -145,3 +145,50 @@ No code and no snapshots in 10.0, so there is nothing to test or hash. The exist
 **Next step after your OK:** you provide `OPENSEA_API_KEY` (and optionally `ALCHEMY_API_KEY` and `DUNE_API_KEY`) in `.env`. I run the depth check (7 calls) and add the result to this checkpoint before 10.1.
 
 STOP: waiting for OK.
+
+---
+
+## Addendum A1 (2026-11-10): OpenSea floor-history depth, checked with OPENSEA_API_KEY
+
+**Commands.**
+- `GET /api/v2/collections/{slug}/floor_prices?timeframe=all_time` for the 7 collections in A2 and the CloneX reserve. 8 calls, all HTTP 200.
+- For BAYC also `resolution=100`, `resolution=5000`, `timeframe=one_year` and `timeframe=one_day`.
+- One `GET /events/collection/boredapeyachtclub?event_type=sale` page each for the 2024-11-03..10 window and for the most recent sales.
+- One Alchemy `getNFTsForContract` page for milady.
+- Keys were read from `.env` (gitignored) and never printed or written anywhere. Raw responses are kept in the scratchpad, not the repo.
+
+**Floor history.** Figures computed from the responses by a script, not hand-typed.
+
+| Collection | Points | First | Last | Span (days) | Distinct days | Missing days | Median gap (h) | 3 largest gaps (h) | USD zero or null |
+|---|---|---|---|---|---|---|---|---|---|
+| boredapeyachtclub | 782 | 2024-09-16 | 2026-11-10 | 786 | 781 | 5 | 24.0 | 51, 55, 61 | 0 |
+| mutant-ape-yacht-club | 781 | 2024-09-16 | 2026-11-10 | 786 | 781 | 5 | 24.0 | 48, 63, 138 | 0 |
+| pudgypenguins | 782 | 2024-09-16 | 2026-11-10 | 786 | 781 | 5 | 24.2 | 48, 82, 106 | 0 |
+| lilpudgys | 785 | 2024-09-16 | 2026-11-10 | 786 | 784 | 2 | 23.9 | 48, 48, 61 | 1 (2026-06-29) |
+| azuki | 786 | 2024-09-16 | 2026-11-10 | 786 | 785 | 1 | 24.3 | 48, 48, 48 | 1 (2026-06-29) |
+| doodles-official | 782 | 2024-09-16 | 2026-11-10 | 786 | 782 | 4 | 23.6 | 47, 54, 100 | 0 |
+| milady | 786 | 2024-09-16 | 2026-11-10 | 786 | 786 | 0 | 24.0 | 48, 48, 48 | 0 |
+| clonex (reserve) | 781 | 2024-09-16 | 2026-11-10 | 786 | 780 | 6 | 24.0 | 48, 48, 54 | 0 |
+
+**What this shows:**
+- **Every collection has 786 days (over 365) of OpenSea floor history.** The A3 sales-derived proxy is therefore not needed for any collection. The 24-month sales window (A6, from 2024-11-10) lies entirely inside the floor history.
+- **The history starts on 2024-09-16 for all 8 collections**, so this is an OpenSea data cutoff, not each collection's start. `resolution=5000` returns the same 782 points as the default, so there is no finer history. `resolution=100` downsamples.
+- **There is about one point per day, at an irregular time of day.** Only 14–21% of points fall between 23:00 and 01:59 UTC, so the A4 "value at 00:00 UTC" must be an as-of value (the last point at or before 00:00). 10.1 defines this.
+- **`timeframe=one_day` returns intraday points**: 45 points over the last 24 h for BAYC, about one every 30 minutes. These are the source for the display-only intraday median (A4). They cannot be backfilled.
+- **USD/ETH ratio check:**
+  - The USD/ETH ratio implied by OpenSea's `usd_price` has a median of about 2,490–2,510 per collection, which matches ETH's price range.
+  - Azuki and Lil Pudgys each have one point (2026-06-29) with `usd_price` = 0.
+  - USD will be computed from our own ETH price, not OpenSea's `usd_price` (10.1).
+
+**Rate limit.** The response headers show `x-ratelimit-limit: 120` with a reset about 30 s ahead, roughly 4 requests per second. This is far above the 600/h assumed in section 2.4. Revised backfill time:
+- Sales, 24 months: about 1,800 pages of 50, or about 450 pages of 200 (the events `limit` maximum is 200), so **under 10 minutes**.
+- Traits (Alchemy): about 905 pages, about 10–20 minutes.
+
+**Sales events.** Fields: buyer, seller, event_timestamp, nft (identifier, contract and **traits**), payment (quantity, token, symbol), transaction, protocol_address and quantity.
+- Payment symbols are **ETH, WETH and BETH**. BETH is Blur's pool token. In the 2024-11 BAYC sample, 27 of 50 sales were paid in BETH, with an empty `protocol_address`. In the recent sample, 39 of 50 used Seaport (`0x0000000000000068f116a894984e2db1123eb395`).
+- **So OpenSea's sales feed includes Blur sales.** The Blur coverage gap from section 4 item 5 is smaller than feared. It is not proven complete: Blur sales paid in plain ETH or WETH with no protocol address cannot be told apart from other marketplaces, and there is no explicit marketplace field.
+- 10.1 records the marketplace as derived from protocol address and payment token, and A10 labels follow that.
+
+**Alchemy.** `getNFTsForContract` for milady returned 100 tokens per page, all 100 with `attributes`. Milady trait metadata is confirmed.
+
+**Effect on section 2.3:** for all 7 collections, the "365+ days of floor history?" column is now **yes (786 days)**.
