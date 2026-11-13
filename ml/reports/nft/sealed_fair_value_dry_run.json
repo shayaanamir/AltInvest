@@ -1,0 +1,302 @@
+{
+ "mode": "dry_run",
+ "decision": "D79",
+ "git_commit": "2e6caccdc1da6e687e1efd7cb5da5570bc40c7d4",
+ "git_dirty": false,
+ "generated_at": "2026-11-13T22:24:35Z",
+ "window": {
+  "first": "2025-10-01",
+  "last": "2026-01-24"
+ },
+ "test_w2_from_sales_up_to": "2026-01-24",
+ "candidate": "fv_pooled_l1_nl15",
+ "params": {
+  "learning_rate": 0.05,
+  "min_data_in_leaf": 100,
+  "feature_fraction": 0.8,
+  "bagging_fraction": 0.8,
+  "bagging_freq": 1,
+  "lambda_l2": 1.0,
+  "seed": 0,
+  "deterministic": true,
+  "force_row_wise": true,
+  "num_threads": 4,
+  "verbose": -1,
+  "objective": "regression_l1",
+  "num_leaves": 15
+ },
+ "n_rounds": 400,
+ "serve": {
+  "azuki": "model",
+  "boredapeyachtclub": "model",
+  "doodles-official": "model",
+  "lilpudgys": "b2",
+  "milady": "model",
+  "mutant-ape-yacht-club": "model",
+  "pudgypenguins": "model"
+ },
+ "item_manifest_sha256": "1d0c12d1643ad18dee4e3851ff3a48f9d938ab1223b38e56abb2fddbc6e67dfd",
+ "months": [
+  {
+   "month": "2025-10",
+   "train_cutoff": "2025-09-24",
+   "n_train": 109612,
+   "n_test": 12506,
+   "test_dates": [
+    "2025-10-01",
+    "2025-10-31"
+   ],
+   "seconds": 6.5
+  },
+  {
+   "month": "2025-11",
+   "train_cutoff": "2025-10-25",
+   "n_train": 122635,
+   "n_test": 7578,
+   "test_dates": [
+    "2025-11-01",
+    "2025-11-30"
+   ],
+   "seconds": 5.9
+  },
+  {
+   "month": "2025-12",
+   "train_cutoff": "2025-11-24",
+   "n_train": 131006,
+   "n_test": 6563,
+   "test_dates": [
+    "2025-12-01",
+    "2025-12-31"
+   ],
+   "seconds": 6.0
+  },
+  {
+   "month": "2026-01",
+   "train_cutoff": "2025-12-25",
+   "n_train": 137040,
+   "n_test": 5813,
+   "test_dates": [
+    "2026-01-01",
+    "2026-01-24"
+   ],
+   "seconds": 6.4
+  }
+ ],
+ "verdict": {
+  "mdape": {
+   "served": 0.02793592720422855,
+   "fv_pooled_l1_nl15": 0.028394734750110784,
+   "B0_floor": 0.0344827586206895,
+   "B1_rarity_decile": 0.03721805824358343,
+   "B2_decile_90d": 0.033476232042685294
+  },
+  "best_baseline": "B2_decile_90d",
+  "paired_diff_best_baseline_minus_served": {
+   "estimate": 0.005540304838456744,
+   "low": 0.004205216135805458,
+   "high": 0.006269824428271431,
+   "level": 0.95,
+   "block_size": 7,
+   "block_unit": "calendar dates (all collections together)",
+   "n_dates": 116,
+   "n_boot": 1000,
+   "seed": 0
+  },
+  "pass": true,
+  "outcome": "PASS: keep the serving rule {\"azuki\": \"model\", \"boredapeyachtclub\": \"model\", \"doodles-official\": \"model\", \"lilpudgys\": \"b2\", \"milady\": \"model\", \"mutant-ape-yacht-club\": \"model\", \"pudgypenguins\": \"model\"}",
+  "range_served": null,
+  "n_rows": 32460,
+  "n_dates": 116,
+  "n_blocks": 16.571428571428573
+ },
+ "descriptive": {
+  "by_collection": {
+   "azuki": {
+    "n": 3290,
+    "served": 0.03228331709153365,
+    "fv_pooled_l1_nl15": 0.03228331709153365,
+    "B0_floor": 0.038799134016200776,
+    "B1_rarity_decile": 0.04481267142186307,
+    "B2_decile_90d": 0.04095728549860678
+   },
+   "boredapeyachtclub": {
+    "n": 1794,
+    "served": 0.027822563363211317,
+    "fv_pooled_l1_nl15": 0.027822563363211317,
+    "B0_floor": 0.03254761904761916,
+    "B1_rarity_decile": 0.03232949156504816,
+    "B2_decile_90d": 0.03206170444614609
+   },
+   "doodles-official": {
+    "n": 3611,
+    "served": 0.031430095352426246,
+    "fv_pooled_l1_nl15": 0.031430095352426246,
+    "B0_floor": 0.04316326530612247,
+    "B1_rarity_decile": 0.04337231968810906,
+    "B2_decile_90d": 0.043612759802114986
+   },
+   "lilpudgys": {
+    "n": 10878,
+    "served": 0.027594696426813226,
+    "fv_pooled_l1_nl15": 0.029069767739840824,
+    "B0_floor": 0.02905980273502967,
+    "B1_rarity_decile": 0.036403557850674506,
+    "B2_decile_90d": 0.027594696426813226
+   },
+   "milady": {
+    "n": 4149,
+    "served": 0.029120434614958723,
+    "fv_pooled_l1_nl15": 0.029120434614958723,
+    "B0_floor": 0.03911666666666669,
+    "B1_rarity_decile": 0.03924205914567369,
+    "B2_decile_90d": 0.03922123893805329
+   },
+   "mutant-ape-yacht-club": {
+    "n": 5044,
+    "served": 0.026956579644764056,
+    "fv_pooled_l1_nl15": 0.026956579644764056,
+    "B0_floor": 0.04186051357490994,
+    "B1_rarity_decile": 0.03647524939019525,
+    "B2_decile_90d": 0.035229336865555294
+   },
+   "pudgypenguins": {
+    "n": 3694,
+    "served": 0.022626633048740352,
+    "fv_pooled_l1_nl15": 0.022626633048740352,
+    "B0_floor": 0.030048865984036832,
+    "B1_rarity_decile": 0.027999667876913714,
+    "B2_decile_90d": 0.027024236046012895
+   }
+  },
+  "by_rarity_decile": {
+   "1.0": {
+    "n": 1527,
+    "served": 0.0644377376405596,
+    "fv_pooled_l1_nl15": 0.06232062589322662,
+    "B0_floor": 0.09092727272727286,
+    "B1_rarity_decile": 0.08440715206863858,
+    "B2_decile_90d": 0.07310106536562189
+   },
+   "2.0": {
+    "n": 2128,
+    "served": 0.04034438027329085,
+    "fv_pooled_l1_nl15": 0.03955689038423904,
+    "B0_floor": 0.05475535549270022,
+    "B1_rarity_decile": 0.05233212104262308,
+    "B2_decile_90d": 0.05027639782455462
+   },
+   "3.0": {
+    "n": 2819,
+    "served": 0.032152157245102564,
+    "fv_pooled_l1_nl15": 0.031972613957740315,
+    "B0_floor": 0.03895446880269815,
+    "B1_rarity_decile": 0.04392661846799362,
+    "B2_decile_90d": 0.03804164966470158
+   },
+   "4.0": {
+    "n": 3270,
+    "served": 0.027887783266300814,
+    "fv_pooled_l1_nl15": 0.028164104691727254,
+    "B0_floor": 0.03395123969916147,
+    "B1_rarity_decile": 0.038106537292208364,
+    "B2_decile_90d": 0.03401225421829834
+   },
+   "5.0": {
+    "n": 3365,
+    "served": 0.026361694270852443,
+    "fv_pooled_l1_nl15": 0.02698068729679437,
+    "B0_floor": 0.03440882496940023,
+    "B1_rarity_decile": 0.0360549803742366,
+    "B2_decile_90d": 0.03207761847213075
+   },
+   "6.0": {
+    "n": 3607,
+    "served": 0.025347396897744456,
+    "fv_pooled_l1_nl15": 0.026261272813034697,
+    "B0_floor": 0.030998851894374235,
+    "B1_rarity_decile": 0.03553983436059727,
+    "B2_decile_90d": 0.02982351575850717
+   },
+   "7.0": {
+    "n": 3617,
+    "served": 0.025431451059747312,
+    "fv_pooled_l1_nl15": 0.025444958353692537,
+    "B0_floor": 0.0313432835820896,
+    "B1_rarity_decile": 0.033558722629503546,
+    "B2_decile_90d": 0.029975847468547423
+   },
+   "8.0": {
+    "n": 3973,
+    "served": 0.024394032600547955,
+    "fv_pooled_l1_nl15": 0.025738097214887956,
+    "B0_floor": 0.03133847939514489,
+    "B1_rarity_decile": 0.03246916327183191,
+    "B2_decile_90d": 0.029529966460169144
+   },
+   "9.0": {
+    "n": 3934,
+    "served": 0.024525186528164822,
+    "fv_pooled_l1_nl15": 0.025943282450528682,
+    "B0_floor": 0.029411764705882304,
+    "B1_rarity_decile": 0.032385106349911874,
+    "B2_decile_90d": 0.028272831515911645
+   },
+   "10.0": {
+    "n": 4220,
+    "served": 0.025362982841062753,
+    "fv_pooled_l1_nl15": 0.025303481222871016,
+    "B0_floor": 0.031183098940156695,
+    "B1_rarity_decile": 0.03277870504334185,
+    "B2_decile_90d": 0.030092065865847784
+   }
+  },
+  "by_month": {
+   "2025-10": {
+    "n": 12506,
+    "served": 0.029565666016345193,
+    "fv_pooled_l1_nl15": 0.03660943025979135,
+    "B0_floor": 0.03703703703703698,
+    "B1_rarity_decile": 0.042035185119454255,
+    "B2_decile_90d": 0.036030438353298
+   },
+   "2025-11": {
+    "n": 7578,
+    "served": 0.02490958043057312,
+    "fv_pooled_l1_nl15": 0.02302667077499626,
+    "B0_floor": 0.03159980000000018,
+    "B1_rarity_decile": 0.0325715243500182,
+    "B2_decile_90d": 0.029310525832820566
+   },
+   "2025-12": {
+    "n": 6563,
+    "served": 0.027135542997739792,
+    "fv_pooled_l1_nl15": 0.02531730929885634,
+    "B0_floor": 0.02876982892690516,
+    "B1_rarity_decile": 0.03675485151469826,
+    "B2_decile_90d": 0.03208814238510893
+   },
+   "2026-01": {
+    "n": 5813,
+    "served": 0.02929608241067605,
+    "fv_pooled_l1_nl15": 0.025196634017614405,
+    "B0_floor": 0.04268292682926833,
+    "B1_rarity_decile": 0.03374786708863653,
+    "B2_decile_90d": 0.03477068041193032
+   }
+  },
+  "b2_range_80pct_coverage": {
+   "pooled": 0.8699014171287739,
+   "lower_tail_miss": 0.050061614294516325,
+   "upper_tail_miss": 0.08003696857670979,
+   "by_collection": {
+    "azuki": 0.843161094224924,
+    "boredapeyachtclub": 0.8210702341137124,
+    "doodles-official": 0.9404597064525062,
+    "lilpudgys": 0.9202059202059202,
+    "milady": 0.7799469751747409,
+    "mutant-ape-yacht-club": 0.8402061855670103,
+    "pudgypenguins": 0.8419057931781266
+   }
+  }
+ }
+}
