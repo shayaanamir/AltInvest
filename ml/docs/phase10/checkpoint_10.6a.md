@@ -180,3 +180,49 @@ The bounds are in log space, so coverage is the same in price.
 6. **D32 and the D44 interval-score condition** are added (section 1).
 
 **STOP. 10.6b (running B0, B1 and the 6 candidates) starts only after your OK.**
+
+---
+
+## Amendment after review (2026-11-14): commit `7fa7ec9`, next to the declarations `5adadbd`
+One commit, pushed **before any baseline or candidate run**. D76 is amended (the "AMENDED 2026-11-14" paragraph).
+
+1. **B2 baseline.** D60's trailing 90-day decile median is a baseline again.
+   - Definition: the same (collection, decile) sales in [t − 90 days, t), strictly before the sale; 0 with fewer than 5 such sales.
+   - Range: y_hat plus the per-collection training residual quantiles.
+   - It also stays the feature `decile_prem_med_90d`.
+   - The better baseline is now the best of B0/B1/B2.
+   - D76 notes that the earlier replacement of D60 (b) came from the planner's prompt, not from D60.
+2. **Per-collection serving guard.** Approval stays pooled.
+   - If the top candidate is approved, a collection gets the model only if its confirmation MdAPE is ≤ the best of B0/B1/B2 on that collection.
+   - Otherwise it serves that best baseline. That baseline's range is shown only if its coverage on the collection's confirmation rows is in [0.75, 0.85].
+   - The table is in `select()["per_collection"]`.
+3. **W2 look-ahead removed.** v3 is not changed; `fv_features.clean_as_of(cutoff)` recomputes W1/W2 from development rows before the cutoff.
+   - Cutoffs: each fold's training cutoff for its training rows; 2026-01-25 00:00 UTC for test rows and for the final 10.8 training set.
+   - **68 development rows change status**, all from flagged to clean, dated 2025-12-30 to 2026-01-24: mutant-ape-yacht-club 37, lilpudgys 12, milady 7, azuki 6, doodles-official 5, boredapeyachtclub 1, pudgypenguins 0. This matches the 30-day look-ahead window.
+   - Per-fold training sets differ from the stored flags by 38, 33, 27, 64, 38, 66, 73, 47 and 61 rows (folds 1–9).
+   - W2 sales stay in the feature history.
+4. **Range failure.**
+   - D44 says only: *"A part that is not served keeps its baseline (D27, D33, D35)."* It does not say which of several baseline ranges is kept, or whether it must be calibrated.
+   - For comparison, D50 required calibration before the vol_30d band could be served: *"may be served ... only if its coverage is in [75%, 85%] and each tail miss rate is <= 15%"*.
+   - **Declared:** the point estimate is served with the range of the baseline with the lower confirmation interval score, only if that range's confirmation coverage is in [0.75, 0.85]; otherwise no range is shown.
+5. **Sorted quantiles.** `nft_fair_value.ordered_range` sorts the 0.10 and 0.90 predictions per row and counts crossed rows. Test: `test_quantile_bounds_are_sorted_so_low_never_exceeds_high`.
+
+**Leakage and forbidden-column tests, re-run at `7fa7ec9`** (`fv_leakage_check.json`, `git_dirty` false):
+- Clean targets as of 2026-01-24: 144,592.
+- Check 1: every feature equal on **2,000/2,000** (new sample, because the clean set changed); max abs diff 1.1e-16.
+- Check 2: every feature equal on **70/70**.
+- Check 3: no forbidden column in any matrix; all 27 banned names refused.
+
+| Fold | Part | n_train (clean as of the fold cutoff) | n_test (clean as of 2026-01-24) |
+|---|---|---|---|
+| 1 | rank | 76,362 | 7,678 |
+| 2 | rank | 84,393 | 4,707 |
+| 3 | rank | 89,197 | 9,340 |
+| 4 | rank | 97,409 | 6,686 |
+| 5 | rank | 104,626 | 5,973 |
+| 6 | confirm | 109,612 | 12,506 |
+| 7 | confirm | 122,635 | 7,578 |
+| 8 | confirm | 131,006 | 6,563 |
+| 9 | confirm | 137,040 | 5,813 |
+
+Unit tests in `ml/tests/test_nft_fv.py` include W2 as of a cutoff, sorted quantiles, B2, and the per-collection guard with the range fallback.

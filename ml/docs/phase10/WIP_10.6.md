@@ -4,11 +4,12 @@ Branch `phase-10-nft`. Never touch main. Sealed rule: `ml.nft.item_data.load_dev
 
 ## Done
 - 10.6a declarations: commit `5adadbd`; checkpoint `c8dc1a9`.
-- 10.6a review amendments (B2, per-collection guard, W2 as of cutoffs, range fallback, sorted quantiles): ONE commit
-  (the one that adds this text; its SHA goes into checkpoint_10.6a.md and D76 afterwards). No run before it.
+- 10.6a review amendments: commit `7fa7ec9` (recorded in D76 and checkpoint_10.6a.md). No run before it.
+- Leakage report re-run at 7fa7ec9 (git_dirty false): all equal, no leaks; committed with the checkpoint addendum.
 
 ## In progress
-- Re-run `python -m ml.nft.fv_leakage` on the amendment commit (git_dirty false), commit the report, record the SHA.
+- 10.6b: runner `ml/evaluation/run_nft_fair_value.py` written; commit it, then run it (about 30-40 min; W2 recompute
+  ~100 s per cutoff). If interrupted: just re-run the module from a clean tree.
 
 ## Next
 - 10.6b: `ml/evaluation/run_nft_fair_value.py` -> `ml/reports/nft/walkforward_fair_value.json`: 9 folds; training rows
