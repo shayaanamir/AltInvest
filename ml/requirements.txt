@@ -10,3 +10,4 @@ jsonschema==4.26.0
 rfc3339-validator==0.1.4   # jsonschema's date-time check silently passes without it
 httpx==0.28.1
 pytest==9.1.1
+lightgbm==4.7.0            # D78: the served NFT fair-value model (LightGBM text artifact); also in requirements-train

@@ -18,6 +18,7 @@ from fastapi import FastAPI, HTTPException
 from ml import config
 from ml.api.contract import check
 from ml.evaluation import live_score, scorecard
+from ml.serving import nft_items
 from ml.serving import nft_responses as nft
 from ml.serving import responses as rs
 
@@ -91,6 +92,21 @@ def nft_risk(slug: str):
 @app.get("/nft/{slug}/sales")
 def nft_sales(slug: str, days: int = 30):
     return check("NftSalesResponse", _serve_nft(nft.sales, slug, datetime.now(timezone.utc), days))
+
+
+@app.get("/nft/items/value")
+def nft_items_value(items: str):
+    """Batch item values (D78), e.g. ?items=azuki:8604,pudgypenguins:7862."""
+    try:
+        body = _serve_nft(nft_items.batch, items, datetime.now(timezone.utc))
+    except ValueError as e:
+        raise HTTPException(422, str(e)) from None
+    return check("NftItemValuesResponse", body)
+
+
+@app.get("/nft/{slug}/items/{token_id}/value")
+def nft_item_value(slug: str, token_id: str):
+    return check("NftItemValueResponse", _serve_nft(nft_items.value, slug, token_id, datetime.now(timezone.utc)))
 
 
 @app.get("/debug/{asset}")

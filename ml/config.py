@@ -114,3 +114,17 @@ ML_NFT_DIR = Path(os.environ.get("ML_NFT_DIR") or NFT_DATA_DIR / "live")
 NFT_ITEM_SNAPSHOT_V2 = "2026-11-10-items-v2"  # D70: cleaned item sales, floor point before each sale; never rewritten
 NFT_ITEM_SNAPSHOT_V3 = "2026-11-10-items-v3"  # D74, D75: v2 with the payment-based multi-token rule; used by 10.6
 NFT_FV_SEALED_START = "2026-02-01"  # D71: sealed cutoff T for fair value (computed from the clean sales; freeze checks it)
+
+# ---- Phase 10 step 10.7: fair-value item serving (D78) ----
+# Per-collection serving choice from the 10.6 walk-forward (D77): "model" = the fitted fv_pooled_l1_nl15 artifact,
+# "b2" = the B2 baseline (90-day same-decile median premium). Step 10.9 can switch every collection to "b2" here,
+# without code changes. No range is served for any collection (D77).
+NFT_FV_SERVE = {"azuki": "model", "boredapeyachtclub": "model", "doodles-official": "model", "lilpudgys": "b2",
+                "milady": "model", "mutant-ape-yacht-club": "model", "pudgypenguins": "model"}
+NFT_FV_CANDIDATE = "fv_pooled_l1_nl15"           # D77: the approved walk-forward candidate
+NFT_FV_TRAIN_CUTOFF = "2025-12-25"               # D78: the last walk-forward fold's training cutoff (dev data only)
+NFT_FV_ARTIFACT_DIR = Path(os.environ.get("ML_NFT_FV_ARTIFACT_DIR")
+                           or Path(__file__).resolve().parent / "artifacts" / "nft_fv")  # mounted read-only in Docker
+MODEL_VERSION_NFT_FV = "nft-fv-pooled-l1-nl15-dev-2025-12-25"
+NFT_FV_ACCURACY_NOTE = "Accuracy check pending"  # D78: replaced by the sealed-test result in 10.9
+NFT_FV_MAX_BATCH = 50                            # D78: tokens per batch request

@@ -9,8 +9,9 @@
 
 FROM python:3.12-slim
 
-# git only for the test suite: ml/tests/test_gitinfo.py builds a throwaway repo.
-RUN apt-get update && apt-get install -y --no-install-recommends git \
+# git only for the test suite: ml/tests/test_gitinfo.py builds a throwaway repo. libgomp1: LightGBM's OpenMP
+# runtime, needed since the NFT fair-value model is served (D78).
+RUN apt-get update && apt-get install -y --no-install-recommends git libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

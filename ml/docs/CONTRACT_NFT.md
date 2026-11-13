@@ -142,6 +142,264 @@ The ML service (:8001) validates every NFT response against these schemas before
 }
 ```
 
+## GET /nft/{slug}/items/{token_id}/value -> NftItemValueResponse (step 10.7, D78)
+
+Estimated value of one item if it sold now, in ETH, point only. Unknown slug or token: 404. Model or data unavailable: 503.
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NftItemValueResponse",
+  "type": "object",
+  "required": [
+    "slug",
+    "token_id",
+    "estimated_value_eth",
+    "method",
+    "last_floor_eth",
+    "last_floor_time",
+    "last_sale",
+    "no_prior_sale",
+    "rarity_rank",
+    "rarity_ranked_tokens",
+    "accuracy_note",
+    "model_version",
+    "note",
+    "as_of",
+    "timestamp"
+  ],
+  "properties": {
+    "slug": {
+      "type": "string"
+    },
+    "token_id": {
+      "type": "string"
+    },
+    "estimated_value_eth": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Point estimate in ETH: last floor point before as_of x exp(predicted premium). No range is served (D77)."
+    },
+    "method": {
+      "type": "string",
+      "enum": [
+        "model",
+        "baseline_b2"
+      ],
+      "description": "Per-collection serving choice, config.NFT_FV_SERVE (D78)"
+    },
+    "last_floor_eth": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "The last OpenSea floor point before as_of, ETH"
+    },
+    "last_floor_time": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "last_sale": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "required": [
+        "price_eth",
+        "timestamp"
+      ],
+      "properties": {
+        "price_eth": {
+          "type": "number"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+    "no_prior_sale": {
+      "type": "boolean",
+      "description": "The item has no earlier sale in the data (prev_* features missing)"
+    },
+    "rarity_rank": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "1 = rarest; traits only, ID-like categories excluded"
+    },
+    "rarity_ranked_tokens": {
+      "type": "integer"
+    },
+    "accuracy_note": {
+      "type": "string",
+      "description": "From the served artifact's metadata ('Accuracy check pending' until 10.9)"
+    },
+    "model_version": {
+      "type": "string"
+    },
+    "note": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "as_of": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The request time t the estimate describes"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+}
+```
+
+## GET /nft/items/value?items=slug:token_id,... -> NftItemValuesResponse (step 10.7, D78)
+
+The same for up to `config.NFT_FV_MAX_BATCH` items (demo holdings). A malformed list: 422.
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NftItemValuesResponse",
+  "type": "object",
+  "required": [
+    "items",
+    "timestamp"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "slug",
+          "token_id",
+          "estimated_value_eth",
+          "method",
+          "last_floor_eth",
+          "last_floor_time",
+          "last_sale",
+          "no_prior_sale",
+          "rarity_rank",
+          "rarity_ranked_tokens",
+          "accuracy_note",
+          "model_version",
+          "note",
+          "as_of"
+        ],
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "token_id": {
+            "type": "string"
+          },
+          "estimated_value_eth": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Point estimate in ETH: last floor point before as_of x exp(predicted premium). No range is served (D77)."
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "model",
+              "baseline_b2"
+            ],
+            "description": "Per-collection serving choice, config.NFT_FV_SERVE (D78)"
+          },
+          "last_floor_eth": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "The last OpenSea floor point before as_of, ETH"
+          },
+          "last_floor_time": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "last_sale": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "required": [
+              "price_eth",
+              "timestamp"
+            ],
+            "properties": {
+              "price_eth": {
+                "type": "number"
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "additionalProperties": false
+          },
+          "no_prior_sale": {
+            "type": "boolean",
+            "description": "The item has no earlier sale in the data (prev_* features missing)"
+          },
+          "rarity_rank": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "1 = rarest; traits only, ID-like categories excluded"
+          },
+          "rarity_ranked_tokens": {
+            "type": "integer"
+          },
+          "accuracy_note": {
+            "type": "string",
+            "description": "From the served artifact's metadata ('Accuracy check pending' until 10.9)"
+          },
+          "model_version": {
+            "type": "string"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The request time t the estimate describes"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+}
+```
+
 ## Notes
 
 - Rows are wash-filtered (D57) and only cover sales reported by OpenSea, including Blur-pool (BETH) sales (D56).

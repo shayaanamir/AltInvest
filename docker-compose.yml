@@ -80,8 +80,12 @@ services:
     restart: unless-stopped
     ports:
       - "8001:8001"
+    # The NFT fair-value model artifact (D78) is mounted read-only, never baked into the image (.dockerignore).
+    environment:
+      ML_NFT_FV_ARTIFACT_DIR: /artifacts/nft_fv
     volumes:
       - ml-data:/data
+      - ./ml/artifacts/nft_fv:/artifacts/nft_fv:ro
     networks:
       - altinvest
 
