@@ -31,6 +31,23 @@ router = APIRouter(tags=["Portfolio"])
 _FILTER_DAYS = {"1D": 1, "1W": 7, "1M": 30, "3M": 90, "1Y": 365}
 
 
+def with_item_estimates(holdings: list) -> list:
+    """NFT holdings get the stored ML item estimate (Phase 10 step 10.7, D78): ETH, point only, display only."""
+    from db.queries import get_nft_item_values
+    pairs = [(h.get("nft_collection_slug"), str(h.get("nft_token_id"))) for h in holdings if h.get("asset_type") == "nft"]
+    try:
+        rows = get_nft_item_values(pairs)
+    except Exception:                               # an estimate is optional; never fail the holdings list
+        rows = {}
+    out = []
+    for h in holdings:
+        r = rows.get((h.get("nft_collection_slug"), str(h.get("nft_token_id")))) if h.get("asset_type") == "nft" else None
+        out.append({**h, **({"estimated_value_eth": r.get("estimated_value_eth"), "estimated_value_as_of": r.get("as_of"),
+                             "estimated_value_method": r.get("method"), "estimated_value_note": r.get("note"),
+                             "estimated_value_accuracy_note": r.get("accuracy_note")} if r else {})})
+    return out
+
+
 def _serialize(h: dict) -> dict:
     """Datetime fields → ISO strings for JSON response."""
     out = dict(h)
@@ -121,7 +138,7 @@ def get_portfolio_allocation(
 @router.get("/portfolio/holdings", response_model=list[PortfolioHoldingOut])
 def list_portfolio_holdings(user_id: ObjectId = Depends(get_current_user_id)):
     valued = get_valued_holdings(user_id)
-    return [_serialize(h) for h in valued]
+    return [_serialize(h) for h in with_item_estimates(valued)]
 
 
 # ── GET /portfolio/intelligence ─────────────────────────────────────────────

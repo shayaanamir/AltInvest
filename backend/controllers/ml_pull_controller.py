@@ -48,18 +48,19 @@ def _parse_ts(value) -> datetime:
     return dt.astimezone(timezone.utc)
 
 
-def fetch(client: httpx.Client, path: str, sleep=time.sleep) -> tuple[str, dict | None, str]:
+def fetch(client: httpx.Client, path: str, sleep=time.sleep, timeout: float = TIMEOUT_SECONDS,
+          retries: int = RETRIES) -> tuple[str, dict | None, str]:
     """
     GET {ML_BASE_URL}{path}. Returns (status, body, reason) with status one of
     "ok" (body is the JSON dict), "not_covered" (404) or "failed" (503 / timeout / other).
     """
     url = f"{ML_BASE_URL}{path}"
     reason = ""
-    for attempt in range(RETRIES + 1):
+    for attempt in range(retries + 1):
         if attempt:
             sleep(BACKOFF_SECONDS[min(attempt - 1, len(BACKOFF_SECONDS) - 1)])
         try:
-            resp = client.get(url, timeout=TIMEOUT_SECONDS)
+            resp = client.get(url, timeout=timeout)
         except httpx.TimeoutException:
             reason = "timeout"
             continue
@@ -123,6 +124,7 @@ def pull_all(client: httpx.Client | None = None, sleep=time.sleep) -> dict:
     """Pulls every covered asset. Returns {asset: {endpoint: outcome}}. Never raises for HTTP errors."""
     from db.queries import ML_COVERED_ASSETS
 
+    from controllers.nft_items import pull_item_values
     from controllers.nft_pull import pull_nft
 
     own = client is None
@@ -130,6 +132,7 @@ def pull_all(client: httpx.Client | None = None, sleep=time.sleep) -> dict:
     try:
         result = {a: pull_asset(client, a, sleep=sleep) for a in ML_COVERED_ASSETS}
         result["NFT"] = pull_nft(client, fetch, sleep)          # Phase 10 (ml/docs/DECISIONS.md D61, D67)
+        result["NFT items"] = pull_item_values(client, fetch, sleep)    # Phase 10 step 10.7 (D78)
         return result
     finally:
         if own:

@@ -882,3 +882,29 @@ def get_nft_floor_history(slug: str, days: int = 365) -> list:
 def get_all_latest_nft_risk() -> dict:
     """{slug: newest nft_risk_breakdown row}."""
     return _latest_per_key("nft_risk_breakdown", "slug")
+
+
+# ── NFT item values (Phase 10 step 10.7, ml/docs/DECISIONS.md D78) ───────────
+
+def upsert_nft_item_value(row: dict) -> int:
+    """One row per (slug, token_id): the latest ML estimate (ETH, point only)."""
+    return _bulk_upsert("nft_item_values", ("slug", "token_id"), [row])
+
+
+def get_nft_item_value(slug: str, token_id: str) -> dict | None:
+    return get_db().nft_item_values.find_one({"slug": slug, "token_id": str(token_id)}, {"_id": 0})
+
+
+def get_nft_item_values(pairs: list) -> dict:
+    """{(slug, token_id): row} for the given pairs."""
+    if not pairs:
+        return {}
+    ors = [{"slug": s, "token_id": str(t)} for s, t in pairs]
+    return {(r["slug"], r["token_id"]): r for r in get_db().nft_item_values.find({"$or": ors}, {"_id": 0})}
+
+
+def get_nft_holding_tokens() -> list:
+    """Distinct (slug, token_id) of every NFT portfolio holding."""
+    rows = get_db().portfolio_holdings.find({"asset_type": "nft"}, {"_id": 0, "nft_collection_slug": 1, "nft_token_id": 1})
+    return sorted({(r["nft_collection_slug"], str(r["nft_token_id"])) for r in rows
+                   if r.get("nft_collection_slug") and r.get("nft_token_id") is not None})

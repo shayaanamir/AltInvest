@@ -12,7 +12,7 @@ import path_setup  # noqa: F401
 from fastapi import APIRouter, HTTPException, Query
 from utils.http_errors import db_unavailable
 
-from models.schemas import NFTCollectionListItem, NFTCollectionDetail, NFTTokenDetail
+from models.schemas import NFTCollectionListItem, NFTCollectionDetail, NFTItemValueOut, NFTTokenDetail
 from db.queries import (
     get_nft_collections,
     get_nft_collection,
@@ -149,3 +149,24 @@ def get_nft_token_detail(slug: str, token_id: str):
         "sale_history": sale_history,
         "ownership_history": ownership_history,
     }
+
+# ── GET /nft/collections/{slug}/items/{token_id}/value ──────────────────────
+# Phase 10 step 10.7 (ml/docs/DECISIONS.md D78): one live call to the ML service, stored on success; if the call
+# fails, the last stored estimate is returned with stale = true.
+
+@router.get("/nft/collections/{slug}/items/{token_id}/value", response_model=NFTItemValueOut)
+def get_nft_item_value(slug: str, token_id: str):
+    import httpx
+    from controllers.ml_pull_controller import fetch
+    from controllers.nft_items import live_item_value
+
+    token_id = str(token_id).strip()
+    if not token_id.isdigit() or len(token_id) > 12:
+        raise HTTPException(status_code=422, detail="token_id must be a number.")
+    with httpx.Client() as client:
+        status, row = live_item_value(client, fetch, slug.lower(), token_id)
+    if status == "not_found":
+        raise HTTPException(status_code=404, detail=f"Token '{token_id}' not found in collection '{slug}'.")
+    if row is None:
+        raise HTTPException(status_code=503, detail="Item estimate unavailable; the ML service did not answer.")
+    return {**{k: v for k, v in row.items() if k in NFTItemValueOut.model_fields}, "stale": status == "stale"}
