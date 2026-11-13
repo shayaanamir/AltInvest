@@ -25,6 +25,12 @@ from ml.serving import responses as rs
 app = FastAPI(title="AltInvest ML", version="v2")
 
 
+@app.on_event("startup")
+def _warm_nft_items():
+    """Phase 10 step 10.7 (D78): build the item value tables in the background."""
+    nft_items.warm_up()
+
+
 def _serve(build, asset: str) -> dict:
     a = asset.lower()
     if a not in config.ASSETS:

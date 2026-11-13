@@ -11,6 +11,7 @@ ones the model was trained with (hashes in metadata.json).
 """
 
 import math
+import threading
 from datetime import datetime, timezone
 
 import numpy as np
@@ -23,6 +24,7 @@ from ml.serving.responses import iso_utc
 
 SOURCE_FILES = ("floor_points.csv", "sales_raw.csv", "tx_payments.csv", "traits_fill.csv", "tokens_fill.csv")
 _CACHE: dict = {}
+_LOCK = threading.Lock()                         # one rebuild at a time
 
 
 def _num(x, digits: int = 6):
@@ -37,6 +39,11 @@ def _signature() -> tuple:
 
 def tables(now: datetime) -> dict:
     """{h, points, items, booster, meta}, cached on the source files' modification times."""
+    with _LOCK:
+        return _tables(now)
+
+
+def _tables(now: datetime) -> dict:
     sig = _signature()
     if _CACHE.get("sig") == sig:
         return _CACHE["tables"]
@@ -131,3 +138,14 @@ def batch(items: str, now: datetime) -> dict:
     if not pairs or any(len(p) != 2 for p in pairs) or len(pairs) > config.NFT_FV_MAX_BATCH:
         raise ValueError(f"items must be 1-{config.NFT_FV_MAX_BATCH} entries 'slug:token_id', comma separated")
     return {"items": values([(s.strip(), k.strip()) for s, k in pairs], now), "timestamp": iso_utc(now)}
+
+
+def warm_up() -> None:
+    """Build the item tables once in the background at startup, so the first request is fast (errors ignored:
+    the request path reports them)."""
+    def run():
+        try:
+            tables(datetime.now(timezone.utc))
+        except Exception:                                           # noqa: BLE001
+            pass
+    threading.Thread(target=run, name="nft-items-warm-up", daemon=True).start()

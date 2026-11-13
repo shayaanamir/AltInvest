@@ -167,3 +167,20 @@ def test_endpoints_validate_and_map_errors(served, monkeypatch):
     assert c.get("/nft/items/value", params={"items": "pudgypenguins"}).status_code == 422
     r = c.get("/nft/items/value", params={"items": "pudgypenguins:7862,azuki:8604"})
     assert r.status_code == 200 and len(r.json()["items"]) == 2
+
+
+def test_live_directory_cut_at_the_development_end_rebuilds_the_training_history():
+    """The serving loader on the live data directory, cut at 2026-01-25, equals the development history (D78)."""
+    _need_dev()
+    from ml.nft import item_data
+    if not fv_serving.store.has_table(config.ML_NFT_DIR, "sales_raw"):
+        pytest.skip("no live NFT data directory")
+    a = fv_serving.history_asof(config.ML_NFT_DIR, item_data.dev_end_timestamp())["h"]
+    b = fv.history(item_data.load_dev(include_flagged=True)["sales"])
+    cols = ["slug", "token_id", "timestamp", "tx", "price_eth", "floor_point_eth", "premium"]
+    pd.testing.assert_frame_equal(a[cols].reset_index(drop=True), b[cols].reset_index(drop=True))
+    if (config.NFT_FV_ARTIFACT_DIR / fv_artifact.META).exists():
+        meta = fv_artifact.load()[1]
+        it = fv_serving.items(config.ML_NFT_DIR)
+        assert fv_serving.static_hash(it["static"]) == meta["static_sha256"]
+        assert fv_serving.trait_pairs_hash(it["traits"]) == meta["trait_pairs_sha256"]
