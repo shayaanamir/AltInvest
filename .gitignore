@@ -121,3 +121,4 @@ ml/data/nft/snapshots/*/sales_filtered.parquet
 ml/data/nft/snapshots/*/traits.parquet
 ml/data/nft/snapshots/*/tokens.parquet
 ml/data/nft/snapshots/*/sales.parquet
+ml/reports/nft/walkforward_fair_value_rows.parquet
