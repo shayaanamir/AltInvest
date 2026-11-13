@@ -1,4 +1,5 @@
 import { apiFetch } from "./apiClient";
+import { holdingEstimate } from "../utils/nftItemValue";
 import { fetchUniverse } from "./assetRepository";
 import { notifyHoldingsChanged } from "./holdingsEvents";
 import { getToken } from "../hooks/useAuth";
@@ -62,6 +63,7 @@ function mapNftHolding(h, meta) {
     aiAction: meta?.signal ? SIGNAL_TO_ACTION[meta.signal] || "Hold" : "Hold",
     artColor: meta?.color || "#c9805a",
     dateAdded: h.date_added,
+    estimate: holdingEstimate(h),           // Phase 10 step 10.7 (D78): ML item estimate, ETH, display only
   };
 }
 

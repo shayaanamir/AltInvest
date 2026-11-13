@@ -6,6 +6,7 @@ import { nftApi } from "../services/nftApi";
 import { formatAssetPrice, formatPct } from "../utils/formatters";
 import { NFT_RISK_RELATIVE_NOTE } from "../utils/nftCone";
 import NftFloorCard from "../components/nft/NftFloorCard";
+import NftItemCard from "../components/nft/NftItemCard";
 import { IconArrowLeft } from "../components/icons";
 import { ErrorState, ErrorBoundary } from "../errors";
 
@@ -85,6 +86,7 @@ export default function NftCollectionPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const slug = searchParams.get("slug");
+  const token = searchParams.get("token");
   const { data: c, loading, error, refetch } = useAsync(
     () => (slug ? nftApi.getCollection(slug) : Promise.resolve(null)), [slug]);
   const back = () => navigate(-1);
@@ -138,6 +140,8 @@ export default function NftCollectionPage() {
               <ErrorBoundary variant="section" label="Liquidity"><LiquidityCard liquidity={c.liquidity} /></ErrorBoundary>
               <ErrorBoundary variant="section" label="Sales"><SalesCard sales={c.recentSales} /></ErrorBoundary>
             </div>
+
+            <ErrorBoundary variant="section" label="Item value"><NftItemCard slug={c.slug} initialToken={token} /></ErrorBoundary>
 
             <div className="sv2-mute2 sv2-tiny nft-footnote">
               Data: OpenSea floor and sales, Ethereum prices from Binance; updated daily

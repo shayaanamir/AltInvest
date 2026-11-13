@@ -9,6 +9,9 @@ import HoldingHistoryModal from "./HoldingHistoryModal";
 import CreateAlertModal from "../alerts/CreateAlertModal";
 import { formatPct } from "../../utils/formatters";
 import NftArtPlaceholder from "./NftArtPlaceholder";
+import { Link } from "react-router-dom";
+import { NFT_ITEM_CAPTION } from "../../utils/nftItemValue";
+import "../../styles/nftCollection.css";
 
 export default function NftHoldingsGrid() {
   const toast = useToast();
@@ -51,11 +54,19 @@ export default function NftHoldingsGrid() {
                 </div>
                 <div className="pv2-nft-body">
                   <div className="pv2-nft-name">{n.collectionName}</div>
-                  <div className="pv2-nft-token">#{n.tokenId}</div>
+                  <div className="pv2-nft-token">
+                    <Link to={`/nft-collection?slug=${encodeURIComponent(n.collectionSlug)}&token=${encodeURIComponent(n.tokenId)}`}>#{n.tokenId}</Link>
+                  </div>
                   <div className="pv2-nft-price-row">
                     <div>
                       <div className="pv2-nft-price">{n.currentPriceEth} ETH</div>
                       <div className="pv2-nft-cost">cost {n.avgBuyPriceEth} ETH</div>
+                      {n.estimate && (
+                        <>
+                          <div className="pv2-nft-est" title={NFT_ITEM_CAPTION}>{n.estimate.label}</div>
+                          <div className="pv2-nft-est-sub">{n.estimate.accuracyLine}</div>
+                        </>
+                      )}
                     </div>
                     <span className={`dv2-asset-change ${positive ? "positive" : "negative"}`}>
                       {positive ? "↗" : "↘"} {formatPct(n.changePct, { withSign: true })}
