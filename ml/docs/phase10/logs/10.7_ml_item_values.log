@@ -1,0 +1,4 @@
+{"items":[{"slug":"pudgypenguins","token_id":"7862","estimated_value_eth":2.393813,"method":"model","last_floor_eth":2.349,"last_floor_time":"2026-11-13T10:47:24Z","last_sale":{"price_eth":4.32,"timestamp":"2026-06-01T02:48:23Z"},"no_prior_sale":false,"rarity_rank":1712,"rarity_ranked_tokens":8888,"accuracy_note":"Accuracy check pending","model_version":"nft-fv-pooled-l1-nl15-dev-2025-12-25","note":null,"as_of":"2026-11-13T22:47:16Z"},{"slug":"azuki","token_id":"8604","estimated_value_eth":0.513038,"method":"model","last_floor_eth":0.5097,"last_floor_time":"2026-11-13T17:01:25Z","last_sale":{"price_eth":0.84,"timestamp":"2026-06-01T02:53:23Z"},"no_prior_sale":false,"rarity_rank":4369,"rarity_ranked_tokens":10000,"accuracy_note":"Accuracy check pending","model_version":"nft-fv-pooled-l1-nl15-dev-2025-12-25","note":null,"as_of":"2026-11-13T22:47:16Z"}],"timestamp":"2026-11-13T22:47:16Z"}
+real	0m2.830s
+user	0m0.015s
+sys	0m0.031s

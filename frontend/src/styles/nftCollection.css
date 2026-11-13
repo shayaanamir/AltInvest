@@ -49,5 +49,7 @@
 .pv2-nft-est-sub { font-size: 10.5px; color: var(--sv2-text-soft); }
 @media (max-width: 560px) {
   .nft-item-form { width: 100%; }
-  .nft-item-input { flex: 1; width: auto; }
+  .nft-item-input { flex: 1; width: auto; min-width: 0; }
 }
+.pv2-nft-token a { color: inherit; text-decoration: none; }
+.pv2-nft-token a:hover { text-decoration: underline; }

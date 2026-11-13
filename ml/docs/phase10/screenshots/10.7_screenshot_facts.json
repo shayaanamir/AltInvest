@@ -1,0 +1,17 @@
+{
+ "desktop_theme": "dark",
+ "card_text_pudgy": "Item value\nLook up one item of this collection by its token number\nLook up\n#7862\nESTIMATED VALUE\n2.394 ETH\nLast floor\n2.349 ETH (13 Nov 2026)\nThis item's last sale\n4.320 ETH on 1 Jun 2026\nRarity rank\n#1,712 of 8,888\nMethod\nModel\nTypical error: Accuracy check pending\nAn estimate of what this item might sell for now, mostly driven by the collection floor and recent sales. Not a price prediction.",
+ "desktop_theme_after_toggle": "light",
+ "phone_sidebar_collapsed_by_click": true,
+ "phone_theme": "dark",
+ "phone_page_scroll_width": 390,
+ "card_text_azuki": "Item value\nLook up one item of this collection by its token number\nLook up\n#8604\nESTIMATED VALUE\n0.513 ETH\nLast floor\n0.510 ETH (13 Nov 2026)\nThis item's last sale\n0.840 ETH on 1 Jun 2026\nRarity rank\n#4,369 of 10,000\nMethod\nModel\nTypical error: Accuracy check pending\nAn estimate of what this item might sell for now, mostly driven by the collection floor and recent sales. Not a price prediction.",
+ "holdings_text": [
+  "Pudgy Penguins\n#7862\n2.25 ETH\ncost 4.32 ETH\nEst. value 2.394 ETH\nTypical error: Accuracy check pending\n↘ -47.59%",
+  "Azuki\n#8604\n0.469999 ETH\ncost 0.84 ETH\nEst. value 0.513 ETH\nTypical error: Accuracy check pending\n↘ -43.69%"
+ ],
+ "caption_present": true,
+ "accuracy_line_present": true,
+ "no_range_or_drivers": true,
+ "no_usd_on_card": true
+}
