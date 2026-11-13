@@ -1,7 +1,23 @@
 # STATUS
 
-Current phase: 10 (NFTs, docs/PLAN_NFT.md) at checkpoint 10.5b, branch phase-10-nft (pushed, not merged). Next: 10.6 fair value (another session). Previously: 9 (forecasting v2) DONE and merged into main as PR #8. Served: EWMA risk for all assets (D51). Follow-up on branch phase-9-vol-cone (2026-11-10): frontend volatility cone (D52), reviewed twice, PR open against main.
+Current phase: 10 (NFTs, docs/PLAN_NFT.md) at checkpoint 10.6, branch phase-10-nft (pushed, not merged). Next: planner review of checkpoint_10.6.md, then 10.7 fair-value serving. Previously: 9 (forecasting v2) DONE and merged into main as PR #8. Served: EWMA risk for all assets (D51). Follow-up on branch phase-9-vol-cone (2026-11-10): frontend volatility cone (D52), reviewed twice, PR open against main.
 Next: Person B checks the new risk_score values and note text (fields unchanged). Merge phase-7-integration, then rebase this branch onto main. The live scorecard starts scoring on 2026-11-30.
+
+## Phase 10 step 10.6: fair-value model (2026-11-14, ml/docs/phase10/checkpoint_10.6a.md and checkpoint_10.6.md)
+
+- Declarations: D76 (commit 5adadbd), amended after review in 7fa7ec9, before any run:
+  - B2 baseline;
+  - per-collection serving guard;
+  - W2 flags as of cutoffs (68 development rows change status);
+  - range fallback;
+  - sorted quantiles.
+- Leakage checks (`ml/reports/nft/fv_leakage_check.json`): 2,000 development sales, every feature equal to the cut-data reference; no forbidden column.
+- Walk-forward (`ml/reports/nft/walkforward_fair_value.json`, D77; trial count 6):
+  - fv_pooled_l1_nl15 is approved against B2: MdAPE 0.0284 vs 0.0335, diff 0.0051 [0.0015, 0.0079].
+  - The 80% range is not approved (coverage 0.7336), and the fallback B2 range is out of the band (0.8699), so no range.
+  - lilpudgys serves B2 under the per-collection guard.
+- Nothing is served yet; 10.7 and 10.8 decide.
+- Tests: `python -m pytest ml -q` gives 409 passed (2026-11-14, at b479ce8 plus docs).
 
 ## Phase 10 step 10.5b: review fixes (2026-11-11, ml/docs/phase10/checkpoint_10.5b.md)
 
