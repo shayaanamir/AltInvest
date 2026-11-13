@@ -163,6 +163,20 @@ def load_dev(include_flagged: bool = False) -> dict:
     return out
 
 
+def load_history(step: str) -> dict:
+    """The as-of feature history for the one-time sealed test (D79): EVERY v3 row after C1-C3 (clean and flagged,
+    development, embargo and sealed dates up to the snapshot), all floor points, tokens and traits. Features of a
+    sealed sale use only rows strictly before it (fv_features). Only step 10.8 may call it (plan rule 3)."""
+    if step != "10.8":
+        raise PermissionError("the full item history is read only in step 10.8 (plan rule 3, D79)")
+    v = config.NFT_ITEM_SNAPSHOT_V3
+    require(v)
+    snapshot.require_snapshot("floor_points")
+    return {"sales": snapshot.load("sales", v), "tokens": snapshot.load("tokens", v),
+            "traits": snapshot.load("traits", v), "floor_points": snapshot.load("floor_points"),
+            "not_model_features": ic.NOT_FEATURES}
+
+
 def load_sealed(step: str) -> dict:
     """The sealed fair-value rows (dated >= T). Only the one-time sealed test may call it (plan rule 3)."""
     if step != "10.8":
