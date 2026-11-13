@@ -129,12 +129,17 @@ def require_v2() -> str:
     return require(config.NFT_ITEM_SNAPSHOT_V2)
 
 
-def _load(part: str) -> dict:
+def dev_end_timestamp() -> int:
+    """Unix seconds of T - 7 days 00:00 UTC (2026-01-25): every development row and floor point is before it."""
+    return int(pd.Timestamp(embargo_start(config.NFT_FV_SEALED_START), tz="UTC").timestamp())
+
+
+def _load(part: str, include_flagged: bool = False) -> dict:
     v = config.NFT_ITEM_SNAPSHOT_V3
     require(v)
     snapshot.require_snapshot("eth_usd")
     sales = snapshot.load("sales", v)
-    sales = split(sales[sales["clean"]], config.NFT_FV_SEALED_START)[part]
+    sales = split(sales if include_flagged else sales[sales["clean"]], config.NFT_FV_SEALED_START)[part]
     eth = snapshot.load("eth_usd")
     sales = sales.merge(eth[["date", "eth_usd"]], on="date", how="left")
     sales["price_usd"] = sales["price_eth"] * sales["eth_usd"]
@@ -142,10 +147,19 @@ def _load(part: str) -> dict:
             "traits": snapshot.load("traits", v), "not_model_features": ic.NOT_FEATURES}
 
 
-def load_dev() -> dict:
-    """Development data for 10.6: clean v3 sales dated before T - 7 days, tokens and traits (id_like marked)."""
-    out = _load("dev")
+def load_dev(include_flagged: bool = False) -> dict:
+    """Development data for 10.6: v3 sales dated before T - 7 days (clean only, or with the W1/W2-flagged rows
+    when include_flagged; the fair-value feature history needs them, D76), tokens, traits (id_like marked) and
+    the base snapshot's OpenSea floor points with time before T - 7 days 00:00 UTC (later points are dropped
+    here, before anything else sees them)."""
+    out = _load("dev", include_flagged)
+    cut = dev_end_timestamp()
     assert out["sales"].empty or out["sales"]["date"].max() < embargo_start(config.NFT_FV_SEALED_START)
+    assert out["sales"].empty or int(out["sales"]["timestamp"].max()) < cut
+    snapshot.require_snapshot("floor_points")
+    points = snapshot.load("floor_points")
+    out["floor_points"] = points[points["time"] < cut].reset_index(drop=True)
+    assert out["floor_points"].empty or out["floor_points"]["time"].max() < cut
     return out
 
 
