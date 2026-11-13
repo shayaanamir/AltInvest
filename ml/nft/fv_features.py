@@ -4,6 +4,8 @@ Notation. t = the sale's timestamp (Unix seconds, UTC). HISTORY H = the developm
 (ml.nft.item_data.load_dev(include_flagged=True): C1-C3 applied, dated before 2026-01-25) WITHOUT the W1 rows
 (buyer == seller, known at the sale). W2-flagged rows STAY in H: W2 is decided with up to 30 days of look-ahead,
 so at time t a later-flagged sale looked like any other sale. The `clean` flag is never a feature.
+Which rows are training or test targets ('clean') is recomputed by clean_as_of(cutoff) from sales before the
+cutoff only (D76 amended): never the snapshot's stored flags, whose W2 used sales after 2026-01-24.
 premium(sale) = log(price_eth / floor_point_eth), floor_point_eth = the last OpenSea floor point strictly before
 that sale (D70). The target y of a clean row is its premium. A window [t - w days, t) is strictly before t:
 rows at timestamp t (the same transaction or the same block) never enter it. Points: the base snapshot's floor
@@ -106,13 +108,35 @@ def static_features(tokens: pd.DataFrame, traits: pd.DataFrame) -> tuple[pd.Data
 
 
 def history(sales: pd.DataFrame) -> pd.DataFrame:
-    """H: development rows without W1, sorted (slug, timestamp, tx, token_id), with hid (row id), ts and premium."""
-    h = sales[sales["wash_flag"] != "W1"].sort_values(["slug", "timestamp", "tx", "token_id"]).reset_index(drop=True)
-    h = h[["slug", "token_id", "timestamp", "date", "tx", "price_eth", "floor_point_eth", "clean"]].copy()
+    """H: development rows without W1 (buyer == seller), sorted (slug, timestamp, tx, token_id), with hid (row id),
+    ts and premium. The snapshot's stored wash_flag / clean are NOT carried (their W2 used later sales, D76 amended)."""
+    w1 = sales["buyer"] == sales["seller"]
+    h = sales[~w1].sort_values(["slug", "timestamp", "tx", "token_id"]).reset_index(drop=True)
+    h = h[["slug", "token_id", "timestamp", "date", "tx", "price_eth", "floor_point_eth"]].copy()
     h["hid"] = np.arange(len(h))
     h["ts"] = pd.to_datetime(h["timestamp"], unit="s")
     h["premium"] = np.log(h["price_eth"] / h["floor_point_eth"])
     return h
+
+
+def clean_as_of(sales: pd.DataFrame, cutoff: int) -> pd.DataFrame:
+    """(slug, tx, token_id, clean) for the rows with timestamp < cutoff, with W1 (buyer == seller) and W2
+    (item_clean.return_flags) computed from THOSE rows only, so no flag depends on a sale at or after the cutoff
+    (D76 amended). `sales` = development rows after C1-C3 (load_dev(include_flagged=True))."""
+    s = sales[sales["timestamp"] < cutoff].sort_values(["slug", "token_id", "timestamp", "tx"], kind="stable")
+    s = s.reset_index(drop=True)
+    w1 = (s["buyer"] == s["seller"]).to_numpy()
+    w2 = ic.return_flags(s)
+    return s[["slug", "tx", "token_id"]].assign(clean=~w1 & ~w2)
+
+
+def clean_mask(frame: pd.DataFrame, sales: pd.DataFrame, cutoff: int) -> np.ndarray:
+    """Per row of `frame` (slug, tx, token_id): clean as of `cutoff` (False for rows at or after the cutoff)."""
+    c = clean_as_of(sales, cutoff)
+    if c.duplicated(["slug", "tx", "token_id"]).any():
+        raise ValueError("(slug, tx, token_id) is not unique")
+    m = frame[["slug", "tx", "token_id"]].merge(c, on=["slug", "tx", "token_id"], how="left")
+    return m["clean"].eq(True).to_numpy(dtype=bool)
 
 
 def _rolling(df: pd.DataFrame, keys: list[str], days: int, stat: str) -> np.ndarray:
@@ -171,9 +195,11 @@ def _previous(h: pd.DataFrame) -> pd.DataFrame:
 
 
 def build(h: pd.DataFrame, points: pd.DataFrame, static: pd.DataFrame, traits: pd.DataFrame) -> pd.DataFrame:
-    """Features for EVERY row of H (index = hid order), plus slug, token_id, date, timestamp, clean, premium."""
+    """Features for EVERY row of H (index = hid order), plus hid, slug, token_id, tx, date, timestamp, premium and
+    rarity_decile (identifiers and the label; never in a model matrix). Which rows are clean is decided per cutoff
+    by clean_as_of."""
     h = h.merge(static[["slug", "token_id", "rarity_decile"]], on=["slug", "token_id"], how="left")
-    out = h[["hid", "slug", "token_id", "date", "timestamp", "clean", "premium", "rarity_decile"]].copy()
+    out = h[["hid", "slug", "token_id", "tx", "date", "timestamp", "premium", "rarity_decile"]].copy()
     for k in COUNT_DAYS:
         out[f"coll_sales_{k}d"] = _rolling(h, ["slug"], k, "count")
     for k in COLL_MED_DAYS:

@@ -15,6 +15,16 @@ RANGE (D44 range rule; plan step 10.6): the 80% range of the approved model is a
 confirmation rows, coverage is in [0.75, 0.85], each tail miss is <= 0.15, and the paired date-block CI of mean
 interval score (the B0/B1 range with the lower confirmation interval score minus the model) excludes 0 with a
 positive estimate. Bounds are in y (log premium) space, so coverage is the same in price.
+AMENDED (10.6a review, before any run): baselines are B0, B1 and B2 (the trailing 90-day decile median); the
+better baseline is the best of the three (D44). RANGE FALLBACK: D44 says only 'A part that is not served keeps
+its baseline'; it does not say which of several baseline ranges, or whether it must be calibrated. Declared: if
+the point model is approved but its range is not, the point estimate is served with the range of the baseline
+with the lower confirmation interval score (the 'baseline range to beat'), only if that range's confirmation
+coverage is in [0.75, 0.85]; otherwise no range. PER-COLLECTION SERVING GUARD: approval stays pooled. If the top
+candidate is approved, a collection is served the model only if its confirmation MdAPE on that collection is <=
+the best of B0/B1/B2 on that collection; otherwise it serves that best baseline, with that baseline's own range
+only if the range's coverage on the collection's confirmation rows is in [0.75, 0.85] (otherwise no range).
+Collections served the model take the pooled range decision. With no approved model nothing is chosen here.
 Pure functions, no I/O.
 """
 
@@ -33,7 +43,7 @@ BLOCK_DAYS = 7                          # D60, checkpoint 10.5c handoff
 N_BOOT = 1000
 SEED = 0
 RANK_SHARE = 0.6                        # D25
-BASELINES = ("B0_floor", "B1_rarity_decile")
+BASELINES = ("B0_floor", "B1_rarity_decile", "B2_decile_90d")
 
 
 def dev_end() -> pd.Timestamp:
@@ -124,6 +134,8 @@ def select(rows: pd.DataFrame, candidates: list[str]) -> dict:
     is_ok = bool(is_ci is not None and is_ci["estimate"] > 0 and is_ci["low"] > 0)
     r = ranges[top]
     range_ok = bool(approved and is_ok and r["coverage_in_bounds"] and r["tails_within_max"])
+    fallback_ok = bool(ranges[best_range_base]["coverage_in_bounds"])
+    served_range = (top if range_ok else best_range_base if fallback_ok else None) if approved else None
     n_dates = conf["date"].nunique()
     return {
         "ranking_first_60pct": {"n_rows": len(rank), "n_dates": int(rank["date"].nunique()), "order": order,
@@ -137,5 +149,25 @@ def select(rows: pd.DataFrame, candidates: list[str]) -> dict:
                     "approved": approved},
         "range": {"confirmation": ranges, "baseline_range_to_beat": best_range_base,
                   "paired_interval_score_diff_baseline_minus_model": is_ci, "interval_score_ci_ok": is_ok,
-                  "approved": range_ok},
+                  "approved": range_ok, "fallback_baseline_range_in_band": fallback_ok,
+                  "served_range_pooled": served_range},
+        "per_collection": per_collection(conf, top, approved, served_range),
     }
+
+
+def per_collection(conf: pd.DataFrame, top: str, approved: bool, pooled_range: str | None) -> dict:
+    """Confirmation MdAPE and range coverage per collection, and (only if approved) what each collection serves."""
+    out = {}
+    lo_b, hi_b = config.RANGE_COVERAGE_BOUNDS
+    for slug, g in conf.groupby("slug"):
+        md = {n: float(np.median(g[f"ape:{n}"])) for n in [top, *BASELINES]}
+        cov = {n: float(np.mean((g["y"] >= g[f"lo:{n}"]) & (g["y"] <= g[f"hi:{n}"]))) for n in [top, *BASELINES]}
+        best = min(BASELINES, key=lambda b: md[b])
+        row = {"n": len(g), "mdape": md, "coverage": cov, "best_baseline": best,
+               "model_not_worse_than_best_baseline": bool(md[top] <= md[best])}
+        if approved:
+            model = row["model_not_worse_than_best_baseline"]
+            row["serve_point"] = top if model else best
+            row["serve_range"] = pooled_range if model else (best if lo_b <= cov[best] <= hi_b else None)
+        out[slug] = row
+    return out

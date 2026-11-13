@@ -31,11 +31,14 @@ def _items(n=12):
     return tokens, traits
 
 
-def _sale(token, t_days, price=1.0, flag="", floor=1.0):
+def _sale(token, t_days, price=1.0, flag="", floor=1.0, seller=None, buyer=None):
     ts = T0 + int(t_days * DAY)
+    seller = seller or f"s{token}-{ts}"
+    buyer = buyer or (seller if flag == "W1" else f"b{token}-{ts}")
     return {"slug": SLUG, "token_id": str(token), "timestamp": ts,
             "date": pd.Timestamp(ts, unit="s", tz="UTC").strftime("%Y-%m-%d"), "tx": f"x{token}-{ts}",
-            "price_eth": price, "floor_point_eth": floor, "wash_flag": flag, "clean": flag == ""}
+            "price_eth": price, "floor_point_eth": floor, "wash_flag": flag, "clean": flag == "",
+            "seller": seller, "buyer": buyer}
 
 
 POINTS = pd.DataFrame({"slug": SLUG, "time": [float(T0 - 40 * DAY + j * DAY) for j in range(80)],
@@ -72,7 +75,31 @@ def test_previous_sale_is_strictly_before_and_later_prices_never_change_a_row():
 
 def test_w1_rows_leave_the_history_but_w2_rows_stay_as_they_looked_at_the_time():
     h = fv.history(pd.DataFrame([_sale(1, 0, flag="W1"), _sale(2, 1, flag="W2"), _sale(3, 2)]))
-    assert h["token_id"].tolist() == ["2", "3"] and h["clean"].tolist() == [False, True]
+    assert h["token_id"].tolist() == ["2", "3"] and "clean" not in h and "wash_flag" not in h
+
+
+def test_w2_flags_use_only_sales_before_the_cutoff():
+    # token 5: A -> B on day 0, B -> A on day 20 (a round trip: both legs W2 once the day-20 sale is known)
+    rows = pd.DataFrame([_sale(5, 0, seller="A", buyer="B"), _sale(5, 20, seller="B", buyer="A"), _sale(6, 1)])
+    early = fv.clean_as_of(rows, T0 + 10 * DAY)
+    assert early.set_index("token_id")["clean"].to_dict() == {"5": True, "6": True}   # day-20 sale not yet known
+    late = fv.clean_as_of(rows, T0 + 25 * DAY)
+    assert late.sort_values("tx")["clean"].tolist() == [False, False, True]
+    mask = fv.clean_mask(rows, rows, T0 + 10 * DAY)
+    assert mask.tolist() == [True, False, True]                                  # day-20 row is after the cutoff
+
+
+def test_quantile_bounds_are_sorted_so_low_never_exceeds_high():
+    lo, hi, n = fvm.ordered_range([0.5, -0.2, 0.3], [0.1, 0.4, 0.3])
+    assert (lo <= hi).all() and lo.tolist() == [0.1, -0.2, 0.3] and hi.tolist() == [0.5, 0.4, 0.3] and n == 1
+
+
+def test_b2_is_the_trailing_decile_median_or_0():
+    train = pd.DataFrame({"slug": SLUG, "decile_prem_med_90d": [0.1, np.nan, 0.3], "y": [0.2, 0.0, 0.5]})
+    test = pd.DataFrame({"slug": SLUG, "decile_prem_med_90d": [np.nan, 0.4]})
+    y_hat, lo, hi = fvm.baseline_b2(train, test)
+    assert y_hat.tolist() == [0.0, 0.4]
+    assert lo[1] == pytest.approx(0.4 + np.quantile([0.1, 0.0, 0.2], 0.1))
 
 
 def test_floor_features_use_points_strictly_before_the_sale():
@@ -147,9 +174,9 @@ def test_median_bootstrap_resamples_dates_like_the_mean_version():
 
 def _rows(model_err_rank, model_err_conf):
     dates = pd.date_range("2025-05-01", periods=60).strftime("%Y-%m-%d")
-    rows = pd.DataFrame({"date": np.repeat(dates, 2), "y": 0.0})
+    rows = pd.DataFrame({"date": np.repeat(dates, 2), "y": 0.0, "slug": ["a", "b"] * len(dates)})
     rows["part"] = np.where(rows["date"] < "2025-05-31", "rank", "confirm")
-    for n, e in {"B0_floor": 0.5, "B1_rarity_decile": 0.4, "good": None, "bad": 0.9}.items():
+    for n, e in {"B0_floor": 0.5, "B1_rarity_decile": 0.4, "B2_decile_90d": 0.45, "good": None, "bad": 0.9}.items():
         err = np.where(rows["part"] == "rank", model_err_rank, model_err_conf) if e is None else e
         rows[f"ape:{n}"] = np.abs(np.exp(err) - 1)
         rows[f"lo:{n}"], rows[f"hi:{n}"] = -1.0, 1.0
@@ -163,6 +190,23 @@ def test_only_the_top_ranked_candidate_is_confirmed_and_d32_is_required():
     worse_on_rank = proto.select(_rows(0.45, 0.1), ["good"])                  # beats B1 only on confirmation
     assert not worse_on_rank["verdict"]["beats_better_baseline_on_ranking_folds_D32"]
     assert not worse_on_rank["verdict"]["approved"]
+    assert "serve_point" not in worse_on_rank["per_collection"]["a"]          # nothing chosen without approval
+
+
+def test_per_collection_guard_and_range_fallback():
+    rows = _rows(0.1, 0.1)
+    b = (rows["slug"] == "b") & (rows["part"] == "confirm")
+    rows.loc[b, "ape:good"] = 0.6                     # worse than B1 (0.49) on 'b'; the pooled median still wins
+    rows["lo:good"], rows["hi:good"] = 0.5, 0.6                               # model range misses every y = 0
+    out = proto.select(rows, ["good"])
+    assert out["verdict"]["approved"] and not out["range"]["approved"]
+    pc = out["per_collection"]
+    assert pc["a"]["serve_point"] == "good" and pc["b"]["serve_point"] == "B1_rarity_decile"
+    # every baseline range [-1, 1] covers y = 0 (coverage 1.0, outside [0.75, 0.85]): no range anywhere
+    assert out["range"]["served_range_pooled"] is None and pc["b"]["serve_range"] is None
+    rows.loc[rows.index[::5], "y"] = 5.0                                      # 80% coverage for the baselines
+    out2 = proto.select(rows, ["good"])
+    assert out2["range"]["served_range_pooled"] == out2["range"]["baseline_range_to_beat"]
 
 
 def test_ape_is_on_price():

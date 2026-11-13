@@ -7,6 +7,10 @@ BASELINES (fitted inside each training fold only; not trials):
                     cell has fewer than 5 training rows. Rarity decile = ceil(10 x rarity_rank / tokens ranked) per
                     collection (rarity_score: traits only, ID-like categories excluded, see fv_features). Range:
                     y_hat + the per-collection 0.10 / 0.90 quantiles of the training residuals y - y_hat.
+  B2_decile_90d     (D76 amended; D60 baseline (b) restored) y_hat = decile_prem_med_90d: the median premium of
+                    the feature-history sales of the same (collection, rarity decile) in [t - 90 days, t), strictly
+                    before the sale; 0 when fewer than 5 such sales. Fits nothing. Range: y_hat + the per-collection
+                    0.10 / 0.90 quantiles of the training rows' residuals y - y_hat.
 CANDIDATES (6 LightGBM configs = the trial count; no additions after the first run; D25 max 4 per model type):
   model type 'pooled' (4): one model over all 7 collections with every feature (collection as a categorical).
   model type 'per_collection' (2): one model per collection with the STATIC features except collection, that
@@ -15,7 +19,8 @@ CANDIDATES (6 LightGBM configs = the trial count; no additions after the first r
   round, lambda_l2 1.0, seed 0, deterministic, 4 threads, no early stopping (it would need held-out rows).
 RANGE of a candidate (fixed method, selects nothing, adds no trial): two LightGBM quantile models (alpha 0.10 and
 0.90) with the candidate's own structure and settings except the objective, fitted on the same training fold.
-Crossed bounds are sorted and counted (interval_metrics.ordered).
+The two predictions are sorted per row (ordered_range), so the low end never exceeds the high end; the number of
+crossed rows is counted and reported.
 """
 
 import numpy as np
@@ -89,7 +94,25 @@ def baseline_b1(train: pd.DataFrame, test: pd.DataFrame) -> tuple[np.ndarray, np
     return y_hat, lo, hi
 
 
-BASELINE_FNS = {"B0_floor": baseline_b0, "B1_rarity_decile": baseline_b1}
+def b2_predict(df: pd.DataFrame) -> np.ndarray:
+    return df["decile_prem_med_90d"].fillna(0.0).to_numpy(dtype=float)
+
+
+def baseline_b2(train: pd.DataFrame, test: pd.DataFrame) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    q = _per_slug_quantiles(train["slug"], train["y"].to_numpy() - b2_predict(train))
+    y_hat = b2_predict(test)
+    lo = y_hat + test["slug"].map(lambda s: q[s][0]).to_numpy(dtype=float)
+    hi = y_hat + test["slug"].map(lambda s: q[s][1]).to_numpy(dtype=float)
+    return y_hat, lo, hi
+
+
+BASELINE_FNS = {"B0_floor": baseline_b0, "B1_rarity_decile": baseline_b1, "B2_decile_90d": baseline_b2}
+
+
+def ordered_range(lo, hi) -> tuple[np.ndarray, np.ndarray, int]:
+    """(low, high, n_crossed): the two quantile predictions sorted per row, so low <= high always."""
+    lo, hi = np.asarray(lo, dtype=float), np.asarray(hi, dtype=float)
+    return np.minimum(lo, hi), np.maximum(lo, hi), int(np.sum(lo > hi))
 
 
 def columns_for(name: str, slug: str | None, trait_cols: list[str]) -> list[str]:
@@ -106,8 +129,9 @@ def _fit(p: dict, X: pd.DataFrame, y: np.ndarray):
 
 
 def fit_predict(name: str, train: pd.DataFrame, test: pd.DataFrame, trait_cols: list[str], id_like: dict,
-                quantile: float | None = None) -> np.ndarray:
-    """Point prediction (or one quantile) of candidate `name` for `test`, fitted on `train` only."""
+                quantile: float | None = None, models: dict | None = None) -> np.ndarray:
+    """Point prediction (or one quantile) of candidate `name` for `test`, fitted on `train` only. When `models`
+    is a dict, the fitted boosters are stored in it by collection (None for pooled)."""
     out = np.full(len(test), np.nan)
     groups = [(None, np.ones(len(train), bool), np.ones(len(test), bool))] if model_type(name) == "pooled" else \
         [(s, (train["slug"] == s).to_numpy(), (test["slug"] == s).to_numpy()) for s in sorted(test["slug"].unique())]
@@ -115,6 +139,8 @@ def fit_predict(name: str, train: pd.DataFrame, test: pd.DataFrame, trait_cols: 
         cols = columns_for(name, slug, trait_cols)
         model = _fit(params(name, quantile), fv.matrix(train[tr_mask], cols, id_like), train["y"].to_numpy()[tr_mask])
         out[te_mask] = model.predict(fv.matrix(test[te_mask], cols, id_like))
+        if models is not None:
+            models[slug] = model
     return out
 
 
@@ -122,7 +148,9 @@ def declared() -> dict:
     return {"target": "y = log(price_eth / floor_point_eth), floor point strictly before the sale (D70)",
             "baselines": {"B0_floor": "y_hat = 0; range = per-collection training y quantiles 0.10 / 0.90",
                           "B1_rarity_decile": f"training median y per (collection, rarity decile), 0 if < {B1_MIN_ROWS} "
-                                              "rows; range = y_hat + per-collection training residual quantiles"},
+                                              "rows; range = y_hat + per-collection training residual quantiles",
+                          "B2_decile_90d": "median premium of same (collection, decile) sales in [t - 90d, t), 0 if "
+                                           "< 5; range = y_hat + per-collection training residual quantiles"},
             "candidates": CANDIDATES, "common_settings": COMMON, "n_rounds": N_ROUNDS, "trial_count": TRIAL_COUNT,
             "range_method": "LightGBM quantile alpha 0.10 / 0.90, same structure and settings as the candidate",
             "quantiles": list(QUANTILES)}

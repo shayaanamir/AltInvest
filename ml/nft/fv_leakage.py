@@ -41,7 +41,33 @@ def prepare() -> dict:
     h = fv.history(d["sales"])
     static, tcols = fv.static_features(d["tokens"], d["traits"])
     feats = fv.build(h, d["floor_points"], static, d["traits"])
+    feats["clean"] = fv.clean_mask(feats, d["sales"], item_data.dev_end_timestamp())     # W2 up to 2026-01-24
     return {"dev": d, "h": h, "static": static, "trait_cols": tcols, "features": feats}
+
+
+def w2_changes(p: dict) -> dict:
+    """D76 amended: dev rows whose status changes when W2 uses only sales up to 2026-01-24 (vs the v3 stored
+    flags, which used sales up to the snapshot), and each fold's training rows vs the stored flags."""
+    d, feats = p["dev"], p["features"]
+    stored = feats[["slug", "tx", "token_id"]].merge(d["sales"][["slug", "tx", "token_id", "clean"]],
+                                                     on=["slug", "tx", "token_id"], how="left")["clean"].to_numpy(bool)
+    now = feats["clean"].to_numpy(bool)
+    changed = feats[stored != now]
+    per = {s: {"stored_clean_now_flagged": int(((stored & ~now) & (feats["slug"] == s)).sum()),
+               "stored_flagged_now_clean": int(((~stored & now) & (feats["slug"] == s)).sum())}
+           for s in sorted(feats["slug"].unique())}
+    folds = []
+    for f in proto.folds():
+        cut = int(f["train_end"].timestamp())
+        before = (feats["timestamp"] < cut).to_numpy()
+        at_cut = fv.clean_mask(feats, d["sales"], cut)
+        folds.append({"fold": f["fold"], "train_cutoff": str(f["train_end"].date()), "n_train": int(at_cut.sum()),
+                      "n_train_with_stored_flags": int((stored & before).sum()),
+                      "n_rows_status_differs": int((at_cut != (stored & before))[before].sum())})
+    return {"dev_rows_in_history": len(feats), "stored_clean": int(stored.sum()), "clean_as_of_2026_01_24": int(now.sum()),
+            "n_status_changed": len(changed), "per_collection": per,
+            "changed_rows_date_range": [changed["date"].min(), changed["date"].max()] if len(changed) else None,
+            "per_fold_training_sets": folds}
 
 
 def static_reference(tokens: pd.DataFrame, traits: pd.DataFrame, slug: str, token: str) -> dict:
@@ -190,16 +216,18 @@ def check_forbidden(p: dict) -> dict:
             "per_collection_matrix_columns": {s: len(c) for s, c in per_coll.items()}}
 
 
-def fold_table(feats: pd.DataFrame) -> list[dict]:
-    clean = feats[feats["clean"]]
-    rows = []
+def fold_table(p: dict) -> list[dict]:
+    """Rows per fold: training rows clean as of the fold's cutoff; test rows clean as of 2026-01-24 (D76 amended)."""
+    feats, rows = p["features"], []
     for f in proto.folds():
-        train, test = proto.fold_rows(clean, f)
+        train, test = proto.fold_rows(feats, f)
+        train &= fv.clean_mask(feats, p["dev"]["sales"], int(f["train_end"].timestamp()))
+        test &= feats["clean"].to_numpy(bool)
         rows.append({"fold": f["fold"], "part": f["part"], "train_end_exclusive": str(f["train_end"].date()),
                      "embargo": [str(f["train_end"].date()), str(f["test_start"].date())],
                      "test": [str(f["test_start"].date()), str(f["test_end"].date())],
                      "n_train": int(train.sum()), "n_test": int(test.sum()),
-                     "n_test_by_collection": clean[test].groupby("slug").size().astype(int).to_dict()})
+                     "n_test_by_collection": feats[test].groupby("slug").size().astype(int).to_dict()})
     return rows
 
 
@@ -217,7 +245,8 @@ def main() -> None:
                          "tolerance": TOL},
               "check1_reference_on_cut_data": check_reference(p, sample),
               "check2_pipeline_on_cut_data": check_pipeline(p, sample.head(N_PIPELINE)),
-              "check3_forbidden_columns": check_forbidden(p), "folds": fold_table(p["features"])}
+              "check3_forbidden_columns": check_forbidden(p), "folds": fold_table(p),
+              "w2_as_of_cutoffs": w2_changes(p)}
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     REPORT.write_text(json.dumps(report, indent=1, default=str), encoding="utf-8")
     print(f"wrote {REPORT}")
