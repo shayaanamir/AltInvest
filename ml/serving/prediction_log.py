@@ -35,7 +35,7 @@ def served_row(asset: str, now: datetime, feats) -> dict:
     p, r = rs.predict(asset, now, feats), rs.risk(asset, now, feats)
     close = float(rs.servable_raw(asset)["close"].iloc[-1])
     return {"asset": asset, "last_bar": x["last_bar"], "logged_at": rs.iso_utc(now), "close": close,
-            "vol_30d": x["vol_30d"], "ewma_vol": x["ewma_vol"],            # D46/D51: served measure vs baseline
+            "vol_30d": x["vol_30d"], "ewma_vol": x["ewma_vol"],            # D46 monitor: EWMA vs persistence (served, D82)
             **{k: p[k] for k in FIELDS_PREDICT}, **{k: r[k] for k in FIELDS_RISK}}
 
 

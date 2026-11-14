@@ -131,7 +131,8 @@ def _scored(asset, days, ewma, persistence, realised):
              "vol_30d": persistence, "realised_vol_30d": realised, "status": "scored"} for d in days]
 
 
-def test_risk_monitor_needs_6_non_overlapping_windows_then_alerts():
+def test_risk_monitor_needs_6_non_overlapping_windows_then_alerts(monkeypatch):
+    monkeypatch.setattr(config, "RISK_MODEL_SERVED", True)              # the D51 rule while EWMA was served
     daily = _scored("btc", range(0, 151), 0.02, 0.03, 0.02)           # 151 daily rows -> windows at 0, 30, ..., 150
     assert len(live_score.non_overlapping(daily)) == 6
     few = live_score.risk_monitor(daily[:150])                          # windows at 0..120: only 5
@@ -141,6 +142,13 @@ def test_risk_monitor_needs_6_non_overlapping_windows_then_alerts():
     worse = live_score.risk_monitor(_scored("btc", range(0, 151), 0.05, 0.02, 0.02))["per_asset"]["btc"]
     assert worse["status"] == "ALERT" and worse["n_non_overlapping_windows"] == 6
     assert live_score.risk_monitor(daily)["per_asset"]["eth"]["status"] == "insufficient data"   # no rows
+
+
+def test_risk_monitor_only_informs_while_persistence_is_served():
+    """D82: persistence is served, so EWMA falling behind it is information ('info'), never an ALERT."""
+    assert config.RISK_MODEL_SERVED is False
+    worse = live_score.risk_monitor(_scored("btc", range(0, 151), 0.05, 0.02, 0.02))["per_asset"]["btc"]
+    assert worse["status"] == "info" and worse["qlike_ewma"] > worse["qlike_persistence"]
 
 
 def test_risk_monitor_ignores_rows_logged_before_ewma():

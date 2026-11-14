@@ -3,8 +3,10 @@
 Reads raw rows for FEATURES only (ewma_vol, vol_30d and ret_1d, all backward-looking): no labels are built and
 no metric is computed on any split. Served:
 - price: the last-value baseline, prediction_30d = 0 and no predicted price or interval (D35);
-- risk: EWMA volatility (D51; the same ml.features.features.ewma_vol as the Phase 9 evaluation), mapped to
-  risk_score by the pooled percentile over the EWMA history of all assets (D36); sharpe per D37;
+- risk: the served volatility config.RISK_VOL_COLUMN, mapped to risk_score by the pooled percentile over its
+  history for all assets (D36); sharpe per D37. Since D82 that is persistence vol_30d (D27): the D51 EWMA approval
+  was withdrawn under top-only selection (D81). EWMA (ml.features.features.ewma_vol, as in the Phase 9
+  evaluation) is still computed and logged for the D46 monitor, but not served;
 - signal and confidence: ml.signal.signal_logic.generate_signal (D33).
 Staleness is measured from the latest bar's close (its open time + 1 day), when its data became complete (D38).
 Every asset passes the serving gate first (D40): its CSV must match a passed validation report, else NotServable.
@@ -26,17 +28,18 @@ from ml.features.features import build_features, ewma_vol
 from ml.signal.signal_logic import generate_signal
 
 BAR = pd.Timedelta(days=1)
-DECISIONS_IN_FORCE = ("D6", "D33", "D35", "D36", "D37", "D38", "D40", "D50", "D51")
+DECISIONS_IN_FORCE = ("D6", "D27", "D33", "D35", "D36", "D37", "D38", "D40", "D81", "D82")
 NOTE_PRICE = ("No model beats the no-change baseline (D35): prediction_30d is the last-value baseline (0%); "
               "no predicted price or interval.")
 
 
 def serving_table(raw: pd.DataFrame) -> pd.DataFrame:
-    """Feature table plus ewma_vol, computed exactly as in the Phase 9 evaluation: ewma_vol of the closes of the
-    feature rows (run_walkforward.dev_data aligns close to the feature index). Trailing: closes <= t only."""
+    """Feature table (vol_30d is the served persistence measure, D82) plus ewma_vol, computed exactly as in the
+    Phase 9 evaluation: ewma_vol of the closes of the feature rows (run_walkforward.dev_data aligns close to the
+    feature index). Trailing: closes <= t only."""
     feats = build_features(raw)
     close = raw.sort_values("timestamp").set_index("timestamp")["close"].loc[feats.index]
-    feats[config.RISK_VOL_COLUMN] = ewma_vol(close).to_numpy()
+    feats["ewma_vol"] = ewma_vol(close).to_numpy()
     return feats
 
 
@@ -67,8 +70,8 @@ def pooled_risk_score(x: float, pool) -> tuple[float, float]:
 
 
 def pool_values(feats: Mapping[str, pd.DataFrame], today: pd.Timestamp) -> np.ndarray:
-    """The served vol (EWMA, D51) of every asset in `feats` on all dates <= today (D36). Later rows never enter
-    the pool; the warm-up rows without an EWMA value are left out."""
+    """The served vol (config.RISK_VOL_COLUMN, D82) of every asset in `feats` on all dates <= today (D36). Later
+    rows never enter the pool; warm-up rows without a value are left out."""
     vals = np.concatenate([f.loc[f.index <= today, config.RISK_VOL_COLUMN].to_numpy() for f in feats.values()])
     return vals[~np.isnan(vals)]
 
@@ -100,7 +103,8 @@ def risk_inputs(asset: str, now: datetime, feats: Mapping[str, pd.DataFrame] | N
         "last_bar": today.strftime("%Y-%m-%d"), "last_bar_close": iso_utc(today + BAR),
         "age_hours": age, "stale": stale,
         "stale_note": f"data stale: last bar {today.strftime('%Y-%m-%d')}" if stale else None,
-        "ewma_vol": vol, "vol_30d": float(own["vol_30d"].iloc[-1]),       # vol_30d: the D46 monitoring baseline
+        "served_vol_column": config.RISK_VOL_COLUMN, "served_vol": vol,
+        "ewma_vol": float(own["ewma_vol"].iloc[-1]), "vol_30d": float(own["vol_30d"].iloc[-1]),  # D46 monitor inputs
         "volatility": vol * math.sqrt(config.ANNUALISATION_DAYS),
         "sharpe_ratio": sharpe_trailing(own["ret_1d"]), "returns_available": len(own),
         "pool_assets": list(feats), "pool_size": len(pool), "p": p, "risk_score": score,
@@ -113,9 +117,13 @@ def _note(*parts: str | None) -> str:
 
 def _risk_note(feats_assets) -> str:
     names = ", ".join(a.upper() for a in feats_assets)
-    return (f"Risk model: EWMA volatility (lambda {config.EWMA_LAMBDA}), which beat 30-day persistence in "
-            f"walk-forward and was not worse on the sealed test (D50, D51). risk_score is the percentile of today's "
-            f"EWMA volatility among {names} up to today (D36), higher = safer.")
+    if config.RISK_VOL_COLUMN == "ewma_vol":
+        return (f"Risk model: EWMA volatility (lambda {config.EWMA_LAMBDA}), which beat 30-day persistence in "
+                f"walk-forward and was not worse on the sealed test (D50, D51). risk_score is the percentile of "
+                f"today's EWMA volatility among {names} up to today (D36), higher = safer.")
+    return (f"Risk measure: 30-day volatility (persistence). No risk model is served: the EWMA approval was "
+            f"withdrawn when the Phase 9 results were re-checked with top-only selection (D81, D82). risk_score is "
+            f"the percentile of today's 30-day volatility among {names} up to today (D36), higher = safer.")
 
 
 def risk(asset: str, now: datetime, feats: Mapping[str, pd.DataFrame] | None = None) -> dict:
