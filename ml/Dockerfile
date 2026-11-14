@@ -33,5 +33,8 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=180s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health', timeout=4)"
 
 # Refresh once (a failure is logged in /data/validation/refresh_status.json, not fatal), then serve.
+# In the background, a separate process runs the D79 fair-value refit if no refit is served on the volume yet
+# (ml.nft.fv_refit --ensure, logged in refit_log.jsonl with trigger "startup"; 10.9b). It exits when done, so it
+# holds no memory; compose runs the service with init: true so it is reaped.
 # exec makes uvicorn the main process, so `docker stop` reaches it.
-CMD ["sh", "-c", "python -m ml.data.refresh; exec uvicorn ml.api.service:app --host 0.0.0.0 --port 8001"]
+CMD ["sh", "-c", "python -m ml.data.refresh; python -m ml.nft.fv_refit --ensure & exec uvicorn ml.api.service:app --host 0.0.0.0 --port 8001"]

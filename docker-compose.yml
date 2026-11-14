@@ -80,6 +80,7 @@ services:
     image: altinvest-ml
     container_name: altinvest-ml
     restart: unless-stopped
+    init: true            # reaps the startup refit process (ml/Dockerfile CMD)
     ports:
       - "8001:8001"
     # The development fair-value artifact (D78) and accuracy.json are mounted read-only, never baked into the image
