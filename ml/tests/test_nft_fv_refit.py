@@ -166,5 +166,16 @@ def test_error_lines_per_collection_and_for_the_rarest_decile():
                                                           "Rarest items: about 9%")
     assert nft_items.accuracy_lines(meta, "lilpudgys", 2.0)[0] == "Median error in testing (Feb-Nov 2026): 2.8%"
     assert nft_items.accuracy_lines(meta, "milady", float("nan"))[1] is None
-    assert nft_items.accuracy_lines({"accuracy_note": "Accuracy check pending"}, "azuki", 1) == \
-        ("Accuracy check pending", None)                                   # an artifact without a sealed result
+    assert nft_items.accuracy_lines({}, "azuki", 1) == ("Accuracy check pending", None)   # no sealed result
+
+
+def test_error_line_only_when_the_tested_method_is_the_served_one(monkeypatch):
+    """10.9b MINOR 3: after a serve-map change the old error line would describe the other method; it is hidden."""
+    meta = {"accuracy": ACC}
+    monkeypatch.setattr(nft_items.config, "NFT_FV_SERVE", {**config.NFT_FV_SERVE, "azuki": "b2"})
+    assert nft_items.accuracy_lines(meta, "azuki", 1) == ("Accuracy check pending", None)
+    line, rare = nft_items.accuracy_lines(meta, "pudgypenguins", 1)     # same method: line kept, pooled line not
+    assert line == "Median error in testing (Feb-Nov 2026): 2.0%" and rare is None
+    monkeypatch.setattr(nft_items.config, "NFT_FV_SERVE", {s: "b2" for s in config.NFT_SLUGS})
+    assert nft_items.accuracy_lines(meta, "lilpudgys", 2.0)[0] == "Median error in testing (Feb-Nov 2026): 2.8%"
+    assert nft_items.accuracy_lines(meta, "milady", 2.0)[0] == "Accuracy check pending"

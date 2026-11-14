@@ -49,13 +49,19 @@ def pct(x: float, digits: int) -> str:
 
 
 def accuracy_lines(meta: dict, slug: str, rarity_decile) -> tuple[str, str | None]:
-    """(accuracy_note, rarity_accuracy_note) from the served metadata (D84)."""
+    """(accuracy_note, rarity_accuracy_note) from the served metadata (D84). The collection's error line is shown only
+    when the method it was measured for equals the method served now (config.NFT_FV_SERVE[slug], 10.9b MINOR 3), and
+    the pooled rarest-decile line only when every collection's tested method is the one served; otherwise the note
+    says the accuracy check is pending."""
     acc = meta.get("accuracy")
-    if not acc:
-        return meta.get("accuracy_note") or config.NFT_FV_ACCURACY_NOTE, None
-    line = f"Median error in testing ({acc['window_label']}): {pct(acc['by_collection'][slug]['mdape'], 1)}"
+    tested = (acc or {}).get("by_collection", {})
+    if not acc or slug not in tested or tested[slug]["method"] != config.NFT_FV_SERVE.get(slug):
+        return config.NFT_FV_ACCURACY_NOTE, None
+    line = f"Median error in testing ({acc['window_label']}): {pct(tested[slug]['mdape'], 1)}"
     rare = None
-    if rarity_decile is not None and not pd.isna(rarity_decile) and int(rarity_decile) == acc["rarest_decile"]["decile"]:
+    same_setup = all(tested.get(s, {}).get("method") == m for s, m in config.NFT_FV_SERVE.items())
+    if same_setup and rarity_decile is not None and not pd.isna(rarity_decile) and \
+            int(rarity_decile) == acc["rarest_decile"]["decile"]:
         rare = f"Rarest items: about {pct(acc['rarest_decile']['mdape'], 0)}"
     return line, rare
 
