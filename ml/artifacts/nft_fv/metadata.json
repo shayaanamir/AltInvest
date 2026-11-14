@@ -209,7 +209,6 @@
   "pudgypenguins": "model"
  },
  "range": null,
- "accuracy_note": "Accuracy check pending",
  "decisions": "D76, D77 (walk-forward approval), D78 (serving)",
  "walkforward_report": "ml/reports/nft/walkforward_fair_value.json",
  "trial_count": 6,
