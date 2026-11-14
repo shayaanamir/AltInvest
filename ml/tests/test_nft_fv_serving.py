@@ -97,7 +97,7 @@ def test_served_artifact_is_the_fold_9_fit_of_the_walk_forward(dev):
         pytest.skip("artifact or walk-forward rows not present")
     booster, meta = fv_artifact.load(follow_current=False)              # the development fit (D78)
     assert meta["train_cutoff_exclusive"] == "2025-12-25" and meta["train_dates"][1] < "2025-12-25"
-    assert meta["range"] is None and meta["accuracy_note"] == "Accuracy check pending"
+    assert meta["range"] is None and "accuracy_note" not in meta        # removed in 10.9b (MINOR 4)
     rows = pd.read_parquet(ROWS)
     f9 = rows[rows["fold"] == 9]
     feats = dev["features"].set_index("hid").loc[f9["hid"]].reset_index()
