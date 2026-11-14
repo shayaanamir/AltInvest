@@ -9,8 +9,8 @@ amended; the live accuracy log stays off until after 10.8).
   backend 750b90c; frontend 87adf68; screenshots 7d471fb; checkpoint_10.7.md (final commit of the step).
 
 ## In progress
-- Nothing. STOPPED after checkpoint_10.7.md, waiting for review.
+- Nothing. 10.8 done: ONE sealed run at cb6f00c, PASS (ml/docs/phase10/checkpoint_10.8.md). STOPPED, waiting for review.
 
 ## Next (only after the user's OK)
-- 10.8: on a clean tree, ONE run: `python -m ml.evaluation.run_nft_sealed_fv --sealed` (writes
-  ml/reports/nft/sealed_fair_value.json and ml/docs/phase10/logs/10.8_sealed_run.log). Its output is final.
+- 10.9: apply the 10.8 outcome (error line, live accuracy log, retrain), as the planner decides. Never re-run 10.8:
+  `ml/reports/nft/sealed_fair_value.json` exists and the script refuses.

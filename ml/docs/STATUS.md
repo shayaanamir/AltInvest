@@ -1,7 +1,12 @@
 # STATUS
 
-Current phase: 10 (NFTs, docs/PLAN_NFT.md) at checkpoint 10.7, branch phase-10-nft (pushed, not merged). Next: planner review of checkpoint_10.7.md, then the one-time sealed test 10.8 (protocol D79, commit 2e6cacc). Previously: 9 (forecasting v2) DONE and merged into main as PR #8. Served: EWMA risk for all assets (D51). Follow-up on branch phase-9-vol-cone (2026-11-10): frontend volatility cone (D52), reviewed twice, PR open against main.
+Current phase: 10 (NFTs, docs/PLAN_NFT.md) at checkpoint 10.8, branch phase-10-nft (pushed, not merged). Next: planner review of checkpoint_10.8.md, then 10.9. Previously: 9 (forecasting v2) DONE and merged into main as PR #8. Served: EWMA risk for all assets (D51). Follow-up on branch phase-9-vol-cone (2026-11-10): frontend volatility cone (D52), reviewed twice, PR open against main.
 Next: Person B checks the new risk_score values and note text (fields unchanged). Merge phase-7-integration, then rebase this branch onto main. The live scorecard starts scoring on 2026-11-30.
+
+## Phase 10 step 10.8: sealed fair-value test (2026-11-14, ml/docs/phase10/checkpoint_10.8.md)
+
+- One run under D79 at cb6f00c (clean tree): PASS, so the serving rule stays. Served MdAPE 0.0294 vs best baseline B0 (floor) 0.0353; difference 0.0059, 95% CI [0.0034, 0.0085]; 39,399 sales, 2026-02-01 to 2026-11-10.
+- Descriptive: the model alone would have scored 0.0275. On sealed data lilpudgys favours the model (0.0223 vs B2 0.0281), the reverse of 10.6. Nothing applied; serving, the error line and the live accuracy log are unchanged until 10.9.
 
 ## Phase 10 step 10.7 + 10.8 preparation (2026-11-14, ml/docs/phase10/checkpoint_10.7.md)
 
