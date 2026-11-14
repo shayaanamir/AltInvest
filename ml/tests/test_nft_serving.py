@@ -68,7 +68,8 @@ def _errors(title, body):
 
 
 def test_schemas_are_closed_and_separate_from_the_crypto_contract():
-    assert set(SCHEMAS) == {"NftCollectionsResponse", "NftFloorResponse", "NftRiskResponse", "NftSalesResponse"}
+    assert set(SCHEMAS) == {"NftCollectionsResponse", "NftFloorResponse", "NftRiskResponse", "NftSalesResponse",
+                            "NftItemValueResponse", "NftItemValuesResponse"}          # 10.7 item values (D78)
     assert all(s["additionalProperties"] is False for s in SCHEMAS.values())
     ok = {"slug": "aa", "rows": [], "timestamp": "2025-01-20T00:00:00Z"}
     assert _errors("NftFloorResponse", ok) == [] and _errors("NftFloorResponse", {**ok, "extra": 1})

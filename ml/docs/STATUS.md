@@ -1,7 +1,19 @@
 # STATUS
 
-Current phase: 10 (NFTs, docs/PLAN_NFT.md) at checkpoint 10.6, branch phase-10-nft (pushed, not merged). Next: planner review of checkpoint_10.6.md, then 10.7 fair-value serving. Previously: 9 (forecasting v2) DONE and merged into main as PR #8. Served: EWMA risk for all assets (D51). Follow-up on branch phase-9-vol-cone (2026-11-10): frontend volatility cone (D52), reviewed twice, PR open against main.
+Current phase: 10 (NFTs, docs/PLAN_NFT.md) at checkpoint 10.7, branch phase-10-nft (pushed, not merged). Next: planner review of checkpoint_10.7.md, then the one-time sealed test 10.8 (protocol D79, commit 2e6cacc). Previously: 9 (forecasting v2) DONE and merged into main as PR #8. Served: EWMA risk for all assets (D51). Follow-up on branch phase-9-vol-cone (2026-11-10): frontend volatility cone (D52), reviewed twice, PR open against main.
 Next: Person B checks the new risk_score values and note text (fields unchanged). Merge phase-7-integration, then rebase this branch onto main. The live scorecard starts scoring on 2026-11-30.
+
+## Phase 10 step 10.7 + 10.8 preparation (2026-11-14, ml/docs/phase10/checkpoint_10.7.md)
+
+- Item card serving (D78):
+  - `config.NFT_FV_SERVE` serves the model for 6 collections and B2 for lilpudgys.
+  - ETH point estimate; no range, no drivers.
+  - The served model is the dev-only fold-9 fit (`nft-fv-pooled-l1-nl15-dev-2025-12-25`).
+  - Request-time features use the training code, tested equal on 200 hypothetical and 100 real dev (token, t) pairs.
+- ML endpoints `/nft/{slug}/items/{token_id}/value` and `/nft/items/value`. The backend pulls holdings' estimates and serves the item lookup. The frontend has the item card and holding estimates. Screenshots are in `ml/docs/phase10/screenshots/10.7_*`.
+- Live serving uses data after 2026-01-25, with no metric on those dates; the live accuracy log is off until after 10.8 (user decision, D78 amended).
+- 10.8 protocol (D79) committed in 2e6cacc before any sealed access. Its dry run on the 10.6 confirmation months reproduces 10.6 row for row: served 0.0279 vs B2 0.0335, PASS, in-sample for the per-collection guard.
+- Tests: ML 421 passed; backend 43 passed, 1 skipped; frontend 20 passed.
 
 ## Phase 10 step 10.6: fair-value model (2026-11-14, ml/docs/phase10/checkpoint_10.6a.md and checkpoint_10.6.md)
 
