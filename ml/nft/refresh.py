@@ -27,7 +27,7 @@ import pandas as pd
 
 from ml import config
 from ml.data.refresh import next_run
-from ml.nft import collect, store
+from ml.nft import collect, store, tx_payments
 from ml.nft.opensea import Client
 
 STATUS_FILE = "nft_refresh_status.json"
@@ -85,6 +85,8 @@ def run_once(now: datetime | None = None) -> dict:
         stage("floor", lambda: refresh_floor(client))
         stage("intraday", lambda: len(collect.collect_intraday(client, today)))
         stage("sales", lambda: collect.collect_sales(client, int(now.timestamp())))
+    if store.has_table(config.ML_NFT_DIR, "sales_raw"):
+        stage("tx_payments", lambda: tx_payments.update())      # new multi-token transactions (D74, 10.9b)
     stage("eth", lambda: collect.collect_eth()["bars_written"])
     if (config.ML_NFT_DIR / "collections.json").exists():
         stage("traits", lambda: collect.collect_traits(collect.load_meta()))
