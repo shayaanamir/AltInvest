@@ -3,6 +3,10 @@
     python -m ml.nft.refresh            (once)
     python -m ml.nft.refresh --loop     (now, then daily at config.NFT_REFRESH_UTC; after each refresh the
                                          fair-value jobs run: monthly refit D83, live accuracy log D85)
+    python -m ml.nft.refresh --cycle    (one refresh plus the fair-value jobs; what --loop runs each day)
+
+The loop runs every cycle in a child process, so the memory of the refresh, the refit and the live log (about
+0.5 GB) is returned when the cycle ends; the waiting loop itself holds only the interpreter (10.9b).
 
 Writes only to config.ML_NFT_DIR and refuses a directory inside the frozen snapshots (D62). Each stage runs
 on its own: a stage that fails leaves its previous files in place and the others still run. New floor data
@@ -13,6 +17,7 @@ nft_refresh_status.json in ML_NFT_DIR. Keys come from the environment (or .env) 
 import argparse
 import json
 import signal
+import subprocess
 import sys
 import time
 from datetime import datetime, timezone
@@ -89,14 +94,19 @@ def run_once(now: datetime | None = None) -> dict:
     return status
 
 
-def loop() -> None:
+def cycle() -> None:
     from ml.nft import fv_jobs
+    run_once()
+    try:
+        fv_jobs.after_refresh()
+    except Exception as exc:                                    # the jobs report their own failures
+        print(f"[nft-refresh] fair-value jobs failed: {type(exc).__name__}: {exc}", flush=True)
+
+
+def loop(run=subprocess.run) -> None:
     while True:
-        run_once()
-        try:
-            fv_jobs.after_refresh()
-        except Exception as exc:                                # the jobs report their own failures
-            print(f"[nft-refresh] fair-value jobs failed: {type(exc).__name__}: {exc}", flush=True)
+        code = run([sys.executable, "-m", "ml.nft.refresh", "--cycle"]).returncode
+        print(f"[nft-refresh] cycle exited with {code}", flush=True)
         wake = next_run(datetime.now(timezone.utc), config.NFT_REFRESH_UTC)
         print(f"[nft-refresh] next refresh at {wake.strftime('%Y-%m-%dT%H:%M:%SZ')}", flush=True)
         while (left := (wake - datetime.now(timezone.utc)).total_seconds()) > 0:
@@ -106,11 +116,15 @@ def loop() -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Refresh the NFT serving data")
     parser.add_argument("--loop", action="store_true", help=f"run now, then daily at {config.NFT_REFRESH_UTC} UTC")
+    parser.add_argument("--cycle", action="store_true", help="one refresh plus the fair-value jobs (used by --loop)")
     args = parser.parse_args()
     signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
     try:
         if args.loop:
             loop()
+        if args.cycle:
+            cycle()
+            sys.exit(0)
         status = run_once()
     except SnapshotProtected as exc:
         sys.exit(str(exc))
