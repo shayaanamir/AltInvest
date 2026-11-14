@@ -2,6 +2,20 @@ PLAN_NFT — Phase 10: NFT collections, volatility cone and fair value
 
 Planner: Claude (planning chat). Executor: the agent. The user relays
 reports between the two. Every step ends at a CHECKPOINT: report and wait.
+
+STATUS (2026-11-14, step 10.9; branch phase-10-nft, not merged)
+| Step | Status | Checkpoint |
+|---|---|---|
+| 10.0 Investigate | DONE | [checkpoint_10.0.md](phase10/checkpoint_10.0.md) |
+| 10.1 Decisions | DONE (D53-D62) | [checkpoint_10.1.md](phase10/checkpoint_10.1.md) |
+| 10.2 Collection data | DONE (snapshot 2026-11-10, D62-D64) | [checkpoint_10.2.md](phase10/checkpoint_10.2.md) |
+| 10.3 Risk and liquidity | DONE; EWMA approval later WITHDRAWN (D73), persistence served | [checkpoint_10.3.md](phase10/checkpoint_10.3.md) |
+| 10.4 Collection page and cone | DONE (D67) | [checkpoint_10.4.md](phase10/checkpoint_10.4.md) |
+| 10.5 Item data | DONE (5, 5b, 5c; D68-D75) | [10.5](phase10/checkpoint_10.5.md), [10.5b](phase10/checkpoint_10.5b.md), [10.5c](phase10/checkpoint_10.5c.md) |
+| 10.6 Fair value model | DONE: fv_pooled_l1_nl15 approved; range NOT approved; comparable sales NOT built (D76, D77) | [10.6a](phase10/checkpoint_10.6a.md), [10.6](phase10/checkpoint_10.6.md) |
+| 10.7 Serving and item card | DONE, changed by the owner: point estimate only, no range, no drivers, no similar sales; live log deferred to 10.9 (D78) | [checkpoint_10.7.md](phase10/checkpoint_10.7.md) |
+| 10.8 Sealed test | DONE once: PASS (D79). NFT risk was not sealed-tested (nothing approved by then) | [checkpoint_10.8.md](phase10/checkpoint_10.8.md) |
+| 10.9 Close | DONE: refit + monthly job (D83), error line (D84), live accuracy log (D85), D49 audit (D81, D82), docs | [checkpoint_10.9.md](phase10/checkpoint_10.9.md) |
 Precondition: Phase 9 and the volatility cone PR are merged into main.
 Branch: phase-10-nft, from main.
 

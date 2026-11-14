@@ -125,6 +125,21 @@ Terms marked *(not used yet)* appear in the plan docs but no code uses them so f
 - **Prediction log**: one line per asset per day with what /predict and /risk served, kept in the serving data (prediction_log.jsonl, Phase 6d).
 - **Live (forward) score / pending**: scoring a logged line against what really happened 30 days later. Until bar t+30 exists the line is pending and nothing is scored.
 
+## NFTs (Phase 10)
+- **NFT collection / token / item**: a set of numbered digital items on Ethereum (for example Pudgy Penguins #7862). Each item (token) has traits such as "background: blue".
+- **Floor price (floor)**: the cheapest price at which any item of a collection is listed for sale, in ETH. We use OpenSea's floor points; the daily floor is the last point before 00:00 UTC (D55, D63).
+- **Wash trading**: fake sales that make a collection look busier, for example a wallet selling to itself or two wallets passing the same item back and forth. Such sales are removed before anything is measured (D57, D70: W1 buyer = seller, W2 back-and-forth within 30 days).
+- **Premium**: how much an item sold above or below the floor: log(sale price / floor just before the sale). 0 means it sold at the floor. The fair-value model predicts it (D70, D76).
+- **Rarity rank / rarity decile**: rank 1 = the item whose traits are rarest in its collection (ID-like traits excluded). The rarity decile splits a collection into ten equal groups; decile 1 is the rarest 10% (D68, D76).
+- **Liquidity score**: a 0-100 rule-based score from the last 7 and 30 days' sales count and volume, ranked against the other tracked collections; under 10 sales in 7 days counts as illiquid (D58).
+- **Comparable sales**: the plan's "3 most similar items sold recently". Planned in step 10.6 but not built; nothing in the app shows them.
+- **Estimated value (fair value)**: what an item might sell for now: the last floor x exp(predicted premium). A point estimate in ETH, not a forecast (D78).
+- **MdAPE**: median absolute percentage error. For each sale, |estimate / price - 1|; the median over sales. 3% means half of the sales landed within 3% of the estimate.
+- **B0 / B1 / B2 baselines**: the simple rules a fair-value model must beat. B0 = the floor; B1 = the floor x the item's rarity decile's median premium; B2 = the same over the last 90 days only (D76).
+- **Top-only selection**: all candidate configs are ranked together on the first 60% of the test folds, and only the best one gets the final check on the last 40%. Checking each model type separately would give two chances to pass (D81, which replaces D49).
+- **Refit**: training the same model again, with the same settings and features, on newer data. The served item model is refitted monthly (D83).
+- **Live accuracy log**: each day's served estimates, later matched with the real sales to see how the served values actually did (D85).
+
 ## Engineering
 - **Unit test**: a tiny automatic check of one function using small made-up inputs (here, hand-made fixtures, not market data).
 - **Fixture**: the small made-up input a test uses.
