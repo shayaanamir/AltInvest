@@ -121,8 +121,8 @@ def _risk_note(feats_assets) -> str:
         return (f"Risk model: EWMA volatility (lambda {config.EWMA_LAMBDA}), which beat 30-day persistence in "
                 f"walk-forward and was not worse on the sealed test (D50, D51). risk_score is the percentile of "
                 f"today's EWMA volatility among {names} up to today (D36), higher = safer.")
-    return (f"Risk measure: 30-day volatility (persistence). No risk model is served: the EWMA approval was "
-            f"withdrawn when the Phase 9 results were re-checked with top-only selection (D81, D82). risk_score is "
+    return (f"Risk measure: 30-day volatility (persistence). No risk model is served: no model beat this simple "
+            f"measure under the project's selection rule (D81, D82). risk_score is "
             f"the percentile of today's 30-day volatility among {names} up to today (D36), higher = safer.")
 
 

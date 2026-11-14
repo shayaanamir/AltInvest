@@ -183,8 +183,8 @@ def _risk_note(served: bool) -> str:
     if config.NFT_RISK_VOL_COLUMN == "ewma_vol":
         return (f"Risk model: EWMA floor volatility (lambda {config.EWMA_LAMBDA}) of the daily floor in ETH, approved "
                 f"pooled over the tracked NFT collections in walk-forward (D59). {relative}")
-    return ("Risk measure: 30-day volatility of the daily floor in ETH (persistence). No model is served: the EWMA "
-            f"walk-forward approval was withdrawn after a check against sale prices (D72, D73). {relative}")
+    return ("Risk measure: 30-day volatility of the daily floor in ETH (persistence). No model is served: an earlier "
+            f"model approval was withdrawn after a check against sale prices (D72, D73). {relative}")
 
 
 def risk(slug: str, now: datetime) -> dict:

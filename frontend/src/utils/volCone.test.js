@@ -9,8 +9,8 @@ import {
 } from "./volCone.js";
 
 const OLD_D51_NOTE = "Risk model: EWMA volatility (lambda 0.94), which beat 30-day persistence (D50, D51).";
-const PERSISTENCE_NOTE = "Risk measure: 30-day volatility (persistence). No risk model is served: the EWMA approval was "
-  + "withdrawn when the Phase 9 results were re-checked with top-only selection (D81, D82).";
+const PERSISTENCE_NOTE = "Risk measure: 30-day volatility (persistence). No risk model is served: no model beat this "
+  + "simple measure under the project's selection rule (D81, D82).";
 const risk = (volatility, note = PERSISTENCE_NOTE) => ({ volatility, note });
 const history = [
   { date: "2026-11-01", price: 100 },
