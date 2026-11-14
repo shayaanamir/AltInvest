@@ -32,7 +32,7 @@ function sentimentLabel(score) {
 export const assetDetailApi = {
   /** Resolves to null when the backend has no such asset (404); throws on any other failure. */
   getAssetDetail: async (symbol) => {
-    // The served risk (annualised EWMA volatility and its note, D51) feeds the chart's volatility cone (D52).
+    // The served risk (annualised 30-day volatility and its note, D82) feeds the chart's volatility cone (D52).
     // Any failure here only hides the cone; it never breaks the page.
     const riskPromise = apiFetch(`/risk/${encodeURIComponent(symbol)}`).catch(() => null);
     let d;

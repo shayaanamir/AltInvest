@@ -14,7 +14,7 @@ function sliceForFilter(arr, filter) {
   return arr.slice(-(FILTER_DAYS[filter] + 1));
 }
 
-// History line, then (when the served EWMA volatility allows it) an illustrative 30-day volatility cone (D52).
+// History line, then (when the served volatility allows it, D82) an illustrative 30-day volatility cone (D52).
 // There is no forecast or center line: no price model is approved, and lower/upper bounds stay null.
 export default function PricePerformanceCard({ priceHistory, risk, aaiPanel }) {
   const [filter, setFilter] = useState("1M");

@@ -1,10 +1,11 @@
 // Illustrative 30-day volatility cone for the asset price chart (ml/docs/DECISIONS.md D52).
 //
-// Built only from the `volatility` the ML service already serves on /risk: annualised EWMA vol (D51).
+// Built only from the `volatility` the ML service already serves on /risk: since D82 the annualised 30-day
+// volatility (persistence); EWMA (D51) until its approval was withdrawn under top-only selection (D81, D82).
 // It is NOT a tested price range: no price or range model is approved, so lower_bound / upper_bound stay null
 // and no predicted price line is drawn. Pure functions, no React, so they can be unit-tested with `node --test`.
 
-// The annualisation factor serving uses: volatility = daily EWMA vol x sqrt(ANNUALISATION_DAYS)
+// The annualisation factor serving uses: volatility = served daily vol x sqrt(ANNUALISATION_DAYS)
 // (ml/config.py ANNUALISATION_DAYS, ml/serving/responses.py). A test checks the two stay equal.
 export const ANNUALISATION_DAYS = 365;
 export const CONE_DAYS = 30;
@@ -15,6 +16,11 @@ export const CONE_CAPTION = "Likely price range based on recent volatility, not 
 // The future section gets its true share of the time axis, but never less than this share of the plot width,
 // so the 30-day cone stays readable next to a long history (1Y: 30 / 395 days would be about 7.6%).
 export const MIN_FUTURE_SHARE = 0.15;
+
+// The ML /risk note starts with one of these when it describes the volatility the ML service serves (D82:
+// persistence; D51: EWMA). Any other note (mock data, an asset ML does not cover) hides the cone. The ML side
+// tests the same wording (ml/tests/test_serving.py test_d52_risk_note_wording_the_frontend_cone_depends_on).
+export const SERVED_RISK_NOTE_PREFIXES = ["Risk measure: 30-day volatility", "Risk model: EWMA volatility"];
 
 const DAY_MS = 86400000;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -59,7 +65,7 @@ export function coneVolatility(risk) {
   const v = risk.volatility;
   if (typeof v !== "number" || !Number.isFinite(v) || v <= 0) return null;
   const note = typeof risk.note === "string" ? risk.note : "";
-  if (!note.includes("EWMA volatility")) return null;
+  if (!SERVED_RISK_NOTE_PREFIXES.some((p) => note.startsWith(p))) return null;
   if (note.toLowerCase().includes("data stale")) return null;
   return v;
 }

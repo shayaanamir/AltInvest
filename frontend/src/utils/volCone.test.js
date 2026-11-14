@@ -9,7 +9,9 @@ import {
 } from "./volCone.js";
 
 const EWMA_NOTE = "Risk model: EWMA volatility (lambda 0.94), which beat 30-day persistence (D50, D51).";
-const risk = (volatility, note = EWMA_NOTE) => ({ volatility, note });
+const PERSISTENCE_NOTE = "Risk measure: 30-day volatility (persistence). No risk model is served: the EWMA approval was "
+  + "withdrawn when the Phase 9 results were re-checked with top-only selection (D81, D82).";
+const risk = (volatility, note = PERSISTENCE_NOTE) => ({ volatility, note });
 const history = [
   { date: "2026-11-01", price: 100 },
   { date: "2026-11-02", price: 104 },
@@ -51,15 +53,22 @@ test("symmetric in log space and widens with sqrt(d)", () => {
   assert.ok(cone[CONE_DAYS].outer.upper > cone[CONE_DAYS].inner.upper); // outer 80% band wider than inner 50%
 });
 
-test("cone is hidden when volatility is missing, null, not positive, not the EWMA model, or stale", () => {
+test("cone is hidden when volatility is missing, null, not positive, not the served measure, or stale", () => {
   for (const r of [null, undefined, risk(null), risk(undefined), risk(Number.NaN), risk(0), risk(-0.1), risk("0.5"),
     risk(0.5, "mock data — no risk score found in DB yet"), risk(0.5, null),
-    risk(0.5, `${EWMA_NOTE} data stale: the newest stored row is 40 h old`)]) {
+    risk(0.5, `${PERSISTENCE_NOTE} data stale: the newest stored row is 40 h old`),
+    risk(0.5, "Risk model: 30-day floor volatility (persistence)."),   // an NFT note: not the crypto measure
+    risk(0.5, `Note: ${PERSISTENCE_NOTE}`)]) {                          // the prefix must start the note
     assert.equal(coneVolatility(r), null);
     assert.equal(buildCone(history[1], r), null);
     assert.deepEqual(chartLayers(history, r).layers, ["history"]);
   }
   assert.equal(coneVolatility(risk(0.5)), 0.5);
+});
+
+test("D82: the cone uses the served persistence volatility; an EWMA note (D51) is still accepted", () => {
+  assert.equal(coneVolatility(risk(0.42)), 0.42);
+  assert.equal(coneVolatility(risk(0.42, EWMA_NOTE)), 0.42);
 });
 
 test("no forecast or center line is ever a chart layer", () => {
