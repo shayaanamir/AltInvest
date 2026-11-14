@@ -12,7 +12,7 @@ const BODY = {
 
 test("the caption is the agreed text", () => {
   assert.equal(NFT_ITEM_CAPTION,
-    "An estimate of what this item might sell for now, mostly driven by the collection floor and recent sales. Not a price prediction.");
+    "An estimate of what this item might sell for now, mostly driven by the collection floor and recent sales. Not a forecast of future price.");
 });
 
 test("the card shows the estimate in ETH, the last floor with its date, the last sale and the rarity rank", () => {

@@ -162,7 +162,7 @@ def values(pairs: list[tuple[str, str]], now: datetime) -> list[dict]:
         elif (ts - floor["time"]) / 3600 > config.STALE_DATA_HOURS:
             notes.append(f"data stale: last floor {iso_utc(datetime.fromtimestamp(floor['time'], tz=timezone.utc))}")
         if no_prior and i is not None:
-            notes.append("This item has no earlier sale in the data, so the estimate leans on similar items.")
+            notes.append("This item has no earlier sale in the data, so the estimate leans on recent sales in the collection.")
         rank = info.get("rarity_rank")
         acc_line, rare_line = accuracy_lines(t["meta"], slug, dec)
         out.append({

@@ -4,7 +4,7 @@
 // plus rarity_accuracy_note ("Rarest items: about Y%") for an item in its collection's rarest 10%.
 
 export const NFT_ITEM_CAPTION =
-  "An estimate of what this item might sell for now, mostly driven by the collection floor and recent sales. Not a price prediction.";
+  "An estimate of what this item might sell for now, mostly driven by the collection floor and recent sales. Not a forecast of future price.";
 
 const isNum = (v) => typeof v === "number" && Number.isFinite(v);
 
