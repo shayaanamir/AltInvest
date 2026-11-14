@@ -126,5 +126,10 @@ NFT_FV_TRAIN_CUTOFF = "2025-12-25"               # D78: the last walk-forward fo
 NFT_FV_ARTIFACT_DIR = Path(os.environ.get("ML_NFT_FV_ARTIFACT_DIR")
                            or Path(__file__).resolve().parent / "artifacts" / "nft_fv")  # mounted read-only in Docker
 MODEL_VERSION_NFT_FV = "nft-fv-pooled-l1-nl15-dev-2025-12-25"
-NFT_FV_ACCURACY_NOTE = "Accuracy check pending"  # D78: replaced by the sealed-test result in 10.9
+NFT_FV_ACCURACY_NOTE = "Accuracy check pending"  # D78; since D84 only for an artifact without an accuracy block
 NFT_FV_MAX_BATCH = 50                            # D78: tokens per batch request
+# Phase 10 step 10.9: monthly serving refits (D83) and the live accuracy log (D85). The refit job writes versioned
+# folders under NFT_FV_ARTIFACT_DIR (the ml-nft-refresh sidecar mounts it read-write; the API reads it read-only);
+# monthly summaries go to NFT_LIVE_ACCURACY_DIR (ml/docs/phase10/live_accuracy, mounted into the sidecar).
+NFT_LIVE_ACCURACY_DIR = Path(os.environ.get("ML_NFT_LIVE_ACCURACY_DIR")
+                             or Path(__file__).resolve().parent / "docs" / "phase10" / "live_accuracy")

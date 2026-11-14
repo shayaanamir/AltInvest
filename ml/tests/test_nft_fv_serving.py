@@ -95,7 +95,7 @@ def test_served_artifact_is_the_fold_9_fit_of_the_walk_forward(dev):
     from ml.evaluation.run_nft_fair_value import ROWS
     if not (config.NFT_FV_ARTIFACT_DIR / fv_artifact.MODEL).exists() or not ROWS.exists():
         pytest.skip("artifact or walk-forward rows not present")
-    booster, meta = fv_artifact.load()
+    booster, meta = fv_artifact.load(follow_current=False)              # the development fit (D78)
     assert meta["train_cutoff_exclusive"] == "2025-12-25" and meta["train_dates"][1] < "2025-12-25"
     assert meta["range"] is None and meta["accuracy_note"] == "Accuracy check pending"
     rows = pd.read_parquet(ROWS)
@@ -117,7 +117,9 @@ def served(dev, monkeypatch):
     from ml.serving import nft_items
     if not (config.NFT_FV_ARTIFACT_DIR / fv_artifact.MODEL).exists():
         pytest.skip("artifact not trained")
-    booster, meta = fv_artifact.load()
+    from ml.nft import fv_refit
+    booster, meta = fv_artifact.load(follow_current=False)
+    meta = {**meta, "accuracy": fv_refit.accuracy_block(config.NFT_FV_ARTIFACT_DIR)}   # the D84 lines
     tokens = dev["dev"]["tokens"]
     t = {"h": dev["h"], "points": dev["dev"]["floor_points"], "booster": booster, "meta": meta,
          "items": {"tokens": tokens, "traits": dev["dev"]["traits"], "static": dev["static"],
@@ -133,13 +135,28 @@ def test_item_values_follow_the_per_collection_serving_config(served, dev, monke
     by = {i["slug"]: i for i in body["items"]}
     assert by["pudgypenguins"]["method"] == "model" and by["lilpudgys"]["method"] == "baseline_b2"
     assert all("usd" not in k for i in body["items"] for k in i)          # ETH only
-    assert all(i["accuracy_note"] == "Accuracy check pending" for i in body["items"])
+    assert by["pudgypenguins"]["accuracy_note"] == "Median error in testing (Feb-Nov 2026): 2.0%"
+    assert by["lilpudgys"]["accuracy_note"] == "Median error in testing (Feb-Nov 2026): 2.8%"    # B2's (D80)
+    st = dev["static"].set_index(["slug", "token_id"])["rarity_decile"]
+    for i in body["items"]:
+        rare = st.get((i["slug"], i["token_id"])) == 1
+        assert i["rarity_accuracy_note"] == ("Rarest items: about 9%" if rare else None)
     feats = fv_serving.query_features(dev["h"], dev["dev"]["floor_points"], dev["static"], dev["dev"]["traits"],
                                       [pairs[2]], int(NOW.timestamp()))
     b2 = float(np.nan_to_num(feats["decile_prem_med_90d"].iloc[0]))
     assert by["lilpudgys"]["estimated_value_eth"] == pytest.approx(by["lilpudgys"]["last_floor_eth"] * np.exp(b2), rel=1e-5)
     monkeypatch.setattr(config, "NFT_FV_SERVE", {s: "b2" for s in config.NFT_SLUGS})   # the 10.9 switch
     assert all(i["method"] == "baseline_b2" for i in served.batch("pudgypenguins:7862,azuki:8604", NOW)["items"])
+
+
+def test_rarest_decile_item_gets_the_rarest_items_line(served, dev):
+    st = dev["static"]
+    rare = st[(st["slug"] == "azuki") & (st["rarity_decile"] == 1)]["token_id"].iloc[0]
+    common = st[(st["slug"] == "azuki") & (st["rarity_decile"] == 10)]["token_id"].iloc[0]
+    a = check("NftItemValueResponse", served.value("azuki", rare, NOW))
+    b = check("NftItemValueResponse", served.value("azuki", common, NOW))
+    assert a["rarity_accuracy_note"] == "Rarest items: about 9%" and b["rarity_accuracy_note"] is None
+    assert a["accuracy_note"] == b["accuracy_note"] == "Median error in testing (Feb-Nov 2026): 3.8%"
 
 
 def test_item_without_an_earlier_sale_is_flagged(served, dev):
@@ -180,7 +197,29 @@ def test_live_directory_cut_at_the_development_end_rebuilds_the_training_history
     cols = ["slug", "token_id", "timestamp", "tx", "price_eth", "floor_point_eth", "premium"]
     pd.testing.assert_frame_equal(a[cols].reset_index(drop=True), b[cols].reset_index(drop=True))
     if (config.NFT_FV_ARTIFACT_DIR / fv_artifact.META).exists():
-        meta = fv_artifact.load()[1]
+        meta = fv_artifact.load(follow_current=False)[1]
         it = fv_serving.items(config.ML_NFT_DIR)
         assert fv_serving.static_hash(it["static"]) == meta["static_sha256"]
         assert fv_serving.trait_pairs_hash(it["traits"]) == meta["trait_pairs_sha256"]
+
+
+def test_live_accuracy_log_records_exactly_the_served_values(served, dev, tmp_path, monkeypatch):
+    """D85: the daily log uses the API's own estimates() code; its values equal the item value responses."""
+    import gzip
+
+    from ml.nft import live_accuracy
+    t = served.tables(NOW)
+    st = dev["static"]
+    small = st[st["token_id"].isin(["7862", "8604", "1", "2", "3"])].reset_index(drop=True)
+    monkeypatch.setattr(served, "tables", lambda now: {**t, "items": {**t["items"], "static": small}})
+    rec = live_accuracy.record(NOW, tmp_path)
+    with gzip.open(rec["file"], "rt", encoding="utf-8") as f:
+        logged = pd.read_csv(f, dtype={"token_id": str})
+    assert rec["rows"] == len(small) == len(logged) and (logged["logged_at"] == int(NOW.timestamp())).all()
+    pairs = list(zip(logged["slug"], logged["token_id"]))
+    api = {(i["slug"], i["token_id"]): i for i in served.values(pairs, NOW)}
+    for r in logged.itertuples():
+        a = api[(r.slug, r.token_id)]
+        assert r.estimated_value_eth == pytest.approx(a["estimated_value_eth"], rel=1e-6, abs=1e-6)
+        assert r.floor_eth == pytest.approx(a["last_floor_eth"], rel=1e-6)          # the API rounds to 6 digits
+        assert ("model" if r.method == "model" else "baseline_b2") == a["method"]

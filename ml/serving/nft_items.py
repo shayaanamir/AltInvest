@@ -5,7 +5,10 @@ then per collection (config.NFT_FV_SERVE): "model" -> the fitted fv_pooled_l1_nl
 baseline (the 90-day same-decile median premium, 0 with fewer than 5 sales). estimated_value_eth = the last floor
 point before t x exp(predicted premium). ETH only, point estimate only: no range for any collection (D77), no
 feature-importance drivers. Tokens with no earlier sale get the training's missing-value handling and
-no_prior_sale = true. The accuracy note comes from the artifact metadata ('Accuracy check pending' until 10.9).
+no_prior_sale = true. The served model is the refit named by the artifact folder's CURRENT (D83). The error line
+comes from the served metadata's accuracy block, generated from the 10.8 report (D84): 'Median error in testing
+(Feb-Nov 2026): X%' (the collection's served method), plus 'Rarest items: about Y%' for items in their
+collection's rarest 10% (rarity decile 1, as B1, computed from the live traits now).
 Tables are rebuilt only when a source file changes; serving refuses (503) if the live traits differ from the
 ones the model was trained with (hashes in metadata.json).
 """
@@ -34,7 +37,27 @@ def _num(x, digits: int = 6):
 def _signature() -> tuple:
     d = config.ML_NFT_DIR
     files = [d / f for f in SOURCE_FILES] + sorted((d / "traits").glob("*.csv")) + sorted((d / "tokens").glob("*.csv"))
-    return (str(d),) + tuple(f.stat().st_mtime_ns if f.exists() else None for f in files)
+    a = config.NFT_FV_ARTIFACT_DIR
+    files += [a / fv_artifact.CURRENT, a / fv_artifact.META]                 # a new refit is picked up (D83)
+    pointer = a / fv_artifact.CURRENT
+    current = pointer.read_text(encoding="utf-8").strip() if pointer.exists() else ""
+    return (str(d), current) + tuple(f.stat().st_mtime_ns if f.exists() else None for f in files)
+
+
+def pct(x: float, digits: int) -> str:
+    return f"{100 * x:.{digits}f}%"
+
+
+def accuracy_lines(meta: dict, slug: str, rarity_decile) -> tuple[str, str | None]:
+    """(accuracy_note, rarity_accuracy_note) from the served metadata (D84)."""
+    acc = meta.get("accuracy")
+    if not acc:
+        return meta.get("accuracy_note") or config.NFT_FV_ACCURACY_NOTE, None
+    line = f"Median error in testing ({acc['window_label']}): {pct(acc['by_collection'][slug]['mdape'], 1)}"
+    rare = None
+    if rarity_decile is not None and not pd.isna(rarity_decile) and int(rarity_decile) == acc["rarest_decile"]["decile"]:
+        rare = f"Rarest items: about {pct(acc['rarest_decile']['mdape'], 0)}"
+    return line, rare
 
 
 def tables(now: datetime) -> dict:
@@ -74,6 +97,35 @@ def _check(slug: str, token_id: str, items: dict) -> tuple[str, str]:
     return s, tok
 
 
+ESTIMATE_COLUMNS = ["slug", "token_id", "method", "y_hat", "floor_eth", "floor_time", "estimated_value_eth",
+                    "no_prior_sale", "rarity_decile", "model_version"]
+
+
+def estimates(t: dict, pairs: list[tuple[str, str]], ts: int) -> pd.DataFrame:
+    """The served point estimate of each (slug, token_id) with known traits at Unix time ts, one row per pair in
+    order (ESTIMATE_COLUMNS). The API and the live accuracy log (D85) both use it, so the log records exactly what is
+    served. method follows config.NFT_FV_SERVE: 'model' -> the served artifact, 'b2' -> the 90-day same-decile median
+    premium (0 with fewer than 5 sales); estimated_value_eth = the last floor point before ts x exp(y_hat), NaN
+    without a floor point."""
+    if not pairs:
+        return pd.DataFrame(columns=ESTIMATE_COLUMNS)
+    feats = fv_serving.query_features(t["h"], t["points"], t["items"]["static"], t["items"]["traits"], pairs, ts)
+    pred = fv_artifact.predict(t["booster"], t["meta"], feats)
+    df = pd.DataFrame(pairs, columns=["slug", "token_id"]).astype(str)
+    df["method"] = df["slug"].map(config.NFT_FV_SERVE)
+    df["y_hat"] = np.where(df["method"] == "model", pred, np.nan_to_num(feats["decile_prem_med_90d"].to_numpy()))
+    floors = {s: fv_serving.floor_before(t["points"], s, ts) for s in df["slug"].unique()}
+    df["floor_eth"] = df["slug"].map(lambda s: floors[s]["floor_eth"] if floors[s] else np.nan)
+    df["floor_time"] = df["slug"].map(lambda s: floors[s]["time"] if floors[s] else np.nan)
+    df["estimated_value_eth"] = df["floor_eth"] * np.exp(df["y_hat"])
+    df["no_prior_sale"] = feats["no_prior_sale"].to_numpy(dtype=bool)
+    st = t["items"]["static"]
+    deciles = dict(zip(zip(st["slug"].astype(str), st["token_id"].astype(str)), st["rarity_decile"]))
+    df["rarity_decile"] = [deciles.get(p) for p in zip(df["slug"], df["token_id"])]
+    df["model_version"] = np.where(df["method"] == "model", t["meta"]["model_version"], "nft-fv-baseline-b2")
+    return df[ESTIMATE_COLUMNS]
+
+
 def values(pairs: list[tuple[str, str]], now: datetime) -> list[dict]:
     """One NftItemValue body per (slug, token_id), in order."""
     t = tables(now)
@@ -81,9 +133,7 @@ def values(pairs: list[tuple[str, str]], now: datetime) -> list[dict]:
     pairs = [_check(s, k, t["items"]) for s, k in pairs]
     known = set(map(tuple, t["items"]["static"][["slug", "token_id"]].astype(str).to_numpy()))
     ok = [p for p in pairs if p in known]
-    feats = fv_serving.query_features(t["h"], t["points"], t["items"]["static"], t["items"]["traits"], ok, ts) \
-        if ok else None
-    pred_model = fv_artifact.predict(t["booster"], t["meta"], feats) if ok else []
+    est = estimates(t, ok, ts)
     by_pair = {p: i for i, p in enumerate(ok)}
     tokens = t["items"]["tokens"].set_index(["slug", "token_id"])
     out = []
@@ -95,12 +145,11 @@ def values(pairs: list[tuple[str, str]], now: datetime) -> list[dict]:
         i = by_pair.get((slug, tok))
         notes = []
         if i is None:
-            y_hat, no_prior = None, sale is None
+            y_hat, no_prior, dec = None, sale is None, None
             notes.append("No trait data for this item, so no estimate.")
         else:
-            row = feats.iloc[i]
-            y_hat = float(pred_model[i]) if method == "model" else float(np.nan_to_num(row["decile_prem_med_90d"]))
-            no_prior = bool(row["no_prior_sale"])
+            row = est.iloc[i]
+            y_hat, no_prior, dec = float(row["y_hat"]), bool(row["no_prior_sale"]), row["rarity_decile"]
         if floor is None:
             y_hat = None
             notes.append("No floor price before now, so no estimate.")
@@ -109,6 +158,7 @@ def values(pairs: list[tuple[str, str]], now: datetime) -> list[dict]:
         if no_prior and i is not None:
             notes.append("This item has no earlier sale in the data, so the estimate leans on similar items.")
         rank = info.get("rarity_rank")
+        acc_line, rare_line = accuracy_lines(t["meta"], slug, dec)
         out.append({
             "slug": slug, "token_id": tok,
             "estimated_value_eth": None if y_hat is None else _num(floor["floor_eth"] * math.exp(y_hat)),
@@ -121,7 +171,7 @@ def values(pairs: list[tuple[str, str]], now: datetime) -> list[dict]:
             "no_prior_sale": bool(no_prior),
             "rarity_rank": None if pd.isna(rank) else int(rank),
             "rarity_ranked_tokens": int(t["items"]["tokens"].query("slug == @slug")["rarity_rank"].notna().sum()),
-            "accuracy_note": t["meta"].get("accuracy_note") or config.NFT_FV_ACCURACY_NOTE,
+            "accuracy_note": acc_line, "rarity_accuracy_note": rare_line,
             "model_version": t["meta"]["model_version"] if method == "model" else "nft-fv-baseline-b2",
             "note": " ".join(notes) or None, "as_of": iso_utc(now)})
     return out

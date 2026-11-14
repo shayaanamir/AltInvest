@@ -163,6 +163,7 @@ Estimated value of one item if it sold now, in ETH, point only. Unknown slug or 
     "rarity_rank",
     "rarity_ranked_tokens",
     "accuracy_note",
+    "rarity_accuracy_note",
     "model_version",
     "note",
     "as_of",
@@ -240,7 +241,14 @@ Estimated value of one item if it sold now, in ETH, point only. Unknown slug or 
     },
     "accuracy_note": {
       "type": "string",
-      "description": "From the served artifact's metadata ('Accuracy check pending' until 10.9)"
+      "description": "From the served artifact's metadata (D84): 'Median error in testing (Feb-Nov 2026): X%' with the sealed-test MdAPE of the method served for the collection (B2 for lilpudgys); 'Accuracy check pending' without a sealed result"
+    },
+    "rarity_accuracy_note": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Only for items in their collection's rarest 10% (rarity decile 1, as B1, computed now): 'Rarest items: about Y%' with the sealed-test MdAPE of the served setup on the rarest decile (D84); null otherwise"
     },
     "model_version": {
       "type": "string"
@@ -295,6 +303,7 @@ The same for up to `config.NFT_FV_MAX_BATCH` items (demo holdings). A malformed 
           "rarity_rank",
           "rarity_ranked_tokens",
           "accuracy_note",
+          "rarity_accuracy_note",
           "model_version",
           "note",
           "as_of"
@@ -371,7 +380,14 @@ The same for up to `config.NFT_FV_MAX_BATCH` items (demo holdings). A malformed 
           },
           "accuracy_note": {
             "type": "string",
-            "description": "From the served artifact's metadata ('Accuracy check pending' until 10.9)"
+            "description": "From the served artifact's metadata (D84): 'Median error in testing (Feb-Nov 2026): X%' with the sealed-test MdAPE of the method served for the collection (B2 for lilpudgys); 'Accuracy check pending' without a sealed result"
+          },
+          "rarity_accuracy_note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Only for items in their collection's rarest 10% (rarity decile 1, as B1, computed now): 'Rarest items: about Y%' with the sealed-test MdAPE of the served setup on the rarest decile (D84); null otherwise"
           },
           "model_version": {
             "type": "string"

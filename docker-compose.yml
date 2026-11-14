@@ -116,8 +116,13 @@ services:
     environment:
       OPENSEA_API_KEY: ${OPENSEA_API_KEY:-}
       ALCHEMY_API_KEY: ${ALCHEMY_API_KEY:-}
+      # D83/D85: monthly fair-value refits and the live accuracy log run in this sidecar after each refresh
+      ML_NFT_FV_ARTIFACT_DIR: /artifacts/nft_fv
+      ML_NFT_LIVE_ACCURACY_DIR: /live_accuracy
     volumes:
       - ml-data:/data
+      - ./ml/artifacts/nft_fv:/artifacts/nft_fv
+      - ./ml/docs/phase10/live_accuracy:/live_accuracy
     healthcheck:
       disable: true
     depends_on:

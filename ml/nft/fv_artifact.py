@@ -4,14 +4,16 @@
 
 Fits config.NFT_FV_CANDIDATE (fv_pooled_l1_nl15, exactly as declared in ml/models/nft_fair_value.py) on the
 clean development sales before config.NFT_FV_TRAIN_CUTOFF (2025-12-25, the last walk-forward fold's training
-cutoff), with W1/W2 decided from sales before that cutoff (D76 amended), i.e. the fold-9 fit of 10.6. It is
-refitted on all data only in step 10.9, after the sealed test. Writes model.txt (LightGBM text) and
-metadata.json (AGENTS rule 10) to config.NFT_FV_ARTIFACT_DIR. Serving loads them with load() (lightgbm only).
+cutoff), with W1/W2 decided from sales before that cutoff (D76 amended), i.e. the fold-9 fit of 10.6. Writes
+model.txt (LightGBM text) and metadata.json (AGENTS rule 10) to config.NFT_FV_ARTIFACT_DIR. Since step 10.9 the
+served model is a refit on the live data (ml.nft.fv_refit, D83) in the folder that the pointer file CURRENT names;
+this development fit stays as the reference. Serving loads the served one with load() (lightgbm only).
 """
 
 import argparse
 import json
 from datetime import datetime, timezone
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -21,7 +23,7 @@ from ml.models import nft_fair_value as fvm
 from ml.nft import fv_features as fv
 from ml.nft import fv_serving
 
-MODEL, META = "model.txt", "metadata.json"
+MODEL, META, CURRENT = "model.txt", "metadata.json", "CURRENT"
 
 
 def cutoff_ts() -> int:
@@ -74,10 +76,23 @@ def train() -> dict:
     return meta
 
 
-def load(directory=None) -> tuple:
-    """(booster, metadata) of the served artifact."""
+def served_dir(directory=None, follow_current: bool = True):
+    """The served artifact folder: the refit that CURRENT points to (D83), else the development artifact (D78)."""
+    d = Path(directory or config.NFT_FV_ARTIFACT_DIR)
+    pointer = d / CURRENT
+    if follow_current and pointer.exists():
+        rel = pointer.read_text(encoding="utf-8").strip()
+        target = (d / rel).resolve()
+        if d.resolve() not in target.parents:
+            raise OSError("CURRENT points outside the artifact folder")
+        return target
+    return d
+
+
+def load(directory=None, follow_current: bool = True) -> tuple:
+    """(booster, metadata) of the served artifact (CURRENT's refit if present, D83; else the development fit)."""
     import lightgbm as lgb
-    d = directory or config.NFT_FV_ARTIFACT_DIR
+    d = served_dir(directory, follow_current)
     meta = json.loads((d / META).read_text(encoding="utf-8"))
     import hashlib
     if hashlib.sha256((d / MODEL).read_bytes()).hexdigest() != meta["model_sha256"]:

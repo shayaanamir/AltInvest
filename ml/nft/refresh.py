@@ -1,7 +1,8 @@
 """Daily refresh of the NFT serving data (plan step 10.2; the same pattern as ml.data.refresh, D40).
 
     python -m ml.nft.refresh            (once)
-    python -m ml.nft.refresh --loop     (now, then daily at config.NFT_REFRESH_UTC)
+    python -m ml.nft.refresh --loop     (now, then daily at config.NFT_REFRESH_UTC; after each refresh the
+                                         fair-value jobs run: monthly refit D83, live accuracy log D85)
 
 Writes only to config.ML_NFT_DIR and refuses a directory inside the frozen snapshots (D62). Each stage runs
 on its own: a stage that fails leaves its previous files in place and the others still run. New floor data
@@ -89,8 +90,13 @@ def run_once(now: datetime | None = None) -> dict:
 
 
 def loop() -> None:
+    from ml.nft import fv_jobs
     while True:
         run_once()
+        try:
+            fv_jobs.after_refresh()
+        except Exception as exc:                                # the jobs report their own failures
+            print(f"[nft-refresh] fair-value jobs failed: {type(exc).__name__}: {exc}", flush=True)
         wake = next_run(datetime.now(timezone.utc), config.NFT_REFRESH_UTC)
         print(f"[nft-refresh] next refresh at {wake.strftime('%Y-%m-%dT%H:%M:%SZ')}", flush=True)
         while (left := (wake - datetime.now(timezone.utc)).total_seconds()) > 0:
