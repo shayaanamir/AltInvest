@@ -94,9 +94,15 @@ def verdict_rows(pooled_results: dict, sections: dict, winner: str | None) -> li
     return rows
 
 
-def build(floor, column: str = risk_data.COLUMN, protocol: str = "per-model-type") -> dict:
-    """protocol 'per-model-type' (what 10.3 ran: each model type confirmed, D49 practice) or 'top-only' (D25/D44 as
-    written: all candidates ranked together, only the top one confirmed; declared for the re-evaluation, D65i)."""
+HISTORICAL_WARNING = ("WARNING: --protocol per-model-type reproduces the historical 10.3 run (D49 practice). It is "
+                      "NOT the selection rule: D81 makes top-only the rule for every phase. Never approve or serve "
+                      "from this report.")
+
+
+def build(floor, column: str = risk_data.COLUMN, protocol: str = "top-only") -> dict:
+    """protocol 'top-only' (the default and the rule, D25/D44 as written, D81: all candidates ranked together, only
+    the top one confirmed) or 'per-model-type' (historical: what 10.3 ran, each model type confirmed, D49 practice;
+    main() needs --historical for it)."""
     runs = {slug: run_collection(f, column) for slug, f in floor.groupby("slug", sort=True)}
     rows = {slug: {"dates": r["pooled"].index.strftime("%Y-%m-%d").to_numpy(), "in_rank": r["in_rank"],
                    "losses": r["losses"]} for slug, r in runs.items()}
@@ -115,7 +121,10 @@ def build(floor, column: str = risk_data.COLUMN, protocol: str = "per-model-type
         "baseline": "persistence vol_30d of the floor",
         "rule": "D59 (amended 2026-11-10) with D44: pooled paired 95% CI (date blocks of 30) of QLIKE(persistence) "
                 "- QLIKE(model) on the last 40% of every collection's folds excludes 0 with a positive estimate, "
-                "and no collection is worse than persistence; if both models pass, the lower pooled QLIKE wins",
+                "and no collection is worse than persistence; "
+                + ("only the top-ranked candidate of all model types is confirmed (top-only, D81)"
+                   if protocol == "top-only" else
+                   "HISTORICAL per-model-type: if both models pass, the lower pooled QLIKE wins (not the D81 rule)"),
         "declared": nft_risk.declared(),
         "trial_count": {"formula": "configs x 1 pooled test x 1 horizon (baselines are not trials); the per-"
                                    "collection rows are reported, not separate approvals",
@@ -131,19 +140,33 @@ def build(floor, column: str = risk_data.COLUMN, protocol: str = "per-model-type
     }
 
 
-def main(argv=None) -> None:
+def parse_args(argv=None):
+    """--protocol defaults to top-only (D81). per-model-type is refused unless --historical is given, and then a
+    warning is printed (10.9b SHOULD FIX 3)."""
     import argparse
-    manifest_sha = snapshot.require_snapshot("floor")           # D62: frozen snapshot only
     parser = argparse.ArgumentParser(description="NFT floor-volatility walk-forward (10.3)")
     parser.add_argument("--floor-column", default=risk_data.COLUMN,
                         help="floor_eth_model reproduces 10.3; the declared re-run (D65h) uses floor_eth_asof")
-    parser.add_argument("--protocol", choices=("per-model-type", "top-only"), default="per-model-type",
-                        help="per-model-type reproduces 10.3; the declared re-run (D65i) uses top-only")
+    parser.add_argument("--protocol", choices=("top-only", "per-model-type"), default="top-only",
+                        help="top-only is the rule (D81); per-model-type only reproduces 10.3 and needs --historical")
+    parser.add_argument("--historical", action="store_true",
+                        help="allow --protocol per-model-type (reproduction of the 10.3 run only)")
     args = parser.parse_args(argv)
+    if args.protocol == "per-model-type":
+        if not args.historical:
+            parser.error("--protocol per-model-type is historical (D81: top-only for every phase); add --historical "
+                         "to reproduce the 10.3 run")
+        print(HISTORICAL_WARNING, flush=True)
+    return args
+
+
+def main(argv=None) -> None:
+    args = parse_args(argv)
+    manifest_sha = snapshot.require_snapshot("floor")           # D62: frozen snapshot only
     column, protocol = args.floor_column, args.protocol
     floor = snapshot.load("floor")
     report = build(floor, column=column, protocol=protocol)
-    sens = build(floor, column=SENSITIVITY_COLUMN)
+    sens = build(floor, column=SENSITIVITY_COLUMN, protocol=protocol)
     report["sensitivity_unguarded_floor"] = {
         "floor_column": SENSITIVITY_COLUMN,
         "note": "D66: the same run without the spike guard. Reported only; not an approval and not served.",

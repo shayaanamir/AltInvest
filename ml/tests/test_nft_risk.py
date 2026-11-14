@@ -152,7 +152,20 @@ def test_report_serves_persistence_when_nothing_is_approved_and_counts_trials():
 def test_runner_refuses_a_snapshot_that_does_not_match_its_manifest(monkeypatch):
     monkeypatch.setattr(snapshot, "mismatches", lambda date=None, tables=(): ["floor.parquet"])
     with pytest.raises(SystemExit, match=r"does not match its manifest \(D62\)"):
-        run_nft_risk.main()
+        run_nft_risk.main([])
+
+
+def test_runner_defaults_to_top_only_and_needs_historical_for_per_model_type(capsys):
+    """10.9b SHOULD FIX 3 (D81): top-only is the default; the 10.3 per-model-type mode needs --historical and warns."""
+    import inspect
+    assert run_nft_risk.parse_args([]).protocol == "top-only"
+    assert inspect.signature(run_nft_risk.build).parameters["protocol"].default == "top-only"
+    with pytest.raises(SystemExit) as e:
+        run_nft_risk.parse_args(["--protocol", "per-model-type"])
+    assert e.value.code == 2 and "--historical" in capsys.readouterr().err
+    args = run_nft_risk.parse_args(["--protocol", "per-model-type", "--historical"])
+    assert args.protocol == "per-model-type" and "WARNING" in capsys.readouterr().out
+    assert "WARNING" not in (run_nft_risk.parse_args([]) and capsys.readouterr().out)
 
 
 def test_top_only_protocol_ranks_all_candidates_together_and_confirms_only_the_top():
