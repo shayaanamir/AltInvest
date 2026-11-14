@@ -65,6 +65,7 @@ export default function NftHoldingsGrid() {
                         <>
                           <div className="pv2-nft-est" title={NFT_ITEM_CAPTION}>{n.estimate.label}</div>
                           <div className="pv2-nft-est-sub">{n.estimate.accuracyLine}</div>
+                          {n.estimate.rarityAccuracyLine && <div className="pv2-nft-est-sub">{n.estimate.rarityAccuracyLine}</div>}
                         </>
                       )}
                     </div>

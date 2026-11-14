@@ -1,5 +1,7 @@
 // NFT item value card (Phase 10 step 10.7, ml/docs/DECISIONS.md D78). Pure helpers, tested in nftItemValue.test.js.
 // ETH only (no USD conversion of the estimate), point estimate only (no range), no feature-importance drivers.
+// Error lines (D84, step 10.9): the served accuracy_note ("Median error in testing (Feb-Nov 2026): X%") as it comes,
+// plus rarity_accuracy_note ("Rarest items: about Y%") for an item in its collection's rarest 10%.
 
 export const NFT_ITEM_CAPTION =
   "An estimate of what this item might sell for now, mostly driven by the collection floor and recent sales. Not a price prediction.";
@@ -34,7 +36,8 @@ export function mapItemValue(d) {
     lastSaleLabel: sale ? `${formatEth(sale.price_eth)} on ${formatUtcDate(sale.timestamp)}` : "No earlier sale in the data",
     noPriorSale: d.no_prior_sale === true,
     rarityLabel: rank != null ? `#${rank.toLocaleString("en-US")}${of != null ? ` of ${of.toLocaleString("en-US")}` : ""}` : "—",
-    accuracyLine: `Typical error: ${d.accuracy_note || "Accuracy check pending"}`,
+    accuracyLine: d.accuracy_note || "Accuracy check pending",
+    rarityAccuracyLine: d.rarity_accuracy_note || null,
     note: d.note || null,
     stale: d.stale === true,
     method: d.method === "baseline_b2" ? "Similar-rarity sales (baseline)" : "Model",
@@ -47,7 +50,8 @@ export function holdingEstimate(h) {
   if (!h || !isNum(h.estimated_value_eth)) return null;
   return {
     label: `Est. value ${formatEth(h.estimated_value_eth)}`,
-    accuracyLine: `Typical error: ${h.estimated_value_accuracy_note || "Accuracy check pending"}`,
+    accuracyLine: h.estimated_value_accuracy_note || "Accuracy check pending",
+    rarityAccuracyLine: h.estimated_value_rarity_accuracy_note || null,
     asOf: formatUtcDate(h.estimated_value_as_of),
   };
 }

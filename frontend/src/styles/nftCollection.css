@@ -44,6 +44,7 @@
 .nft-item-body { margin-top: 12px; max-width: 520px; }
 .nft-item-token { font-size: 12px; font-weight: 700; color: var(--sv2-text-mute); }
 .nft-item-accuracy { font-size: 12px; font-weight: 600; color: var(--sv2-text); margin-top: 10px; }
+.nft-item-accuracy-rare { margin-top: 2px; }
 .nft-item-caption { font-style: italic; }
 .pv2-nft-est { font-size: 12px; font-weight: 700; color: var(--sv2-text); margin-top: 6px; }
 .pv2-nft-est-sub { font-size: 10.5px; color: var(--sv2-text-soft); }

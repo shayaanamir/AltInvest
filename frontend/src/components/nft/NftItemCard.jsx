@@ -5,7 +5,7 @@ import { NFT_ITEM_CAPTION, validTokenId } from "../../utils/nftItemValue";
 import { ErrorState } from "../../errors";
 
 // Item card (Phase 10 step 10.7, ml/docs/DECISIONS.md D78): estimated value in ETH (point only, no range,
-// no drivers), the last floor and its date, the item's last sale, its rarity rank and the served accuracy line.
+// no drivers), the last floor and its date, the item's last sale, its rarity rank and the served error lines (D84).
 export default function NftItemCard({ slug, initialToken }) {
   const [input, setInput] = useState(initialToken || "");
   const [query, setQuery] = useState(validTokenId(initialToken));
@@ -54,6 +54,7 @@ export default function NftItemCard({ slug, initialToken }) {
             <span>Method</span><b>{v.method}</b>
           </div>
           <div className="nft-item-accuracy">{v.accuracyLine}</div>
+          {v.rarityAccuracyLine && <div className="nft-item-accuracy nft-item-accuracy-rare">{v.rarityAccuracyLine}</div>}
           {v.note && <div className="nft-note">{v.note}</div>}
           {v.stale && <div className="nft-note">Showing the last stored estimate ({v.asOf}); the live estimate is unavailable.</div>}
           <div className="nft-note nft-item-caption">{NFT_ITEM_CAPTION}</div>
