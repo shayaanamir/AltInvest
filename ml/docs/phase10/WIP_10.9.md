@@ -11,13 +11,15 @@ the backend only via `docker restart altinvest-backend`.
 - D83 serving refit + monthly refit job. D84 item card error line. D85 live accuracy log.
 
 ## Done
-- A. D80, D81 (owner decisions).
+- A. D80, D81 (owner decisions) 8c86c6b.
+- B. D49 audit: EWMA withdrawn, persistence served (D82) 99dcc8a ml, e0056f6 frontend, 1ba73af scorecard. Not yet deployed.
 
 ## In progress
-- B. D49 audit.
+- F. Deploy (ML compose up --no-deps; backend docker restart), check the sidecar's first refit + first log,
+  sanity check, screenshots.
+- Code done: C+D+E ML 39c9216 (D83-D85), backend 80953b4, frontend 6837982.
 
 ## Next
 - B. D49 audit -> report + D82 (+ serving switch if it fails).
-- C. Refit + monthly job (D83).  D. Error line (ML, backend:, frontend; D84).  E. Live accuracy log (D85).
 - F. Deploy, screenshots.  G. Close: PLAN_NFT statuses, review list, backlog, STATUS how-to-verify,
   PHASE_10_nft.md, GLOSSARY, scorecard, all tests, snapshot verify, checkpoint_10.9.md.
