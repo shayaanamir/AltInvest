@@ -8,7 +8,7 @@ the D74 multi-token rule (transaction payments frozen as tx_payments.parquet), p
 traits with ID-like categories marked and rarity recomputed without them (known traits only). v2 (D70) stays frozen.
 Sealed cutoff T (D71) is config.NFT_FV_SEALED_START, computed once on v2 and NOT recomputed for v3 (D75).
   load_dev()      clean sales dated before T - 7 days (the only loader for development, tested)
-  load_sealed()   clean sales dated on or after T, ONLY for step 10.8 (refuses otherwise)
+  load_sealed()   clean sales dated on or after T; was ONLY for step 10.8, refuses every caller since 10.9b
 The embargo [T - 7, T) is in neither.
 """
 
@@ -166,22 +166,17 @@ def load_dev(include_flagged: bool = False) -> dict:
 def load_history(step: str) -> dict:
     """The as-of feature history for the one-time sealed test (D79): EVERY v3 row after C1-C3 (clean and flagged,
     development, embargo and sealed dates up to the snapshot), all floor points, tokens and traits. Features of a
-    sealed sale use only rows strictly before it (fv_features). Only step 10.8 may call it (plan rule 3)."""
-    if step != "10.8":
-        raise PermissionError("the full item history is read only in step 10.8 (plan rule 3, D79)")
-    v = config.NFT_ITEM_SNAPSHOT_V3
-    require(v)
-    snapshot.require_snapshot("floor_points")
-    return {"sales": snapshot.load("sales", v), "tokens": snapshot.load("tokens", v),
-            "traits": snapshot.load("traits", v), "floor_points": snapshot.load("floor_points"),
-            "not_model_features": ic.NOT_FEATURES}
+    sealed sale use only rows strictly before it (fv_features). Only step 10.8 could call it (plan rule 3); that run
+    is done (ml/reports/nft/sealed_fair_value.json), so since 10.9b it refuses every caller."""
+    raise PermissionError(f"the full item history was read once, in step 10.8 (plan rule 3, D79); the sealed test is "
+                          f"spent and the loader refuses every step (asked for {step!r}, 10.9b)")
 
 
 def load_sealed(step: str) -> dict:
-    """The sealed fair-value rows (dated >= T). Only the one-time sealed test may call it (plan rule 3)."""
-    if step != "10.8":
-        raise PermissionError("the sealed fair-value rows are read only in step 10.8 (plan rule 3, D71)")
-    return _load("sealed")
+    """The sealed fair-value rows (dated >= T). Only the one-time sealed test could call it (plan rule 3); that run is
+    done, so since 10.9b it refuses every caller."""
+    raise PermissionError(f"the sealed fair-value rows were for step 10.8 only (plan rule 3, D71); the sealed test is "
+                          f"spent and the loader refuses every step (asked for {step!r}, 10.9b)")
 
 
 def main() -> None:

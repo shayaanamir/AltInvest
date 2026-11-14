@@ -21,10 +21,12 @@ def test_window_months_and_cutoffs_are_as_declared():
     assert str(d[-1]["test_end"].date()) == "2026-01-25"
 
 
-def test_history_loader_and_sealed_loader_refuse_outside_step_10_8():
+def test_history_loader_and_sealed_loader_refuse_every_step_now_that_the_sealed_test_is_spent():
+    """10.9b MINOR 5: both loaders raise unconditionally, 10.8 included."""
     for f in (item_data.load_history, item_data.load_sealed):
-        with pytest.raises(PermissionError, match="10.8"):
-            f("10.7")
+        for step in ("10.7", "10.8", "10.9", ""):
+            with pytest.raises(PermissionError, match="spent"):
+                f(step)
 
 
 def _rows(served_err, base_err):
