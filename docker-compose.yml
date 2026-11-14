@@ -48,17 +48,19 @@ services:
       SMTP_FROM: ${SMTP_FROM:-}
       SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
       ML_BASE_URL: ${ML_BASE_URL:-http://ml:8001}
+      # The source is bind-mounted read-only (no container writes into the repo, Phase 10 review 10.9b)
+      PYTHONDONTWRITEBYTECODE: "1"
     depends_on:
       mongodb:
         condition: service_healthy
     volumes:
-      # bind-mount source for live editing; installed pip packages live
-      # outside these paths so they aren't shadowed
-      - ./backend:/app/backend
-      - ./shared:/app/shared
-      - ./aai_engine:/app/aai_engine
-      - ./sentiment_engine:/app/sentiment_engine
-      - ./db:/app/db
+      # bind-mount source for live editing (read-only: no container writes into the repo); installed pip
+      # packages live outside these paths so they aren't shadowed
+      - ./backend:/app/backend:ro
+      - ./shared:/app/shared:ro
+      - ./aai_engine:/app/aai_engine:ro
+      - ./sentiment_engine:/app/sentiment_engine:ro
+      - ./db:/app/db:ro
     working_dir: /app/backend
     command: uvicorn main:app --host 0.0.0.0 --port 8000
     networks:
@@ -147,7 +149,8 @@ services:
       # Bind mounts from Windows don't deliver file events; let Vite poll (see vite.config.js).
       VITE_WATCH_POLLING: "true"
     volumes:
-      - ./frontend:/app
+      # read-only (no container writes into the repo); Vite's caches go to node_modules, a volume
+      - ./frontend:/app:ro
       - frontend_node_modules:/app/node_modules
     depends_on:
       - backend
