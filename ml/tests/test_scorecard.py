@@ -89,3 +89,14 @@ def test_phase9_nothing_served_after_d82(card):
         assert row["approved"] == src[("ewma", 30)]["approved"]                  # the logged D49 verdict, unchanged
     assert card["summary"]["phase9_served"] == 0 and card["summary"]["phase9_approved_top_only"] == 1
     assert card["summary"]["phase9_approved"] > 0                                # BTC/ETH EWMA, logged under D49
+
+
+def test_nft_section_copies_the_phase_10_reports(card):
+    """Phase 10 close: the scorecard's NFT rows are copied from ml/reports/nft and match the committed file."""
+    rows = {(r["part"], r["model"]): r for r in card["nft"]["rows"]}
+    sealed = json.loads((sc.REPORTS / "nft" / "sealed_fair_value.json").read_text(encoding="utf-8"))["verdict"]
+    s = rows[("nft fair value (sealed test, once)", "served setup")]
+    assert s["model_value"] == sealed["mdape"]["served"] and s["approved"] is sealed["pass"] is True
+    assert rows[("nft risk (pooled, h = 30)", "ewma")]["served"] is False                      # D73
+    committed = json.loads(sc.OUT_JSON.read_text(encoding="utf-8"))
+    assert committed["nft"] == card["nft"]

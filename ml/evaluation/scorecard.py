@@ -3,8 +3,9 @@
     python -m ml.evaluation.scorecard          (from the repo root)
 
 Reads ONLY ml/reports/{asset}/walkforward_{risk,price,direction}.json, backtest.json, power_check.json and the
-Phase 9 reports (walkforward_{price_v2,range,risk_v2,direction_v2}.json, test_final.json) and the D82 audit
-(ml/reports/d49_audit_risk.json); trains nothing and reads
+Phase 9 reports (walkforward_{price_v2,range,risk_v2,direction_v2}.json, test_final.json), the D82 audit
+(ml/reports/d49_audit_risk.json) and the Phase 10 NFT reports (ml/reports/nft/walkforward_risk.json,
+walkforward_fair_value.json, sealed_fair_value.json); trains nothing and reads
 no data (AGENTS rules 5, 8). Writes ml/reports/scorecard.json and ml/reports/SCORECARD.md, both generated, never
 hand-typed. Every number is copied from a source report; `gain` is the paired difference signed so that > 0 means
 the model beat its baseline (D25, D28, D31, D44). Served comes from config and D33, D35, D36, D82.
@@ -145,6 +146,35 @@ def verdict(asset: str, models: dict, bt: dict) -> str:
     return f"{asset.upper()}: " + "; ".join(parts) + "."
 
 
+def nft_section() -> dict:
+    """Phase 10 NFT rows, copied from ml/reports/nft (D59, D65, D73, D77, D79, D80)."""
+    nft = REPORTS / "nft"
+    risk = json.loads((nft / "walkforward_risk.json").read_text(encoding="utf-8"))
+    fv_wf = json.loads((nft / "walkforward_fair_value.json").read_text(encoding="utf-8"))["selection"]
+    fv_s = json.loads((nft / "sealed_fair_value.json").read_text(encoding="utf-8"))
+    rows = [{"part": "nft risk (pooled, h = 30)", "model": v["model"], "metric": "QLIKE", "model_value": v["model_qlike"],
+             "baseline": v["baseline"], "baseline_value": v["baseline_qlike"], "gain_ci95": _ci(v["paired_ci"]),
+             "approved": v["approved"], "served": False,
+             "status": ("approved in 10.3, withdrawn by the D72 check (D73); under top-only GARCH ranks first and its "
+                        "CI includes 0 (D65 i)") if v["approved"] else "not approved",
+             "source": "ml/reports/nft/walkforward_risk.json"}
+            for v in risk["verdict_table"] if v["scope"].startswith("pooled")]
+    v = fv_wf["verdict"]
+    rows.append({"part": "nft fair value (walk-forward)", "model": v["top_candidate"], "metric": "MdAPE on price",
+                 "model_value": v["model_mdape"], "baseline": v["baseline"], "baseline_value": v["baseline_mdape"],
+                 "gain_ci95": _ci(v["paired_diff_baseline_minus_model"]), "approved": v["approved"], "served": True,
+                 "status": "approved (D77); served for 6 collections, B2 for lilpudgys (D78, D80); no range",
+                 "source": "ml/reports/nft/walkforward_fair_value.json"})
+    s = fv_s["verdict"]
+    best = s["best_baseline"]
+    rows.append({"part": "nft fair value (sealed test, once)", "model": "served setup", "metric": "MdAPE on price",
+                 "model_value": s["mdape"]["served"], "baseline": best, "baseline_value": s["mdape"][best],
+                 "gain_ci95": _ci(s["paired_diff_best_baseline_minus_served"]), "approved": s["pass"], "served": True,
+                 "status": "PASS (D79): the serving rule stays", "source": "ml/reports/nft/sealed_fair_value.json"})
+    return {"rows": rows, "served_risk": "persistence vol_30d (D73)",
+            "served_fair_value": "monthly refit of fv_pooled_l1_nl15 (D83); B2 for lilpudgys (D80)"}
+
+
 def build(assets=config.ASSETS) -> dict:
     out = {"assets": {}}
     for a in assets:
@@ -153,6 +183,7 @@ def build(assets=config.ASSETS) -> dict:
         power = _load(a, "power_check")
         out["assets"][a] = {"verdict": verdict(a, models, bt), "models": models, "backtest": bt,
                             "power_note": power["note"], "phase9": phase9_rows(a), "sealed_test": sealed_test(a)}
+    out["nft"] = nft_section()
     out["summary"] = {
         "models_approved": sum(r["approved"] for x in out["assets"].values() for r in x["models"].values()),
         "models_served": sum(r["served"] for x in out["assets"].values() for r in x["models"].values()),
@@ -229,6 +260,18 @@ def markdown(card: dict) -> str:
             f"risk {h}: QLIKE EWMA {_f(r['qlike_ewma'])} vs persistence {_f(r['qlike_persistence'])}, gain "
             f"{_f(r['gain_ci95']['estimate'])} [{_f(r['gain_ci95']['low'])}, {_f(r['gain_ci95']['high'])}]"
             for h, r in st["risk"].items()) + f"; vol_30d band coverage {_f(st['range_h30']['coverage'])}.", ""]
+    n = card["nft"]
+    lines += ["## NFT collections (Phase 10)", "",
+              f"Served: risk = {n['served_risk']}; item value = {n['served_fair_value']}.", "",
+              "| Part | Model | Metric | Model | Baseline | Gain [95% CI] | Approved | Served | Status |",
+              "|---|---|---|---|---|---|---|---|---|"]
+    for r in n["rows"]:
+        g = r["gain_ci95"]
+        lines.append(f"| {r['part']} | {r['model']} | {r['metric']} | {_f(r['model_value'])} | "
+                     f"{_f(r['baseline_value'])} ({r['baseline']}) | {_f(g['estimate'])} [{_f(g['low'])}, "
+                     f"{_f(g['high'])}] | {'yes' if r['approved'] else 'no'} | {'yes' if r['served'] else 'no'} | "
+                     f"{r['status']} |")
+    lines.append("")
     return "\n".join(lines)
 
 
