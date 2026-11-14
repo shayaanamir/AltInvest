@@ -1,6 +1,6 @@
 # AGENTS.md — ML v2 entry point (read this first, every session)
 
-Project: AltInvest ML service (crypto first, NFTs later). Produces ONLY `/predict/{asset}` and `/risk/{asset}`.
+Project: AltInvest ML service (crypto first, NFTs later). Produces ONLY `/predict/{asset}` and `/risk/{asset}`, plus, from Phase 10 (D53), NFT collection and item outputs under `/nft/...` as specified in docs/DECISIONS.md D53-D62.
 AAI score is the backend's job. Do not build it.
 
 ## Read order (do not read the whole repo)

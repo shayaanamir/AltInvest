@@ -1,0 +1,727 @@
+{
+ "generated_at": "2026-11-13T20:45:56Z",
+ "git_commit": "7fa7ec9f575824eac167c1983027f1fbfd76efd6",
+ "git_dirty": false,
+ "item_snapshot": "2026-11-10-items-v3",
+ "item_manifest_sha256": "1d0c12d1643ad18dee4e3851ff3a48f9d938ab1223b38e56abb2fddbc6e67dfd",
+ "base_manifest_sha256": "90e74e885eee75336e7a9b46bb9f718a4a9757802234fc197053901f3d27d7af",
+ "dev_rows": {
+  "history_H": 153708,
+  "clean_targets": 144592,
+  "last_date": "2026-01-24",
+  "floor_points": 3458
+ },
+ "sample": {
+  "n": 2000,
+  "seed": 0,
+  "by_collection": {
+   "azuki": 232,
+   "boredapeyachtclub": 92,
+   "doodles-official": 296,
+   "lilpudgys": 686,
+   "milady": 178,
+   "mutant-ape-yacht-club": 294,
+   "pudgypenguins": 222
+  },
+  "tolerance": 1e-09
+ },
+ "check1_reference_on_cut_data": {
+  "n_sales": 2000,
+  "per_feature": {
+   "floor_age_hours": {
+    "n": 2000,
+    "n_equal": 2000,
+    "n_non_null": 2000,
+    "max_abs_diff": 0.0
+   },
+   "floor_ret_1d": {
+    "n": 2000,
+    "n_equal": 2000,
+    "n_non_null": 2000,
+    "max_abs_diff": 0.0
+   },
+   "floor_ret_7d": {
+    "n": 2000,
+    "n_equal": 2000,
+    "n_non_null": 2000,
+    "max_abs_diff": 0.0
+   },
+   "floor_ret_30d": {
+    "n": 2000,
+    "n_equal": 2000,
+    "n_non_null": 2000,
+    "max_abs_diff": 0.0
+   },
+   "floor_vol_7d": {
+    "n": 2000,
+    "n_equal": 2000,
+    "n_non_null": 2000,
+    "max_abs_diff": 0.0
+   },
+   "floor_vol_30d": {
+    "n": 2000,
+    "n_equal": 2000,
+    "n_non_null": 2000,
+    "max_abs_diff": 0.0
+   },
+   "coll_sales_1d": {
+    "n": 2000,
+    "n_equal": 2000,
+    "n_non_null": 2000,
+    "max_abs_diff": 0.0
+   },
+   "coll_sales_7d": {
+    "n": 2000,
+    "n_equal": 2000,
+    "n_non_null": 2000,
+    "max_abs_diff": 0.0
+   },
+   "coll_prem_med_7d": {
+    "n": 2000,
+    "n_equal": 2000,
+    "n_non_null": 2000,
+    "max_abs_diff": 0.0
+   },
+   "coll_prem_med_30d": {
+    "n": 2000,
+    "n_equal": 2000,
+    "n_non_null": 2000,
+    "max_abs_diff": 0.0
+   },
+   "decile_prem_med_90d": {
+    "n": 2000,
+    "n_equal": 2000,
+    "n_non_null": 1992,
+    "max_abs_diff": 0.0
+   },
+   "trait_prem_max": {
+    "n": 2000,
+    "n_equal": 2000,
+    "n_non_null": 1994,
+    "max_abs_diff": 0.0
+   },
+   "trait_prem_mean": {
+    "n": 2000,
+    "n_equal": 2000,
+    "n_non_null": 1994,
+    "max_abs_diff": 1.1102230246251565e-16
+   },
+   "trait_prem_min": {
+    "n": 2000,
+    "n_equal": 2000,
+    "n_non_null": 1994,
+    "max_abs_diff": 0.0
+   },
+   "trait_prem_n": {
+    "n": 2000,
+    "n_equal": 2000,
+    "n_non_null": 2000,
+    "max_abs_diff": 0.0
+   },
+   "prev_prem": {
+    "n": 2000,
+    "n_equal": 2000,
+    "n_non_null": 1656,
+    "max_abs_diff": 0.0
+   },
+   "prev_days": {
+    "n": 2000,
+    "n_equal": 2000,
+    "n_non_null": 1656,
+    "max_abs_diff": 0.0
+   },
+   "prev_n": {
+    "n": 2000,
+    "n_equal": 2000,
+    "n_non_null": 2000,
+    "max_abs_diff": 0.0
+   },
+   "dow": {
+    "n": 2000,
+    "n_equal": 2000,
+    "n_non_null": 2000,
+    "max_abs_diff": 0.0
+   },
+   "hour": {
+    "n": 2000,
+    "n_equal": 2000,
+    "n_non_null": 2000,
+    "max_abs_diff": 0.0
+   },
+   "collection": {
+    "n": 2000,
+    "n_equal": 2000,
+    "n_non_null": 2000,
+    "max_abs_diff": 0.0
+   },
+   "rarity_score": {
+    "n": 2000,
+    "n_equal": 2000,
+    "n_non_null": 2000,
+    "max_abs_diff": 0.0
+   },
+   "rarity_pct": {
+    "n": 2000,
+    "n_equal": 2000,
+    "n_non_null": 2000,
+    "max_abs_diff": 0.0
+   },
+   "n_traits": {
+    "n": 2000,
+    "n_equal": 2000,
+    "n_non_null": 2000,
+    "max_abs_diff": 0.0
+   },
+   "trait_share_min": {
+    "n": 2000,
+    "n_equal": 2000,
+    "n_non_null": 2000,
+    "max_abs_diff": 0.0
+   },
+   "trait_share_mean": {
+    "n": 2000,
+    "n_equal": 2000,
+    "n_non_null": 2000,
+    "max_abs_diff": 1.1102230246251565e-16
+   },
+   "trait__<slug>__<category> (all of the sale's own collection)": {
+    "n": 2000,
+    "n_equal": 2000
+   }
+  },
+  "static_columns_checked": 68
+ },
+ "check2_pipeline_on_cut_data": {
+  "n_sales": 70,
+  "per_feature": {
+   "floor_age_hours": {
+    "n": 70,
+    "n_equal": 70,
+    "n_non_null": 70,
+    "max_abs_diff": 0.0
+   },
+   "floor_ret_1d": {
+    "n": 70,
+    "n_equal": 70,
+    "n_non_null": 70,
+    "max_abs_diff": 0.0
+   },
+   "floor_ret_7d": {
+    "n": 70,
+    "n_equal": 70,
+    "n_non_null": 70,
+    "max_abs_diff": 0.0
+   },
+   "floor_ret_30d": {
+    "n": 70,
+    "n_equal": 70,
+    "n_non_null": 70,
+    "max_abs_diff": 0.0
+   },
+   "floor_vol_7d": {
+    "n": 70,
+    "n_equal": 70,
+    "n_non_null": 70,
+    "max_abs_diff": 0.0
+   },
+   "floor_vol_30d": {
+    "n": 70,
+    "n_equal": 70,
+    "n_non_null": 70,
+    "max_abs_diff": 0.0
+   },
+   "coll_sales_1d": {
+    "n": 70,
+    "n_equal": 70,
+    "n_non_null": 70,
+    "max_abs_diff": 0.0
+   },
+   "coll_sales_7d": {
+    "n": 70,
+    "n_equal": 70,
+    "n_non_null": 70,
+    "max_abs_diff": 0.0
+   },
+   "coll_prem_med_7d": {
+    "n": 70,
+    "n_equal": 70,
+    "n_non_null": 70,
+    "max_abs_diff": 0.0
+   },
+   "coll_prem_med_30d": {
+    "n": 70,
+    "n_equal": 70,
+    "n_non_null": 70,
+    "max_abs_diff": 0.0
+   },
+   "decile_prem_med_90d": {
+    "n": 70,
+    "n_equal": 70,
+    "n_non_null": 70,
+    "max_abs_diff": 0.0
+   },
+   "trait_prem_max": {
+    "n": 70,
+    "n_equal": 70,
+    "n_non_null": 70,
+    "max_abs_diff": 0.0
+   },
+   "trait_prem_mean": {
+    "n": 70,
+    "n_equal": 70,
+    "n_non_null": 70,
+    "max_abs_diff": 0.0
+   },
+   "trait_prem_min": {
+    "n": 70,
+    "n_equal": 70,
+    "n_non_null": 70,
+    "max_abs_diff": 0.0
+   },
+   "trait_prem_n": {
+    "n": 70,
+    "n_equal": 70,
+    "n_non_null": 70,
+    "max_abs_diff": 0.0
+   },
+   "prev_prem": {
+    "n": 70,
+    "n_equal": 70,
+    "n_non_null": 61,
+    "max_abs_diff": 0.0
+   },
+   "prev_days": {
+    "n": 70,
+    "n_equal": 70,
+    "n_non_null": 61,
+    "max_abs_diff": 0.0
+   },
+   "prev_n": {
+    "n": 70,
+    "n_equal": 70,
+    "n_non_null": 70,
+    "max_abs_diff": 0.0
+   },
+   "dow": {
+    "n": 70,
+    "n_equal": 70,
+    "n_non_null": 70,
+    "max_abs_diff": 0.0
+   },
+   "hour": {
+    "n": 70,
+    "n_equal": 70,
+    "n_non_null": 70,
+    "max_abs_diff": 0.0
+   },
+   "collection": {
+    "n": 70,
+    "n_equal": 70,
+    "n_non_null": 70,
+    "max_abs_diff": 0.0
+   },
+   "rarity_score": {
+    "n": 70,
+    "n_equal": 70,
+    "n_non_null": 70,
+    "max_abs_diff": 0.0
+   },
+   "rarity_pct": {
+    "n": 70,
+    "n_equal": 70,
+    "n_non_null": 70,
+    "max_abs_diff": 0.0
+   },
+   "n_traits": {
+    "n": 70,
+    "n_equal": 70,
+    "n_non_null": 70,
+    "max_abs_diff": 0.0
+   },
+   "trait_share_min": {
+    "n": 70,
+    "n_equal": 70,
+    "n_non_null": 70,
+    "max_abs_diff": 0.0
+   },
+   "trait_share_mean": {
+    "n": 70,
+    "n_equal": 70,
+    "n_non_null": 70,
+    "max_abs_diff": 0.0
+   }
+  }
+ },
+ "check3_forbidden_columns": {
+  "banned_columns": [
+   "buyer",
+   "clean",
+   "date",
+   "eth_usd",
+   "floor_point_eth",
+   "hid",
+   "image_url",
+   "marketplace",
+   "name",
+   "payment_currency",
+   "payment_symbol",
+   "premium",
+   "price_eth",
+   "price_usd",
+   "protocol_address",
+   "rarity_decile",
+   "rarity_rank",
+   "sale_type",
+   "seller",
+   "slug",
+   "timestamp",
+   "token_id",
+   "trait__milady__Number",
+   "ts",
+   "tx",
+   "wash_flag",
+   "y"
+  ],
+  "id_like_categories": {
+   "milady": [
+    "Number"
+   ]
+  },
+  "leaks_into_any_matrix": [],
+  "matrix_refuses_each_banned_column": true,
+  "n_refused": 27,
+  "pooled_matrix_columns": 88,
+  "per_collection_matrix_columns": {
+   "boredapeyachtclub": 32,
+   "mutant-ape-yacht-club": 33,
+   "pudgypenguins": 30,
+   "lilpudgys": 34,
+   "azuki": 37,
+   "doodles-official": 31,
+   "milady": 40
+  }
+ },
+ "folds": [
+  {
+   "fold": 1,
+   "part": "rank",
+   "train_end_exclusive": "2025-04-24",
+   "embargo": [
+    "2025-04-24",
+    "2025-05-01"
+   ],
+   "test": [
+    "2025-05-01",
+    "2025-06-01"
+   ],
+   "n_train": 76362,
+   "n_test": 7678,
+   "n_test_by_collection": {
+    "azuki": 367,
+    "boredapeyachtclub": 263,
+    "doodles-official": 3597,
+    "lilpudgys": 1529,
+    "milady": 501,
+    "mutant-ape-yacht-club": 891,
+    "pudgypenguins": 530
+   }
+  },
+  {
+   "fold": 2,
+   "part": "rank",
+   "train_end_exclusive": "2025-05-25",
+   "embargo": [
+    "2025-05-25",
+    "2025-06-01"
+   ],
+   "test": [
+    "2025-06-01",
+    "2025-07-01"
+   ],
+   "n_train": 84393,
+   "n_test": 4707,
+   "n_test_by_collection": {
+    "azuki": 495,
+    "boredapeyachtclub": 211,
+    "doodles-official": 898,
+    "lilpudgys": 1199,
+    "milady": 787,
+    "mutant-ape-yacht-club": 763,
+    "pudgypenguins": 354
+   }
+  },
+  {
+   "fold": 3,
+   "part": "rank",
+   "train_end_exclusive": "2025-06-24",
+   "embargo": [
+    "2025-06-24",
+    "2025-07-01"
+   ],
+   "test": [
+    "2025-07-01",
+    "2025-08-01"
+   ],
+   "n_train": 89197,
+   "n_test": 9340,
+   "n_test_by_collection": {
+    "azuki": 1024,
+    "boredapeyachtclub": 501,
+    "doodles-official": 1380,
+    "lilpudgys": 3034,
+    "milady": 884,
+    "mutant-ape-yacht-club": 1386,
+    "pudgypenguins": 1131
+   }
+  },
+  {
+   "fold": 4,
+   "part": "rank",
+   "train_end_exclusive": "2025-07-25",
+   "embargo": [
+    "2025-07-25",
+    "2025-08-01"
+   ],
+   "test": [
+    "2025-08-01",
+    "2025-09-01"
+   ],
+   "n_train": 97409,
+   "n_test": 6686,
+   "n_test_by_collection": {
+    "azuki": 913,
+    "boredapeyachtclub": 476,
+    "doodles-official": 869,
+    "lilpudgys": 1786,
+    "milady": 661,
+    "mutant-ape-yacht-club": 1268,
+    "pudgypenguins": 713
+   }
+  },
+  {
+   "fold": 5,
+   "part": "rank",
+   "train_end_exclusive": "2025-08-25",
+   "embargo": [
+    "2025-08-25",
+    "2025-09-01"
+   ],
+   "test": [
+    "2025-09-01",
+    "2025-10-01"
+   ],
+   "n_train": 104626,
+   "n_test": 5973,
+   "n_test_by_collection": {
+    "azuki": 454,
+    "boredapeyachtclub": 319,
+    "doodles-official": 1102,
+    "lilpudgys": 2103,
+    "milady": 585,
+    "mutant-ape-yacht-club": 932,
+    "pudgypenguins": 478
+   }
+  },
+  {
+   "fold": 6,
+   "part": "confirm",
+   "train_end_exclusive": "2025-09-24",
+   "embargo": [
+    "2025-09-24",
+    "2025-10-01"
+   ],
+   "test": [
+    "2025-10-01",
+    "2025-11-01"
+   ],
+   "n_train": 109612,
+   "n_test": 12506,
+   "n_test_by_collection": {
+    "azuki": 1121,
+    "boredapeyachtclub": 691,
+    "doodles-official": 1687,
+    "lilpudgys": 4075,
+    "milady": 1796,
+    "mutant-ape-yacht-club": 1776,
+    "pudgypenguins": 1360
+   }
+  },
+  {
+   "fold": 7,
+   "part": "confirm",
+   "train_end_exclusive": "2025-10-25",
+   "embargo": [
+    "2025-10-25",
+    "2025-11-01"
+   ],
+   "test": [
+    "2025-11-01",
+    "2025-12-01"
+   ],
+   "n_train": 122635,
+   "n_test": 7578,
+   "n_test_by_collection": {
+    "azuki": 1069,
+    "boredapeyachtclub": 416,
+    "doodles-official": 577,
+    "lilpudgys": 2554,
+    "milady": 901,
+    "mutant-ape-yacht-club": 1118,
+    "pudgypenguins": 943
+   }
+  },
+  {
+   "fold": 8,
+   "part": "confirm",
+   "train_end_exclusive": "2025-11-24",
+   "embargo": [
+    "2025-11-24",
+    "2025-12-01"
+   ],
+   "test": [
+    "2025-12-01",
+    "2026-01-01"
+   ],
+   "n_train": 131006,
+   "n_test": 6563,
+   "n_test_by_collection": {
+    "azuki": 601,
+    "boredapeyachtclub": 359,
+    "doodles-official": 853,
+    "lilpudgys": 2259,
+    "milady": 617,
+    "mutant-ape-yacht-club": 1130,
+    "pudgypenguins": 744
+   }
+  },
+  {
+   "fold": 9,
+   "part": "confirm",
+   "train_end_exclusive": "2025-12-25",
+   "embargo": [
+    "2025-12-25",
+    "2026-01-01"
+   ],
+   "test": [
+    "2026-01-01",
+    "2026-01-25"
+   ],
+   "n_train": 137040,
+   "n_test": 5813,
+   "n_test_by_collection": {
+    "azuki": 499,
+    "boredapeyachtclub": 328,
+    "doodles-official": 494,
+    "lilpudgys": 1990,
+    "milady": 835,
+    "mutant-ape-yacht-club": 1020,
+    "pudgypenguins": 647
+   }
+  }
+ ],
+ "w2_as_of_cutoffs": {
+  "dev_rows_in_history": 153708,
+  "stored_clean": 144524,
+  "clean_as_of_2026_01_24": 144592,
+  "n_status_changed": 68,
+  "per_collection": {
+   "azuki": {
+    "stored_clean_now_flagged": 0,
+    "stored_flagged_now_clean": 6
+   },
+   "boredapeyachtclub": {
+    "stored_clean_now_flagged": 0,
+    "stored_flagged_now_clean": 1
+   },
+   "doodles-official": {
+    "stored_clean_now_flagged": 0,
+    "stored_flagged_now_clean": 5
+   },
+   "lilpudgys": {
+    "stored_clean_now_flagged": 0,
+    "stored_flagged_now_clean": 12
+   },
+   "milady": {
+    "stored_clean_now_flagged": 0,
+    "stored_flagged_now_clean": 7
+   },
+   "mutant-ape-yacht-club": {
+    "stored_clean_now_flagged": 0,
+    "stored_flagged_now_clean": 37
+   },
+   "pudgypenguins": {
+    "stored_clean_now_flagged": 0,
+    "stored_flagged_now_clean": 0
+   }
+  },
+  "changed_rows_date_range": [
+   "2025-12-30",
+   "2026-01-24"
+  ],
+  "per_fold_training_sets": [
+   {
+    "fold": 1,
+    "train_cutoff": "2025-04-24",
+    "n_train": 76362,
+    "n_train_with_stored_flags": 76324,
+    "n_rows_status_differs": 38
+   },
+   {
+    "fold": 2,
+    "train_cutoff": "2025-05-25",
+    "n_train": 84393,
+    "n_train_with_stored_flags": 84360,
+    "n_rows_status_differs": 33
+   },
+   {
+    "fold": 3,
+    "train_cutoff": "2025-06-24",
+    "n_train": 89197,
+    "n_train_with_stored_flags": 89170,
+    "n_rows_status_differs": 27
+   },
+   {
+    "fold": 4,
+    "train_cutoff": "2025-07-25",
+    "n_train": 97409,
+    "n_train_with_stored_flags": 97345,
+    "n_rows_status_differs": 64
+   },
+   {
+    "fold": 5,
+    "train_cutoff": "2025-08-25",
+    "n_train": 104626,
+    "n_train_with_stored_flags": 104588,
+    "n_rows_status_differs": 38
+   },
+   {
+    "fold": 6,
+    "train_cutoff": "2025-09-24",
+    "n_train": 109612,
+    "n_train_with_stored_flags": 109546,
+    "n_rows_status_differs": 66
+   },
+   {
+    "fold": 7,
+    "train_cutoff": "2025-10-25",
+    "n_train": 122635,
+    "n_train_with_stored_flags": 122562,
+    "n_rows_status_differs": 73
+   },
+   {
+    "fold": 8,
+    "train_cutoff": "2025-11-24",
+    "n_train": 131006,
+    "n_train_with_stored_flags": 130959,
+    "n_rows_status_differs": 47
+   },
+   {
+    "fold": 9,
+    "train_cutoff": "2025-12-25",
+    "n_train": 137040,
+    "n_train_with_stored_flags": 136979,
+    "n_rows_status_differs": 61
+   }
+  ]
+ }
+}

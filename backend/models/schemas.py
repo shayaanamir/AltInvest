@@ -267,6 +267,13 @@ class PortfolioHoldingOut(BaseModel):
     unrealised_pnl_usd: Optional[float] = None
     unrealised_pnl_pct: Optional[float] = None
     valuation_status: Optional[str] = None          # "ok" | "no_price" | "invalid_quantity" | "unsupported_type"
+    # NFT only (Phase 10 step 10.7, D78): the stored ML item estimate, ETH, point only. Not used in value or P&L.
+    estimated_value_eth: Optional[float] = None
+    estimated_value_as_of: Optional[str] = None
+    estimated_value_method: Optional[str] = None
+    estimated_value_note: Optional[str] = None
+    estimated_value_accuracy_note: Optional[str] = None
+    estimated_value_rarity_accuracy_note: Optional[str] = None   # D84
     date_added: Optional[str] = None
     updated_at: Optional[str] = None
 
@@ -374,12 +381,47 @@ class NFTCollectionDetail(BaseModel):
     trait_categories: List[str] = []
     recent_sales: List[Dict] = []
     aai_score: Optional[float] = None
+    # Phase 10 (ml/docs/DECISIONS.md D61, D67): from the ML pull. risk_score is relative to the tracked NFT
+    # collections only and is not comparable to crypto risk scores (D59).
+    floor_history: List[Dict] = []
+    volatility: Optional[float] = None
+    risk_score: Optional[float] = None
+    risk_note: Optional[str] = None
+    risk_model_version: Optional[str] = None
+    risk_as_of: Optional[str] = None
+    last_updated: Optional[str] = None
 
 
 class NFTTokenTrait(BaseModel):
     category: str
     value: str
     rarity_pct: float
+
+
+class NFTItemLastSale(BaseModel):
+    price_eth: float
+    timestamp: str
+
+
+class NFTItemValueOut(BaseModel):
+    """Phase 10 step 10.7 (ml/docs/DECISIONS.md D78): the ML estimate of what an item might sell for now. ETH only,
+    point estimate only (no range), no drivers."""
+    slug: str
+    token_id: str
+    estimated_value_eth: Optional[float] = None
+    method: str                                      # "model" | "baseline_b2"
+    last_floor_eth: Optional[float] = None
+    last_floor_time: Optional[str] = None
+    last_sale: Optional[NFTItemLastSale] = None
+    no_prior_sale: bool
+    rarity_rank: Optional[int] = None
+    rarity_ranked_tokens: Optional[int] = None
+    accuracy_note: str                               # D84: 'Median error in testing (Feb-Nov 2026): X%'
+    rarity_accuracy_note: Optional[str] = None       # D84: 'Rarest items: about Y%' for the rarest 10%, else null
+    model_version: str
+    note: Optional[str] = None
+    as_of: str
+    stale: bool = False                              # True when the live ML call failed and the stored row is shown
 
 
 class NFTTokenDetail(BaseModel):

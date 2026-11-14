@@ -1,0 +1,19 @@
+{
+ "dashboard_stat_text": "PORTFOLIO VALUE\n$61,817.23\n4 holdings tracked",
+ "desktop_layers": "history cone-outer cone-inner",
+ "desktop_theme_before": "dark",
+ "cone_start_label": "Last floor, 10 Nov",
+ "caption": "Likely floor range based on recent volatility, not a price prediction.",
+ "desktop_theme_after": "light",
+ "usd_main_layers": "history",
+ "usd_eth_only_cone": true,
+ "usd_eth_cone_layers": "history cone-outer cone-inner",
+ "usd_caption": "Likely floor range based on recent volatility, not a price prediction. This range is in ETH. ETH price moves are not included.",
+ "stale_badge_shown": false,
+ "risk_note_text": "This risk score is relative to the other NFT collections tracked here. It is not comparable to crypto risk scores.",
+ "btc_layers": "history cone-outer cone-inner",
+ "btc_cone_start": "Last close, 8 Nov",
+ "phone_layers": "history cone-outer cone-inner",
+ "phone_sidebar_collapsed_by_click": true,
+ "phone_page_scroll_width": 390
+}

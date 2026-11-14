@@ -1,7 +1,121 @@
 # STATUS
 
-Current phase: 9 (forecasting v2) DONE and merged into main as PR #8. Served: EWMA risk for all assets (D51). Follow-up on branch phase-9-vol-cone (2026-11-10): frontend volatility cone (D52), reviewed twice, PR open against main.
-Next: Person B checks the new risk_score values and note text (fields unchanged). Merge phase-7-integration, then rebase this branch onto main. The live scorecard starts scoring on 2026-11-30.
+Current phase: 10 (NFTs, docs/PLAN_NFT.md) CLOSED at checkpoint 10.9 (ml/docs/phase10/checkpoint_10.9.md), branch phase-10-nft (pushed, not merged; 0 commits behind main). Pre-merge fixes from the independent review done in 10.9b (ml/docs/phase10/checkpoint_10.9b.md); the owner approved D63-D85 (D86). Next: the owner merges (steps in checkpoint_10.9.md) and rotates the Atlas credential (review SHOULD FIX 4). Previously: 9 (forecasting v2) DONE and merged as PR #8; phase-9-vol-cone and phase-7-integration are in main.
+Served now: crypto risk = persistence vol_30d (D82, the EWMA approval was withdrawn under top-only, D81); NFT risk = persistence vol_30d (D73); NFT item value = the monthly refit of fv_pooled_l1_nl15 for 6 collections, B2 for lilpudgys (D80, D83), no range; price = last value (D35); direction = UNCERTAIN (D33).
+
+## Phase 10 step 10.9b: pre-merge fixes from the independent review (2026-11-14, ml/docs/phase10/checkpoint_10.9b.md)
+
+- Refits, `CURRENT`, `refit_log.jsonl` and the live accuracy summaries are on the ml-data volume (`/data/nft/fv_refits`, `/data/nft/live_accuracy/summaries`), not in the repo. Every repo bind mount is read-only. Copies of the log are in `ml/docs/phase10/refits/`.
+- The daily NFT refresh reads payments of new multi-token transactions (backfill: 5, 0 not returned). Manual refit `2026-11-14-r2` = same rows and sha256 as the 2026-11-14 refit.
+- `run_nft_risk` defaults to top-only; `--protocol per-model-type` needs `--historical`. Sealed loaders refuse every caller. ML startup refits if no refit is served. The sidecar runs each daily cycle in a child process (idle 95 MiB, was 510 MiB).
+- D86: owner approval of D63-D85; D66 relabelled WITHDRAWN (D73); D79 discloses the sealed-date demo holdings.
+
+## Phase 10 step 10.9: apply the sealed result and close (2026-11-14, ml/docs/phase10/checkpoint_10.9.md)
+
+- Owner decisions: lilpudgys keeps B2 (D80); top-only selection for every phase replaces D49 (D81).
+- D49 audit (D82, `ml/reports/d49_audit_risk.json`, logged results only): GARCH ranks first for every asset and horizon and its CI includes 0, so the EWMA risk approval is withdrawn. Crypto risk serves persistence vol_30d and the cone uses it. ETH direction still stands under top-only (not served, D33).
+- Serving refit (D83): the 2026-11-14 refit (cutoff 2026-11-07, 185,052 rows, sha256 949f66c5...) was served through `CURRENT` (since 10.9b on the ml-data volume; now `refits/2026-11-14-r2`, same model). The sidecar refits on the 1st of each month and logs each refit in `refit_log.jsonl`. A refit dated 2026-01-01 reproduces the development artifact byte for byte. Sanity vs the development model: median value difference 0.45%, Spearman 0.98 (`ml/reports/nft/fv_refit_sanity.json`).
+- Item card error line (D84): "Median error in testing (Feb-Nov 2026): X%" per collection (lilpudgys: B2's), plus "Rarest items: about 9%" for the rarest 10%. Values come from `ml/artifacts/nft_fv/accuracy.json`, generated from the 10.8 report.
+- Live accuracy log ON (D85): daily estimates for all 90,395 tokens; monthly summaries on the ml-data volume, hand-copied to `ml/docs/phase10/live_accuracy/` (the first, November 2026, on 2027-01-01). Monitoring only.
+- Docs: PLAN_NFT status table, PHASE_10_nft.md, GLOSSARY NFT terms, scorecard NFT section.
+- Tests: see checkpoint_10.9.md section 4.
+
+## Backlog (owner, after Phase 10)
+- Hardcoded asset header prices: the asset page header price comes from demo seed data (asset_market_data), not the market.
+- Phone sidebar: on phones the sidebar opens expanded and has to be collapsed by hand.
+- NFT risk re-evaluation on or after 2027-05-10 (D65 h): top-only (D65 i, D81), on the raw floor (D73), new frozen snapshot; trials cumulative 4.
+- NFT range calibration: no 80% range is served (D77); calibrating one needs its own declared phase.
+- lilpudgys guard revisit (D80): only at the next declared fair-value re-evaluation, on sales after 2026-11-10.
+- From checkpoint_10.7 (still open; the payment records item was closed in 10.9b): Binance unreachable from Docker on this machine; two floors on screen (holdings daily floor vs item card last point); unrounded floor on the holdings card.
+
+## How to verify Phase 10 yourself (PowerShell, from the repo root, Docker running)
+
+```powershell
+Set-Location C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest
+$py = ".\.venv-train\Scripts\python.exe"
+& $py -m pytest ml -q                                                   # 1. ML tests
+& $py -m ml.nft.snapshot --verify; & $py -m ml.nft.item_snapshot --verify; & $py -m ml.nft.item_data --verify   # 2.
+& $py -m ml.evaluation.run_nft_sealed_fv --sealed; "exit: $LASTEXITCODE"  # 3. the sealed test refuses a second run
+& $py -m ml.evaluation.d49_audit                                         # 4. the D49 audit from the logged results
+docker exec altinvest-ml-nft-refresh sh -c "cat /data/nft/fv_refits/CURRENT /data/nft/fv_refits/refit_log.jsonl"   # 5. the served refit (volume)
+curl.exe -s http://127.0.0.1:8001/nft/azuki/items/278/value; ""         # 6. error lines (rarest item)
+curl.exe -s http://127.0.0.1:8001/risk/BTC; ""                           # 7. crypto risk note (persistence)
+docker exec -w /app/backend altinvest-backend python -m pytest tests -q -p no:cacheprovider  # 8. backend tests (source is read-only)
+Set-Location frontend; npm test; Set-Location ..                         # 9. frontend tests
+```
+
+Expected (observed 2026-11-14): 1. all passed (number in checkpoint_10.9.md). 2. "OK, all hashes match" for the 2026-11-10, -items, -items-v2 and -items-v3 snapshots. 3. "refusing: the sealed run needs a clean tree and runs once (its report already exists)", then `exit: 1`. 4. Every risk line ends "-> None", ETH direction "-> logreg", then "EWMA approval WITHDRAWN ...". 5. `refits/2026-11-14-r2` and two log lines, both train_rows 185052 and sha256 949f66c5... 6. model_version `nft-fv-pooled-l1-nl15-refit-2026-11-14-r2`, "Median error in testing (Feb-Nov 2026): 3.8%", "Rarest items: about 9%". 7. note starts "Risk measure: 30-day volatility (persistence)". 8. 44 passed, 1 skipped. 9. 21 passed.
+
+## Phase 10 step 10.8: sealed fair-value test (2026-11-14, ml/docs/phase10/checkpoint_10.8.md)
+
+- One run under D79 at cb6f00c (clean tree): PASS, so the serving rule stays. Served MdAPE 0.0294 vs best baseline B0 (floor) 0.0353; difference 0.0059, 95% CI [0.0034, 0.0085]; 39,399 sales, 2026-02-01 to 2026-11-10.
+- Descriptive: the model alone would have scored 0.0275. On sealed data lilpudgys favours the model (0.0223 vs B2 0.0281), the reverse of 10.6. Nothing applied; serving, the error line and the live accuracy log are unchanged until 10.9.
+
+## Phase 10 step 10.7 + 10.8 preparation (2026-11-14, ml/docs/phase10/checkpoint_10.7.md)
+
+- Item card serving (D78):
+  - `config.NFT_FV_SERVE` serves the model for 6 collections and B2 for lilpudgys.
+  - ETH point estimate; no range, no drivers.
+  - The served model is the dev-only fold-9 fit (`nft-fv-pooled-l1-nl15-dev-2025-12-25`).
+  - Request-time features use the training code, tested equal on 200 hypothetical and 100 real dev (token, t) pairs.
+- ML endpoints `/nft/{slug}/items/{token_id}/value` and `/nft/items/value`. The backend pulls holdings' estimates and serves the item lookup. The frontend has the item card and holding estimates. Screenshots are in `ml/docs/phase10/screenshots/10.7_*`.
+- Live serving uses data after 2026-01-25, with no metric on those dates; the live accuracy log is off until after 10.8 (user decision, D78 amended).
+- 10.8 protocol (D79) committed in 2e6cacc before any sealed access. Its dry run on the 10.6 confirmation months reproduces 10.6 row for row: served 0.0279 vs B2 0.0335, PASS, in-sample for the per-collection guard.
+- Tests: ML 421 passed; backend 43 passed, 1 skipped; frontend 20 passed.
+
+## Phase 10 step 10.6: fair-value model (2026-11-14, ml/docs/phase10/checkpoint_10.6a.md and checkpoint_10.6.md)
+
+- Declarations: D76 (commit 5adadbd), amended after review in 7fa7ec9, before any run:
+  - B2 baseline;
+  - per-collection serving guard;
+  - W2 flags as of cutoffs (68 development rows change status);
+  - range fallback;
+  - sorted quantiles.
+- Leakage checks (`ml/reports/nft/fv_leakage_check.json`): 2,000 development sales, every feature equal to the cut-data reference; no forbidden column.
+- Walk-forward (`ml/reports/nft/walkforward_fair_value.json`, D77; trial count 6):
+  - fv_pooled_l1_nl15 is approved against B2: MdAPE 0.0284 vs 0.0335, diff 0.0051 [0.0015, 0.0079].
+  - The 80% range is not approved (coverage 0.7336), and the fallback B2 range is out of the band (0.8699), so no range.
+  - lilpudgys serves B2 under the per-collection guard.
+- Nothing is served yet; 10.7 and 10.8 decide.
+- Tests: `python -m pytest ml -q` gives 409 passed (2026-11-14, at b479ce8 plus docs).
+
+## Phase 10 step 10.5b: review fixes (2026-11-11, ml/docs/phase10/checkpoint_10.5b.md)
+
+- D69: the backend compose service defaults to local Mongo, and seeds refuse remote hosts without `--allow-remote`. Confirmed that the NFT pull and seed only ever wrote to the local container.
+- D66 guard: causal on all 7 collections. The D72 sales check (rule fixed in advance) supported the raw floor on 4 of 10 days, so the EWMA approval is withdrawn (D73). NFT risk now serves persistence vol_30d of the raw floor, and the cone uses it.
+- D70/D71: item snapshot v2 `2026-11-10-items-v2`:
+  - floor point strictly before each sale;
+  - C1-C3 cleaning and W1/W2 flags;
+  - sale_type not a feature;
+  - milady `Number` excluded as ID-like.
+  - Fair-value sealed cutoff T = 2026-02-01 with a 7-day embargo. `ml.nft.item_data.load_dev` / `load_sealed("10.8")`.
+- Frontend: no USD cone (a separate ETH-only cone instead) and a floor stale indicator (D67 revised).
+- Tests: ML `383 passed`, frontend `14 passed`, backend `38 passed, 1 skipped` (in its container).
+- Next: 10.6 (fair value), from the handoff at the end of checkpoint_10.5b.md.
+
+## Phase 10 steps 10.2-10.5 (2026-11-10 to 11, branch phase-10-nft, autonomous mode)
+
+- The approved 10.1 changes were added to D52, D55, D59, D61 and D62. Autonomous decisions D63-D68 are each marked "AUTONOMOUS, needs review".
+- 10.2 (ml/docs/phase10/checkpoint_10.2.md):
+  - `ml/nft/` collectors and the daily refresh.
+  - Frozen snapshot `ml/data/nft/snapshots/2026-11-10/`. The manifest and the collection-level parquet files are tracked; the item files stay local and are hashed in the manifest.
+  - Reports: `ml/reports/nft/data_summary.json` and `liquidity.json`.
+  - D66 spike guard on the modelling floor.
+- 10.3 (checkpoint_10.3.md): EWMA floor volatility is approved, pooled over 7 collections: QLIKE 0.6929 vs 0.9333, CI [0.0668, 0.5855]. GARCH is not approved. The approval depends on D66 (on the unguarded floor nothing is approved). Report: `ml/reports/nft/walkforward_risk.json`.
+- 10.4 (checkpoint_10.4.md):
+  - ML: `/nft/collections`, `/nft/{slug}/floor`, `/nft/{slug}/risk` and `/nft/{slug}/sales` (ml/docs/CONTRACT_NFT.md), plus the `ml-nft-refresh` sidecar.
+  - Backend commits are prefixed `backend:`.
+  - Frontend: the NFT collection page with the cone, and screenshots in ml/docs/phase10/screenshots/.
+- 10.5 (checkpoint_10.5.md): the item data checks all pass (`ml/reports/nft/item_data.json`). The D68 item snapshot `2026-11-10-items` fills 348 failed metadata reads.
+- Tests: ML `344 passed`, frontend `13 passed`, backend `26 passed` (in its container).
+- Local Docker note: recreate only the ML services (`docker compose up -d --build --no-deps ml ml-refresh ml-nft-refresh`). Recreating the backend makes compose read the Atlas `MONGO_URI` from `.env`.
+
+## Phase 10 steps 10.0-10.1: NFT investigation and decisions (2026-11-10, branch phase-10-nft)
+
+- 10.0 (read-only): report and A1 addendum in ml/docs/phase10/checkpoint_10.0.md. All 7 collections have 786 days of OpenSea floor history (2024-09-16 to 2026-11-10).
+- Planner review amendments A1-A10 accepted. 10.1: D53-D62 written in DECISIONS.md, AGENTS.md line 3 amended (D53), Phase 10 row added to PLAN.md.
+- No code, collectors, tables or models yet. No backend/ or db/ change: D61 is a proposal waiting for Person B.
+- Next: planner OK on checkpoint 10.1 (ml/docs/phase10/checkpoint_10.1.md), then 10.2 collection data.
 
 ## Phase 9 follow-up: frontend 30-day volatility cone (2026-11-10, branch phase-9-vol-cone)
 

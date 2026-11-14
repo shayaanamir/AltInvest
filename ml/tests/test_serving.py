@@ -27,9 +27,10 @@ HOUR = pd.Timedelta(hours=1)
 
 
 def _feats(vols, rets=None, start=DAY0) -> pd.DataFrame:
-    """Hand-made serving table: one row per day from `start`. `vols` is the served EWMA vol (D51)."""
+    """Hand-made serving table: one row per day from `start`. `vols` is the served vol_30d (persistence, D82);
+    ewma_vol (monitored, not served) is a tenth of it so the two cannot be confused."""
     idx = start + pd.to_timedelta(np.arange(len(vols)), unit="D")
-    return pd.DataFrame({"ewma_vol": vols, "vol_30d": 10 * np.asarray(vols, dtype=float),
+    return pd.DataFrame({"vol_30d": vols, "ewma_vol": np.asarray(vols, dtype=float) / 10,
                          "ret_1d": rets if rets is not None else np.zeros(len(vols))}, index=idx)
 
 
@@ -191,13 +192,15 @@ def test_no_label_is_built_when_serving(monkeypatch):
 
 def test_check_scores_match_serving_on_that_date():
     """The D36 mapping in ml.evaluation.risk_mapping_check, cut at each row's date, equals serving on the served
-    EWMA column (D51; rows from 35 on, after the EWMA warm-up)."""
+    column (config.RISK_VOL_COLUMN: vol_30d since D82; rows from 35 on)."""
+    col = config.RISK_VOL_COLUMN
+    assert col == "vol_30d"
     fa, fb = rs.serving_table(_raw("aaa")), rs.serving_table(_raw("bbb", 380))
     fb = fb * 1.3
-    pool = {"aaa": fa["ewma_vol"].dropna(), "bbb": fb["ewma_vol"].dropna()}
+    pool = {"aaa": fa[col].dropna(), "bbb": fb[col].dropna()}
     for r in (35, 200, len(fb) - 1, len(fa) - 1):
         served = rs.risk_inputs("aaa", _now(fa.iloc[:r + 1]), {"aaa": fa.iloc[:r + 1], "bbb": fb})
-        assert historical_scores(fa["ewma_vol"], pool, range(r, r + 1))[0] == pytest.approx(served["risk_score"])
+        assert historical_scores(fa[col], pool, range(r, r + 1))[0] == pytest.approx(served["risk_score"])
 
 
 def test_d51_serving_uses_the_evaluation_ewma_function():
@@ -211,25 +214,29 @@ def test_d51_serving_uses_the_evaluation_ewma_function():
 
 
 @pytest.mark.usefixtures("served_fixture_assets")
-def test_d51_note_flags_and_model_version():
+def test_d82_note_flags_and_model_version():
+    """D82: the EWMA approval is withdrawn; persistence vol_30d is served, EWMA is only logged for the monitor."""
     feats = _two_assets()
     now = _now(feats["aaa"])
     r, d = rs.risk("aaa", now, feats), rs.debug("aaa", now, feats)
-    assert "EWMA volatility" in r["note"] and "D51" in r["note"] and "No risk model" not in r["note"]
-    assert d["served"]["risk_model"] is True and d["model_version"]["risk"] == "ewma-pooled-pct"
-    assert {"D50", "D51"} <= set(d["decisions_in_force"])
-    assert d["inputs"]["ewma_vol"] == 0.02 and d["inputs"]["vol_30d"] == pytest.approx(0.2)
+    assert r["note"].startswith("Risk measure: 30-day volatility (persistence).") and "D82" in r["note"]
+    assert "No risk model is served" in r["note"] and "EWMA volatility" not in r["note"]
+    assert d["served"]["risk_model"] is False and d["model_version"]["risk"] == "persistence-pooled-pct"
+    assert {"D81", "D82"} <= set(d["decisions_in_force"]) and "D51" not in d["decisions_in_force"]
+    assert d["inputs"]["served_vol_column"] == "vol_30d" and d["inputs"]["served_vol"] == 0.02
+    assert d["inputs"]["vol_30d"] == 0.02 and d["inputs"]["ewma_vol"] == pytest.approx(0.002)
 
 
 @pytest.mark.usefixtures("served_fixture_assets")
 def test_d52_risk_note_wording_the_frontend_cone_depends_on():
     """The frontend volatility cone (D52, frontend/src/utils/volCone.js coneVolatility) shows only when the /risk
-    note contains "EWMA volatility" and hides when it contains "data stale". Rewording either phrase here would make
-    the cone silently disappear (or stop hiding), so change both sides together. Until /risk carries a model field."""
+    note starts with one of its SERVED_RISK_NOTE_PREFIXES (since D82 "Risk measure: 30-day volatility") and hides
+    when it contains "data stale". Rewording either phrase here would make the cone silently disappear (or stop
+    hiding), so change both sides together. Until /risk carries a model field."""
     feats = _two_assets()
     fresh, stale = rs.risk("aaa", _now(feats["aaa"], 1), feats), rs.risk("aaa", _now(feats["aaa"], 49), feats)
-    assert "EWMA volatility" in fresh["note"] and "data stale" not in fresh["note"]
-    assert "EWMA volatility" in stale["note"] and "data stale" in stale["note"]
+    assert fresh["note"].startswith("Risk measure: 30-day volatility") and "data stale" not in fresh["note"]
+    assert stale["note"].startswith("Risk measure: 30-day volatility") and "data stale" in stale["note"]
     assert fresh["volatility"] > 0
 
 

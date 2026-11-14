@@ -1,10 +1,11 @@
 // Illustrative 30-day volatility cone for the asset price chart (ml/docs/DECISIONS.md D52).
 //
-// Built only from the `volatility` the ML service already serves on /risk: annualised EWMA vol (D51).
+// Built only from the `volatility` the ML service serves on /risk: since D82 the annualised 30-day volatility
+// (persistence). No risk model is served (D81, D82).
 // It is NOT a tested price range: no price or range model is approved, so lower_bound / upper_bound stay null
 // and no predicted price line is drawn. Pure functions, no React, so they can be unit-tested with `node --test`.
 
-// The annualisation factor serving uses: volatility = daily EWMA vol x sqrt(ANNUALISATION_DAYS)
+// The annualisation factor serving uses: volatility = served daily vol x sqrt(ANNUALISATION_DAYS)
 // (ml/config.py ANNUALISATION_DAYS, ml/serving/responses.py). A test checks the two stay equal.
 export const ANNUALISATION_DAYS = 365;
 export const CONE_DAYS = 30;
@@ -15,6 +16,11 @@ export const CONE_CAPTION = "Likely price range based on recent volatility, not 
 // The future section gets its true share of the time axis, but never less than this share of the plot width,
 // so the 30-day cone stays readable next to a long history (1Y: 30 / 395 days would be about 7.6%).
 export const MIN_FUTURE_SHARE = 0.15;
+
+// The ML /risk note starts with this when it describes the volatility the ML service serves (D82: persistence).
+// Any other note (mock data, an asset ML does not cover, an old stored row from before D82) hides the cone. The ML
+// side tests the same wording (ml/tests/test_serving.py test_d52_risk_note_wording_the_frontend_cone_depends_on).
+export const SERVED_RISK_NOTE_PREFIXES = ["Risk measure: 30-day volatility"];
 
 const DAY_MS = 86400000;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -51,15 +57,15 @@ export function coneBand(lastClose, sd, d, z) {
 
 /**
  * The served annualised vol when the cone may be drawn, else null. Hidden when the value is missing, null or
- * not a positive number, when the risk note is not the ML's served EWMA model (for example mock data for an
- * asset ML does not cover), or when the risk data is stale.
+ * not a positive number, when the risk note does not describe the ML's served 30-day volatility (for example mock
+ * data for an asset ML does not cover, or an old stored row), or when the risk data is stale.
  */
 export function coneVolatility(risk) {
   if (!risk) return null;
   const v = risk.volatility;
   if (typeof v !== "number" || !Number.isFinite(v) || v <= 0) return null;
   const note = typeof risk.note === "string" ? risk.note : "";
-  if (!note.includes("EWMA volatility")) return null;
+  if (!SERVED_RISK_NOTE_PREFIXES.some((p) => note.startsWith(p))) return null;
   if (note.toLowerCase().includes("data stale")) return null;
   return v;
 }
@@ -73,8 +79,16 @@ function addDays(isoDate, d) {
  * Returns null when the cone must be hidden (see coneVolatility) or there is no last close.
  */
 export function buildCone(lastPoint, risk, days = CONE_DAYS) {
-  const annual = coneVolatility(risk);
-  if (annual == null || !lastPoint || !(lastPoint.price > 0)) return null;
+  return coneFromVol(lastPoint, coneVolatility(risk), days);
+}
+
+/**
+ * Cone points from an annualised vol that the caller has already checked (NFT collection pages apply their own
+ * hide rules, utils/nftCone.js, D52 amended). Null when the vol or the last point is unusable.
+ */
+export function coneFromVol(lastPoint, annual, days = CONE_DAYS) {
+  if (typeof annual !== "number" || !Number.isFinite(annual) || annual <= 0) return null;
+  if (!lastPoint || !(lastPoint.price > 0)) return null;
   const sd = dailyVol(annual);
   return Array.from({ length: days + 1 }, (_, d) => ({
     d,

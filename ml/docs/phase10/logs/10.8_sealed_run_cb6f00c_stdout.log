@@ -1,0 +1,13 @@
+2026-02: n_train 144592 n_test 5609
+2026-03: n_train 150420 n_test 3358
+2026-04: n_train 154456 n_test 5502
+2026-05: n_train 158470 n_test 3874
+2026-06: n_train 163611 n_test 3734
+2026-07: n_train 167502 n_test 3277
+2026-08: n_train 170342 n_test 3596
+2026-09: n_train 174158 n_test 3987
+2026-10: n_train 178065 n_test 5529
+2026-11: n_train 183669 n_test 933
+sealed: git cb6f00cbfc5442b482db67cc30fe5ed539f5d214 dirty False; wrote C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest\ml\reports\nft\sealed_fair_value.json
+verdict {"mdape": {"served": 0.02941323817668784, "fv_pooled_l1_nl15": 0.027465525165850657, "B0_floor": 0.03531119971428631, "B1_rarity_decile": 0.03762816179972894, "B2_decile_90d": 0.03622353055480887}, "best_baseline": "B0_floor", "paired_diff_best_baseline_minus_served": {"estimate": 0.005897961537598473, "low": 0.003416821110706154, "high": 0.00848059188549013, "level": 0.95, "block_size": 7, "block_unit": "calendar dates (all collections together)", "n_dates": 283, "n_boot": 1000, "seed": 0}, "pass": true, "outcome": "PASS: keep the serving rule {\"azuki\": \"model\", \"boredapeyachtclub\": \"model\", \"doodles-official\": \"model\", \"lilpudgys\": \"b2\", \"milady\": \"model\", \"mutant-ape-yacht-club\": \"model\", \"pudgypenguins\": \"model\"}", "range_served": null, "n_rows": 39399, "n_dates": 283, "n_blocks": 40.42857142857143}
+exit 0

@@ -1,0 +1,253 @@
+{
+ "snapshot": "2026-11-10-items-v3",
+ "created_at": "2026-11-10T21:15:50Z",
+ "git_commit": "bc81974c8bb0a5c8747a56dace31fe8a6688a98c",
+ "git_dirty": false,
+ "parents": {
+  "2026-11-10": "90e74e885eee75336e7a9b46bb9f718a4a9757802234fc197053901f3d27d7af",
+  "2026-11-10-items": "16a5c7568b8cfd4f32c0bd7b9d94d4d9a986f4994c116bd776b762a546cacb3d"
+ },
+ "rules": "D70 (cleaning, floor point strictly before the sale, ID-like categories) with C2 replaced by D74 (transaction payments), D75 (currency), D71 (sealed cutoff, not recomputed)",
+ "not_model_features": [
+  "sale_type",
+  "payment_currency",
+  "marketplace",
+  "payment_symbol",
+  "buyer",
+  "seller",
+  "tx",
+  "protocol_address",
+  "wash_flag",
+  "clean"
+ ],
+ "cleaning_counts": {
+  "azuki": {
+   "before": 23736,
+   "C1_rows_collapsed": 21,
+   "C1_ambiguous_rows_dropped": 6,
+   "C2_attributable_groups": 363,
+   "C2_attributable_rows": 937,
+   "C2_not_attributable_groups": 13,
+   "C2_not_attributable_rows": 40,
+   "C2_rpc_missing_groups": 0,
+   "C2_rpc_missing_rows": 0,
+   "C3_below_1pct_floor_dropped": 5,
+   "W1_flagged": 16,
+   "W2_flagged": 1500,
+   "clean": 22148
+  },
+  "boredapeyachtclub": {
+   "before": 9620,
+   "C1_rows_collapsed": 46,
+   "C1_ambiguous_rows_dropped": 8,
+   "C2_attributable_groups": 39,
+   "C2_attributable_rows": 95,
+   "C2_not_attributable_groups": 0,
+   "C2_not_attributable_rows": 0,
+   "C2_rpc_missing_groups": 0,
+   "C2_rpc_missing_rows": 0,
+   "C3_below_1pct_floor_dropped": 0,
+   "W1_flagged": 9,
+   "W2_flagged": 440,
+   "clean": 9117
+  },
+  "doodles-official": {
+   "before": 27641,
+   "C1_rows_collapsed": 61,
+   "C1_ambiguous_rows_dropped": 14,
+   "C2_attributable_groups": 455,
+   "C2_attributable_rows": 1112,
+   "C2_not_attributable_groups": 10,
+   "C2_not_attributable_rows": 23,
+   "C2_rpc_missing_groups": 0,
+   "C2_rpc_missing_rows": 0,
+   "C3_below_1pct_floor_dropped": 11,
+   "W1_flagged": 12,
+   "W2_flagged": 1842,
+   "clean": 25678
+  },
+  "lilpudgys": {
+   "before": 67319,
+   "C1_rows_collapsed": 89,
+   "C1_ambiguous_rows_dropped": 17,
+   "C2_attributable_groups": 1440,
+   "C2_attributable_rows": 3544,
+   "C2_not_attributable_groups": 41,
+   "C2_not_attributable_rows": 95,
+   "C2_rpc_missing_groups": 0,
+   "C2_rpc_missing_rows": 0,
+   "C3_below_1pct_floor_dropped": 8,
+   "W1_flagged": 25,
+   "W2_flagged": 4122,
+   "clean": 62963
+  },
+  "milady": {
+   "before": 18184,
+   "C1_rows_collapsed": 23,
+   "C1_ambiguous_rows_dropped": 2,
+   "C2_attributable_groups": 313,
+   "C2_attributable_rows": 880,
+   "C2_not_attributable_groups": 3,
+   "C2_not_attributable_rows": 6,
+   "C2_rpc_missing_groups": 0,
+   "C2_rpc_missing_rows": 0,
+   "C3_below_1pct_floor_dropped": 4,
+   "W1_flagged": 9,
+   "W2_flagged": 781,
+   "clean": 17359
+  },
+  "mutant-ape-yacht-club": {
+   "before": 29268,
+   "C1_rows_collapsed": 79,
+   "C1_ambiguous_rows_dropped": 18,
+   "C2_attributable_groups": 297,
+   "C2_attributable_rows": 716,
+   "C2_not_attributable_groups": 11,
+   "C2_not_attributable_rows": 26,
+   "C2_rpc_missing_groups": 0,
+   "C2_rpc_missing_rows": 0,
+   "C3_below_1pct_floor_dropped": 4,
+   "W1_flagged": 10,
+   "W2_flagged": 2315,
+   "clean": 26816
+  },
+  "pudgypenguins": {
+   "before": 22780,
+   "C1_rows_collapsed": 28,
+   "C1_ambiguous_rows_dropped": 2,
+   "C2_attributable_groups": 124,
+   "C2_attributable_rows": 287,
+   "C2_not_attributable_groups": 5,
+   "C2_not_attributable_rows": 10,
+   "C2_rpc_missing_groups": 0,
+   "C2_rpc_missing_rows": 0,
+   "C3_below_1pct_floor_dropped": 2,
+   "W1_flagged": 21,
+   "W2_flagged": 1374,
+   "clean": 21343
+  }
+ },
+ "id_like_categories": {
+  "azuki": [],
+  "boredapeyachtclub": [],
+  "doodles-official": [],
+  "lilpudgys": [],
+  "milady": [
+   "Number"
+  ],
+  "mutant-ape-yacht-club": [],
+  "pudgypenguins": []
+ },
+ "sealed_start_T": "2026-02-01",
+ "sealed_start_T_source": "config.NFT_FV_SEALED_START, computed on v2 (D71); not recomputed (D75)",
+ "embargo": [
+  "2026-01-25",
+  "2026-02-01"
+ ],
+ "clean_rows_by_split": {
+  "dev": {
+   "azuki": 18333,
+   "boredapeyachtclub": 6165,
+   "doodles-official": 21362,
+   "lilpudgys": 50479,
+   "milady": 13620,
+   "mutant-ape-yacht-club": 18736,
+   "pudgypenguins": 15829,
+   "all": 144524
+  },
+  "embargo": {
+   "azuki": 99,
+   "boredapeyachtclub": 94,
+   "doodles-official": 143,
+   "lilpudgys": 505,
+   "milady": 138,
+   "mutant-ape-yacht-club": 272,
+   "pudgypenguins": 251,
+   "all": 1502
+  },
+  "sealed": {
+   "azuki": 3716,
+   "boredapeyachtclub": 2858,
+   "doodles-official": 4173,
+   "lilpudgys": 11979,
+   "milady": 3601,
+   "mutant-ape-yacht-club": 7808,
+   "pudgypenguins": 5263,
+   "all": 39398
+  },
+  "sealed_share_of_clean": 0.21247519199240658
+ },
+ "files": {
+  "sales.parquet": {
+   "sha256": "f1972846b4cf42f2b80443a335e5624393abf13b9c44bda04da5f4bc05de6bc9",
+   "rows": 197900,
+   "bytes": 11741723,
+   "range": [
+    "2024-11-10",
+    "2026-11-10"
+   ],
+   "columns": [
+    "slug",
+    "token_id",
+    "timestamp",
+    "date",
+    "price_eth",
+    "payment_symbol",
+    "buyer",
+    "seller",
+    "tx",
+    "protocol_address",
+    "marketplace",
+    "floor_point_eth",
+    "floor_point_age_hours",
+    "wash_flag",
+    "clean",
+    "sale_type",
+    "payment_currency"
+   ]
+  },
+  "traits.parquet": {
+   "sha256": "ad79c7e31d4bc06f751fd0cbbaefb3bd0b81e16523a6185c534a63e292f6e81f",
+   "rows": 618970,
+   "bytes": 1683208,
+   "range": null,
+   "columns": [
+    "slug",
+    "token_id",
+    "trait_type",
+    "value",
+    "id_like"
+   ]
+  },
+  "tokens.parquet": {
+   "sha256": "6619f738491b5923a61f4689810822e6b7e10819c8093534de5d69848bcbf546",
+   "rows": 90395,
+   "bytes": 3626573,
+   "range": null,
+   "columns": [
+    "slug",
+    "token_id",
+    "name",
+    "image_url",
+    "n_traits",
+    "traits_missing",
+    "rarity_score",
+    "rarity_rank",
+    "rarity_pct"
+   ]
+  },
+  "tx_payments.parquet": {
+   "sha256": "4d9cc1d5946cbea00fc454ebe8adf4984e8b2a9e0b391c2e795f28d819b6c32d",
+   "rows": 2634,
+   "bytes": 115583,
+   "range": null,
+   "columns": [
+    "tx",
+    "ok",
+    "value_eth",
+    "weth",
+    "beth"
+   ]
+  }
+ }
+}

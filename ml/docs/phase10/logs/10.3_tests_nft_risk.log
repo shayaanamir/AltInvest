@@ -1,0 +1,20 @@
+..F
+================================== FAILURES ===================================
+_ test_spike_guard_holds_back_one_day_spikes_and_accepts_a_level_confirmed_by_a_second_day _
+
+    def test_spike_guard_holds_back_one_day_spikes_and_accepts_a_level_confirmed_by_a_second_day():
+        x = np.array([3.0, 3.1, 1.0, 3.05, 2.9, 1.4, 1.0, 1.1, 2.3, 0.3, 0.1, 0.11])
+        model, held = fl.guard_spikes(x)
+        # 1.0 is held (dip, back at 3.05); 1.4 is within 2x of 2.9; 2.3 is over 2x of 1.1 and of nothing before it,
+        # held; 0.3 and 0.1 disagree with the accepted 1.1 and with the day before, held; 0.11 confirms 0.1
+>       assert model.tolist() == [3.0, 3.1, 3.1, 3.05, 2.9, 1.4, 1.0, 1.1, 1.1, 1.1, 1.1, 0.11]
+E       assert [3.0, 3.1, 3....2.9, 2.9, ...] == [3.0, 3.1, 3....2.9, 1.4, ...]
+E         
+E         At index 5 diff: 2.9 != 1.4
+E         Use -v to get more diff
+
+ml\tests\test_nft_data.py:52: AssertionError
+=========================== short test summary info ===========================
+FAILED ml\tests\test_nft_data.py::test_spike_guard_holds_back_one_day_spikes_and_accepts_a_level_confirmed_by_a_second_day
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 2 passed in 28.13s

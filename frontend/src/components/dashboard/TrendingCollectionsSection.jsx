@@ -36,7 +36,7 @@ export default function TrendingCollectionsSection() {
                 key={c.slug}
                 className="sv2-card dv2-collection-card"
                 style={{ cursor: "pointer" }}
-                onClick={() => navigate("/discover")}
+                onClick={() => navigate(`/nft-collection?slug=${encodeURIComponent(c.slug)}`)}
               >
                 {/* No image field in nftCollections.json — a tinted gradient
                     derived from each collection's own bannerColor stands in

@@ -1,0 +1,1395 @@
+{
+ "generated_at": "2026-11-13T21:58:16Z",
+ "git_commit": "647822b053dbac9fa3d5b754e03c7a0ea9be9c82",
+ "git_dirty": false,
+ "step": "10.6b",
+ "decision": "D76 (as amended 2026-11-14)",
+ "item_snapshot": "2026-11-10-items-v3",
+ "item_manifest_sha256": "1d0c12d1643ad18dee4e3851ff3a48f9d938ab1223b38e56abb2fddbc6e67dfd",
+ "base_manifest_sha256": "90e74e885eee75336e7a9b46bb9f718a4a9757802234fc197053901f3d27d7af",
+ "data": {
+  "dev_end_exclusive": "2026-01-25",
+  "last_row_date": "2026-01-24",
+  "history_rows": 153708,
+  "test_rows_pooled": 66844,
+  "test_date_range": [
+   "2025-05-01",
+   "2026-01-24"
+  ]
+ },
+ "trial_count": 6,
+ "candidates": {
+  "target": "y = log(price_eth / floor_point_eth), floor point strictly before the sale (D70)",
+  "baselines": {
+   "B0_floor": "y_hat = 0; range = per-collection training y quantiles 0.10 / 0.90",
+   "B1_rarity_decile": "training median y per (collection, rarity decile), 0 if < 5 rows; range = y_hat + per-collection training residual quantiles",
+   "B2_decile_90d": "median premium of same (collection, decile) sales in [t - 90d, t), 0 if < 5; range = y_hat + per-collection training residual quantiles"
+  },
+  "candidates": {
+   "pooled": {
+    "fv_pooled_l2_nl15": {
+     "objective": "regression",
+     "num_leaves": 15
+    },
+    "fv_pooled_l2_nl63": {
+     "objective": "regression",
+     "num_leaves": 63
+    },
+    "fv_pooled_l1_nl15": {
+     "objective": "regression_l1",
+     "num_leaves": 15
+    },
+    "fv_pooled_l1_nl63": {
+     "objective": "regression_l1",
+     "num_leaves": 63
+    }
+   },
+   "per_collection": {
+    "fv_percoll_l2_nl15": {
+     "objective": "regression",
+     "num_leaves": 15
+    },
+    "fv_percoll_l1_nl15": {
+     "objective": "regression_l1",
+     "num_leaves": 15
+    }
+   }
+  },
+  "common_settings": {
+   "learning_rate": 0.05,
+   "min_data_in_leaf": 100,
+   "feature_fraction": 0.8,
+   "bagging_fraction": 0.8,
+   "bagging_freq": 1,
+   "lambda_l2": 1.0,
+   "seed": 0,
+   "deterministic": true,
+   "force_row_wise": true,
+   "num_threads": 4,
+   "verbose": -1
+  },
+  "n_rounds": 400,
+  "trial_count": 6,
+  "range_method": "LightGBM quantile alpha 0.10 / 0.90, same structure and settings as the candidate",
+  "quantiles": [
+   0.1,
+   0.9
+  ]
+ },
+ "baselines": [
+  "B0_floor",
+  "B1_rarity_decile",
+  "B2_decile_90d"
+ ],
+ "metric": "MdAPE = median |exp(y_hat - y) - 1| (price), pooled over collections",
+ "bootstrap": {
+  "block_days": 7,
+  "n_boot": 1000,
+  "seed": 0
+ },
+ "folds": [
+  {
+   "fold": 1,
+   "part": "rank",
+   "train_cutoff": "2025-04-24",
+   "test": [
+    "2025-05-01",
+    "2025-06-01"
+   ],
+   "n_train": 76362,
+   "n_test": 7678,
+   "train_dates": [
+    "2024-11-10",
+    "2025-04-23"
+   ],
+   "test_dates": [
+    "2025-05-01",
+    "2025-05-31"
+   ],
+   "quantile_rows_crossed": {
+    "fv_pooled_l2_nl15": 4,
+    "fv_pooled_l2_nl63": 69,
+    "fv_pooled_l1_nl15": 4,
+    "fv_pooled_l1_nl63": 69,
+    "fv_percoll_l2_nl15": 3,
+    "fv_percoll_l1_nl15": 3
+   },
+   "seconds": 60.2
+  },
+  {
+   "fold": 2,
+   "part": "rank",
+   "train_cutoff": "2025-05-25",
+   "test": [
+    "2025-06-01",
+    "2025-07-01"
+   ],
+   "n_train": 84393,
+   "n_test": 4707,
+   "train_dates": [
+    "2024-11-10",
+    "2025-05-24"
+   ],
+   "test_dates": [
+    "2025-06-01",
+    "2025-06-30"
+   ],
+   "quantile_rows_crossed": {
+    "fv_pooled_l2_nl15": 4,
+    "fv_pooled_l2_nl63": 3,
+    "fv_pooled_l1_nl15": 4,
+    "fv_pooled_l1_nl63": 3,
+    "fv_percoll_l2_nl15": 0,
+    "fv_percoll_l1_nl15": 0
+   },
+   "seconds": 56.3
+  },
+  {
+   "fold": 3,
+   "part": "rank",
+   "train_cutoff": "2025-06-24",
+   "test": [
+    "2025-07-01",
+    "2025-08-01"
+   ],
+   "n_train": 89197,
+   "n_test": 9340,
+   "train_dates": [
+    "2024-11-10",
+    "2025-06-23"
+   ],
+   "test_dates": [
+    "2025-07-01",
+    "2025-07-31"
+   ],
+   "quantile_rows_crossed": {
+    "fv_pooled_l2_nl15": 1,
+    "fv_pooled_l2_nl63": 7,
+    "fv_pooled_l1_nl15": 1,
+    "fv_pooled_l1_nl63": 7,
+    "fv_percoll_l2_nl15": 5,
+    "fv_percoll_l1_nl15": 5
+   },
+   "seconds": 57.6
+  },
+  {
+   "fold": 4,
+   "part": "rank",
+   "train_cutoff": "2025-07-25",
+   "test": [
+    "2025-08-01",
+    "2025-09-01"
+   ],
+   "n_train": 97409,
+   "n_test": 6686,
+   "train_dates": [
+    "2024-11-10",
+    "2025-07-24"
+   ],
+   "test_dates": [
+    "2025-08-01",
+    "2025-08-31"
+   ],
+   "quantile_rows_crossed": {
+    "fv_pooled_l2_nl15": 1,
+    "fv_pooled_l2_nl63": 6,
+    "fv_pooled_l1_nl15": 1,
+    "fv_pooled_l1_nl63": 6,
+    "fv_percoll_l2_nl15": 1,
+    "fv_percoll_l1_nl15": 1
+   },
+   "seconds": 68.0
+  },
+  {
+   "fold": 5,
+   "part": "rank",
+   "train_cutoff": "2025-08-25",
+   "test": [
+    "2025-09-01",
+    "2025-10-01"
+   ],
+   "n_train": 104626,
+   "n_test": 5973,
+   "train_dates": [
+    "2024-11-10",
+    "2025-08-24"
+   ],
+   "test_dates": [
+    "2025-09-01",
+    "2025-09-30"
+   ],
+   "quantile_rows_crossed": {
+    "fv_pooled_l2_nl15": 0,
+    "fv_pooled_l2_nl63": 10,
+    "fv_pooled_l1_nl15": 0,
+    "fv_pooled_l1_nl63": 10,
+    "fv_percoll_l2_nl15": 1,
+    "fv_percoll_l1_nl15": 1
+   },
+   "seconds": 67.8
+  },
+  {
+   "fold": 6,
+   "part": "confirm",
+   "train_cutoff": "2025-09-24",
+   "test": [
+    "2025-10-01",
+    "2025-11-01"
+   ],
+   "n_train": 109612,
+   "n_test": 12506,
+   "train_dates": [
+    "2024-11-10",
+    "2025-09-23"
+   ],
+   "test_dates": [
+    "2025-10-01",
+    "2025-10-31"
+   ],
+   "quantile_rows_crossed": {
+    "fv_pooled_l2_nl15": 0,
+    "fv_pooled_l2_nl63": 5,
+    "fv_pooled_l1_nl15": 0,
+    "fv_pooled_l1_nl63": 5,
+    "fv_percoll_l2_nl15": 0,
+    "fv_percoll_l1_nl15": 0
+   },
+   "seconds": 65.1
+  },
+  {
+   "fold": 7,
+   "part": "confirm",
+   "train_cutoff": "2025-10-25",
+   "test": [
+    "2025-11-01",
+    "2025-12-01"
+   ],
+   "n_train": 122635,
+   "n_test": 7578,
+   "train_dates": [
+    "2024-11-10",
+    "2025-10-24"
+   ],
+   "test_dates": [
+    "2025-11-01",
+    "2025-11-30"
+   ],
+   "quantile_rows_crossed": {
+    "fv_pooled_l2_nl15": 8,
+    "fv_pooled_l2_nl63": 8,
+    "fv_pooled_l1_nl15": 8,
+    "fv_pooled_l1_nl63": 8,
+    "fv_percoll_l2_nl15": 7,
+    "fv_percoll_l1_nl15": 7
+   },
+   "seconds": 68.4
+  },
+  {
+   "fold": 8,
+   "part": "confirm",
+   "train_cutoff": "2025-11-24",
+   "test": [
+    "2025-12-01",
+    "2026-01-01"
+   ],
+   "n_train": 131006,
+   "n_test": 6563,
+   "train_dates": [
+    "2024-11-10",
+    "2025-11-23"
+   ],
+   "test_dates": [
+    "2025-12-01",
+    "2025-12-31"
+   ],
+   "quantile_rows_crossed": {
+    "fv_pooled_l2_nl15": 0,
+    "fv_pooled_l2_nl63": 5,
+    "fv_pooled_l1_nl15": 0,
+    "fv_pooled_l1_nl63": 5,
+    "fv_percoll_l2_nl15": 10,
+    "fv_percoll_l1_nl15": 10
+   },
+   "seconds": 70.3
+  },
+  {
+   "fold": 9,
+   "part": "confirm",
+   "train_cutoff": "2025-12-25",
+   "test": [
+    "2026-01-01",
+    "2026-01-25"
+   ],
+   "n_train": 137040,
+   "n_test": 5813,
+   "train_dates": [
+    "2024-11-10",
+    "2025-12-24"
+   ],
+   "test_dates": [
+    "2026-01-01",
+    "2026-01-24"
+   ],
+   "quantile_rows_crossed": {
+    "fv_pooled_l2_nl15": 0,
+    "fv_pooled_l2_nl63": 0,
+    "fv_pooled_l1_nl15": 0,
+    "fv_pooled_l1_nl63": 0,
+    "fv_percoll_l2_nl15": 0,
+    "fv_percoll_l1_nl15": 0
+   },
+   "seconds": 72.8
+  }
+ ],
+ "selection": {
+  "ranking_first_60pct": {
+   "n_rows": 34384,
+   "n_dates": 153,
+   "order": [
+    "fv_pooled_l1_nl15",
+    "fv_pooled_l1_nl63",
+    "fv_pooled_l2_nl15",
+    "fv_pooled_l2_nl63",
+    "fv_percoll_l1_nl15",
+    "fv_percoll_l2_nl15"
+   ],
+   "mdape": {
+    "fv_pooled_l2_nl15": 0.028525497339531247,
+    "fv_pooled_l2_nl63": 0.02901666064059083,
+    "fv_pooled_l1_nl15": 0.023557633167506475,
+    "fv_pooled_l1_nl63": 0.023975304363444805,
+    "fv_percoll_l2_nl15": 0.03708063364692071,
+    "fv_percoll_l1_nl15": 0.03075275194723487,
+    "B0_floor": 0.03076343754070604,
+    "B1_rarity_decile": 0.0406600966715121,
+    "B2_decile_90d": 0.03199885492993715
+   },
+   "best_baseline": "B0_floor"
+  },
+  "confirmation_last_40pct": {
+   "n_rows": 32460,
+   "n_dates": 116,
+   "n_effective_dates_over_block": 16.571428571428573,
+   "mdape": {
+    "fv_pooled_l2_nl15": 0.031097055057302314,
+    "fv_pooled_l2_nl63": 0.029799727630562656,
+    "fv_pooled_l1_nl15": 0.028394734750110784,
+    "fv_pooled_l1_nl63": 0.02690329722503132,
+    "fv_percoll_l2_nl15": 0.034898132970974216,
+    "fv_percoll_l1_nl15": 0.02966770709662503,
+    "B0_floor": 0.0344827586206895,
+    "B1_rarity_decile": 0.03721805824358343,
+    "B2_decile_90d": 0.033476232042685294
+   },
+   "note": "all candidates reported; only the top-ranked one is tested"
+  },
+  "verdict": {
+   "top_candidate": "fv_pooled_l1_nl15",
+   "baseline": "B2_decile_90d",
+   "model_mdape": 0.028394734750110784,
+   "baseline_mdape": 0.033476232042685294,
+   "paired_diff_baseline_minus_model": {
+    "estimate": 0.0050814972925745105,
+    "low": 0.0014641963251051748,
+    "high": 0.007893717388852525,
+    "level": 0.95,
+    "block_size": 7,
+    "block_unit": "calendar dates (all collections together)",
+    "n_dates": 116,
+    "n_boot": 1000,
+    "seed": 0
+   },
+   "ci_excludes_0_positive": true,
+   "beats_better_baseline_on_ranking_folds_D32": true,
+   "approved": true
+  },
+  "range": {
+   "confirmation": {
+    "fv_pooled_l1_nl15": {
+     "n": 32460,
+     "mean_interval_score": 0.27599440013713145,
+     "coverage": 0.7336105976586568,
+     "lower_tail_miss": 0.1261860751694393,
+     "upper_tail_miss": 0.14020332717190387,
+     "mean_width": 0.1233641733443504,
+     "n_crossed": 0,
+     "coverage_in_bounds": false,
+     "tails_within_max": true,
+     "coverage_bounds": [
+      0.75,
+      0.85
+     ],
+     "tail_max": 0.15
+    },
+    "B0_floor": {
+     "n": 32460,
+     "mean_interval_score": 0.4733046823749697,
+     "coverage": 0.830653111521873,
+     "lower_tail_miss": 0.1040973505853358,
+     "upper_tail_miss": 0.06524953789279113,
+     "mean_width": 0.24806902168252637,
+     "n_crossed": 0,
+     "coverage_in_bounds": true,
+     "tails_within_max": true,
+     "coverage_bounds": [
+      0.75,
+      0.85
+     ],
+     "tail_max": 0.15
+    },
+    "B1_rarity_decile": {
+     "n": 32460,
+     "mean_interval_score": 0.4570536424075558,
+     "coverage": 0.8317313616759088,
+     "lower_tail_miss": 0.10397412199630314,
+     "upper_tail_miss": 0.06429451632778804,
+     "mean_width": 0.23986003142288803,
+     "n_crossed": 0,
+     "coverage_in_bounds": true,
+     "tails_within_max": true,
+     "coverage_bounds": [
+      0.75,
+      0.85
+     ],
+     "tail_max": 0.15
+    },
+    "B2_decile_90d": {
+     "n": 32460,
+     "mean_interval_score": 0.4541475318310562,
+     "coverage": 0.8699014171287739,
+     "lower_tail_miss": 0.050061614294516325,
+     "upper_tail_miss": 0.08003696857670979,
+     "mean_width": 0.2385883867527086,
+     "n_crossed": 0,
+     "coverage_in_bounds": false,
+     "tails_within_max": true,
+     "coverage_bounds": [
+      0.75,
+      0.85
+     ],
+     "tail_max": 0.15
+    }
+   },
+   "baseline_range_to_beat": "B2_decile_90d",
+   "paired_interval_score_diff_baseline_minus_model": {
+    "estimate": 0.17815313169392477,
+    "low": 0.14851060217600323,
+    "high": 0.22230549526834964,
+    "level": 0.95,
+    "block_size": 7,
+    "block_unit": "calendar dates (all collections together)",
+    "n_dates": 116,
+    "n_boot": 1000,
+    "seed": 0
+   },
+   "interval_score_ci_ok": true,
+   "approved": false,
+   "fallback_baseline_range_in_band": false,
+   "served_range_pooled": null
+  },
+  "per_collection": {
+   "azuki": {
+    "n": 3290,
+    "mdape": {
+     "fv_pooled_l1_nl15": 0.03228331709153365,
+     "B0_floor": 0.038799134016200776,
+     "B1_rarity_decile": 0.04481267142186307,
+     "B2_decile_90d": 0.04095728549860678
+    },
+    "coverage": {
+     "fv_pooled_l1_nl15": 0.6610942249240122,
+     "B0_floor": 0.8018237082066869,
+     "B1_rarity_decile": 0.8063829787234043,
+     "B2_decile_90d": 0.843161094224924
+    },
+    "best_baseline": "B0_floor",
+    "model_not_worse_than_best_baseline": true,
+    "serve_point": "fv_pooled_l1_nl15",
+    "serve_range": null
+   },
+   "boredapeyachtclub": {
+    "n": 1794,
+    "mdape": {
+     "fv_pooled_l1_nl15": 0.027822563363211317,
+     "B0_floor": 0.03254761904761916,
+     "B1_rarity_decile": 0.03232949156504816,
+     "B2_decile_90d": 0.03206170444614609
+    },
+    "coverage": {
+     "fv_pooled_l1_nl15": 0.7313266443701226,
+     "B0_floor": 0.8010033444816054,
+     "B1_rarity_decile": 0.794314381270903,
+     "B2_decile_90d": 0.8210702341137124
+    },
+    "best_baseline": "B2_decile_90d",
+    "model_not_worse_than_best_baseline": true,
+    "serve_point": "fv_pooled_l1_nl15",
+    "serve_range": null
+   },
+   "doodles-official": {
+    "n": 3611,
+    "mdape": {
+     "fv_pooled_l1_nl15": 0.031430095352426246,
+     "B0_floor": 0.04316326530612247,
+     "B1_rarity_decile": 0.04337231968810906,
+     "B2_decile_90d": 0.043612759802114986
+    },
+    "coverage": {
+     "fv_pooled_l1_nl15": 0.7042370534477984,
+     "B0_floor": 0.8662420382165605,
+     "B1_rarity_decile": 0.8637496538355026,
+     "B2_decile_90d": 0.9404597064525062
+    },
+    "best_baseline": "B0_floor",
+    "model_not_worse_than_best_baseline": true,
+    "serve_point": "fv_pooled_l1_nl15",
+    "serve_range": null
+   },
+   "lilpudgys": {
+    "n": 10878,
+    "mdape": {
+     "fv_pooled_l1_nl15": 0.029069767739840824,
+     "B0_floor": 0.02905980273502967,
+     "B1_rarity_decile": 0.036403557850674506,
+     "B2_decile_90d": 0.027594696426813226
+    },
+    "coverage": {
+     "fv_pooled_l1_nl15": 0.7728442728442728,
+     "B0_floor": 0.8745173745173745,
+     "B1_rarity_decile": 0.8729545872403015,
+     "B2_decile_90d": 0.9202059202059202
+    },
+    "best_baseline": "B2_decile_90d",
+    "model_not_worse_than_best_baseline": false,
+    "serve_point": "B2_decile_90d",
+    "serve_range": null
+   },
+   "milady": {
+    "n": 4149,
+    "mdape": {
+     "fv_pooled_l1_nl15": 0.029120434614958723,
+     "B0_floor": 0.03911666666666669,
+     "B1_rarity_decile": 0.03924205914567369,
+     "B2_decile_90d": 0.03922123893805329
+    },
+    "coverage": {
+     "fv_pooled_l1_nl15": 0.7042660882140275,
+     "B0_floor": 0.7604241986020728,
+     "B1_rarity_decile": 0.7582550012051097,
+     "B2_decile_90d": 0.7799469751747409
+    },
+    "best_baseline": "B0_floor",
+    "model_not_worse_than_best_baseline": true,
+    "serve_point": "fv_pooled_l1_nl15",
+    "serve_range": null
+   },
+   "mutant-ape-yacht-club": {
+    "n": 5044,
+    "mdape": {
+     "fv_pooled_l1_nl15": 0.026956579644764056,
+     "B0_floor": 0.04186051357490994,
+     "B1_rarity_decile": 0.03647524939019525,
+     "B2_decile_90d": 0.035229336865555294
+    },
+    "coverage": {
+     "fv_pooled_l1_nl15": 0.7490087232355274,
+     "B0_floor": 0.8045202220459953,
+     "B1_rarity_decile": 0.8138382236320381,
+     "B2_decile_90d": 0.8402061855670103
+    },
+    "best_baseline": "B2_decile_90d",
+    "model_not_worse_than_best_baseline": true,
+    "serve_point": "fv_pooled_l1_nl15",
+    "serve_range": null
+   },
+   "pudgypenguins": {
+    "n": 3694,
+    "mdape": {
+     "fv_pooled_l1_nl15": 0.022626633048740352,
+     "B0_floor": 0.030048865984036832,
+     "B1_rarity_decile": 0.027999667876913714,
+     "B2_decile_90d": 0.027024236046012895
+    },
+    "coverage": {
+     "fv_pooled_l1_nl15": 0.7244179750947483,
+     "B0_floor": 0.8213318895506226,
+     "B1_rarity_decile": 0.8267460747157552,
+     "B2_decile_90d": 0.8419057931781266
+    },
+    "best_baseline": "B2_decile_90d",
+    "model_not_worse_than_best_baseline": true,
+    "serve_point": "fv_pooled_l1_nl15",
+    "serve_range": null
+   }
+  }
+ },
+ "descriptive": {
+  "all_folds": {
+   "by_collection": {
+    "azuki": {
+     "n": 6543,
+     "B0_floor": 0.03874162540052428,
+     "B1_rarity_decile": 0.047076484853150635,
+     "B2_decile_90d": 0.04154995112414439,
+     "fv_pooled_l2_nl15": 0.036934003131872006,
+     "fv_pooled_l2_nl63": 0.038620027404160595,
+     "fv_pooled_l1_nl15": 0.031145580114538385,
+     "fv_pooled_l1_nl63": 0.03175646108647867,
+     "fv_percoll_l2_nl15": 0.04444865101808049,
+     "fv_percoll_l1_nl15": 0.03576334731132813
+    },
+    "boredapeyachtclub": {
+     "n": 3564,
+     "B0_floor": 0.03158781993776255,
+     "B1_rarity_decile": 0.03190419654995702,
+     "B2_decile_90d": 0.032034448997982856,
+     "fv_pooled_l2_nl15": 0.03438280046210773,
+     "fv_pooled_l2_nl63": 0.035570638433940094,
+     "fv_pooled_l1_nl15": 0.025179047900594165,
+     "fv_pooled_l1_nl63": 0.025525311018562424,
+     "fv_percoll_l2_nl15": 0.039382058841191336,
+     "fv_percoll_l1_nl15": 0.028919961885967238
+    },
+    "doodles-official": {
+     "n": 11457,
+     "B0_floor": 0.0442863335060103,
+     "B1_rarity_decile": 0.047811231290650236,
+     "B2_decile_90d": 0.042442113658186176,
+     "fv_pooled_l2_nl15": 0.03864902946599846,
+     "fv_pooled_l2_nl63": 0.03687268852386305,
+     "fv_pooled_l1_nl15": 0.03246745037943122,
+     "fv_pooled_l1_nl63": 0.034833939190088925,
+     "fv_percoll_l2_nl15": 0.05591945317733349,
+     "fv_percoll_l1_nl15": 0.05272852890961999
+    },
+    "lilpudgys": {
+     "n": 20529,
+     "B0_floor": 0.026871401151631558,
+     "B1_rarity_decile": 0.03994860385343535,
+     "B2_decile_90d": 0.027505584553726203,
+     "fv_pooled_l2_nl15": 0.027152542164808446,
+     "fv_pooled_l2_nl63": 0.02523344334971389,
+     "fv_pooled_l1_nl15": 0.02425437384338669,
+     "fv_pooled_l1_nl63": 0.022490215755685217,
+     "fv_percoll_l2_nl15": 0.03137456862342769,
+     "fv_percoll_l1_nl15": 0.02675134165913251
+    },
+    "milady": {
+     "n": 7567,
+     "B0_floor": 0.03636454545453682,
+     "B1_rarity_decile": 0.03749574549396928,
+     "B2_decile_90d": 0.03629726274023193,
+     "fv_pooled_l2_nl15": 0.033021982598054334,
+     "fv_pooled_l2_nl63": 0.03473647804114122,
+     "fv_pooled_l1_nl15": 0.026832556547660036,
+     "fv_pooled_l1_nl63": 0.027716801023323523,
+     "fv_percoll_l2_nl15": 0.04286047886616062,
+     "fv_percoll_l1_nl15": 0.03248036084738226
+    },
+    "mutant-ape-yacht-club": {
+     "n": 10284,
+     "B0_floor": 0.03216287194062184,
+     "B1_rarity_decile": 0.03319985500425959,
+     "B2_decile_90d": 0.030316723871693374,
+     "fv_pooled_l2_nl15": 0.025183211305357944,
+     "fv_pooled_l2_nl63": 0.025710933383913392,
+     "fv_pooled_l1_nl15": 0.02194608594370917,
+     "fv_pooled_l1_nl63": 0.021376374620472482,
+     "fv_percoll_l2_nl15": 0.0292109463320267,
+     "fv_percoll_l1_nl15": 0.02436087083269378
+    },
+    "pudgypenguins": {
+     "n": 6900,
+     "B0_floor": 0.02822976310020131,
+     "B1_rarity_decile": 0.029774562400698645,
+     "B2_decile_90d": 0.027024236046012895,
+     "fv_pooled_l2_nl15": 0.02353321757747573,
+     "fv_pooled_l2_nl63": 0.022717979314683168,
+     "fv_pooled_l1_nl15": 0.021262565885131535,
+     "fv_pooled_l1_nl63": 0.020629194122625816,
+     "fv_percoll_l2_nl15": 0.02803104693539793,
+     "fv_percoll_l1_nl15": 0.02490416302333509
+    }
+   },
+   "by_sale_type": {
+    "bid_accept": {
+     "n": 37089,
+     "B0_floor": 0.02989690721649496,
+     "B1_rarity_decile": 0.044219303497432305,
+     "B2_decile_90d": 0.03492645654490789,
+     "fv_pooled_l2_nl15": 0.03214345751145675,
+     "fv_pooled_l2_nl63": 0.032089767617420994,
+     "fv_pooled_l1_nl15": 0.027155241249215534,
+     "fv_pooled_l1_nl63": 0.02715363465281717,
+     "fv_percoll_l2_nl15": 0.03874603921711506,
+     "fv_percoll_l1_nl15": 0.032330753305840565
+    },
+    "listing_fill": {
+     "n": 29755,
+     "B0_floor": 0.036826922613859114,
+     "B1_rarity_decile": 0.0329380556285539,
+     "B2_decile_90d": 0.02875508088197143,
+     "fv_pooled_l2_nl15": 0.026837487758960776,
+     "fv_pooled_l2_nl63": 0.02628601731788216,
+     "fv_pooled_l1_nl15": 0.023770423215740077,
+     "fv_pooled_l1_nl63": 0.022868206313713113,
+     "fv_percoll_l2_nl15": 0.03252087320769492,
+     "fv_percoll_l1_nl15": 0.027570819423718973
+    }
+   },
+   "by_floor_age_bucket": {
+    "0-6h": {
+     "n": 18438,
+     "B0_floor": 0.022535389759672175,
+     "B1_rarity_decile": 0.03224740905900347,
+     "B2_decile_90d": 0.023037498241807064,
+     "fv_pooled_l2_nl15": 0.025005122979768923,
+     "fv_pooled_l2_nl63": 0.02566343958707279,
+     "fv_pooled_l1_nl15": 0.021623342182312544,
+     "fv_pooled_l1_nl63": 0.020890551484133768,
+     "fv_percoll_l2_nl15": 0.03142010761638675,
+     "fv_percoll_l1_nl15": 0.02423819062356458
+    },
+    "6-12h": {
+     "n": 13783,
+     "B0_floor": 0.03225775234121053,
+     "B1_rarity_decile": 0.036359916177713725,
+     "B2_decile_90d": 0.030733207296071985,
+     "fv_pooled_l2_nl15": 0.027820770459715205,
+     "fv_pooled_l2_nl63": 0.027808493845410398,
+     "fv_pooled_l1_nl15": 0.02426953688192146,
+     "fv_pooled_l1_nl63": 0.023665863285510902,
+     "fv_percoll_l2_nl15": 0.033591742342716335,
+     "fv_percoll_l1_nl15": 0.02823821806995197
+    },
+    "12-24h": {
+     "n": 23516,
+     "B0_floor": 0.0393232367505994,
+     "B1_rarity_decile": 0.04339420372089531,
+     "B2_decile_90d": 0.038373894980433865,
+     "fv_pooled_l2_nl15": 0.03284171250815349,
+     "fv_pooled_l2_nl63": 0.03163995322687568,
+     "fv_pooled_l1_nl15": 0.02828448874288536,
+     "fv_pooled_l1_nl63": 0.027659873829375847,
+     "fv_percoll_l2_nl15": 0.039027137428289005,
+     "fv_percoll_l1_nl15": 0.03420941754696294
+    },
+    "24-72h": {
+     "n": 11107,
+     "B0_floor": 0.038997826086956566,
+     "B1_rarity_decile": 0.05023664059397248,
+     "B2_decile_90d": 0.041896004997594494,
+     "fv_pooled_l2_nl15": 0.03529523177558014,
+     "fv_pooled_l2_nl63": 0.03388712491889545,
+     "fv_pooled_l1_nl15": 0.030202373640083824,
+     "fv_pooled_l1_nl63": 0.031666154807625246,
+     "fv_percoll_l2_nl15": 0.041829831868191336,
+     "fv_percoll_l1_nl15": 0.03711230306618751
+    }
+   }
+  },
+  "ranking": {
+   "by_collection": {
+    "azuki": {
+     "n": 3253,
+     "B0_floor": 0.0384030150753768,
+     "B1_rarity_decile": 0.049905269247133344,
+     "B2_decile_90d": 0.042105285425101835,
+     "fv_pooled_l2_nl15": 0.03583353877368678,
+     "fv_pooled_l2_nl63": 0.03827176349489281,
+     "fv_pooled_l1_nl15": 0.029776831632151057,
+     "fv_pooled_l1_nl63": 0.02952921534755326,
+     "fv_percoll_l2_nl15": 0.04399549288329574,
+     "fv_percoll_l1_nl15": 0.03197834147990164
+    },
+    "boredapeyachtclub": {
+     "n": 1770,
+     "B0_floor": 0.030295698833776474,
+     "B1_rarity_decile": 0.0315305466350122,
+     "B2_decile_90d": 0.03201621156477086,
+     "fv_pooled_l2_nl15": 0.03229741015388765,
+     "fv_pooled_l2_nl63": 0.033645172948542856,
+     "fv_pooled_l1_nl15": 0.023233312449231824,
+     "fv_pooled_l1_nl63": 0.023220156083770038,
+     "fv_percoll_l2_nl15": 0.03704928992343948,
+     "fv_percoll_l1_nl15": 0.02705291280304123
+    },
+    "doodles-official": {
+     "n": 7846,
+     "B0_floor": 0.044928964069850974,
+     "B1_rarity_decile": 0.049585843094730686,
+     "B2_decile_90d": 0.04190507462848814,
+     "fv_pooled_l2_nl15": 0.04008826372806118,
+     "fv_pooled_l2_nl63": 0.038528449359554406,
+     "fv_pooled_l1_nl15": 0.03299523888917727,
+     "fv_pooled_l1_nl63": 0.03537151728367083,
+     "fv_percoll_l2_nl15": 0.07723184244671727,
+     "fv_percoll_l1_nl15": 0.07589584893898615
+    },
+    "lilpudgys": {
+     "n": 9651,
+     "B0_floor": 0.024878109763720513,
+     "B1_rarity_decile": 0.043857006887288996,
+     "B2_decile_90d": 0.027461578766661887,
+     "fv_pooled_l2_nl15": 0.024581222786137613,
+     "fv_pooled_l2_nl63": 0.025037317954450966,
+     "fv_pooled_l1_nl15": 0.020231959519095732,
+     "fv_pooled_l1_nl63": 0.020931221483589835,
+     "fv_percoll_l2_nl15": 0.031431977277871725,
+     "fv_percoll_l1_nl15": 0.027571712620917177
+    },
+    "milady": {
+     "n": 3418,
+     "B0_floor": 0.03332139372822285,
+     "B1_rarity_decile": 0.035774319599142124,
+     "B2_decile_90d": 0.033444664254836054,
+     "fv_pooled_l2_nl15": 0.030376103364389728,
+     "fv_pooled_l2_nl63": 0.03289068468648304,
+     "fv_pooled_l1_nl15": 0.024741128844525173,
+     "fv_pooled_l1_nl63": 0.024558632396697755,
+     "fv_percoll_l2_nl15": 0.03961677175928363,
+     "fv_percoll_l1_nl15": 0.02842835744783412
+    },
+    "mutant-ape-yacht-club": {
+     "n": 5240,
+     "B0_floor": 0.024241818181818253,
+     "B1_rarity_decile": 0.030893777095078845,
+     "B2_decile_90d": 0.026193566787749034,
+     "fv_pooled_l2_nl15": 0.021148359904543335,
+     "fv_pooled_l2_nl63": 0.022053832791207872,
+     "fv_pooled_l1_nl15": 0.018195074097306974,
+     "fv_pooled_l1_nl63": 0.017740628277829795,
+     "fv_percoll_l2_nl15": 0.02631750755377188,
+     "fv_percoll_l1_nl15": 0.020383796555150435
+    },
+    "pudgypenguins": {
+     "n": 3206,
+     "B0_floor": 0.025974032467532493,
+     "B1_rarity_decile": 0.031639403055416127,
+     "B2_decile_90d": 0.027041313868567063,
+     "fv_pooled_l2_nl15": 0.023017416844970662,
+     "fv_pooled_l2_nl63": 0.02232662816059444,
+     "fv_pooled_l1_nl15": 0.020156727282557463,
+     "fv_pooled_l1_nl63": 0.02007726368075119,
+     "fv_percoll_l2_nl15": 0.029233472630047497,
+     "fv_percoll_l1_nl15": 0.0240815416193797
+    }
+   },
+   "by_sale_type": {
+    "bid_accept": {
+     "n": 20200,
+     "B0_floor": 0.02899187488856625,
+     "B1_rarity_decile": 0.04586785248483438,
+     "B2_decile_90d": 0.034505901434730424,
+     "fv_pooled_l2_nl15": 0.031115652067433497,
+     "fv_pooled_l2_nl63": 0.03162619674286005,
+     "fv_pooled_l1_nl15": 0.025171520100587763,
+     "fv_pooled_l1_nl63": 0.02605954365011154,
+     "fv_percoll_l2_nl15": 0.03956919832017336,
+     "fv_percoll_l1_nl15": 0.032588430202287966
+    },
+    "listing_fill": {
+     "n": 14184,
+     "B0_floor": 0.0341578327444052,
+     "B1_rarity_decile": 0.03412486010515692,
+     "B2_decile_90d": 0.027178039284438515,
+     "fv_pooled_l2_nl15": 0.024844889191839303,
+     "fv_pooled_l2_nl63": 0.025640055098481107,
+     "fv_pooled_l1_nl15": 0.021225212902851565,
+     "fv_pooled_l1_nl63": 0.021035878202334157,
+     "fv_percoll_l2_nl15": 0.03336555708542999,
+     "fv_percoll_l1_nl15": 0.02788262572723016
+    }
+   },
+   "by_floor_age_bucket": {
+    "0-6h": {
+     "n": 9550,
+     "B0_floor": 0.02289596905255903,
+     "B1_rarity_decile": 0.035281307445864996,
+     "B2_decile_90d": 0.024142100538518674,
+     "fv_pooled_l2_nl15": 0.02426046184288161,
+     "fv_pooled_l2_nl63": 0.026018803172489613,
+     "fv_pooled_l1_nl15": 0.020338305646876498,
+     "fv_pooled_l1_nl63": 0.02013089463384976,
+     "fv_percoll_l2_nl15": 0.03280695757699792,
+     "fv_percoll_l1_nl15": 0.025672160763497265
+    },
+    "6-12h": {
+     "n": 6914,
+     "B0_floor": 0.029914614827991515,
+     "B1_rarity_decile": 0.037016345036477494,
+     "B2_decile_90d": 0.030438304345570988,
+     "fv_pooled_l2_nl15": 0.02642172236317769,
+     "fv_pooled_l2_nl63": 0.026758674644107194,
+     "fv_pooled_l1_nl15": 0.021858736086907915,
+     "fv_pooled_l1_nl63": 0.02205300449119174,
+     "fv_percoll_l2_nl15": 0.03389202116235163,
+     "fv_percoll_l1_nl15": 0.027642536903050963
+    },
+    "12-24h": {
+     "n": 12021,
+     "B0_floor": 0.036054421768707545,
+     "B1_rarity_decile": 0.04298323142693117,
+     "B2_decile_90d": 0.035690943043884094,
+     "fv_pooled_l2_nl15": 0.03029321860627332,
+     "fv_pooled_l2_nl63": 0.029943501984109,
+     "fv_pooled_l1_nl15": 0.02444304935530006,
+     "fv_pooled_l1_nl63": 0.02513153657673084,
+     "fv_percoll_l2_nl15": 0.03912876135766452,
+     "fv_percoll_l1_nl15": 0.033675469593490215
+    },
+    "24-72h": {
+     "n": 5899,
+     "B0_floor": 0.037258110026619384,
+     "B1_rarity_decile": 0.05446962741999983,
+     "B2_decile_90d": 0.0417395252598427,
+     "fv_pooled_l2_nl15": 0.03642917895397568,
+     "fv_pooled_l2_nl63": 0.03609656844599529,
+     "fv_pooled_l1_nl15": 0.030844185804461577,
+     "fv_pooled_l1_nl63": 0.032303928784217395,
+     "fv_percoll_l2_nl15": 0.04538751090356863,
+     "fv_percoll_l1_nl15": 0.03940370489955303
+    }
+   }
+  },
+  "confirmation": {
+   "by_collection": {
+    "azuki": {
+     "n": 3290,
+     "B0_floor": 0.038799134016200776,
+     "B1_rarity_decile": 0.04481267142186307,
+     "B2_decile_90d": 0.04095728549860678,
+     "fv_pooled_l2_nl15": 0.037840382505012704,
+     "fv_pooled_l2_nl63": 0.03897591972040071,
+     "fv_pooled_l1_nl15": 0.03228331709153365,
+     "fv_pooled_l1_nl63": 0.034140512049324445,
+     "fv_percoll_l2_nl15": 0.04525493726749952,
+     "fv_percoll_l1_nl15": 0.040872734200406435
+    },
+    "boredapeyachtclub": {
+     "n": 1794,
+     "B0_floor": 0.03254761904761916,
+     "B1_rarity_decile": 0.03232949156504816,
+     "B2_decile_90d": 0.03206170444614609,
+     "fv_pooled_l2_nl15": 0.03765161216716645,
+     "fv_pooled_l2_nl63": 0.03825955924782132,
+     "fv_pooled_l1_nl15": 0.027822563363211317,
+     "fv_pooled_l1_nl63": 0.027593681580627305,
+     "fv_percoll_l2_nl15": 0.041382239658092235,
+     "fv_percoll_l1_nl15": 0.031271119034984696
+    },
+    "doodles-official": {
+     "n": 3611,
+     "B0_floor": 0.04316326530612247,
+     "B1_rarity_decile": 0.04337231968810906,
+     "B2_decile_90d": 0.043612759802114986,
+     "fv_pooled_l2_nl15": 0.03574434515331082,
+     "fv_pooled_l2_nl63": 0.03408684443426191,
+     "fv_pooled_l1_nl15": 0.031430095352426246,
+     "fv_pooled_l1_nl63": 0.03370864040096111,
+     "fv_percoll_l2_nl15": 0.03739579274384308,
+     "fv_percoll_l1_nl15": 0.033280193897376464
+    },
+    "lilpudgys": {
+     "n": 10878,
+     "B0_floor": 0.02905980273502967,
+     "B1_rarity_decile": 0.036403557850674506,
+     "B2_decile_90d": 0.027594696426813226,
+     "fv_pooled_l2_nl15": 0.029129586746439062,
+     "fv_pooled_l2_nl63": 0.02536451849621002,
+     "fv_pooled_l1_nl15": 0.029069767739840824,
+     "fv_pooled_l1_nl63": 0.023998359107814227,
+     "fv_percoll_l2_nl15": 0.031333585311949796,
+     "fv_percoll_l1_nl15": 0.025974833739827174
+    },
+    "milady": {
+     "n": 4149,
+     "B0_floor": 0.03911666666666669,
+     "B1_rarity_decile": 0.03924205914567369,
+     "B2_decile_90d": 0.03922123893805329,
+     "fv_pooled_l2_nl15": 0.035435771505538005,
+     "fv_pooled_l2_nl63": 0.036654807354304486,
+     "fv_pooled_l1_nl15": 0.029120434614958723,
+     "fv_pooled_l1_nl63": 0.031179495807568403,
+     "fv_percoll_l2_nl15": 0.046689023960705844,
+     "fv_percoll_l1_nl15": 0.03685052351371776
+    },
+    "mutant-ape-yacht-club": {
+     "n": 5044,
+     "B0_floor": 0.04186051357490994,
+     "B1_rarity_decile": 0.03647524939019525,
+     "B2_decile_90d": 0.035229336865555294,
+     "fv_pooled_l2_nl15": 0.029323789240438325,
+     "fv_pooled_l2_nl63": 0.03030509336445103,
+     "fv_pooled_l1_nl15": 0.026956579644764056,
+     "fv_pooled_l1_nl63": 0.026641899462080953,
+     "fv_percoll_l2_nl15": 0.032292868655205975,
+     "fv_percoll_l1_nl15": 0.02945548626721417
+    },
+    "pudgypenguins": {
+     "n": 3694,
+     "B0_floor": 0.030048865984036832,
+     "B1_rarity_decile": 0.027999667876913714,
+     "B2_decile_90d": 0.027024236046012895,
+     "fv_pooled_l2_nl15": 0.02424902958687808,
+     "fv_pooled_l2_nl63": 0.02301365561654295,
+     "fv_pooled_l1_nl15": 0.022626633048740352,
+     "fv_pooled_l1_nl63": 0.021103525325821992,
+     "fv_percoll_l2_nl15": 0.02662501376450621,
+     "fv_percoll_l1_nl15": 0.025669167105047852
+    }
+   },
+   "by_sale_type": {
+    "bid_accept": {
+     "n": 16889,
+     "B0_floor": 0.03125,
+     "B1_rarity_decile": 0.04212723192265977,
+     "B2_decile_90d": 0.03561403308586897,
+     "fv_pooled_l2_nl15": 0.0334770741361794,
+     "fv_pooled_l2_nl63": 0.03263634274663951,
+     "fv_pooled_l1_nl15": 0.02985532501312016,
+     "fv_pooled_l1_nl63": 0.028715311453958448,
+     "fv_percoll_l2_nl15": 0.03770766295467687,
+     "fv_percoll_l1_nl15": 0.0320715415871613
+    },
+    "listing_fill": {
+     "n": 15571,
+     "B0_floor": 0.03888888888888897,
+     "B1_rarity_decile": 0.03179380852403968,
+     "B2_decile_90d": 0.030445312093485555,
+     "fv_pooled_l2_nl15": 0.028467349252559893,
+     "fv_pooled_l2_nl63": 0.026989492544103988,
+     "fv_pooled_l1_nl15": 0.026443664617581963,
+     "fv_pooled_l1_nl63": 0.024753944571024977,
+     "fv_percoll_l2_nl15": 0.03191425821356897,
+     "fv_percoll_l1_nl15": 0.02725437131325137
+    }
+   },
+   "by_floor_age_bucket": {
+    "0-6h": {
+     "n": 8888,
+     "B0_floor": 0.0222222222222222,
+     "B1_rarity_decile": 0.029155476259706548,
+     "B2_decile_90d": 0.021871578936074998,
+     "fv_pooled_l2_nl15": 0.025919150600583696,
+     "fv_pooled_l2_nl63": 0.02531666976204655,
+     "fv_pooled_l1_nl15": 0.022886705087889425,
+     "fv_pooled_l1_nl63": 0.021664822317508214,
+     "fv_percoll_l2_nl15": 0.030216838020220682,
+     "fv_percoll_l1_nl15": 0.02280264275868682
+    },
+    "6-12h": {
+     "n": 6869,
+     "B0_floor": 0.034482758620689724,
+     "B1_rarity_decile": 0.03575790442689941,
+     "B2_decile_90d": 0.031109695494046408,
+     "fv_pooled_l2_nl15": 0.029453011827527797,
+     "fv_pooled_l2_nl63": 0.029227342207074347,
+     "fv_pooled_l1_nl15": 0.027244314584721097,
+     "fv_pooled_l1_nl63": 0.025472888584368913,
+     "fv_percoll_l2_nl15": 0.033277553379464475,
+     "fv_percoll_l1_nl15": 0.028813120478580423
+    },
+    "12-24h": {
+     "n": 11495,
+     "B0_floor": 0.04347826086956519,
+     "B1_rarity_decile": 0.04402516953164992,
+     "B2_decile_90d": 0.04164463855965672,
+     "fv_pooled_l2_nl15": 0.03596981799785581,
+     "fv_pooled_l2_nl63": 0.03360314016212751,
+     "fv_pooled_l1_nl15": 0.03300006743387163,
+     "fv_pooled_l1_nl63": 0.030860689138514696,
+     "fv_percoll_l2_nl15": 0.0389150111008556,
+     "fv_percoll_l1_nl15": 0.03491844282546985
+    },
+    "24-72h": {
+     "n": 5208,
+     "B0_floor": 0.040935672514619936,
+     "B1_rarity_decile": 0.045667306116423445,
+     "B2_decile_90d": 0.04221514632855111,
+     "fv_pooled_l2_nl15": 0.03402943857951346,
+     "fv_pooled_l2_nl63": 0.03164561839610952,
+     "fv_pooled_l1_nl15": 0.029757938836058206,
+     "fv_pooled_l1_nl63": 0.030956723390462182,
+     "fv_percoll_l2_nl15": 0.03813014468742881,
+     "fv_percoll_l1_nl15": 0.034675008414954966
+    }
+   }
+  },
+  "by_fold": {
+   "1": {
+    "n": 7678,
+    "B0_floor": 0.03332139372822285,
+    "B1_rarity_decile": 0.050735869369111675,
+    "B2_decile_90d": 0.036290590053569494,
+    "fv_pooled_l2_nl15": 0.03506444369771716,
+    "fv_pooled_l2_nl63": 0.03793787664838549,
+    "fv_pooled_l1_nl15": 0.027981396818347826,
+    "fv_pooled_l1_nl63": 0.029851018089491643,
+    "fv_percoll_l2_nl15": 0.0729545808486492,
+    "fv_percoll_l1_nl15": 0.061884366809260793
+   },
+   "2": {
+    "n": 4707,
+    "B0_floor": 0.028194698613338565,
+    "B1_rarity_decile": 0.041765141086603785,
+    "B2_decile_90d": 0.03044183563131586,
+    "fv_pooled_l2_nl15": 0.026783929388800476,
+    "fv_pooled_l2_nl63": 0.027091887599296705,
+    "fv_pooled_l1_nl15": 0.022709578903569616,
+    "fv_pooled_l1_nl63": 0.023087974910039666,
+    "fv_percoll_l2_nl15": 0.035989228229554415,
+    "fv_percoll_l1_nl15": 0.026378476327308942
+   },
+   "3": {
+    "n": 9340,
+    "B0_floor": 0.04222630922744225,
+    "B1_rarity_decile": 0.038350781481171936,
+    "B2_decile_90d": 0.036882828294564574,
+    "fv_pooled_l2_nl15": 0.033081191005261745,
+    "fv_pooled_l2_nl63": 0.03196207059373457,
+    "fv_pooled_l1_nl15": 0.027972529597796614,
+    "fv_pooled_l1_nl63": 0.027696976650808114,
+    "fv_percoll_l2_nl15": 0.03596349414118277,
+    "fv_percoll_l1_nl15": 0.03211728301279981
+   },
+   "4": {
+    "n": 6686,
+    "B0_floor": 0.02872352778857945,
+    "B1_rarity_decile": 0.04013356523129963,
+    "B2_decile_90d": 0.03135314017308388,
+    "fv_pooled_l2_nl15": 0.02782263380419081,
+    "fv_pooled_l2_nl63": 0.027905641735232356,
+    "fv_pooled_l1_nl15": 0.022700465051018193,
+    "fv_pooled_l1_nl63": 0.022722457472286406,
+    "fv_percoll_l2_nl15": 0.031198982595377234,
+    "fv_percoll_l1_nl15": 0.026395667118967847
+   },
+   "5": {
+    "n": 5973,
+    "B0_floor": 0.019476470588235317,
+    "B1_rarity_decile": 0.03404963221467039,
+    "B2_decile_90d": 0.023885825947379424,
+    "fv_pooled_l2_nl15": 0.01923305477656667,
+    "fv_pooled_l2_nl63": 0.020161216253821612,
+    "fv_pooled_l1_nl15": 0.015714412993977245,
+    "fv_pooled_l1_nl63": 0.01633421540907265,
+    "fv_percoll_l2_nl15": 0.028290854496356488,
+    "fv_percoll_l1_nl15": 0.023097974772396168
+   },
+   "6": {
+    "n": 12506,
+    "B0_floor": 0.03703703703703698,
+    "B1_rarity_decile": 0.042035185119454255,
+    "B2_decile_90d": 0.036030438353298,
+    "fv_pooled_l2_nl15": 0.03732251800994768,
+    "fv_pooled_l2_nl63": 0.03415815754024021,
+    "fv_pooled_l1_nl15": 0.03660943025979135,
+    "fv_pooled_l1_nl63": 0.03133542194341643,
+    "fv_percoll_l2_nl15": 0.04117565441426019,
+    "fv_percoll_l1_nl15": 0.03396549738056642
+   },
+   "7": {
+    "n": 7578,
+    "B0_floor": 0.03159980000000018,
+    "B1_rarity_decile": 0.0325715243500182,
+    "B2_decile_90d": 0.029310525832820566,
+    "fv_pooled_l2_nl15": 0.02708782991127534,
+    "fv_pooled_l2_nl63": 0.026825564633236487,
+    "fv_pooled_l1_nl15": 0.02302667077499626,
+    "fv_pooled_l1_nl63": 0.02336707414234629,
+    "fv_percoll_l2_nl15": 0.031666358488798285,
+    "fv_percoll_l1_nl15": 0.02636045862795222
+   },
+   "8": {
+    "n": 6563,
+    "B0_floor": 0.02876982892690516,
+    "B1_rarity_decile": 0.03675485151469826,
+    "B2_decile_90d": 0.03208814238510893,
+    "fv_pooled_l2_nl15": 0.029025286293770547,
+    "fv_pooled_l2_nl63": 0.028695863851454728,
+    "fv_pooled_l1_nl15": 0.02531730929885634,
+    "fv_pooled_l1_nl63": 0.025322479901712214,
+    "fv_percoll_l2_nl15": 0.03227784813183332,
+    "fv_percoll_l1_nl15": 0.027639245886263764
+   },
+   "9": {
+    "n": 5813,
+    "B0_floor": 0.04268292682926833,
+    "B1_rarity_decile": 0.03374786708863653,
+    "B2_decile_90d": 0.03477068041193032,
+    "fv_pooled_l2_nl15": 0.027166026924983155,
+    "fv_pooled_l2_nl63": 0.02703769868032435,
+    "fv_pooled_l1_nl15": 0.025196634017614405,
+    "fv_pooled_l1_nl63": 0.024791872003279813,
+    "fv_percoll_l2_nl15": 0.03142429870584418,
+    "fv_percoll_l1_nl15": 0.027137708821049822
+   }
+  }
+ },
+ "feature_importance_gain_share_mean_over_folds": {
+  "fv_pooled_l2_nl15": {
+   "floor_ret_7d": 0.4279717945849125,
+   "floor_ret_30d": 0.15428403451637085,
+   "coll_sales_1d": 0.06318136530267533,
+   "floor_ret_1d": 0.05226285763465171,
+   "trait_prem_max": 0.047331642752738,
+   "coll_prem_med_7d": 0.037464646213832366,
+   "prev_prem": 0.03019079330216404,
+   "floor_age_hours": 0.028596343875192536,
+   "coll_sales_7d": 0.019029506360905765,
+   "floor_vol_7d": 0.016415822624751563,
+   "trait_share_min": 0.01595426653610292,
+   "floor_vol_30d": 0.014582299998244806,
+   "dow": 0.010637378157380748,
+   "prev_days": 0.010621582822018185,
+   "coll_prem_med_30d": 0.009366890642005769,
+   "collection": 0.009130873015242694,
+   "rarity_pct": 0.004957101182663319,
+   "hour": 0.003907922681023492,
+   "trait__doodles_official__hair": 0.0038155591313663254,
+   "trait_prem_mean": 0.0036673831766648774,
+   "trait_prem_n": 0.0035946849109702267,
+   "trait_share_mean": 0.002762915347455505,
+   "trait__azuki__Special": 0.002555703819942994,
+   "rarity_score": 0.0023317613324439937,
+   "decile_prem_med_90d": 0.0016743137871091094
+  },
+  "fv_pooled_l2_nl63": {
+   "floor_ret_7d": 0.4183656654596654,
+   "floor_ret_30d": 0.14207359117589566,
+   "coll_sales_1d": 0.0680209352540761,
+   "floor_ret_1d": 0.05118457154930611,
+   "trait_prem_max": 0.04373827814648405,
+   "coll_prem_med_7d": 0.04030617886274823,
+   "prev_prem": 0.02549084220978855,
+   "floor_age_hours": 0.02447839128710649,
+   "coll_sales_7d": 0.019525830995673545,
+   "trait_share_min": 0.018138215652971523,
+   "floor_vol_30d": 0.017171983781473374,
+   "floor_vol_7d": 0.01699500022564764,
+   "collection": 0.013700115077840658,
+   "coll_prem_med_30d": 0.01077486755047091,
+   "prev_days": 0.009661561029407024,
+   "dow": 0.008669430081333342,
+   "trait_prem_mean": 0.0057958663089504245,
+   "rarity_pct": 0.005172835445500065,
+   "trait_share_mean": 0.003750362077703138,
+   "trait__doodles_official__hair": 0.0032686805041908726,
+   "rarity_score": 0.0032323971611321316,
+   "trait_prem_min": 0.00315710810714674,
+   "trait_prem_n": 0.0030999407079836017,
+   "hour": 0.0029392994497811093,
+   "trait__azuki__Hair": 0.0024146854317832625
+  },
+  "fv_pooled_l1_nl15": {
+   "prev_prem": 0.13296407706707936,
+   "coll_sales_1d": 0.12440014697625129,
+   "prev_days": 0.09634514886075346,
+   "coll_prem_med_7d": 0.09533296320089486,
+   "floor_ret_7d": 0.08722256112974273,
+   "floor_ret_30d": 0.06902373032528614,
+   "floor_ret_1d": 0.05895065311757733,
+   "floor_age_hours": 0.057500487813614644,
+   "coll_sales_7d": 0.04215801037806441,
+   "trait_prem_max": 0.03615092417005062,
+   "coll_prem_med_30d": 0.020440035978007184,
+   "floor_vol_7d": 0.019827616240977328,
+   "floor_vol_30d": 0.018449854568566557,
+   "hour": 0.013774413589976558,
+   "collection": 0.01238240897105906,
+   "trait__lilpudgys__Body": 0.01155547334933369,
+   "dow": 0.009769174582729242,
+   "trait__lilpudgys__Head": 0.009265766949810666,
+   "trait__azuki__Hair": 0.008524717923940363,
+   "rarity_pct": 0.0072818280709747284,
+   "trait_share_min": 0.006828861127462203,
+   "trait_prem_mean": 0.006058518420422301,
+   "trait__azuki__Clothing": 0.00489043121251,
+   "trait__mutant_ape_yacht_club__Hat": 0.004801309198122083,
+   "trait__mutant_ape_yacht_club__Mouth": 0.004528125497943663
+  },
+  "fv_pooled_l1_nl63": {
+   "prev_prem": 0.10221626119190899,
+   "coll_sales_1d": 0.09870675844770671,
+   "coll_prem_med_7d": 0.07388723263391711,
+   "prev_days": 0.07368220686475312,
+   "floor_ret_7d": 0.06498067264869706,
+   "floor_age_hours": 0.05770195139036949,
+   "floor_ret_30d": 0.05436246900852865,
+   "floor_ret_1d": 0.05145388104454959,
+   "coll_sales_7d": 0.04551673945414893,
+   "trait__lilpudgys__Body": 0.03642190386698249,
+   "trait__lilpudgys__Head": 0.03391516384584983,
+   "trait_prem_max": 0.02688788856263905,
+   "coll_prem_med_30d": 0.02577295585454703,
+   "floor_vol_7d": 0.025296636083656336,
+   "floor_vol_30d": 0.023197614131077893,
+   "trait__azuki__Hair": 0.019176363535386293,
+   "hour": 0.016970931647620938,
+   "trait__azuki__Clothing": 0.014379575847445335,
+   "collection": 0.013300425445106945,
+   "dow": 0.012439225671734541,
+   "trait__doodles_official__hair": 0.00781781602545585,
+   "trait__mutant_ape_yacht_club__Hat": 0.006667617273134926,
+   "trait_prem_mean": 0.006573460650557581,
+   "trait_share_min": 0.006467938545820945,
+   "trait__mutant_ape_yacht_club__Clothes": 0.0059778001107789625
+  },
+  "fv_percoll_l2_nl15": {
+   "floor_ret_7d": 0.41204372746231877,
+   "floor_ret_30d": 0.14772019448430374,
+   "floor_ret_1d": 0.07528392535503328,
+   "coll_sales_1d": 0.06199153033058973,
+   "floor_age_hours": 0.039921210895278926,
+   "coll_prem_med_7d": 0.036173788269433856,
+   "trait_prem_max": 0.03196396492594113,
+   "coll_sales_7d": 0.02955561239351607,
+   "trait_share_min": 0.02599837261893944,
+   "trait_prem_mean": 0.014837849934344123,
+   "prev_prem": 0.014469770791178818,
+   "floor_vol_30d": 0.01196677193507324,
+   "trait__azuki__Special": 0.010659798865877874,
+   "coll_prem_med_30d": 0.008339262015028786,
+   "floor_vol_7d": 0.007395384894744337,
+   "trait__doodles_official__hair": 0.004851078444472773,
+   "prev_days": 0.004622027469226183,
+   "trait__mutant_ape_yacht_club__Fur": 0.004214488498926219,
+   "hour": 0.003924712678498709,
+   "decile_prem_med_90d": 0.0037681693745062117,
+   "rarity_score": 0.0036079787993725182,
+   "trait__azuki__Hair": 0.0024493006514339716,
+   "trait__lilpudgys__Head": 0.0022405556129146773,
+   "dow": 0.0021930193408961746,
+   "trait_prem_n": 0.002123916613488141
+  },
+  "fv_percoll_l1_nl15": {
+   "coll_sales_1d": 0.14357793726937074,
+   "floor_ret_7d": 0.0735004663213927,
+   "floor_ret_30d": 0.06668811845281875,
+   "coll_prem_med_7d": 0.06664587148186064,
+   "coll_sales_7d": 0.05961061314138784,
+   "floor_age_hours": 0.057895886642027924,
+   "floor_ret_1d": 0.053102407344252915,
+   "prev_prem": 0.04833877929301771,
+   "floor_vol_7d": 0.043677636095648995,
+   "prev_days": 0.041722525724854194,
+   "coll_prem_med_30d": 0.02980798676936814,
+   "floor_vol_30d": 0.028947269824729664,
+   "trait_prem_max": 0.02526959866623796,
+   "trait__azuki__Hair": 0.01872331482706817,
+   "trait__lilpudgys__Body": 0.018313073826096274,
+   "hour": 0.017188119392781646,
+   "trait__lilpudgys__Head": 0.015189657602857906,
+   "dow": 0.014697390333529748,
+   "trait__azuki__Clothing": 0.01431215180859946,
+   "trait__milady__Shirt": 0.008554082121185233,
+   "trait__mutant_ape_yacht_club__Hat": 0.008114083643864036,
+   "trait__mutant_ape_yacht_club__Mouth": 0.008081669883001005,
+   "trait__doodles_official__hair": 0.007777782711985797,
+   "trait_share_min": 0.0076192717884335775,
+   "trait__pudgypenguins__Body": 0.007437188283061726
+  }
+ },
+ "wall_seconds": 598.3
+}

@@ -1,0 +1,1656 @@
+{
+  "part": "nft_risk",
+  "floor_column": "floor_eth_model",
+  "target": "fwd_vol_30d of the daily floor log returns in ETH (floor_eth_model; D59, D63, D66)",
+  "metric": "QLIKE on variance (primary, lower is better); Spearman (secondary)",
+  "baseline": "persistence vol_30d of the floor",
+  "rule": "D59 (amended 2026-11-10) with D44: pooled paired 95% CI (date blocks of 30) of QLIKE(persistence) - QLIKE(model) on the last 40% of every collection's folds excludes 0 with a positive estimate, and no collection is worse than persistence; if both models pass, the lower pooled QLIKE wins",
+  "declared": {
+    "baseline": {
+      "persistence_vol30": "vol_30d of the floor at t (trailing 30 daily log returns)"
+    },
+    "ewma": {
+      "lambda": 0.94,
+      "forecast": "EWMA vol at t for every day of the horizon",
+      "function": "ml.features.features.ewma_vol"
+    },
+    "garch_normal": {
+      "mean": "Constant",
+      "vol": "GARCH",
+      "p": 1,
+      "q": 1,
+      "dist": "normal",
+      "rescale": false,
+      "scale": 100.0,
+      "recursion_start": "variance of the train residuals at feature row 0",
+      "fit": "fold train returns only (D48)",
+      "recursion": "through every daily return up to t (D48)",
+      "forecast": "sqrt(mean of the h forecast variances)"
+    }
+  },
+  "trial_count": {
+    "formula": "configs x 1 pooled test x 1 horizon (baselines are not trials); the per-collection rows are reported, not separate approvals",
+    "per_model": {
+      "ewma": 1,
+      "garch": 1
+    },
+    "total": 2,
+    "collection_level_rows_reported": 14,
+    "sensitivity_runs_reported_not_approvals": 2
+  },
+  "pooled": {
+    "ewma": {
+      "ranking_first_60pct": {
+        "n_pooled": 1680,
+        "order": [
+          "ewma"
+        ],
+        "mean_loss": {
+          "ewma": 0.564021,
+          "persistence_vol30": 0.752208
+        }
+      },
+      "confirmation_last_40pct": {
+        "n_pooled": 1127,
+        "n_dates": 161,
+        "n_effective_rows_over_h": 37.566667,
+        "n_effective_dates_over_h": 5.366667,
+        "date_range": [
+          "2026-01-10",
+          "2026-06-19"
+        ],
+        "mean_loss": {
+          "ewma": 0.69288,
+          "persistence_vol30": 0.933291
+        }
+      },
+      "verdict": {
+        "top_config": "ewma",
+        "baseline": "persistence_vol30",
+        "model_loss": 0.69288,
+        "baseline_loss": 0.933291,
+        "paired_diff_baseline_minus_model": {
+          "estimate": 0.240411,
+          "low": 0.066836,
+          "high": 0.585505,
+          "level": 0.95,
+          "block_size": 30,
+          "block_unit": "calendar dates (all collections together)",
+          "n_dates": 161,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "pooled_ci_excludes_0": true,
+        "per_collection_baseline_minus_model": {
+          "azuki": 0.314378,
+          "boredapeyachtclub": 0.082321,
+          "doodles-official": 0.502561,
+          "lilpudgys": 0.023907,
+          "milady": 0.05821,
+          "mutant-ape-yacht-club": 0.464505,
+          "pudgypenguins": 0.236996
+        },
+        "every_collection_not_worse": true,
+        "approved": true
+      }
+    },
+    "garch": {
+      "ranking_first_60pct": {
+        "n_pooled": 1680,
+        "order": [
+          "garch_normal"
+        ],
+        "mean_loss": {
+          "garch_normal": 0.515754,
+          "persistence_vol30": 0.752208
+        }
+      },
+      "confirmation_last_40pct": {
+        "n_pooled": 1127,
+        "n_dates": 161,
+        "n_effective_rows_over_h": 37.566667,
+        "n_effective_dates_over_h": 5.366667,
+        "date_range": [
+          "2026-01-10",
+          "2026-06-19"
+        ],
+        "mean_loss": {
+          "garch_normal": 0.80732,
+          "persistence_vol30": 0.933291
+        }
+      },
+      "verdict": {
+        "top_config": "garch_normal",
+        "baseline": "persistence_vol30",
+        "model_loss": 0.80732,
+        "baseline_loss": 0.933291,
+        "paired_diff_baseline_minus_model": {
+          "estimate": 0.125971,
+          "low": -0.508758,
+          "high": 1.234118,
+          "level": 0.95,
+          "block_size": 30,
+          "block_unit": "calendar dates (all collections together)",
+          "n_dates": 161,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "pooled_ci_excludes_0": false,
+        "per_collection_baseline_minus_model": {
+          "azuki": 0.948424,
+          "boredapeyachtclub": 0.181317,
+          "doodles-official": 0.487237,
+          "lilpudgys": -1.062141,
+          "milady": -0.306223,
+          "mutant-ape-yacht-club": 0.762483,
+          "pudgypenguins": -0.129302
+        },
+        "every_collection_not_worse": false,
+        "approved": false
+      }
+    }
+  },
+  "winner": "ewma",
+  "served_volatility": "ewma",
+  "served_note": "the cone uses whichever volatility is served (D52 amended): the winner, or persistence vol_30d when no model is approved",
+  "verdict_table": [
+    {
+      "part": "nft_risk",
+      "scope": "pooled (all collections)",
+      "horizon": 30,
+      "model": "ewma",
+      "config": "ewma",
+      "model_qlike": 0.69288,
+      "baseline": "persistence_vol30",
+      "baseline_qlike": 0.933291,
+      "paired_ci": {
+        "estimate": 0.240411,
+        "low": 0.066836,
+        "high": 0.585505,
+        "level": 0.95,
+        "block_size": 30,
+        "block_unit": "calendar dates (all collections together)",
+        "n_dates": 161,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "every_collection_not_worse": true,
+      "approved": true,
+      "winner": true
+    },
+    {
+      "part": "nft_risk",
+      "scope": "azuki",
+      "horizon": 30,
+      "model": "ewma",
+      "config": "ewma",
+      "model_qlike": 1.16558,
+      "baseline": "persistence_vol30",
+      "baseline_qlike": 1.479958,
+      "paired_ci": {
+        "estimate": 0.314378,
+        "low": 0.047865,
+        "high": 0.829684,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "spearman_model": 0.016143,
+      "spearman_baseline": -0.0451,
+      "approved_alone": true,
+      "note": "reported only; approval is pooled (D59)"
+    },
+    {
+      "part": "nft_risk",
+      "scope": "boredapeyachtclub",
+      "horizon": 30,
+      "model": "ewma",
+      "config": "ewma",
+      "model_qlike": 0.399575,
+      "baseline": "persistence_vol30",
+      "baseline_qlike": 0.481896,
+      "paired_ci": {
+        "estimate": 0.082321,
+        "low": 0.014906,
+        "high": 0.15807,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "spearman_model": -0.352533,
+      "spearman_baseline": -0.282347,
+      "approved_alone": true,
+      "note": "reported only; approval is pooled (D59)"
+    },
+    {
+      "part": "nft_risk",
+      "scope": "doodles-official",
+      "horizon": 30,
+      "model": "ewma",
+      "config": "ewma",
+      "model_qlike": 1.350879,
+      "baseline": "persistence_vol30",
+      "baseline_qlike": 1.85344,
+      "paired_ci": {
+        "estimate": 0.502561,
+        "low": 0.029042,
+        "high": 1.399582,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "spearman_model": -0.006979,
+      "spearman_baseline": -0.100604,
+      "approved_alone": true,
+      "note": "reported only; approval is pooled (D59)"
+    },
+    {
+      "part": "nft_risk",
+      "scope": "lilpudgys",
+      "horizon": 30,
+      "model": "ewma",
+      "config": "ewma",
+      "model_qlike": 0.127383,
+      "baseline": "persistence_vol30",
+      "baseline_qlike": 0.151289,
+      "paired_ci": {
+        "estimate": 0.023907,
+        "low": 0.005352,
+        "high": 0.047914,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "spearman_model": 0.10404,
+      "spearman_baseline": 0.080461,
+      "approved_alone": true,
+      "note": "reported only; approval is pooled (D59)"
+    },
+    {
+      "part": "nft_risk",
+      "scope": "milady",
+      "horizon": 30,
+      "model": "ewma",
+      "config": "ewma",
+      "model_qlike": 0.231727,
+      "baseline": "persistence_vol30",
+      "baseline_qlike": 0.289937,
+      "paired_ci": {
+        "estimate": 0.05821,
+        "low": -0.031878,
+        "high": 0.128147,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "spearman_model": 0.130682,
+      "spearman_baseline": -0.14602,
+      "approved_alone": false,
+      "note": "reported only; approval is pooled (D59)"
+    },
+    {
+      "part": "nft_risk",
+      "scope": "mutant-ape-yacht-club",
+      "horizon": 30,
+      "model": "ewma",
+      "config": "ewma",
+      "model_qlike": 0.809866,
+      "baseline": "persistence_vol30",
+      "baseline_qlike": 1.27437,
+      "paired_ci": {
+        "estimate": 0.464505,
+        "low": 0.074778,
+        "high": 1.263207,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "spearman_model": -0.154848,
+      "spearman_baseline": -0.183474,
+      "approved_alone": true,
+      "note": "reported only; approval is pooled (D59)"
+    },
+    {
+      "part": "nft_risk",
+      "scope": "pudgypenguins",
+      "horizon": 30,
+      "model": "ewma",
+      "config": "ewma",
+      "model_qlike": 0.76515,
+      "baseline": "persistence_vol30",
+      "baseline_qlike": 1.002146,
+      "paired_ci": {
+        "estimate": 0.236996,
+        "low": 0.050931,
+        "high": 0.651376,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "spearman_model": -0.040798,
+      "spearman_baseline": -0.066,
+      "approved_alone": true,
+      "note": "reported only; approval is pooled (D59)"
+    },
+    {
+      "part": "nft_risk",
+      "scope": "pooled (all collections)",
+      "horizon": 30,
+      "model": "garch",
+      "config": "garch_normal",
+      "model_qlike": 0.80732,
+      "baseline": "persistence_vol30",
+      "baseline_qlike": 0.933291,
+      "paired_ci": {
+        "estimate": 0.125971,
+        "low": -0.508758,
+        "high": 1.234118,
+        "level": 0.95,
+        "block_size": 30,
+        "block_unit": "calendar dates (all collections together)",
+        "n_dates": 161,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "every_collection_not_worse": false,
+      "approved": false,
+      "winner": false
+    },
+    {
+      "part": "nft_risk",
+      "scope": "azuki",
+      "horizon": 30,
+      "model": "garch",
+      "config": "garch_normal",
+      "model_qlike": 0.531533,
+      "baseline": "persistence_vol30",
+      "baseline_qlike": 1.479958,
+      "paired_ci": {
+        "estimate": 0.948424,
+        "low": -0.123969,
+        "high": 2.859449,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "spearman_model": 0.118142,
+      "spearman_baseline": -0.0451,
+      "approved_alone": false,
+      "note": "reported only; approval is pooled (D59)"
+    },
+    {
+      "part": "nft_risk",
+      "scope": "boredapeyachtclub",
+      "horizon": 30,
+      "model": "garch",
+      "config": "garch_normal",
+      "model_qlike": 0.300578,
+      "baseline": "persistence_vol30",
+      "baseline_qlike": 0.481896,
+      "paired_ci": {
+        "estimate": 0.181317,
+        "low": 0.048707,
+        "high": 0.398975,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "spearman_model": -0.034484,
+      "spearman_baseline": -0.282347,
+      "approved_alone": true,
+      "note": "reported only; approval is pooled (D59)"
+    },
+    {
+      "part": "nft_risk",
+      "scope": "doodles-official",
+      "horizon": 30,
+      "model": "garch",
+      "config": "garch_normal",
+      "model_qlike": 1.366202,
+      "baseline": "persistence_vol30",
+      "baseline_qlike": 1.85344,
+      "paired_ci": {
+        "estimate": 0.487237,
+        "low": -1.317066,
+        "high": 3.695252,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "spearman_model": 0.18974,
+      "spearman_baseline": -0.100604,
+      "approved_alone": false,
+      "note": "reported only; approval is pooled (D59)"
+    },
+    {
+      "part": "nft_risk",
+      "scope": "lilpudgys",
+      "horizon": 30,
+      "model": "garch",
+      "config": "garch_normal",
+      "model_qlike": 1.21343,
+      "baseline": "persistence_vol30",
+      "baseline_qlike": 0.151289,
+      "paired_ci": {
+        "estimate": -1.062141,
+        "low": -1.255864,
+        "high": -0.855999,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "spearman_model": 0.112877,
+      "spearman_baseline": 0.080461,
+      "approved_alone": false,
+      "note": "reported only; approval is pooled (D59)"
+    },
+    {
+      "part": "nft_risk",
+      "scope": "milady",
+      "horizon": 30,
+      "model": "garch",
+      "config": "garch_normal",
+      "model_qlike": 0.596159,
+      "baseline": "persistence_vol30",
+      "baseline_qlike": 0.289937,
+      "paired_ci": {
+        "estimate": -0.306223,
+        "low": -0.645592,
+        "high": -0.052912,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "spearman_model": -0.323821,
+      "spearman_baseline": -0.14602,
+      "approved_alone": false,
+      "note": "reported only; approval is pooled (D59)"
+    },
+    {
+      "part": "nft_risk",
+      "scope": "mutant-ape-yacht-club",
+      "horizon": 30,
+      "model": "garch",
+      "config": "garch_normal",
+      "model_qlike": 0.511887,
+      "baseline": "persistence_vol30",
+      "baseline_qlike": 1.27437,
+      "paired_ci": {
+        "estimate": 0.762483,
+        "low": 0.042676,
+        "high": 2.273992,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "spearman_model": 0.267653,
+      "spearman_baseline": -0.183474,
+      "approved_alone": true,
+      "note": "reported only; approval is pooled (D59)"
+    },
+    {
+      "part": "nft_risk",
+      "scope": "pudgypenguins",
+      "horizon": 30,
+      "model": "garch",
+      "config": "garch_normal",
+      "model_qlike": 1.131449,
+      "baseline": "persistence_vol30",
+      "baseline_qlike": 1.002146,
+      "paired_ci": {
+        "estimate": -0.129302,
+        "low": -1.075736,
+        "high": 1.605353,
+        "level": 0.95,
+        "block_size": 30,
+        "n_boot": 1000,
+        "seed": 0
+      },
+      "spearman_model": -0.002332,
+      "spearman_baseline": -0.066,
+      "approved_alone": false,
+      "note": "reported only; approval is pooled (D59)"
+    }
+  ],
+  "collections": {
+    "azuki": {
+      "metadata": {
+        "n_feature_rows": 755,
+        "b2_test_start_row": 641,
+        "rows_built": [
+          0,
+          641
+        ],
+        "data_first_date": "2024-10-17",
+        "last_date_built": "2026-07-19",
+        "sealed_test_first_date": "2026-07-20",
+        "pooled_rows": [
+          210,
+          611
+        ],
+        "max_label_row_reached": 640,
+        "n_folds": 14,
+        "n_pooled": 401,
+        "n_effective": 13.366667,
+        "min_train_rows": 180,
+        "step_rows": 30,
+        "horizon_days": 30,
+        "embargo_days": 30,
+        "wall_seconds": 1.15075,
+        "refit_every_folds": 1,
+        "refit_every_rows": 30,
+        "n_fits": {
+          "persistence_vol30": 14,
+          "ewma": 14,
+          "garch_normal": 14
+        },
+        "fit_seconds": {
+          "persistence_vol30": 0.003189,
+          "ewma": 0.002477,
+          "garch_normal": 1.103613
+        }
+      },
+      "models": {
+        "ewma": {
+          "ranking_first_60pct": {
+            "n_folds": 8,
+            "n_pooled": 240,
+            "n_effective": 8.0,
+            "date_range": [
+              "2025-05-15",
+              "2026-01-09"
+            ],
+            "order": [
+              "ewma"
+            ],
+            "mean_loss": {
+              "ewma": 0.616893,
+              "persistence_vol30": 0.820861
+            }
+          },
+          "confirmation_last_40pct": {
+            "n_folds": 6,
+            "n_pooled": 161,
+            "n_effective": 5.366667,
+            "date_range": [
+              "2026-01-10",
+              "2026-06-19"
+            ],
+            "mean_loss": {
+              "ewma": 1.16558,
+              "persistence_vol30": 1.479958
+            }
+          },
+          "verdict": {
+            "top_config": "ewma",
+            "baseline": "persistence_vol30",
+            "model_loss": 1.16558,
+            "baseline_loss": 1.479958,
+            "paired_diff_baseline_minus_model": {
+              "estimate": 0.314378,
+              "low": 0.047865,
+              "high": 0.829684,
+              "level": 0.95,
+              "block_size": 30,
+              "n_boot": 1000,
+              "seed": 0
+            },
+            "approved": true
+          }
+        },
+        "garch": {
+          "ranking_first_60pct": {
+            "n_folds": 8,
+            "n_pooled": 240,
+            "n_effective": 8.0,
+            "date_range": [
+              "2025-05-15",
+              "2026-01-09"
+            ],
+            "order": [
+              "garch_normal"
+            ],
+            "mean_loss": {
+              "garch_normal": 0.509477,
+              "persistence_vol30": 0.820861
+            }
+          },
+          "confirmation_last_40pct": {
+            "n_folds": 6,
+            "n_pooled": 161,
+            "n_effective": 5.366667,
+            "date_range": [
+              "2026-01-10",
+              "2026-06-19"
+            ],
+            "mean_loss": {
+              "garch_normal": 0.531533,
+              "persistence_vol30": 1.479958
+            }
+          },
+          "verdict": {
+            "top_config": "garch_normal",
+            "baseline": "persistence_vol30",
+            "model_loss": 0.531533,
+            "baseline_loss": 1.479958,
+            "paired_diff_baseline_minus_model": {
+              "estimate": 0.948424,
+              "low": -0.123969,
+              "high": 2.859449,
+              "level": 0.95,
+              "block_size": 30,
+              "n_boot": 1000,
+              "seed": 0
+            },
+            "approved": false
+          }
+        }
+      },
+      "spearman_confirmation_last_40pct": {
+        "ewma": 0.016143,
+        "garch_normal": 0.118142,
+        "persistence_vol30": -0.0451
+      },
+      "all_folds_mean_qlike": {
+        "ewma": 0.837189,
+        "garch_normal": 0.518333,
+        "persistence_vol30": 1.085486
+      }
+    },
+    "boredapeyachtclub": {
+      "metadata": {
+        "n_feature_rows": 755,
+        "b2_test_start_row": 641,
+        "rows_built": [
+          0,
+          641
+        ],
+        "data_first_date": "2024-10-17",
+        "last_date_built": "2026-07-19",
+        "sealed_test_first_date": "2026-07-20",
+        "pooled_rows": [
+          210,
+          611
+        ],
+        "max_label_row_reached": 640,
+        "n_folds": 14,
+        "n_pooled": 401,
+        "n_effective": 13.366667,
+        "min_train_rows": 180,
+        "step_rows": 30,
+        "horizon_days": 30,
+        "embargo_days": 30,
+        "wall_seconds": 0.212491,
+        "refit_every_folds": 1,
+        "refit_every_rows": 30,
+        "n_fits": {
+          "persistence_vol30": 14,
+          "ewma": 14,
+          "garch_normal": 14
+        },
+        "fit_seconds": {
+          "persistence_vol30": 0.002403,
+          "ewma": 0.002081,
+          "garch_normal": 0.172283
+        }
+      },
+      "models": {
+        "ewma": {
+          "ranking_first_60pct": {
+            "n_folds": 8,
+            "n_pooled": 240,
+            "n_effective": 8.0,
+            "date_range": [
+              "2025-05-15",
+              "2026-01-09"
+            ],
+            "order": [
+              "ewma"
+            ],
+            "mean_loss": {
+              "ewma": 0.391413,
+              "persistence_vol30": 0.459178
+            }
+          },
+          "confirmation_last_40pct": {
+            "n_folds": 6,
+            "n_pooled": 161,
+            "n_effective": 5.366667,
+            "date_range": [
+              "2026-01-10",
+              "2026-06-19"
+            ],
+            "mean_loss": {
+              "ewma": 0.399575,
+              "persistence_vol30": 0.481896
+            }
+          },
+          "verdict": {
+            "top_config": "ewma",
+            "baseline": "persistence_vol30",
+            "model_loss": 0.399575,
+            "baseline_loss": 0.481896,
+            "paired_diff_baseline_minus_model": {
+              "estimate": 0.082321,
+              "low": 0.014906,
+              "high": 0.15807,
+              "level": 0.95,
+              "block_size": 30,
+              "n_boot": 1000,
+              "seed": 0
+            },
+            "approved": true
+          }
+        },
+        "garch": {
+          "ranking_first_60pct": {
+            "n_folds": 8,
+            "n_pooled": 240,
+            "n_effective": 8.0,
+            "date_range": [
+              "2025-05-15",
+              "2026-01-09"
+            ],
+            "order": [
+              "garch_normal"
+            ],
+            "mean_loss": {
+              "garch_normal": 0.265243,
+              "persistence_vol30": 0.459178
+            }
+          },
+          "confirmation_last_40pct": {
+            "n_folds": 6,
+            "n_pooled": 161,
+            "n_effective": 5.366667,
+            "date_range": [
+              "2026-01-10",
+              "2026-06-19"
+            ],
+            "mean_loss": {
+              "garch_normal": 0.300578,
+              "persistence_vol30": 0.481896
+            }
+          },
+          "verdict": {
+            "top_config": "garch_normal",
+            "baseline": "persistence_vol30",
+            "model_loss": 0.300578,
+            "baseline_loss": 0.481896,
+            "paired_diff_baseline_minus_model": {
+              "estimate": 0.181317,
+              "low": 0.048707,
+              "high": 0.398975,
+              "level": 0.95,
+              "block_size": 30,
+              "n_boot": 1000,
+              "seed": 0
+            },
+            "approved": true
+          }
+        }
+      },
+      "spearman_confirmation_last_40pct": {
+        "ewma": -0.352533,
+        "garch_normal": -0.034484,
+        "persistence_vol30": -0.282347
+      },
+      "all_folds_mean_qlike": {
+        "ewma": 0.39469,
+        "garch_normal": 0.27943,
+        "persistence_vol30": 0.468299
+      }
+    },
+    "doodles-official": {
+      "metadata": {
+        "n_feature_rows": 755,
+        "b2_test_start_row": 641,
+        "rows_built": [
+          0,
+          641
+        ],
+        "data_first_date": "2024-10-17",
+        "last_date_built": "2026-07-19",
+        "sealed_test_first_date": "2026-07-20",
+        "pooled_rows": [
+          210,
+          611
+        ],
+        "max_label_row_reached": 640,
+        "n_folds": 14,
+        "n_pooled": 401,
+        "n_effective": 13.366667,
+        "min_train_rows": 180,
+        "step_rows": 30,
+        "horizon_days": 30,
+        "embargo_days": 30,
+        "wall_seconds": 0.275039,
+        "refit_every_folds": 1,
+        "refit_every_rows": 30,
+        "n_fits": {
+          "persistence_vol30": 14,
+          "ewma": 14,
+          "garch_normal": 14
+        },
+        "fit_seconds": {
+          "persistence_vol30": 0.002717,
+          "ewma": 0.002454,
+          "garch_normal": 0.229079
+        }
+      },
+      "models": {
+        "ewma": {
+          "ranking_first_60pct": {
+            "n_folds": 8,
+            "n_pooled": 240,
+            "n_effective": 8.0,
+            "date_range": [
+              "2025-05-15",
+              "2026-01-09"
+            ],
+            "order": [
+              "ewma"
+            ],
+            "mean_loss": {
+              "ewma": 0.407584,
+              "persistence_vol30": 0.469095
+            }
+          },
+          "confirmation_last_40pct": {
+            "n_folds": 6,
+            "n_pooled": 161,
+            "n_effective": 5.366667,
+            "date_range": [
+              "2026-01-10",
+              "2026-06-19"
+            ],
+            "mean_loss": {
+              "ewma": 1.350879,
+              "persistence_vol30": 1.85344
+            }
+          },
+          "verdict": {
+            "top_config": "ewma",
+            "baseline": "persistence_vol30",
+            "model_loss": 1.350879,
+            "baseline_loss": 1.85344,
+            "paired_diff_baseline_minus_model": {
+              "estimate": 0.502561,
+              "low": 0.029042,
+              "high": 1.399582,
+              "level": 0.95,
+              "block_size": 30,
+              "n_boot": 1000,
+              "seed": 0
+            },
+            "approved": true
+          }
+        },
+        "garch": {
+          "ranking_first_60pct": {
+            "n_folds": 8,
+            "n_pooled": 240,
+            "n_effective": 8.0,
+            "date_range": [
+              "2025-05-15",
+              "2026-01-09"
+            ],
+            "order": [
+              "garch_normal"
+            ],
+            "mean_loss": {
+              "garch_normal": 0.852918,
+              "persistence_vol30": 0.469095
+            }
+          },
+          "confirmation_last_40pct": {
+            "n_folds": 6,
+            "n_pooled": 161,
+            "n_effective": 5.366667,
+            "date_range": [
+              "2026-01-10",
+              "2026-06-19"
+            ],
+            "mean_loss": {
+              "garch_normal": 1.366202,
+              "persistence_vol30": 1.85344
+            }
+          },
+          "verdict": {
+            "top_config": "garch_normal",
+            "baseline": "persistence_vol30",
+            "model_loss": 1.366202,
+            "baseline_loss": 1.85344,
+            "paired_diff_baseline_minus_model": {
+              "estimate": 0.487237,
+              "low": -1.317066,
+              "high": 3.695252,
+              "level": 0.95,
+              "block_size": 30,
+              "n_boot": 1000,
+              "seed": 0
+            },
+            "approved": false
+          }
+        }
+      },
+      "spearman_confirmation_last_40pct": {
+        "ewma": -0.006979,
+        "garch_normal": 0.18974,
+        "persistence_vol30": -0.100604
+      },
+      "all_folds_mean_qlike": {
+        "ewma": 0.786314,
+        "garch_normal": 1.059,
+        "persistence_vol30": 1.024904
+      }
+    },
+    "lilpudgys": {
+      "metadata": {
+        "n_feature_rows": 755,
+        "b2_test_start_row": 641,
+        "rows_built": [
+          0,
+          641
+        ],
+        "data_first_date": "2024-10-17",
+        "last_date_built": "2026-07-19",
+        "sealed_test_first_date": "2026-07-20",
+        "pooled_rows": [
+          210,
+          611
+        ],
+        "max_label_row_reached": 640,
+        "n_folds": 14,
+        "n_pooled": 401,
+        "n_effective": 13.366667,
+        "min_train_rows": 180,
+        "step_rows": 30,
+        "horizon_days": 30,
+        "embargo_days": 30,
+        "wall_seconds": 0.224451,
+        "refit_every_folds": 1,
+        "refit_every_rows": 30,
+        "n_fits": {
+          "persistence_vol30": 14,
+          "ewma": 14,
+          "garch_normal": 14
+        },
+        "fit_seconds": {
+          "persistence_vol30": 0.002836,
+          "ewma": 0.00253,
+          "garch_normal": 0.177734
+        }
+      },
+      "models": {
+        "ewma": {
+          "ranking_first_60pct": {
+            "n_folds": 8,
+            "n_pooled": 240,
+            "n_effective": 8.0,
+            "date_range": [
+              "2025-05-15",
+              "2026-01-09"
+            ],
+            "order": [
+              "ewma"
+            ],
+            "mean_loss": {
+              "ewma": 0.430286,
+              "persistence_vol30": 0.441952
+            }
+          },
+          "confirmation_last_40pct": {
+            "n_folds": 6,
+            "n_pooled": 161,
+            "n_effective": 5.366667,
+            "date_range": [
+              "2026-01-10",
+              "2026-06-19"
+            ],
+            "mean_loss": {
+              "ewma": 0.127383,
+              "persistence_vol30": 0.151289
+            }
+          },
+          "verdict": {
+            "top_config": "ewma",
+            "baseline": "persistence_vol30",
+            "model_loss": 0.127383,
+            "baseline_loss": 0.151289,
+            "paired_diff_baseline_minus_model": {
+              "estimate": 0.023907,
+              "low": 0.005352,
+              "high": 0.047914,
+              "level": 0.95,
+              "block_size": 30,
+              "n_boot": 1000,
+              "seed": 0
+            },
+            "approved": true
+          }
+        },
+        "garch": {
+          "ranking_first_60pct": {
+            "n_folds": 8,
+            "n_pooled": 240,
+            "n_effective": 8.0,
+            "date_range": [
+              "2025-05-15",
+              "2026-01-09"
+            ],
+            "order": [
+              "garch_normal"
+            ],
+            "mean_loss": {
+              "garch_normal": 0.557157,
+              "persistence_vol30": 0.441952
+            }
+          },
+          "confirmation_last_40pct": {
+            "n_folds": 6,
+            "n_pooled": 161,
+            "n_effective": 5.366667,
+            "date_range": [
+              "2026-01-10",
+              "2026-06-19"
+            ],
+            "mean_loss": {
+              "garch_normal": 1.21343,
+              "persistence_vol30": 0.151289
+            }
+          },
+          "verdict": {
+            "top_config": "garch_normal",
+            "baseline": "persistence_vol30",
+            "model_loss": 1.21343,
+            "baseline_loss": 0.151289,
+            "paired_diff_baseline_minus_model": {
+              "estimate": -1.062141,
+              "low": -1.255864,
+              "high": -0.855999,
+              "level": 0.95,
+              "block_size": 30,
+              "n_boot": 1000,
+              "seed": 0
+            },
+            "approved": false
+          }
+        }
+      },
+      "spearman_confirmation_last_40pct": {
+        "ewma": 0.10404,
+        "garch_normal": 0.112877,
+        "persistence_vol30": 0.080461
+      },
+      "all_folds_mean_qlike": {
+        "ewma": 0.308671,
+        "garch_normal": 0.820648,
+        "persistence_vol30": 0.325252
+      }
+    },
+    "milady": {
+      "metadata": {
+        "n_feature_rows": 755,
+        "b2_test_start_row": 641,
+        "rows_built": [
+          0,
+          641
+        ],
+        "data_first_date": "2024-10-17",
+        "last_date_built": "2026-07-19",
+        "sealed_test_first_date": "2026-07-20",
+        "pooled_rows": [
+          210,
+          611
+        ],
+        "max_label_row_reached": 640,
+        "n_folds": 14,
+        "n_pooled": 401,
+        "n_effective": 13.366667,
+        "min_train_rows": 180,
+        "step_rows": 30,
+        "horizon_days": 30,
+        "embargo_days": 30,
+        "wall_seconds": 0.244116,
+        "refit_every_folds": 1,
+        "refit_every_rows": 30,
+        "n_fits": {
+          "persistence_vol30": 14,
+          "ewma": 14,
+          "garch_normal": 14
+        },
+        "fit_seconds": {
+          "persistence_vol30": 0.003001,
+          "ewma": 0.003133,
+          "garch_normal": 0.196608
+        }
+      },
+      "models": {
+        "ewma": {
+          "ranking_first_60pct": {
+            "n_folds": 8,
+            "n_pooled": 240,
+            "n_effective": 8.0,
+            "date_range": [
+              "2025-05-15",
+              "2026-01-09"
+            ],
+            "order": [
+              "ewma"
+            ],
+            "mean_loss": {
+              "ewma": 0.583335,
+              "persistence_vol30": 0.677776
+            }
+          },
+          "confirmation_last_40pct": {
+            "n_folds": 6,
+            "n_pooled": 161,
+            "n_effective": 5.366667,
+            "date_range": [
+              "2026-01-10",
+              "2026-06-19"
+            ],
+            "mean_loss": {
+              "ewma": 0.231727,
+              "persistence_vol30": 0.289937
+            }
+          },
+          "verdict": {
+            "top_config": "ewma",
+            "baseline": "persistence_vol30",
+            "model_loss": 0.231727,
+            "baseline_loss": 0.289937,
+            "paired_diff_baseline_minus_model": {
+              "estimate": 0.05821,
+              "low": -0.031878,
+              "high": 0.128147,
+              "level": 0.95,
+              "block_size": 30,
+              "n_boot": 1000,
+              "seed": 0
+            },
+            "approved": false
+          }
+        },
+        "garch": {
+          "ranking_first_60pct": {
+            "n_folds": 8,
+            "n_pooled": 240,
+            "n_effective": 8.0,
+            "date_range": [
+              "2025-05-15",
+              "2026-01-09"
+            ],
+            "order": [
+              "garch_normal"
+            ],
+            "mean_loss": {
+              "garch_normal": 0.228639,
+              "persistence_vol30": 0.677776
+            }
+          },
+          "confirmation_last_40pct": {
+            "n_folds": 6,
+            "n_pooled": 161,
+            "n_effective": 5.366667,
+            "date_range": [
+              "2026-01-10",
+              "2026-06-19"
+            ],
+            "mean_loss": {
+              "garch_normal": 0.596159,
+              "persistence_vol30": 0.289937
+            }
+          },
+          "verdict": {
+            "top_config": "garch_normal",
+            "baseline": "persistence_vol30",
+            "model_loss": 0.596159,
+            "baseline_loss": 0.289937,
+            "paired_diff_baseline_minus_model": {
+              "estimate": -0.306223,
+              "low": -0.645592,
+              "high": -0.052912,
+              "level": 0.95,
+              "block_size": 30,
+              "n_boot": 1000,
+              "seed": 0
+            },
+            "approved": false
+          }
+        }
+      },
+      "spearman_confirmation_last_40pct": {
+        "ewma": 0.130682,
+        "garch_normal": -0.323821,
+        "persistence_vol30": -0.14602
+      },
+      "all_folds_mean_qlike": {
+        "ewma": 0.442166,
+        "garch_normal": 0.376197,
+        "persistence_vol30": 0.52206
+      }
+    },
+    "mutant-ape-yacht-club": {
+      "metadata": {
+        "n_feature_rows": 755,
+        "b2_test_start_row": 641,
+        "rows_built": [
+          0,
+          641
+        ],
+        "data_first_date": "2024-10-17",
+        "last_date_built": "2026-07-19",
+        "sealed_test_first_date": "2026-07-20",
+        "pooled_rows": [
+          210,
+          611
+        ],
+        "max_label_row_reached": 640,
+        "n_folds": 14,
+        "n_pooled": 401,
+        "n_effective": 13.366667,
+        "min_train_rows": 180,
+        "step_rows": 30,
+        "horizon_days": 30,
+        "embargo_days": 30,
+        "wall_seconds": 0.239101,
+        "refit_every_folds": 1,
+        "refit_every_rows": 30,
+        "n_fits": {
+          "persistence_vol30": 14,
+          "ewma": 14,
+          "garch_normal": 14
+        },
+        "fit_seconds": {
+          "persistence_vol30": 0.002741,
+          "ewma": 0.002411,
+          "garch_normal": 0.194479
+        }
+      },
+      "models": {
+        "ewma": {
+          "ranking_first_60pct": {
+            "n_folds": 8,
+            "n_pooled": 240,
+            "n_effective": 8.0,
+            "date_range": [
+              "2025-05-15",
+              "2026-01-09"
+            ],
+            "order": [
+              "ewma"
+            ],
+            "mean_loss": {
+              "ewma": 0.609698,
+              "persistence_vol30": 0.829473
+            }
+          },
+          "confirmation_last_40pct": {
+            "n_folds": 6,
+            "n_pooled": 161,
+            "n_effective": 5.366667,
+            "date_range": [
+              "2026-01-10",
+              "2026-06-19"
+            ],
+            "mean_loss": {
+              "ewma": 0.809866,
+              "persistence_vol30": 1.27437
+            }
+          },
+          "verdict": {
+            "top_config": "ewma",
+            "baseline": "persistence_vol30",
+            "model_loss": 0.809866,
+            "baseline_loss": 1.27437,
+            "paired_diff_baseline_minus_model": {
+              "estimate": 0.464505,
+              "low": 0.074778,
+              "high": 1.263207,
+              "level": 0.95,
+              "block_size": 30,
+              "n_boot": 1000,
+              "seed": 0
+            },
+            "approved": true
+          }
+        },
+        "garch": {
+          "ranking_first_60pct": {
+            "n_folds": 8,
+            "n_pooled": 240,
+            "n_effective": 8.0,
+            "date_range": [
+              "2025-05-15",
+              "2026-01-09"
+            ],
+            "order": [
+              "garch_normal"
+            ],
+            "mean_loss": {
+              "garch_normal": 0.37644,
+              "persistence_vol30": 0.829473
+            }
+          },
+          "confirmation_last_40pct": {
+            "n_folds": 6,
+            "n_pooled": 161,
+            "n_effective": 5.366667,
+            "date_range": [
+              "2026-01-10",
+              "2026-06-19"
+            ],
+            "mean_loss": {
+              "garch_normal": 0.511887,
+              "persistence_vol30": 1.27437
+            }
+          },
+          "verdict": {
+            "top_config": "garch_normal",
+            "baseline": "persistence_vol30",
+            "model_loss": 0.511887,
+            "baseline_loss": 1.27437,
+            "paired_diff_baseline_minus_model": {
+              "estimate": 0.762483,
+              "low": 0.042676,
+              "high": 2.273992,
+              "level": 0.95,
+              "block_size": 30,
+              "n_boot": 1000,
+              "seed": 0
+            },
+            "approved": true
+          }
+        }
+      },
+      "spearman_confirmation_last_40pct": {
+        "ewma": -0.154848,
+        "garch_normal": 0.267653,
+        "persistence_vol30": -0.183474
+      },
+      "all_folds_mean_qlike": {
+        "ewma": 0.690064,
+        "garch_normal": 0.430821,
+        "persistence_vol30": 1.008098
+      }
+    },
+    "pudgypenguins": {
+      "metadata": {
+        "n_feature_rows": 755,
+        "b2_test_start_row": 641,
+        "rows_built": [
+          0,
+          641
+        ],
+        "data_first_date": "2024-10-17",
+        "last_date_built": "2026-07-19",
+        "sealed_test_first_date": "2026-07-20",
+        "pooled_rows": [
+          210,
+          611
+        ],
+        "max_label_row_reached": 640,
+        "n_folds": 14,
+        "n_pooled": 401,
+        "n_effective": 13.366667,
+        "min_train_rows": 180,
+        "step_rows": 30,
+        "horizon_days": 30,
+        "embargo_days": 30,
+        "wall_seconds": 0.213967,
+        "refit_every_folds": 1,
+        "refit_every_rows": 30,
+        "n_fits": {
+          "persistence_vol30": 14,
+          "ewma": 14,
+          "garch_normal": 14
+        },
+        "fit_seconds": {
+          "persistence_vol30": 0.002487,
+          "ewma": 0.002151,
+          "garch_normal": 0.171193
+        }
+      },
+      "models": {
+        "ewma": {
+          "ranking_first_60pct": {
+            "n_folds": 8,
+            "n_pooled": 240,
+            "n_effective": 8.0,
+            "date_range": [
+              "2025-05-15",
+              "2026-01-09"
+            ],
+            "order": [
+              "ewma"
+            ],
+            "mean_loss": {
+              "ewma": 0.908941,
+              "persistence_vol30": 1.567121
+            }
+          },
+          "confirmation_last_40pct": {
+            "n_folds": 6,
+            "n_pooled": 161,
+            "n_effective": 5.366667,
+            "date_range": [
+              "2026-01-10",
+              "2026-06-19"
+            ],
+            "mean_loss": {
+              "ewma": 0.76515,
+              "persistence_vol30": 1.002146
+            }
+          },
+          "verdict": {
+            "top_config": "ewma",
+            "baseline": "persistence_vol30",
+            "model_loss": 0.76515,
+            "baseline_loss": 1.002146,
+            "paired_diff_baseline_minus_model": {
+              "estimate": 0.236996,
+              "low": 0.050931,
+              "high": 0.651376,
+              "level": 0.95,
+              "block_size": 30,
+              "n_boot": 1000,
+              "seed": 0
+            },
+            "approved": true
+          }
+        },
+        "garch": {
+          "ranking_first_60pct": {
+            "n_folds": 8,
+            "n_pooled": 240,
+            "n_effective": 8.0,
+            "date_range": [
+              "2025-05-15",
+              "2026-01-09"
+            ],
+            "order": [
+              "garch_normal"
+            ],
+            "mean_loss": {
+              "garch_normal": 0.820406,
+              "persistence_vol30": 1.567121
+            }
+          },
+          "confirmation_last_40pct": {
+            "n_folds": 6,
+            "n_pooled": 161,
+            "n_effective": 5.366667,
+            "date_range": [
+              "2026-01-10",
+              "2026-06-19"
+            ],
+            "mean_loss": {
+              "garch_normal": 1.131449,
+              "persistence_vol30": 1.002146
+            }
+          },
+          "verdict": {
+            "top_config": "garch_normal",
+            "baseline": "persistence_vol30",
+            "model_loss": 1.131449,
+            "baseline_loss": 1.002146,
+            "paired_diff_baseline_minus_model": {
+              "estimate": -0.129302,
+              "low": -1.075736,
+              "high": 1.605353,
+              "level": 0.95,
+              "block_size": 30,
+              "n_boot": 1000,
+              "seed": 0
+            },
+            "approved": false
+          }
+        }
+      },
+      "spearman_confirmation_last_40pct": {
+        "ewma": -0.040798,
+        "garch_normal": -0.002332,
+        "persistence_vol30": -0.066
+      },
+      "all_folds_mean_qlike": {
+        "ewma": 0.851209,
+        "garch_normal": 0.945288,
+        "persistence_vol30": 1.340286
+      }
+    }
+  },
+  "sensitivity_unguarded_floor": {
+    "floor_column": "floor_eth_asof",
+    "note": "D66: the same run without the spike guard. Reported only; not an approval and not served.",
+    "pooled_verdicts": {
+      "ewma": {
+        "top_config": "ewma",
+        "baseline": "persistence_vol30",
+        "model_loss": 9.602847,
+        "baseline_loss": 8.92788,
+        "paired_diff_baseline_minus_model": {
+          "estimate": -0.674967,
+          "low": -2.669731,
+          "high": 0.632529,
+          "level": 0.95,
+          "block_size": 30,
+          "block_unit": "calendar dates (all collections together)",
+          "n_dates": 161,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "pooled_ci_excludes_0": false,
+        "per_collection_baseline_minus_model": {
+          "azuki": 0.378355,
+          "boredapeyachtclub": 0.082321,
+          "doodles-official": 0.50256,
+          "lilpudgys": -6.447718,
+          "milady": 0.05821,
+          "mutant-ape-yacht-club": 0.464505,
+          "pudgypenguins": 0.236996
+        },
+        "every_collection_not_worse": false,
+        "approved": false
+      },
+      "garch": {
+        "top_config": "garch_normal",
+        "baseline": "persistence_vol30",
+        "model_loss": 2.273224,
+        "baseline_loss": 8.92788,
+        "paired_diff_baseline_minus_model": {
+          "estimate": 6.654655,
+          "low": 0.159683,
+          "high": 18.854758,
+          "level": 0.95,
+          "block_size": 30,
+          "block_unit": "calendar dates (all collections together)",
+          "n_dates": 161,
+          "n_boot": 1000,
+          "seed": 0
+        },
+        "pooled_ci_excludes_0": true,
+        "per_collection_baseline_minus_model": {
+          "azuki": -1.486667,
+          "boredapeyachtclub": 0.181317,
+          "doodles-official": -1.561424,
+          "lilpudgys": 49.33729,
+          "milady": -0.306223,
+          "mutant-ape-yacht-club": 0.547598,
+          "pudgypenguins": -0.129302
+        },
+        "every_collection_not_worse": false,
+        "approved": false
+      }
+    },
+    "would_serve": "persistence_vol30",
+    "all_folds_mean_qlike": {
+      "azuki": {
+        "ewma": 10.957331,
+        "garch_normal": 12.281916,
+        "persistence_vol30": 15.839871
+      },
+      "boredapeyachtclub": {
+        "ewma": 0.39469,
+        "garch_normal": 0.27943,
+        "persistence_vol30": 0.468299
+      },
+      "doodles-official": {
+        "ewma": 0.862376,
+        "garch_normal": 3.260157,
+        "persistence_vol30": 1.070582
+      },
+      "lilpudgys": {
+        "ewma": 30.725138,
+        "garch_normal": 5.426382,
+        "persistence_vol30": 28.907376
+      },
+      "milady": {
+        "ewma": 0.442166,
+        "garch_normal": 0.376197,
+        "persistence_vol30": 0.52206
+      },
+      "mutant-ape-yacht-club": {
+        "ewma": 0.690068,
+        "garch_normal": 0.735121,
+        "persistence_vol30": 1.008098
+      },
+      "pudgypenguins": {
+        "ewma": 0.851209,
+        "garch_normal": 0.945288,
+        "persistence_vol30": 1.340286
+      }
+    }
+  },
+  "metadata": {
+    "generated_at": "2026-11-10T19:54:22Z",
+    "git_commit": "4ee833d24b9c5221d79aa3c4ed0b084c27d23852",
+    "git_dirty": false,
+    "snapshot": "2026-11-10",
+    "snapshot_manifest_sha256": "90e74e885eee75336e7a9b46bb9f718a4a9757802234fc197053901f3d27d7af",
+    "collections": [
+      "azuki",
+      "boredapeyachtclub",
+      "doodles-official",
+      "lilpudgys",
+      "milady",
+      "mutant-ape-yacht-club",
+      "pudgypenguins"
+    ]
+  }
+}

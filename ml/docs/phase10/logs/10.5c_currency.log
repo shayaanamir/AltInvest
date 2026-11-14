@@ -1,0 +1,14 @@
+events dropped at parse by reason, up to the snapshot date: {'payment_token': 29}
+other-currency sales per collection and token:
+slug                   payment_symbol
+azuki                  USDC               1
+boredapeyachtclub      APE                4
+                       USDC               5
+lilpudgys              USDC               2
+mutant-ape-yacht-club  APE                2
+                       USDC               1
+pudgypenguins          USDC              14
+total other-currency sales: 29
+base manifest dropped_events (same counts, frozen): {"azuki": {"payment_token": 1}, "boredapeyachtclub": {"payment_token": 9}, "lilpudgys": {"payment_token": 2}, "mutant-ape-yacht-club": {"payment_token": 3}, "pudgypenguins": {"payment_token": 14}}
+payment symbols inside the frozen sales_raw: {'ETH': 86336, 'BETH': 67041, 'WETH': 45171}
+frozen prices in the snapshot: eth_usd only (no rate for these tokens) -> stay dropped (D75)

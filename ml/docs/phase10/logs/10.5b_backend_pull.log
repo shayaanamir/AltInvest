@@ -1,0 +1,2 @@
+[ml-pull] http://ml:8001: {'BTC': {'predict': 'stored', 'risk': 'stored'}, 'ETH': {'predict': 'stored', 'risk': 'stored'}, 'SOL': {'predict': 'stored', 'risk': 'stored'}, 'NFT': {'boredapeyachtclub': 'stored', 'mutant-ape-yacht-club': 'stored', 'pudgypenguins': 'stored', 'lilpudgys': 'stored', 'azuki': 'stored', 'doodles-official': 'stored', 'milady': 'stored'}}
+[ml-pull] next pull in 12350 s

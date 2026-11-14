@@ -1,0 +1,1 @@
+wrote C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest\ml\reports\nft\item_data.json; all checks pass: True {'duplicate_sales': 0, 'sales_without_floor_for_their_date': 0, 'sales_without_eth_usd_for_their_date': 0, 'sales_with_empty_buyer_or_seller': 0, 'sold_tokens_without_metadata': 0, 'sold_tokens_without_traits': 0, 'duplicate_trait_rows': 0}

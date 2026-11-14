@@ -22,7 +22,7 @@
           "approved": false,
           "rule": "D25: paired 95% CI of the Spearman difference vs persistence on the last 40% excludes 0 and the estimate is positive",
           "served": false,
-          "served_reason": "not served: EWMA volatility (Phase 9) is served instead (D51)",
+          "served_reason": "not served: persistence vol_30d is served (D27, D82)",
           "source": "ml/reports/btc/walkforward_risk.json"
         },
         "price": {
@@ -146,6 +146,7 @@
             "high": 0.009353
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/btc/walkforward_price_v2.json"
         },
@@ -164,6 +165,7 @@
             "high": 0.001028
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/btc/walkforward_price_v2.json"
         },
@@ -182,6 +184,7 @@
             "high": 0.00235
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/btc/walkforward_price_v2.json"
         },
@@ -200,6 +203,7 @@
             "high": -0.000339
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/btc/walkforward_price_v2.json"
         },
@@ -218,6 +222,7 @@
             "high": -0.111303
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/btc/walkforward_price_v2.json"
         },
@@ -236,6 +241,7 @@
             "high": -0.138006
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/btc/walkforward_price_v2.json"
         },
@@ -254,6 +260,7 @@
             "high": 0.013028
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/btc/walkforward_price_v2.json"
         },
@@ -272,6 +279,7 @@
             "high": 0.00185
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/btc/walkforward_price_v2.json"
         },
@@ -290,6 +298,7 @@
             "high": 0.003628
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/btc/walkforward_price_v2.json"
         },
@@ -308,6 +317,7 @@
             "high": 0.0007
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/btc/walkforward_price_v2.json"
         },
@@ -326,6 +336,7 @@
             "high": 0.01074
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/btc/walkforward_range.json"
         },
@@ -344,6 +355,7 @@
             "high": 0.179889
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/btc/walkforward_range.json"
         },
@@ -362,6 +374,7 @@
             "high": 0.006262
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/btc/walkforward_range.json"
         },
@@ -380,6 +393,7 @@
             "high": 0.016195
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/btc/walkforward_range.json"
         },
@@ -398,7 +412,8 @@
             "high": 0.110228
           },
           "approved": true,
-          "served": true,
+          "approved_top_only": false,
+          "served": false,
           "source": "ml/reports/btc/walkforward_risk_v2.json"
         },
         {
@@ -416,6 +431,7 @@
             "high": 0.190759
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/btc/walkforward_risk_v2.json"
         },
@@ -434,6 +450,7 @@
             "high": 0.110103
           },
           "approved": true,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/btc/walkforward_risk_v2.json"
         },
@@ -452,6 +469,7 @@
             "high": 0.183325
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/btc/walkforward_risk_v2.json"
         },
@@ -470,6 +488,7 @@
             "high": 0.017069
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/btc/walkforward_direction_v2.json"
         },
@@ -488,6 +507,7 @@
             "high": 0.005805
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/btc/walkforward_direction_v2.json"
         }
@@ -572,7 +592,7 @@
           "approved": false,
           "rule": "D25: paired 95% CI of the Spearman difference vs persistence on the last 40% excludes 0 and the estimate is positive",
           "served": false,
-          "served_reason": "not served: EWMA volatility (Phase 9) is served instead (D51)",
+          "served_reason": "not served: persistence vol_30d is served (D27, D82)",
           "source": "ml/reports/eth/walkforward_risk.json"
         },
         "price": {
@@ -696,6 +716,7 @@
             "high": 0.004731
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/eth/walkforward_price_v2.json"
         },
@@ -714,6 +735,7 @@
             "high": -0.000462
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/eth/walkforward_price_v2.json"
         },
@@ -732,6 +754,7 @@
             "high": -0.001691
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/eth/walkforward_price_v2.json"
         },
@@ -750,6 +773,7 @@
             "high": -0.002994
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/eth/walkforward_price_v2.json"
         },
@@ -768,6 +792,7 @@
             "high": -0.116628
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/eth/walkforward_price_v2.json"
         },
@@ -786,6 +811,7 @@
             "high": -0.170639
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/eth/walkforward_price_v2.json"
         },
@@ -804,6 +830,7 @@
             "high": -5.2e-05
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/eth/walkforward_price_v2.json"
         },
@@ -822,6 +849,7 @@
             "high": 0.000309
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/eth/walkforward_price_v2.json"
         },
@@ -840,6 +868,7 @@
             "high": 0.002133
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/eth/walkforward_price_v2.json"
         },
@@ -858,6 +887,7 @@
             "high": 0.000188
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/eth/walkforward_price_v2.json"
         },
@@ -876,6 +906,7 @@
             "high": 0.011848
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/eth/walkforward_range.json"
         },
@@ -894,6 +925,7 @@
             "high": -0.038769
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/eth/walkforward_range.json"
         },
@@ -912,6 +944,7 @@
             "high": 0.008333
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/eth/walkforward_range.json"
         },
@@ -930,6 +963,7 @@
             "high": 0.008889
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/eth/walkforward_range.json"
         },
@@ -948,7 +982,8 @@
             "high": 0.126096
           },
           "approved": true,
-          "served": true,
+          "approved_top_only": false,
+          "served": false,
           "source": "ml/reports/eth/walkforward_risk_v2.json"
         },
         {
@@ -966,6 +1001,7 @@
             "high": 0.043181
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/eth/walkforward_risk_v2.json"
         },
@@ -984,6 +1020,7 @@
             "high": 0.13088
           },
           "approved": true,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/eth/walkforward_risk_v2.json"
         },
@@ -1002,6 +1039,7 @@
             "high": 0.122625
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/eth/walkforward_risk_v2.json"
         },
@@ -1020,6 +1058,7 @@
             "high": 0.060357
           },
           "approved": true,
+          "approved_top_only": true,
           "served": false,
           "source": "ml/reports/eth/walkforward_direction_v2.json"
         },
@@ -1038,6 +1077,7 @@
             "high": 0.10546
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/eth/walkforward_direction_v2.json"
         }
@@ -1122,7 +1162,7 @@
           "approved": false,
           "rule": "D25: paired 95% CI of the Spearman difference vs persistence on the last 40% excludes 0 and the estimate is positive",
           "served": false,
-          "served_reason": "not served: EWMA volatility (Phase 9) is served instead (D51)",
+          "served_reason": "not served: persistence vol_30d is served (D27, D82)",
           "source": "ml/reports/sol/walkforward_risk.json"
         },
         "price": {
@@ -1246,6 +1286,7 @@
             "high": 0.020063
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/sol/walkforward_price_v2.json"
         },
@@ -1264,6 +1305,7 @@
             "high": 0.000558
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/sol/walkforward_price_v2.json"
         },
@@ -1282,6 +1324,7 @@
             "high": 0.009385
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/sol/walkforward_price_v2.json"
         },
@@ -1300,6 +1343,7 @@
             "high": -0.004301
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/sol/walkforward_price_v2.json"
         },
@@ -1318,6 +1362,7 @@
             "high": -0.032565
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/sol/walkforward_price_v2.json"
         },
@@ -1336,6 +1381,7 @@
             "high": -0.116707
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/sol/walkforward_price_v2.json"
         },
@@ -1354,6 +1400,7 @@
             "high": 0.024237
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/sol/walkforward_price_v2.json"
         },
@@ -1372,6 +1419,7 @@
             "high": 0.001779
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/sol/walkforward_price_v2.json"
         },
@@ -1390,6 +1438,7 @@
             "high": 0.003239
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/sol/walkforward_price_v2.json"
         },
@@ -1408,6 +1457,7 @@
             "high": -8.2e-05
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/sol/walkforward_price_v2.json"
         },
@@ -1426,6 +1476,7 @@
             "high": 0.023186
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/sol/walkforward_range.json"
         },
@@ -1444,6 +1495,7 @@
             "high": 0.041349
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/sol/walkforward_range.json"
         },
@@ -1462,6 +1514,7 @@
             "high": 0.005164
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/sol/walkforward_range.json"
         },
@@ -1480,6 +1533,7 @@
             "high": 0.019197
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/sol/walkforward_range.json"
         },
@@ -1498,7 +1552,8 @@
             "high": 0.024127
           },
           "approved": false,
-          "served": true,
+          "approved_top_only": false,
+          "served": false,
           "source": "ml/reports/sol/walkforward_risk_v2.json"
         },
         {
@@ -1516,6 +1571,7 @@
             "high": 0.04725
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/sol/walkforward_risk_v2.json"
         },
@@ -1534,6 +1590,7 @@
             "high": 0.116889
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/sol/walkforward_risk_v2.json"
         },
@@ -1552,6 +1609,7 @@
             "high": 0.175735
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/sol/walkforward_risk_v2.json"
         },
@@ -1570,6 +1628,7 @@
             "high": 0.037926
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/sol/walkforward_direction_v2.json"
         },
@@ -1588,6 +1647,7 @@
             "high": 0.120292
           },
           "approved": false,
+          "approved_top_only": false,
           "served": false,
           "source": "ml/reports/sol/walkforward_direction_v2.json"
         }
@@ -1641,17 +1701,92 @@
       }
     }
   },
+  "nft": {
+    "rows": [
+      {
+        "part": "nft risk (pooled, h = 30)",
+        "model": "ewma",
+        "metric": "QLIKE",
+        "model_value": 0.69288,
+        "baseline": "persistence_vol30",
+        "baseline_value": 0.933291,
+        "gain_ci95": {
+          "estimate": 0.240411,
+          "low": 0.066836,
+          "high": 0.585505
+        },
+        "approved": true,
+        "served": false,
+        "status": "approved in 10.3, withdrawn by the D72 check (D73); under top-only GARCH ranks first and its CI includes 0 (D65 i)",
+        "source": "ml/reports/nft/walkforward_risk.json"
+      },
+      {
+        "part": "nft risk (pooled, h = 30)",
+        "model": "garch",
+        "metric": "QLIKE",
+        "model_value": 0.80732,
+        "baseline": "persistence_vol30",
+        "baseline_value": 0.933291,
+        "gain_ci95": {
+          "estimate": 0.125971,
+          "low": -0.508758,
+          "high": 1.234118
+        },
+        "approved": false,
+        "served": false,
+        "status": "not approved",
+        "source": "ml/reports/nft/walkforward_risk.json"
+      },
+      {
+        "part": "nft fair value (walk-forward)",
+        "model": "fv_pooled_l1_nl15",
+        "metric": "MdAPE on price",
+        "model_value": 0.028394734750110784,
+        "baseline": "B2_decile_90d",
+        "baseline_value": 0.033476232042685294,
+        "gain_ci95": {
+          "estimate": 0.0050814972925745105,
+          "low": 0.0014641963251051748,
+          "high": 0.007893717388852525
+        },
+        "approved": true,
+        "served": true,
+        "status": "approved (D77); served for 6 collections, B2 for lilpudgys (D78, D80); no range",
+        "source": "ml/reports/nft/walkforward_fair_value.json"
+      },
+      {
+        "part": "nft fair value (sealed test, once)",
+        "model": "served setup",
+        "metric": "MdAPE on price",
+        "model_value": 0.02941323817668784,
+        "baseline": "B0_floor",
+        "baseline_value": 0.03531119971428631,
+        "gain_ci95": {
+          "estimate": 0.005897961537598473,
+          "low": 0.003416821110706154,
+          "high": 0.00848059188549013
+        },
+        "approved": true,
+        "served": true,
+        "status": "PASS (D79): the serving rule stays",
+        "source": "ml/reports/nft/sealed_fair_value.json"
+      }
+    ],
+    "served_risk": "persistence vol_30d (D73)",
+    "served_fair_value": "monthly refit of fv_pooled_l1_nl15 (D83); B2 for lilpudgys (D80)"
+  },
   "summary": {
     "models_approved": 1,
     "models_served": 0,
     "models_total": 9,
     "phase9_approved": 5,
-    "phase9_served": 3,
+    "phase9_approved_top_only": 1,
+    "phase9_served": 0,
     "phase9_rows": 60
   },
   "metadata": {
-    "generated_at": "2026-11-03T12:23:49Z",
-    "git_commit": "cd0c07accec2afbecc0008c908eba8ed83cd4ca1",
+    "generated_at": "2026-11-14T11:10:50Z",
+    "git_commit": "718eb12d033ada85c16c889ca9f3e71669e2e26f",
     "git_dirty": false,
     "sources": [
       "ml/reports/btc/backtest.json",

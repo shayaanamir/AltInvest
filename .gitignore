@@ -30,6 +30,7 @@ htmlcov/
 # Environment variables
 .env
 .env.*
+!.env.example
 *.env
 
 # Virtual environments
@@ -111,3 +112,17 @@ docs/
 ml/artifacts/*/*
 !ml/artifacts/*/metadata.json
 PLANNER.md
+
+# Phase 10 NFT data (D62, D64): the live/serving directory is never tracked
+ml/data/nft/live/
+# item-level snapshot files are large; their hashes are in the tracked manifest.json (D64)
+ml/data/nft/snapshots/*/sales_raw.parquet
+ml/data/nft/snapshots/*/sales_filtered.parquet
+ml/data/nft/snapshots/*/traits.parquet
+ml/data/nft/snapshots/*/tokens.parquet
+ml/data/nft/snapshots/*/sales.parquet
+ml/reports/nft/walkforward_fair_value_rows.parquet
+ml/reports/nft/*.rows.parquet
+# Phase 10 step 10.9 (D84): the accuracy block is tracked. Refits, CURRENT and refit_log.jsonl live on the ml-data
+# volume (10.9b), never here; hand-committed copies of the log are in ml/docs/phase10/refits/.
+!ml/artifacts/nft_fv/accuracy.json

@@ -1,0 +1,201 @@
+{
+ "snapshot": "2026-11-10-items-v2",
+ "created_at": "2026-11-10T20:41:32Z",
+ "git_commit": "5c4359cb39c29c77ee3634db2638b05779aa5608",
+ "git_dirty": false,
+ "parents": {
+  "2026-11-10": "90e74e885eee75336e7a9b46bb9f718a4a9757802234fc197053901f3d27d7af",
+  "2026-11-10-items": "16a5c7568b8cfd4f32c0bd7b9d94d4d9a986f4994c116bd776b762a546cacb3d"
+ },
+ "rules": "D70 (cleaning, floor point strictly before the sale, sale_type not a feature, ID-like categories), D71 (sealed cutoff)",
+ "not_model_features": [
+  "sale_type",
+  "buyer",
+  "seller",
+  "tx",
+  "marketplace",
+  "payment_symbol",
+  "protocol_address",
+  "wash_flag",
+  "clean"
+ ],
+ "cleaning_counts": {
+  "azuki": {
+   "before": 23736,
+   "C1_rows_collapsed": 21,
+   "C1_ambiguous_rows_dropped": 6,
+   "C2_bundle_rows_dropped": 977,
+   "C3_below_1pct_floor_dropped": 3,
+   "W1_flagged": 16,
+   "W2_flagged": 1394,
+   "clean": 21319
+  },
+  "boredapeyachtclub": {
+   "before": 9620,
+   "C1_rows_collapsed": 46,
+   "C1_ambiguous_rows_dropped": 8,
+   "C2_bundle_rows_dropped": 95,
+   "C3_below_1pct_floor_dropped": 0,
+   "W1_flagged": 9,
+   "W2_flagged": 425,
+   "clean": 9037
+  },
+  "doodles-official": {
+   "before": 27641,
+   "C1_rows_collapsed": 61,
+   "C1_ambiguous_rows_dropped": 14,
+   "C2_bundle_rows_dropped": 1135,
+   "C3_below_1pct_floor_dropped": 11,
+   "W1_flagged": 12,
+   "W2_flagged": 1691,
+   "clean": 24717
+  },
+  "lilpudgys": {
+   "before": 67319,
+   "C1_rows_collapsed": 89,
+   "C1_ambiguous_rows_dropped": 17,
+   "C2_bundle_rows_dropped": 3639,
+   "C3_below_1pct_floor_dropped": 8,
+   "W1_flagged": 25,
+   "W2_flagged": 3823,
+   "clean": 59718
+  },
+  "milady": {
+   "before": 18184,
+   "C1_rows_collapsed": 23,
+   "C1_ambiguous_rows_dropped": 2,
+   "C2_bundle_rows_dropped": 886,
+   "C3_below_1pct_floor_dropped": 4,
+   "W1_flagged": 9,
+   "W2_flagged": 657,
+   "clean": 16603
+  },
+  "mutant-ape-yacht-club": {
+   "before": 29268,
+   "C1_rows_collapsed": 79,
+   "C1_ambiguous_rows_dropped": 18,
+   "C2_bundle_rows_dropped": 742,
+   "C3_below_1pct_floor_dropped": 4,
+   "W1_flagged": 10,
+   "W2_flagged": 2126,
+   "clean": 26289
+  },
+  "pudgypenguins": {
+   "before": 22780,
+   "C1_rows_collapsed": 28,
+   "C1_ambiguous_rows_dropped": 2,
+   "C2_bundle_rows_dropped": 297,
+   "C3_below_1pct_floor_dropped": 2,
+   "W1_flagged": 21,
+   "W2_flagged": 1332,
+   "clean": 21098
+  }
+ },
+ "id_like_categories": {
+  "azuki": [],
+  "boredapeyachtclub": [],
+  "doodles-official": [],
+  "lilpudgys": [],
+  "milady": [
+   "Number"
+  ],
+  "mutant-ape-yacht-club": [],
+  "pudgypenguins": []
+ },
+ "sealed_start_T": "2026-02-01",
+ "embargo": [
+  "2026-01-25",
+  "2026-02-01"
+ ],
+ "clean_rows_by_split": {
+  "dev": {
+   "azuki": 17626,
+   "boredapeyachtclub": 6108,
+   "doodles-official": 20565,
+   "lilpudgys": 48049,
+   "milady": 13035,
+   "mutant-ape-yacht-club": 18306,
+   "pudgypenguins": 15649,
+   "all": 139338
+  },
+  "embargo": {
+   "azuki": 93,
+   "boredapeyachtclub": 94,
+   "doodles-official": 139,
+   "lilpudgys": 490,
+   "milady": 138,
+   "mutant-ape-yacht-club": 269,
+   "pudgypenguins": 248,
+   "all": 1471
+  },
+  "sealed": {
+   "azuki": 3600,
+   "boredapeyachtclub": 2835,
+   "doodles-official": 4013,
+   "lilpudgys": 11179,
+   "milady": 3430,
+   "mutant-ape-yacht-club": 7714,
+   "pudgypenguins": 5201,
+   "all": 37972
+  }
+ },
+ "files": {
+  "sales.parquet": {
+   "sha256": "2df819414d061f0c25e603b8f55fc7f586c6bbeb25b82342789091dbf4e2f088",
+   "rows": 190331,
+   "bytes": 11630250,
+   "range": [
+    "2024-11-10",
+    "2026-11-10"
+   ],
+   "columns": [
+    "slug",
+    "token_id",
+    "timestamp",
+    "date",
+    "price_eth",
+    "payment_symbol",
+    "buyer",
+    "seller",
+    "tx",
+    "protocol_address",
+    "marketplace",
+    "floor_point_eth",
+    "floor_point_age_hours",
+    "wash_flag",
+    "clean",
+    "sale_type"
+   ]
+  },
+  "traits.parquet": {
+   "sha256": "ad79c7e31d4bc06f751fd0cbbaefb3bd0b81e16523a6185c534a63e292f6e81f",
+   "rows": 618970,
+   "bytes": 1683208,
+   "range": null,
+   "columns": [
+    "slug",
+    "token_id",
+    "trait_type",
+    "value",
+    "id_like"
+   ]
+  },
+  "tokens.parquet": {
+   "sha256": "6619f738491b5923a61f4689810822e6b7e10819c8093534de5d69848bcbf546",
+   "rows": 90395,
+   "bytes": 3626573,
+   "range": null,
+   "columns": [
+    "slug",
+    "token_id",
+    "name",
+    "image_url",
+    "n_traits",
+    "traits_missing",
+    "rarity_score",
+    "rarity_rank",
+    "rarity_pct"
+   ]
+  }
+ }
+}

@@ -1,0 +1,57 @@
+{
+ "snapshot": "2026-11-10-items",
+ "created_at": "2026-11-10T20:24:03Z",
+ "git_commit": "9df9029d08859471f1955f5ec21285aa6fc327ff",
+ "git_dirty": false,
+ "parent_snapshot": "2026-11-10",
+ "parent_manifest_sha256": "90e74e885eee75336e7a9b46bb9f718a4a9757802234fc197053901f3d27d7af",
+ "fill_source": "OpenSea GET /chain/ethereum/contract/{contract}/nfts/{id} (D68)",
+ "tokens_without_traits_before": {
+  "azuki": 40,
+  "boredapeyachtclub": 42,
+  "doodles-official": 181,
+  "lilpudgys": 24,
+  "mutant-ape-yacht-club": 3,
+  "pudgypenguins": 58
+ },
+ "tokens_without_traits_after": {
+  "azuki": 0,
+  "boredapeyachtclub": 0,
+  "doodles-official": 0,
+  "lilpudgys": 0,
+  "mutant-ape-yacht-club": 0,
+  "pudgypenguins": 0
+ },
+ "rarity": "over tokens with known traits only; traits_missing tokens have null rarity (D68)",
+ "files": {
+  "traits.parquet": {
+   "sha256": "125d3b86d358747d137cc6d379ebbb4ede0a6dd6eaa18f1267a439b066fdd3ef",
+   "rows": 618970,
+   "bytes": 1676165,
+   "range": null,
+   "columns": [
+    "slug",
+    "token_id",
+    "trait_type",
+    "value"
+   ]
+  },
+  "tokens.parquet": {
+   "sha256": "6404631e1342eed7ab2b076d7f5668766c4881abbd5e98b96d8fd749a9570d40",
+   "rows": 90395,
+   "bytes": 3626657,
+   "range": null,
+   "columns": [
+    "slug",
+    "token_id",
+    "name",
+    "image_url",
+    "n_traits",
+    "traits_missing",
+    "rarity_score",
+    "rarity_rank",
+    "rarity_pct"
+   ]
+  }
+ }
+}

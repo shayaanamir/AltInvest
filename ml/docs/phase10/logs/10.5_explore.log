@@ -1,0 +1,14 @@
+tokens (90395, 8) ['slug', 'token_id', 'name', 'image_url', 'n_traits', 'rarity_score', 'rarity_rank', 'rarity_pct']
+traits (616987, 4)
+azuki | n_traits: 0 - 11 | missing 40 | sold tokens missing from tokens: 0 | sales of traitless tokens: 178 | traitless rarity_rank min: 407
+boredapeyachtclub | n_traits: 0 - 7 | missing 42 | sold tokens missing from tokens: 0 | sales of traitless tokens: 97 | traitless rarity_rank min: 15
+doodles-official | n_traits: 0 - 6 | missing 181 | sold tokens missing from tokens: 0 | sales of traitless tokens: 516 | traitless rarity_rank min: 924
+lilpudgys | n_traits: 0 - 7 | missing 24 | sold tokens missing from tokens: 0 | sales of traitless tokens: 52 | traitless rarity_rank min: 20
+milady | n_traits: 10 - 16 | missing 0 | sold tokens missing from tokens: 0 | sales of traitless tokens: 0 | traitless rarity_rank min: None
+mutant-ape-yacht-club | n_traits: 0 - 7 | missing 3 | sold tokens missing from tokens: 0 | sales of traitless tokens: 9 | traitless rarity_rank min: 236
+pudgypenguins | n_traits: 0 - 5 | missing 58 | sold tokens missing from tokens: 0 | sales of traitless tokens: 266 | traitless rarity_rank min: 6
+dup (token, trait_type): 0
+ slug token_id name
+azuki       40     
+azuki       49     
+azuki      547     

@@ -1,0 +1,11 @@
+db=aaip_db
+[nft_*] removed 0 fictional or made-up rows
+[nft_collections] upserted 7 (market data comes from the ML pull)
+JWT_SECRET is not set; signing tokens with the built-in development secret. Anyone who knows it can forge logins. Set JWT_SECRET in .env for any shared or deployed instance.
+[users] extended demo user 6af21534f3a879244ea9f921
+[user_settings] upserted
+[portfolio_holdings] inserted 4
+[watchlists] inserted 2
+[alerts] inserted 3
+[notifications] inserted 3
+Indexes ensured.

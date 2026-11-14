@@ -46,3 +46,6 @@ Range was not served because no candidate beat the vol_30d band, and the band it
 ## 8. Verify and next
 - Verify: see "How to verify Phase 9 yourself" in ml/docs/STATUS.md.
 - Next: Person B checks the new risk_score values and note text (the fields are unchanged); the live scorecard starts scoring on 2026-11-30.
+
+## Later change (Phase 10 step 10.9, 2026-11-14)
+EWMA risk is no longer served. The owner replaced D49's per-model-type confirmation with top-only selection (D81). Re-reading the logged Phase 9 results that way (`ml/reports/d49_audit_risk.json`, nothing re-run): GARCH ranks first for every asset and horizon, and its confirmation CI includes 0, so no risk config is approved. Crypto risk serves persistence vol_30d again, and the price chart's cone uses it (D82). The ETH direction approval still stands under top-only, but it is not served (D33).

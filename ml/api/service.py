@@ -18,9 +18,17 @@ from fastapi import FastAPI, HTTPException
 from ml import config
 from ml.api.contract import check
 from ml.evaluation import live_score, scorecard
+from ml.serving import nft_items
+from ml.serving import nft_responses as nft
 from ml.serving import responses as rs
 
 app = FastAPI(title="AltInvest ML", version="v2")
+
+
+@app.on_event("startup")
+def _warm_nft_items():
+    """Phase 10 step 10.7 (D78): build the item value tables in the background."""
+    nft_items.warm_up()
 
 
 def _serve(build, asset: str) -> dict:
@@ -60,6 +68,51 @@ def debug_scorecard():
 def debug_live_scorecard():
     """Forward scores of the logged served values (Phase 6d), computed now from the serving data."""
     return live_score.build()
+
+
+def _serve_nft(build, *args):
+    """NFT endpoints (Phase 10, D61): unknown slug -> 404, missing or unusable NFT data -> 503."""
+    try:
+        return build(*args)
+    except KeyError as e:
+        raise HTTPException(404, str(e.args[0])) from None
+    except rs.NotServable as e:
+        raise HTTPException(503, str(e)) from None
+
+
+@app.get("/nft/collections")
+def nft_collections():
+    return check("NftCollectionsResponse", _serve_nft(lambda: nft.collections(datetime.now(timezone.utc))))
+
+
+@app.get("/nft/{slug}/floor")
+def nft_floor(slug: str, days: int = 365):
+    return check("NftFloorResponse", _serve_nft(nft.floor, slug, datetime.now(timezone.utc), days))
+
+
+@app.get("/nft/{slug}/risk")
+def nft_risk(slug: str):
+    return check("NftRiskResponse", _serve_nft(nft.risk, slug, datetime.now(timezone.utc)))
+
+
+@app.get("/nft/{slug}/sales")
+def nft_sales(slug: str, days: int = 30):
+    return check("NftSalesResponse", _serve_nft(nft.sales, slug, datetime.now(timezone.utc), days))
+
+
+@app.get("/nft/items/value")
+def nft_items_value(items: str):
+    """Batch item values (D78), e.g. ?items=azuki:8604,pudgypenguins:7862."""
+    try:
+        body = _serve_nft(nft_items.batch, items, datetime.now(timezone.utc))
+    except ValueError as e:
+        raise HTTPException(422, str(e)) from None
+    return check("NftItemValuesResponse", body)
+
+
+@app.get("/nft/{slug}/items/{token_id}/value")
+def nft_item_value(slug: str, token_id: str):
+    return check("NftItemValueResponse", _serve_nft(nft_items.value, slug, token_id, datetime.now(timezone.utc)))
 
 
 @app.get("/debug/{asset}")

@@ -33,6 +33,8 @@ STEPS = [
 
 
 def run():
+    from db.seed_guard import require_local_target
+    require_local_target()          # local MongoDB only, unless --allow-remote (D69)
     for label, fn in STEPS:
         print(f"\n=== Seeding: {label} ===")
         try:

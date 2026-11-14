@@ -9,10 +9,10 @@ import { describeError } from "../../../errors";
 const DEBOUNCE_MS = 200;
 const EMPTY = { assets: [], collections: [], insights: [] };
 
-/** Where a picked result goes. NFT collections open Discover filtered to that collection (there's no NFT page). */
+/** Where a picked result goes. NFT collections open their collection page (Phase 10). */
 function hrefFor(item) {
   if (item.kind === "asset") return `/asset-detail?symbol=${encodeURIComponent(item.symbol)}`;
-  if (item.kind === "collection") return `/discover?category=nft&q=${encodeURIComponent(item.name)}`;
+  if (item.kind === "collection") return item.id ? `/nft-collection?slug=${encodeURIComponent(item.id)}` : `/discover?category=nft&q=${encodeURIComponent(item.name)}`;
   if (item.kind === "insight") {
     if (item.symbol) return `/asset-detail?symbol=${encodeURIComponent(item.symbol)}`;
     if (item.slug) return `/discover?category=nft&q=${encodeURIComponent(item.slug)}`;

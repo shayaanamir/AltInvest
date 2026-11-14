@@ -76,12 +76,27 @@ def test_debug_scorecard_endpoint_serves_the_file_not_an_asset():
     assert r.json() == json.loads(sc.OUT_JSON.read_text(encoding="utf-8"))
 
 
-def test_phase9_only_ewma_risk_at_30_days_is_served(card):
-    """D51: the scorecard shows risk served = yes (EWMA, h = 30) and every other Phase 9 row not served."""
+def test_phase9_nothing_served_after_d82(card):
+    """D82: the logged D49 EWMA risk approvals do not stand under top-only (D81); the ETH logistic regression
+    direction approval does (it is not served anyway, D33/D50). No Phase 9 row is served."""
     for a, x in card["assets"].items():
-        served = [(r["part"], r["model"], r["horizon"]) for r in x["phase9"] if r["served"]]
-        assert served == [("risk", "ewma", 30)]
+        assert [r for r in x["phase9"] if r["served"]] == []
+        top = [(r["part"], r["model"]) for r in x["phase9"] if r["approved_top_only"]]
+        assert top == ([("direction", "logreg")] if a == "eth" else [])           # D82: only ETH direction stands
         src = {(v["model"], v["horizon"]): v for v in _report(a, "walkforward_risk_v2")["verdict_table"]}
         row = next(r for r in x["phase9"] if r["part"] == "risk" and r["model"] == "ewma" and r["horizon"] == 30)
         assert row["model_value"] == src[("ewma", 30)]["model_qlike"]
-    assert card["summary"]["phase9_served"] == len(config.ASSETS)
+        assert row["approved"] == src[("ewma", 30)]["approved"]                  # the logged D49 verdict, unchanged
+    assert card["summary"]["phase9_served"] == 0 and card["summary"]["phase9_approved_top_only"] == 1
+    assert card["summary"]["phase9_approved"] > 0                                # BTC/ETH EWMA, logged under D49
+
+
+def test_nft_section_copies_the_phase_10_reports(card):
+    """Phase 10 close: the scorecard's NFT rows are copied from ml/reports/nft and match the committed file."""
+    rows = {(r["part"], r["model"]): r for r in card["nft"]["rows"]}
+    sealed = json.loads((sc.REPORTS / "nft" / "sealed_fair_value.json").read_text(encoding="utf-8"))["verdict"]
+    s = rows[("nft fair value (sealed test, once)", "served setup")]
+    assert s["model_value"] == sealed["mdape"]["served"] and s["approved"] is sealed["pass"] is True
+    assert rows[("nft risk (pooled, h = 30)", "ewma")]["served"] is False                      # D73
+    committed = json.loads(sc.OUT_JSON.read_text(encoding="utf-8"))
+    assert committed["nft"] == card["nft"]

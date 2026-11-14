@@ -8,8 +8,10 @@ import {
   buildCone, chartLayers, coneBand, coneStartLabel, coneVolatility, dailyVol, futureShare, shortDate,
 } from "./volCone.js";
 
-const EWMA_NOTE = "Risk model: EWMA volatility (lambda 0.94), which beat 30-day persistence (D50, D51).";
-const risk = (volatility, note = EWMA_NOTE) => ({ volatility, note });
+const OLD_D51_NOTE = "Risk model: EWMA volatility (lambda 0.94), which beat 30-day persistence (D50, D51).";
+const PERSISTENCE_NOTE = "Risk measure: 30-day volatility (persistence). No risk model is served: no model beat this "
+  + "simple measure under the project's selection rule (D81, D82).";
+const risk = (volatility, note = PERSISTENCE_NOTE) => ({ volatility, note });
 const history = [
   { date: "2026-11-01", price: 100 },
   { date: "2026-11-02", price: 104 },
@@ -51,15 +53,23 @@ test("symmetric in log space and widens with sqrt(d)", () => {
   assert.ok(cone[CONE_DAYS].outer.upper > cone[CONE_DAYS].inner.upper); // outer 80% band wider than inner 50%
 });
 
-test("cone is hidden when volatility is missing, null, not positive, not the EWMA model, or stale", () => {
+test("cone is hidden when volatility is missing, null, not positive, not the served measure, or stale", () => {
   for (const r of [null, undefined, risk(null), risk(undefined), risk(Number.NaN), risk(0), risk(-0.1), risk("0.5"),
     risk(0.5, "mock data — no risk score found in DB yet"), risk(0.5, null),
-    risk(0.5, `${EWMA_NOTE} data stale: the newest stored row is 40 h old`)]) {
+    risk(0.5, `${PERSISTENCE_NOTE} data stale: the newest stored row is 40 h old`),
+    risk(0.5, "Risk model: 30-day floor volatility (persistence)."),   // an NFT note: not the crypto measure
+    risk(0.5, `Note: ${PERSISTENCE_NOTE}`)]) {                          // the prefix must start the note
     assert.equal(coneVolatility(r), null);
     assert.equal(buildCone(history[1], r), null);
     assert.deepEqual(chartLayers(history, r).layers, ["history"]);
   }
   assert.equal(coneVolatility(risk(0.5)), 0.5);
+});
+
+test("D82: the cone uses the served persistence volatility; an old stored D51 row draws no cone", () => {
+  assert.equal(coneVolatility(risk(0.42)), 0.42);
+  assert.equal(coneVolatility(risk(0.42, OLD_D51_NOTE)), null);
+  assert.equal(buildCone(history[1], risk(0.42, OLD_D51_NOTE)), null);
 });
 
 test("no forecast or center line is ever a chart layer", () => {
@@ -78,8 +88,11 @@ test("future section: true time share, but at least 15% of the width", () => {
   assert.equal(futureShare(30), 0.5);                                   // 1M: 30 of 60 days, to scale
   assert.equal(futureShare(90), 0.25);                                  // 3M: to scale
   assert.equal(futureShare(365), 0.15);                                 // 1Y: 30 / 395 = 7.6% -> raised to 15%
-  const src = readFileSync(new URL("../components/assetDetail/PricePerformanceCard.jsx", import.meta.url), "utf8");
-  assert.match(src, /futureShare\(histSpan\)/);
+  // The drawing moved into the shared ConeChart (Phase 10); the price card renders it.
+  const card = readFileSync(new URL("../components/assetDetail/PricePerformanceCard.jsx", import.meta.url), "utf8");
+  const chart = readFileSync(new URL("../components/charts/ConeChart.jsx", import.meta.url), "utf8");
+  assert.match(card, /<ConeChart /);
+  assert.match(chart, /futureShare\(histSpan\)/);
 });
 
 test("the cone's start is labelled as the last daily close", () => {
@@ -88,7 +101,9 @@ test("the cone's start is labelled as the last daily close", () => {
   assert.equal(coneStartLabel("2026-11-08"), "Last close, 8 Nov");
   const cone = buildCone(history[1], risk(0.5));
   assert.equal(cone[0].inner.lower, history[1].price);                  // the cone starts at the last close itself
-  const src = readFileSync(new URL("../components/assetDetail/PricePerformanceCard.jsx", import.meta.url), "utf8");
-  assert.match(src, /coneStartLabel\(lastDate\)/);
-  assert.match(src, /data-role="cone-start"/);
+  const card = readFileSync(new URL("../components/assetDetail/PricePerformanceCard.jsx", import.meta.url), "utf8");
+  const chart = readFileSync(new URL("../components/charts/ConeChart.jsx", import.meta.url), "utf8");
+  assert.match(card, /startText=\{coneStartLabel\}/);                 // the price card labels it "Last close, ..."
+  assert.match(chart, /startText\(lastDate\)/);
+  assert.match(chart, /data-role="cone-start"/);
 });

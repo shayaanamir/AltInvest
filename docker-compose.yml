@@ -30,8 +30,11 @@ services:
     ports:
       - "8000:8000"
     environment:
-      MONGO_URI: ${MONGO_URI:-mongodb://mongodb:27017}
-      MONGO_DB_NAME: ${MONGO_DB_NAME:-aaip_db}
+      # Dev default: the local mongodb container (ml/docs/DECISIONS.md D69). The developer's .env MONGO_URI (for
+      # host-side scripts, possibly the shared Atlas cluster) is NOT passed in; set BACKEND_MONGO_URI to point
+      # the container somewhere else on purpose.
+      MONGO_URI: ${BACKEND_MONGO_URI:-mongodb://mongodb:27017}
+      MONGO_DB_NAME: ${BACKEND_MONGO_DB_NAME:-aaip_db}
 
       MONGO_DB: altinvest
       CMC_API_KEY: ${CMC_API_KEY:-}
@@ -45,17 +48,19 @@ services:
       SMTP_FROM: ${SMTP_FROM:-}
       SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
       ML_BASE_URL: ${ML_BASE_URL:-http://ml:8001}
+      # The source is bind-mounted read-only (no container writes into the repo, Phase 10 review 10.9b)
+      PYTHONDONTWRITEBYTECODE: "1"
     depends_on:
       mongodb:
         condition: service_healthy
     volumes:
-      # bind-mount source for live editing; installed pip packages live
-      # outside these paths so they aren't shadowed
-      - ./backend:/app/backend
-      - ./shared:/app/shared
-      - ./aai_engine:/app/aai_engine
-      - ./sentiment_engine:/app/sentiment_engine
-      - ./db:/app/db
+      # bind-mount source for live editing (read-only: no container writes into the repo); installed pip
+      # packages live outside these paths so they aren't shadowed
+      - ./backend:/app/backend:ro
+      - ./shared:/app/shared:ro
+      - ./aai_engine:/app/aai_engine:ro
+      - ./sentiment_engine:/app/sentiment_engine:ro
+      - ./db:/app/db:ro
     working_dir: /app/backend
     command: uvicorn main:app --host 0.0.0.0 --port 8000
     networks:
@@ -75,10 +80,18 @@ services:
     image: altinvest-ml
     container_name: altinvest-ml
     restart: unless-stopped
+    init: true            # reaps the startup refit process (ml/Dockerfile CMD)
     ports:
       - "8001:8001"
+    # The development fair-value artifact (D78) and accuracy.json are mounted read-only, never baked into the image
+    # (.dockerignore). The served refits, CURRENT and the refit log live on the ml-data volume (D83 as amended in
+    # 10.9b); at startup the service refits once if no refit is served there (ml.nft.fv_refit --ensure).
+    environment:
+      ML_NFT_FV_ARTIFACT_DIR: /artifacts/nft_fv
+      ML_NFT_FV_REFIT_DIR: /data/nft/fv_refits
     volumes:
       - ml-data:/data
+      - ./ml/artifacts/nft_fv:/artifacts/nft_fv:ro
     networks:
       - altinvest
 
@@ -91,6 +104,33 @@ services:
     command: python -m ml.data.refresh --loop
     volumes:
       - ml-data:/data
+    healthcheck:
+      disable: true
+    depends_on:
+      - ml
+    networks:
+      - altinvest
+
+  # Daily NFT data refresh for ml (Phase 10, ml/docs/DECISIONS.md D65e, D67): OpenSea floor and sales,
+  # Alchemy traits and Binance ETH-USD into /data/nft on the same volume, at 00:10 UTC. The keys come
+  # from the developer's .env through compose; they are never written to the volume or the image.
+  ml-nft-refresh:
+    image: altinvest-ml
+    container_name: altinvest-ml-nft-refresh
+    restart: unless-stopped
+    command: python -m ml.nft.refresh --loop
+    environment:
+      OPENSEA_API_KEY: ${OPENSEA_API_KEY:-}
+      ALCHEMY_API_KEY: ${ALCHEMY_API_KEY:-}
+      # D83/D85: monthly fair-value refits and the live accuracy log run in this sidecar after each refresh. Every
+      # output (refits, CURRENT, refit_log.jsonl, the monthly summaries) goes to the ml-data volume; the repo
+      # folder is mounted read-only (10.9b). Copies of the log and summaries are committed to ml/docs by hand.
+      ML_NFT_FV_ARTIFACT_DIR: /artifacts/nft_fv
+      ML_NFT_FV_REFIT_DIR: /data/nft/fv_refits
+      ML_NFT_LIVE_ACCURACY_DIR: /data/nft/live_accuracy/summaries
+    volumes:
+      - ml-data:/data
+      - ./ml/artifacts/nft_fv:/artifacts/nft_fv:ro
     healthcheck:
       disable: true
     depends_on:
@@ -115,7 +155,8 @@ services:
       # Bind mounts from Windows don't deliver file events; let Vite poll (see vite.config.js).
       VITE_WATCH_POLLING: "true"
     volumes:
-      - ./frontend:/app
+      # read-only (no container writes into the repo); Vite's caches go to node_modules, a volume
+      - ./frontend:/app:ro
       - frontend_node_modules:/app/node_modules
     depends_on:
       - backend

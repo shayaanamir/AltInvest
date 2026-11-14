@@ -82,7 +82,9 @@ def non_overlapping(rows: list[dict]) -> list[dict]:
 
 
 def risk_monitor(scored: list[dict]) -> dict:
-    """D46/D51 per asset: QLIKE of the served EWMA vs persistence vol_30d on the scored rows that logged both."""
+    """D46 per asset: QLIKE of EWMA vs persistence vol_30d on the scored rows that logged both. While EWMA is served
+    (D51) an EWMA QLIKE above persistence raises ALERT; since D82 persistence is served and EWMA is only watched
+    (status 'info'), so a later owner decision has live evidence. Never switches models."""
     out = {}
     for a in config.ASSETS:
         rows = [r for r in scored if r["asset"] == a and r.get("ewma_vol") is not None]
@@ -95,9 +97,11 @@ def risk_monitor(scored: list[dict]) -> dict:
         real = np.array([r["realised_vol_30d"] for r in rows])
         q_e = float(m.qlike(np.array([r["ewma_vol"] for r in rows]), real).mean())
         q_p = float(m.qlike(np.array([r["vol_30d"] for r in rows]), real).mean())
-        out[a] = {**res, "qlike_ewma": q_e, "qlike_persistence": q_p, "status": "ALERT" if q_e > q_p else "ok"}
-    return {"per_asset": out, "rule": "D46/D51: ALERT when served EWMA QLIKE > persistence QLIKE on the scored rows, "
-            f"only with >= {config.LIVE_ALERT_MIN_WINDOWS} non-overlapping windows; never switches models"}
+        out[a] = {**res, "qlike_ewma": q_e, "qlike_persistence": q_p, "status": ("ALERT" if q_e > q_p else "ok") if config.RISK_MODEL_SERVED else "info"}
+    return {"per_asset": out, "served": config.MODEL_VERSION_RISK,
+            "rule": "D46/D51: ALERT when served EWMA QLIKE > persistence QLIKE on the scored rows, "
+            f"only with >= {config.LIVE_ALERT_MIN_WINDOWS} non-overlapping windows; never switches models. Since D82 "
+            "persistence is served and EWMA is compared for information only (status 'info')"}
 
 
 def build(now: datetime | None = None) -> dict:
@@ -115,7 +119,8 @@ def build(now: datetime | None = None) -> dict:
     pending = [r for r in scored if r["status"] == "pending"]
     per_asset = {a: _summary([r for r in done if r["asset"] == a]) for a in config.ASSETS}
     note = ("No logged prediction has reached its 30-day horizon yet; nothing is scored." if not done else
-            "Price and direction serve baselines (D33, D35); risk serves EWMA (D51), compared in risk_monitor.")
+            "Price and direction serve baselines (D33, D35); risk serves persistence vol_30d (D82); EWMA is compared "
+            "with it in risk_monitor for information.")
     return {
         "generated_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "n_logged": len(rows), "n_scored": len(done), "n_pending": len(pending),

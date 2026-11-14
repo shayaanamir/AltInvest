@@ -1,0 +1,4 @@
+wrote C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest\ml\reports\nft\walkforward_risk.json
+ewma: QLIKE 0.6929 vs 0.9333, diff 0.2404 [0.0668, 0.5855], approved True
+garch: QLIKE 0.8073 vs 0.9333, diff 0.1260 [-0.5088, 1.2341], approved False
+served volatility: ewma

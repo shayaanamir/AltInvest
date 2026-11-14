@@ -1,0 +1,4 @@
+azuki                  0x37524522b1 rows=2 sym=ETH prices=[4.84, 4.84] sum_all_rows_in_tx=9.6800 paid=0.0000
+azuki                  0x48bbc5c09c rows=7 sym=ETH prices=[4.49, 4.49, 4.49, 4.49] sum_all_rows_in_tx=31.4300 paid=0.8089
+azuki                  0x52976d8a36 rows=2 sym=ETH prices=[0.9095, 0.9095] sum_all_rows_in_tx=1.8190 paid=0.0000
+azuki                  0x6fa2714a9c rows=2 sym=ETH prices=[3.2138, 3.2138] sum_all_rows_in_tx=12.8565 paid=0.0000

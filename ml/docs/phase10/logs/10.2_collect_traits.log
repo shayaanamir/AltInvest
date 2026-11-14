@@ -1,0 +1,18 @@
+[nft-collect] traits boredapeyachtclub: 10000 tokens, 42 without traits
+[nft-collect] traits mutant-ape-yacht-club: 19572 tokens, 3 without traits
+[nft-collect] traits pudgypenguins: 8888 tokens, 58 without traits
+[nft-collect] traits lilpudgys: 21935 tokens, 24 without traits
+[nft-collect] traits azuki: 10000 tokens, 40 without traits
+[nft-collect] traits doodles-official: 10000 tokens, 181 without traits
+[nft-collect] traits milady: 10000 tokens, 0 without traits
+{
+ "traits": {
+  "boredapeyachtclub": "10000 tokens, 42 without traits",
+  "mutant-ape-yacht-club": "19572 tokens, 3 without traits",
+  "pudgypenguins": "8888 tokens, 58 without traits",
+  "lilpudgys": "21935 tokens, 24 without traits",
+  "azuki": "10000 tokens, 40 without traits",
+  "doodles-official": "10000 tokens, 181 without traits",
+  "milady": "10000 tokens, 0 without traits"
+ }
+}

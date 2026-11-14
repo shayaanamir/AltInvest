@@ -1,6 +1,7 @@
 import DashboardPage from "./pages/DashboardPage";
 import PortfolioPage from "./pages/PortfolioPage";
 import AssetDetailPage from "./pages/AssetDetailPage";
+import NftCollectionPage from "./pages/NftCollectionPage";
 import SentimentPage from "./pages/SentimentPage";
 import DiscoverPage from "./pages/DiscoverPage";
 import WatchlistsPage from "./pages/WatchlistsPage";
@@ -33,6 +34,7 @@ export const ROUTES = [
   { key: "Watchlists", path: "/watchlists", element: WatchlistsPage, inNav: true, icon: "Watchlists", protected: true },
   { key: "Alerts", path: "/alerts", element: AlertsPage, inNav: true, icon: "Alerts", protected: true },
   { key: "Asset Detail", path: "/asset-detail", element: AssetDetailPage, inNav: false, protected: true },
+  { key: "NFT Collection", path: "/nft-collection", element: NftCollectionPage, inNav: false, protected: true },
   { key: "Notifications", path: "/notifications", element: NotificationsPage, inNav: false, bottomNav: true, icon: "Notifications", protected: true },
   { key: "Profile", path: "/profile", element: ProfilePage, inNav: false, bottomNav: true, icon: "Profile", protected: true },
   { key: "Settings", path: "/settings", element: SettingsPage, inNav: false, bottomNav: true, icon: "Settings", protected: true },

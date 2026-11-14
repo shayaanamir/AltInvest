@@ -3,10 +3,12 @@
     python -m ml.evaluation.scorecard          (from the repo root)
 
 Reads ONLY ml/reports/{asset}/walkforward_{risk,price,direction}.json, backtest.json, power_check.json and the
-Phase 9 reports (walkforward_{price_v2,range,risk_v2,direction_v2}.json, test_final.json); trains nothing and reads
+Phase 9 reports (walkforward_{price_v2,range,risk_v2,direction_v2}.json, test_final.json), the D82 audit
+(ml/reports/d49_audit_risk.json) and the Phase 10 NFT reports (ml/reports/nft/walkforward_risk.json,
+walkforward_fair_value.json, sealed_fair_value.json); trains nothing and reads
 no data (AGENTS rules 5, 8). Writes ml/reports/scorecard.json and ml/reports/SCORECARD.md, both generated, never
 hand-typed. Every number is copied from a source report; `gain` is the paired difference signed so that > 0 means
-the model beat its baseline (D25, D28, D31, D44). Served comes from config and D33, D35, D36, D51.
+the model beat its baseline (D25, D28, D31, D44). Served comes from config and D33, D35, D36, D82.
 """
 
 import json
@@ -31,7 +33,7 @@ MODELS = {
                   "logloss_prior", "paired_diff_logloss_prior_minus_top", False),
 }
 SERVED_REASON = {
-    "risk": "not served: EWMA volatility (Phase 9) is served instead (D51)",
+    "risk": "not served: persistence vol_30d is served (D27, D82)",
     "price": "not served: the last-value baseline (0%) is served instead (D35)",
     "direction": "not served: signal UNCERTAIN, confidence null (D33)",
 }
@@ -74,8 +76,21 @@ PHASE9 = {  # part -> (report, metric label, model field, baseline field)
 
 
 def phase9_served(part: str, model: str, horizon: int) -> bool:
-    """D51: only EWMA risk at h = 30 is served; range, price and direction keep their baselines."""
+    """D51: only EWMA risk at h = 30 was served; D82 withdrew it (top-only, D81), so today nothing in this table is
+    served (RISK_MODEL_SERVED is False); range, price and direction keep their baselines."""
     return part == "risk" and model == "ewma" and horizon == config.HORIZON_DAYS and config.RISK_MODEL_SERVED
+
+
+AUDIT = REPORTS / "d49_audit_risk.json"
+
+
+def approved_top_only(asset: str, part: str, v: dict) -> bool:
+    """D81/D82: a Phase 9 approval under top-only selection, from the D82 audit of the logged results (risk and
+    direction); price and range logged no approval, and top-only can only remove approvals."""
+    audit = json.loads(AUDIT.read_text(encoding="utf-8"))["results"][asset][part]
+    if isinstance(audit, str):
+        return bool(v["approved"])
+    return audit[f"h{v['horizon']}"]["approved_top_only"] == v["model"]
 
 
 def phase9_rows(asset: str) -> list[dict]:
@@ -86,7 +101,7 @@ def phase9_rows(asset: str) -> list[dict]:
             rows.append({"part": part, "horizon": v["horizon"], "model": v["model"], "best_config": v["best_config"],
                          "metric": metric, "model_value": v[mfield], "baseline": v["baseline"],
                          "baseline_value": v[bfield], "gain_ci95": _ci(v["paired_ci"]), "approved": v["approved"],
-                         "served": served, "source": f"ml/reports/{asset}/{report}.json"})
+                         "approved_top_only": approved_top_only(asset, part, v), "served": served, "source": f"ml/reports/{asset}/{report}.json"})
     return rows
 
 
@@ -131,6 +146,35 @@ def verdict(asset: str, models: dict, bt: dict) -> str:
     return f"{asset.upper()}: " + "; ".join(parts) + "."
 
 
+def nft_section() -> dict:
+    """Phase 10 NFT rows, copied from ml/reports/nft (D59, D65, D73, D77, D79, D80)."""
+    nft = REPORTS / "nft"
+    risk = json.loads((nft / "walkforward_risk.json").read_text(encoding="utf-8"))
+    fv_wf = json.loads((nft / "walkforward_fair_value.json").read_text(encoding="utf-8"))["selection"]
+    fv_s = json.loads((nft / "sealed_fair_value.json").read_text(encoding="utf-8"))
+    rows = [{"part": "nft risk (pooled, h = 30)", "model": v["model"], "metric": "QLIKE", "model_value": v["model_qlike"],
+             "baseline": v["baseline"], "baseline_value": v["baseline_qlike"], "gain_ci95": _ci(v["paired_ci"]),
+             "approved": v["approved"], "served": False,
+             "status": ("approved in 10.3, withdrawn by the D72 check (D73); under top-only GARCH ranks first and its "
+                        "CI includes 0 (D65 i)") if v["approved"] else "not approved",
+             "source": "ml/reports/nft/walkforward_risk.json"}
+            for v in risk["verdict_table"] if v["scope"].startswith("pooled")]
+    v = fv_wf["verdict"]
+    rows.append({"part": "nft fair value (walk-forward)", "model": v["top_candidate"], "metric": "MdAPE on price",
+                 "model_value": v["model_mdape"], "baseline": v["baseline"], "baseline_value": v["baseline_mdape"],
+                 "gain_ci95": _ci(v["paired_diff_baseline_minus_model"]), "approved": v["approved"], "served": True,
+                 "status": "approved (D77); served for 6 collections, B2 for lilpudgys (D78, D80); no range",
+                 "source": "ml/reports/nft/walkforward_fair_value.json"})
+    s = fv_s["verdict"]
+    best = s["best_baseline"]
+    rows.append({"part": "nft fair value (sealed test, once)", "model": "served setup", "metric": "MdAPE on price",
+                 "model_value": s["mdape"]["served"], "baseline": best, "baseline_value": s["mdape"][best],
+                 "gain_ci95": _ci(s["paired_diff_best_baseline_minus_served"]), "approved": s["pass"], "served": True,
+                 "status": "PASS (D79): the serving rule stays", "source": "ml/reports/nft/sealed_fair_value.json"})
+    return {"rows": rows, "served_risk": "persistence vol_30d (D73)",
+            "served_fair_value": "monthly refit of fv_pooled_l1_nl15 (D83); B2 for lilpudgys (D80)"}
+
+
 def build(assets=config.ASSETS) -> dict:
     out = {"assets": {}}
     for a in assets:
@@ -139,11 +183,13 @@ def build(assets=config.ASSETS) -> dict:
         power = _load(a, "power_check")
         out["assets"][a] = {"verdict": verdict(a, models, bt), "models": models, "backtest": bt,
                             "power_note": power["note"], "phase9": phase9_rows(a), "sealed_test": sealed_test(a)}
+    out["nft"] = nft_section()
     out["summary"] = {
         "models_approved": sum(r["approved"] for x in out["assets"].values() for r in x["models"].values()),
         "models_served": sum(r["served"] for x in out["assets"].values() for r in x["models"].values()),
         "models_total": len(assets) * len(MODELS),
         "phase9_approved": sum(r["approved"] for x in out["assets"].values() for r in x["phase9"]),
+        "phase9_approved_top_only": sum(r["approved_top_only"] for x in out["assets"].values() for r in x["phase9"]),
         "phase9_served": sum(r["served"] for x in out["assets"].values() for r in x["phase9"]),
         "phase9_rows": sum(len(x["phase9"]) for x in out["assets"].values()),
     }
@@ -161,13 +207,21 @@ def _f(x, pct=False) -> str:
     return f"{x:+.2%}" if pct else f"{x:.4f}"
 
 
+def _approved(r: dict) -> str:
+    if r["approved"] and not r["approved_top_only"]:
+        return "withdrawn (D82)"
+    return "yes" if r["approved"] else "no"
+
+
 def markdown(card: dict) -> str:
     s = card["summary"]
     lines = ["# SCORECARD (generated by `python -m ml.evaluation.scorecard`; do not edit)", "",
              f"Generated {card['metadata']['generated_at']} at commit `{card['metadata']['git_commit']}`. "
              f"Models approved: {s['models_approved']} of {s['models_total']}; served: {s['models_served']}. "
-             f"Phase 9 rows approved: {s['phase9_approved']} of {s['phase9_rows']}; served: {s['phase9_served']} "
-             "(EWMA risk, D51).", "",
+             f"Phase 9 rows approved as logged (per model type, D49): {s['phase9_approved']} of {s['phase9_rows']}; "
+             f"under top-only selection (D81): {s['phase9_approved_top_only']} (D82 audit, "
+             f"ml/reports/d49_audit_risk.json); served: {s['phase9_served']}. Crypto risk serves persistence vol_30d "
+             "(D82).", "",
              "Gain = paired 95% CI of (baseline - model) for losses, (model - baseline) for Spearman: "
              "> 0 means the model is better. Approved only if the whole CI is above 0.", ""]
     for a, x in card["assets"].items():
@@ -199,13 +253,25 @@ def markdown(card: dict) -> str:
             g = r["gain_ci95"]
             lines.append(f"| {r['part']} | {r['horizon']} | {r['model']} | {r['best_config']} | {r['metric']} | "
                          f"{_f(r['model_value'])} | {_f(r['baseline_value'])} ({r['baseline']}) | {_f(g['estimate'])} "
-                         f"[{_f(g['low'])}, {_f(g['high'])}] | {'yes' if r['approved'] else 'no'} | "
+                         f"[{_f(g['low'])}, {_f(g['high'])}] | {_approved(r)} | "
                          f"{'yes' if r['served'] else 'no'} |")
         st = x["sealed_test"]
         lines += ["", "Sealed test (D50): " + "; ".join(
             f"risk {h}: QLIKE EWMA {_f(r['qlike_ewma'])} vs persistence {_f(r['qlike_persistence'])}, gain "
             f"{_f(r['gain_ci95']['estimate'])} [{_f(r['gain_ci95']['low'])}, {_f(r['gain_ci95']['high'])}]"
             for h, r in st["risk"].items()) + f"; vol_30d band coverage {_f(st['range_h30']['coverage'])}.", ""]
+    n = card["nft"]
+    lines += ["## NFT collections (Phase 10)", "",
+              f"Served: risk = {n['served_risk']}; item value = {n['served_fair_value']}.", "",
+              "| Part | Model | Metric | Model | Baseline | Gain [95% CI] | Approved | Served | Status |",
+              "|---|---|---|---|---|---|---|---|---|"]
+    for r in n["rows"]:
+        g = r["gain_ci95"]
+        lines.append(f"| {r['part']} | {r['model']} | {r['metric']} | {_f(r['model_value'])} | "
+                     f"{_f(r['baseline_value'])} ({r['baseline']}) | {_f(g['estimate'])} [{_f(g['low'])}, "
+                     f"{_f(g['high'])}] | {'yes' if r['approved'] else 'no'} | {'yes' if r['served'] else 'no'} | "
+                     f"{r['status']} |")
+    lines.append("")
     return "\n".join(lines)
 
 

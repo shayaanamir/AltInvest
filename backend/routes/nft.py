@@ -12,7 +12,7 @@ import path_setup  # noqa: F401
 from fastapi import APIRouter, HTTPException, Query
 from utils.http_errors import db_unavailable
 
-from models.schemas import NFTCollectionListItem, NFTCollectionDetail, NFTTokenDetail
+from models.schemas import NFTCollectionListItem, NFTCollectionDetail, NFTItemValueOut, NFTTokenDetail
 from db.queries import (
     get_nft_collections,
     get_nft_collection,
@@ -27,7 +27,9 @@ from db.queries import (
     get_nft_token_sale_history,
     get_nft_token_ownership_history,
     get_latest_aai_score,
+    get_nft_floor_history,
 )
+from utils.ml_rows import iso, with_stale_note
 
 router = APIRouter(tags=["NFT"])
 
@@ -95,6 +97,12 @@ def get_nft_collection_detail(slug: str):
     traits = get_nft_traits(slug) or {}
     sales = [_serialize_ts(s) for s in get_nft_sales(slug, limit=10)]
     aai = get_latest_aai_score("nft", slug)
+    history = [{"date": r["date"], "floor_eth": r.get("floor_eth"), "floor_usd": r.get("floor_usd"),
+                "floor_age_hours": r.get("floor_age_hours")}
+               for r in get_nft_floor_history(slug)]
+    # ML risk (Phase 10, ml/docs/DECISIONS.md D59, D67): the stored row's note plus the backend's 36 h stale note.
+    ml_risk = risk_breakdown if (risk_breakdown or {}).get("source") == "ml-service" else None
+    raw_risk = get_nft_risk_breakdown(slug) if ml_risk else None
 
     return {
         **collection,
@@ -105,6 +113,13 @@ def get_nft_collection_detail(slug: str):
         "trait_categories": traits.get("categories", []),
         "recent_sales": sales,
         "aai_score": aai.get("aai_score") if aai else None,
+        "floor_history": history,
+        "volatility": ml_risk.get("floor_volatility_30d") if ml_risk else None,
+        "risk_score": ml_risk.get("risk_score") if ml_risk else None,
+        "risk_note": with_stale_note(ml_risk.get("note"), raw_risk.get("timestamp")) if ml_risk else None,
+        "risk_model_version": ml_risk.get("model_version") if ml_risk else None,
+        "risk_as_of": ml_risk.get("date") if ml_risk else None,
+        "last_updated": iso(raw_risk.get("timestamp")) if ml_risk else None,
     }
 
 
@@ -134,3 +149,24 @@ def get_nft_token_detail(slug: str, token_id: str):
         "sale_history": sale_history,
         "ownership_history": ownership_history,
     }
+
+# ── GET /nft/collections/{slug}/items/{token_id}/value ──────────────────────
+# Phase 10 step 10.7 (ml/docs/DECISIONS.md D78): one live call to the ML service, stored on success; if the call
+# fails, the last stored estimate is returned with stale = true.
+
+@router.get("/nft/collections/{slug}/items/{token_id}/value", response_model=NFTItemValueOut)
+def get_nft_item_value(slug: str, token_id: str):
+    import httpx
+    from controllers.ml_pull_controller import fetch
+    from controllers.nft_items import live_item_value
+
+    token_id = str(token_id).strip()
+    if not token_id.isdigit() or len(token_id) > 12:
+        raise HTTPException(status_code=422, detail="token_id must be a number.")
+    with httpx.Client() as client:
+        status, row = live_item_value(client, fetch, slug.lower(), token_id)
+    if status == "not_found":
+        raise HTTPException(status_code=404, detail=f"Token '{token_id}' not found in collection '{slug}'.")
+    if row is None:
+        raise HTTPException(status_code=503, detail="Item estimate unavailable; the ML service did not answer.")
+    return {**{k: v for k, v in row.items() if k in NFTItemValueOut.model_fields}, "stale": status == "stale"}

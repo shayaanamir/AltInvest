@@ -1,0 +1,55 @@
+{
+ "source": "ml/reports/nft/sealed_fair_value.json",
+ "source_sha256": "e70148f4f7c803a2b3d690c925b7299e15fd59f19ec79bd2e0efc05b898ae97a",
+ "source_git_commit": "cb6f00cbfc5442b482db67cc30fe5ed539f5d214",
+ "window": {
+  "first": "2026-02-01",
+  "last": "2026-11-10"
+ },
+ "window_label": "Feb-Nov 2026",
+ "metric": "MdAPE on price (median absolute percentage error)",
+ "by_collection": {
+  "azuki": {
+   "method": "model",
+   "mdape": 0.038354712712091066,
+   "n": 3716
+  },
+  "boredapeyachtclub": {
+   "method": "model",
+   "mdape": 0.03577736923951724,
+   "n": 2859
+  },
+  "doodles-official": {
+   "method": "model",
+   "mdape": 0.0315625917209621,
+   "n": 4173
+  },
+  "lilpudgys": {
+   "method": "b2",
+   "mdape": 0.028078390841330014,
+   "n": 11979
+  },
+  "milady": {
+   "method": "model",
+   "mdape": 0.030010543408039547,
+   "n": 3601
+  },
+  "mutant-ape-yacht-club": {
+   "method": "model",
+   "mdape": 0.032460721827184624,
+   "n": 7808
+  },
+  "pudgypenguins": {
+   "method": "model",
+   "mdape": 0.019560114543163865,
+   "n": 5263
+  }
+ },
+ "rarest_decile": {
+  "decile": 1,
+  "mdape": 0.09062329376890765,
+  "n": 1980,
+  "scope": "served setup, pooled over the 7 collections"
+ },
+ "decision": "D84"
+}

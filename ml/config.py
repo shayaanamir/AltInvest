@@ -61,9 +61,9 @@ RANDOM_BASELINE_SEED = 0  # D34
 STALE_DATA_HOURS = 48  # CONTRACT.md 'note' rule (no D-number yet)
 SHARPE_WINDOW_DAYS = 365  # D37: trailing daily log returns used for sharpe_ratio on /risk
 MODEL_VERSION_PRICE = "baseline-last-value"  # D35: no price model approved
-MODEL_VERSION_RISK = "ewma-pooled-pct"  # D51 (EWMA vol, lambda EWMA_LAMBDA; D36 pooled percentile mapping)
-RISK_MODEL_SERVED = True  # D51: EWMA risk served for every asset (was persistence vol_30d, D27)
-RISK_VOL_COLUMN = "ewma_vol"  # D51: the served volatility measure (ml.features.features.ewma_vol)
+MODEL_VERSION_RISK = "persistence-pooled-pct"  # D82: persistence vol_30d (D27) with the D36 pooled percentile mapping
+RISK_MODEL_SERVED = False  # D82: the D51 EWMA approval is withdrawn under top-only selection (D81)
+RISK_VOL_COLUMN = "vol_30d"  # D82: the served volatility measure (was "ewma_vol", D51)
 LIVE_ALERT_MIN_WINDOWS = 6  # D46/D51: non-overlapping scored windows per asset before live_score may ALERT
 
 # Data directories (D40). The evaluation snapshot is ml/data/raw + ml/reports/data as of 2026-10-17; splits are
@@ -80,3 +80,58 @@ REFRESH_UTC = "00:05"  # D40
 # Live tracking (Phase 6d), files in ML_VALIDATION_DIR: what the API served each day, and how it turned out.
 PREDICTION_LOG_FILE = "prediction_log.jsonl"
 LIVE_SCORECARD_FILE = "live_scorecard.json"
+
+# ---- Phase 10: NFT collections (docs/PLAN_NFT.md, D53-D62) ----
+# OpenSea slugs, all ERC-721 on Ethereum (D54). Changing the list changes every pooled score: new D-number.
+NFT_SLUGS = ("boredapeyachtclub", "mutant-ape-yacht-club", "pudgypenguins", "lilpudgys", "azuki",
+             "doodles-official", "milady")
+NFT_FLOOR_MAX_AGE_HOURS = 48  # D55: the as-of 00:00 UTC floor point may be at most this old, else the day is a gap
+NFT_FLOOR_SPIKE_FACTOR = 2.0  # D66: a floor more than this factor away from the last accepted floor needs a second day
+NFT_SALES_START = "2024-11-10"  # D56: sales window starts here (24 months before the 10.0 investigation)
+NFT_PAYMENT_SYMBOLS = ("ETH", "WETH", "BETH")  # D56: other payment tokens are dropped and counted
+NFT_SEAPORT_ADDRESSES = (  # D56: protocol_address of an OpenSea (Seaport 1.1, 1.4, 1.5, 1.6) sale
+    "0x00000000006c3852cbef3e08e8df289169ede581", "0x00000000000001ad428e4906ae43d8f9852d0dd6",
+    "0x00000000000000adc04c56bf30ac9d3c0aaf14dc", "0x0000000000000068f116a894984e2db1123eb395")
+NFT_MARKETPLACES_LABEL = "Sales on OpenSea and Blur, as reported by OpenSea"  # D56 (A10)
+NFT_WASH_ROUNDTRIP_DAYS = 30  # D57 R2
+NFT_WASH_PRICE_BOUNDS = (0.10, 20.0)  # D57 R3: allowed sale price as a multiple of the floor of the sale date
+NFT_ILLIQUID_MIN_SALES_7D = 10  # D58: illiquid if fewer wash-filtered sales in the last 7 days
+NFT_LIQUIDITY_LABEL_BOUNDS = (33.0, 67.0)  # D58: Low < 33 <= Medium < 67 <= High
+NFT_MIN_TRAIN_ROWS = 180  # D59: MIN_TRAIN_ROWS = 730 is longer than the floor history (786 days)
+NFT_MIN_CONE_DAYS = 60  # D55: fewer days of floor history than this and no volatility is served
+NFT_RISK_VOL_COLUMN = "vol_30d"  # D73: persistence served (the 10.3 EWMA approval was withdrawn by the D72 check)
+MODEL_VERSION_NFT_RISK = "nft-persistence-pooled-pct"  # D59, D73: persistence floor vol, separate NFT pool
+NFT_MODEL_FLOOR_COLUMN = "floor_eth_asof"  # D73: served floor series and liquidity R3 (D66 guard withdrawn)
+NFT_REFRESH_UTC = "00:10"  # after the price refresh (00:05), before the backend pull (00:15, D61)
+
+# NFT data directories (D62). Evaluation reads only the frozen snapshot under NFT_SNAPSHOT_ROOT; collectors,
+# the refresh and serving read and write ML_NFT_DIR (the env var in Docker, ml/data/nft/live on the host).
+NFT_DATA_DIR = Path(__file__).resolve().parent / "data" / "nft"
+NFT_SNAPSHOT_ROOT = NFT_DATA_DIR / "snapshots"
+NFT_SNAPSHOT_DATE = "2026-11-10"  # D64: the frozen evaluation snapshot (its last floor date); never rewritten
+NFT_ITEM_SNAPSHOT = "2026-11-10-items"  # D68: traits and tokens with the missing metadata filled; never rewritten
+ML_NFT_DIR = Path(os.environ.get("ML_NFT_DIR") or NFT_DATA_DIR / "live")
+NFT_ITEM_SNAPSHOT_V2 = "2026-11-10-items-v2"  # D70: cleaned item sales, floor point before each sale; never rewritten
+NFT_ITEM_SNAPSHOT_V3 = "2026-11-10-items-v3"  # D74, D75: v2 with the payment-based multi-token rule; used by 10.6
+NFT_FV_SEALED_START = "2026-02-01"  # D71: sealed cutoff T for fair value (computed from the clean sales; freeze checks it)
+
+# ---- Phase 10 step 10.7: fair-value item serving (D78) ----
+# Per-collection serving choice from the 10.6 walk-forward (D77): "model" = the fitted fv_pooled_l1_nl15 artifact,
+# "b2" = the B2 baseline (90-day same-decile median premium). Step 10.9 can switch every collection to "b2" here,
+# without code changes. No range is served for any collection (D77).
+NFT_FV_SERVE = {"azuki": "model", "boredapeyachtclub": "model", "doodles-official": "model", "lilpudgys": "b2",
+                "milady": "model", "mutant-ape-yacht-club": "model", "pudgypenguins": "model"}
+NFT_FV_CANDIDATE = "fv_pooled_l1_nl15"           # D77: the approved walk-forward candidate
+NFT_FV_TRAIN_CUTOFF = "2025-12-25"               # D78: the last walk-forward fold's training cutoff (dev data only)
+NFT_FV_ARTIFACT_DIR = Path(os.environ.get("ML_NFT_FV_ARTIFACT_DIR")
+                           or Path(__file__).resolve().parent / "artifacts" / "nft_fv")  # mounted read-only in Docker
+MODEL_VERSION_NFT_FV = "nft-fv-pooled-l1-nl15-dev-2025-12-25"
+NFT_FV_ACCURACY_NOTE = "Accuracy check pending"  # D78/D84: shown only without a sealed result for the served method
+NFT_FV_MAX_BATCH = 50                            # D78: tokens per batch request
+# Phase 10 step 10.9: monthly serving refits (D83) and the live accuracy log (D85). Since the 10.9b fixes both live on
+# the serving data volume, never in the repository: the refit job writes CURRENT, refit_log.jsonl and refits/<R>/ to
+# NFT_FV_REFIT_DIR (/data/nft/fv_refits in Docker) and the monthly summaries to NFT_LIVE_ACCURACY_DIR
+# (/data/nft/live_accuracy/summaries). The development artifact (NFT_FV_ARTIFACT_DIR) is only ever read by containers.
+# Hand-committed copies of the log and the summaries are kept in ml/docs/phase10/refits and .../live_accuracy.
+NFT_FV_REFIT_DIR = Path(os.environ.get("ML_NFT_FV_REFIT_DIR") or ML_NFT_DIR / "fv_refits")
+NFT_LIVE_ACCURACY_DIR = Path(os.environ.get("ML_NFT_LIVE_ACCURACY_DIR") or ML_NFT_DIR / "live_accuracy" / "summaries")

@@ -14,8 +14,7 @@ from typing import Any, Callable, NamedTuple
 import numpy as np
 import pandas as pd
 
-from ml.evaluation.walkforward import (INPUT_COLUMNS, Fold, SealedTestError, check_before_test,
-                                       check_label_horizons)
+from ml.evaluation.walkforward import Fold, SealedTestError, check_before_test, check_label_horizons
 from ml.features.features import FEATURE_COLUMNS
 
 
@@ -25,12 +24,17 @@ class HistorySpec(NamedTuple):
 
 
 def run_history_folds(data: pd.DataFrame, folds: list[Fold], specs: dict[str, HistorySpec], b2: int,
-                      horizon: int, every: int) -> tuple[pd.DataFrame, dict]:
-    """Returns (pooled rows like run_folds with pred:<name>, run info with fit counts and seconds)."""
+                      horizon: int, every: int, feature_columns: list[str] | None = None
+                      ) -> tuple[pd.DataFrame, dict]:
+    """Returns (pooled rows like run_folds with pred:<name>, run info with fit counts and seconds).
+
+    `feature_columns` (default FEATURE_COLUMNS) are the non-label input columns besides close; the NFT floor
+    series (Phase 10) passes its own shorter list."""
+    feature_columns = FEATURE_COLUMNS if feature_columns is None else feature_columns
     if len(data) > b2:
         raise SealedTestError(f"data has {len(data)} rows; only rows before b2={b2} may be passed in")
     check_label_horizons(data, horizon)
-    inputs = data[INPUT_COLUMNS]
+    inputs = data[feature_columns + ["close"]]
     fitted, n_fits, fit_seconds, parts = {}, {k: 0 for k in specs}, {k: 0.0 for k in specs}, []
     for k, f in enumerate(folds):
         check_before_test(f.train, b2)
@@ -38,7 +42,7 @@ def run_history_folds(data: pd.DataFrame, folds: list[Fold], specs: dict[str, Hi
         r = folds[k - k % every]
         if len(r.train) and r.train.stop > r.origin - horizon:
             raise ValueError(f"fold at {r.origin}: train rows inside the {horizon}-row embargo")
-        part = data.iloc[f.predict].drop(columns=FEATURE_COLUMNS).copy()
+        part = data.iloc[f.predict].drop(columns=feature_columns).copy()
         part["origin"], part["row"] = f.origin, list(f.predict)
         history = inputs.iloc[:f.predict.stop]
         for name, spec in specs.items():

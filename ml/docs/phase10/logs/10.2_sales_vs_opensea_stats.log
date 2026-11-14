@@ -1,0 +1,22 @@
+Backfill completeness check: our sale events vs OpenSea /stats (run 2026-11-10T15:59:01Z )
+ours = sales_raw rows in the window ending at the newest stored sale; stats = OpenSea rolling window ending now
+                 slug  ours_7d  stats_7d  ours_vol_7d  stats_vol_7d  ours_30d  stats_30d  ours_vol_30d  stats_vol_30d
+    boredapeyachtclub       96        78        671.4         508.8       361        298        3390.8         2797.8
+mutant-ape-yacht-club      133       123        122.8         113.8       830        729         761.4          672.0
+        pudgypenguins       66        63        148.7         142.2       625        408        1640.1         1040.8
+            lilpudgys      240       223         50.3          47.0      1244       1049         297.1          242.3
+                azuki       62        59         32.7          31.4       532        501         331.6          312.3
+     doodles-official       45        44         13.7          13.4       377        356         101.4           96.6
+               milady       55        55         38.7          38.7       360        345         278.6          268.8
+
+Same (tx, token) appearing in more than one sale row:
+rows in such groups: 713 of 198548 | groups: 331 | by slug: {'azuki': 46, 'boredapeyachtclub': 93, 'doodles-official': 126, 'lilpudgys': 187, 'milady': 43, 'mutant-ape-yacht-club': 162, 'pudgypenguins': 56}
+                 slug token_id  timestamp  price_eth payment_symbol   seller    buyer
+mutant-ape-yacht-club     8326 1732983611    3.17000           WETH 0xbce31a 0xfce343
+mutant-ape-yacht-club     8326 1732983611    3.09075           WETH 0x000000 0x000000
+mutant-ape-yacht-club     8326 1732983611    3.08300            ETH 0xd9c621 0x000000
+            lilpudgys     8031 1762252331    0.71400           WETH 0x922cc2 0xff6518
+            lilpudgys     8031 1762252331    0.64490            ETH 0xb2a968 0x922cc2
+               milady     4290 1735230551    4.27400           WETH 0x822d5b 0x5a29fe
+groups where one row's buyer is another row's seller (pass-through): 303 | groups with identical price in all rows: 0
+last 30 days, rows per slug counting each (tx, token) once: {'azuki': 532, 'boredapeyachtclub': 360, 'doodles-official': 377, 'lilpudgys': 1244, 'milady': 359, 'mutant-ape-yacht-club': 828, 'pudgypenguins': 623}

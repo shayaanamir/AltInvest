@@ -1,0 +1,11 @@
+{
+  "sample": 200,
+  "answered": 200,
+  "tokens_disagreeing": 0,
+  "token_disagreement_rate": 0.0,
+  "differing_trait_entries": 0,
+  "examples": [],
+  "generated_at": "2026-11-10T20:52:19Z",
+  "git_commit": "80ee58c0abe0aa335a1451643d0831783051d174",
+  "git_dirty": true
+}

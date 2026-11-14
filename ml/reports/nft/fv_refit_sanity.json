@@ -1,0 +1,58 @@
+{
+ "t": "2026-11-14T11:04:42Z",
+ "dev_model": "nft-fv-pooled-l1-nl15-dev-2025-12-25",
+ "refit_model": "nft-fv-pooled-l1-nl15-refit-2026-11-14",
+ "sample": "30 tokens per model collection, numpy seed 0",
+ "pooled": {
+  "n": 180,
+  "median_abs_rel_diff_value": 0.004491522794350056,
+  "p90_abs_rel_diff_value": 0.02929138387916562,
+  "max_abs_rel_diff_value": 0.4265792152076473,
+  "spearman_dev_vs_refit": 0.982178462298219
+ },
+ "by_collection": {
+  "azuki": {
+   "n": 30,
+   "median_abs_rel_diff_value": 0.004387381743326313,
+   "p90_abs_rel_diff_value": 0.2014263105583024,
+   "max_abs_rel_diff_value": 0.4265792152076473,
+   "spearman_dev_vs_refit": 0.9577308120133482
+  },
+  "boredapeyachtclub": {
+   "n": 30,
+   "median_abs_rel_diff_value": 0.006324696011181907,
+   "p90_abs_rel_diff_value": 0.029259429855215395,
+   "max_abs_rel_diff_value": 0.046086095399509475,
+   "spearman_dev_vs_refit": 0.9635150166852058
+  },
+  "doodles-official": {
+   "n": 30,
+   "median_abs_rel_diff_value": 0.0030669416239454406,
+   "p90_abs_rel_diff_value": 0.015573694010585212,
+   "max_abs_rel_diff_value": 0.2042559012520957,
+   "spearman_dev_vs_refit": 0.9728587319243605
+  },
+  "milady": {
+   "n": 30,
+   "median_abs_rel_diff_value": 0.004349210802527703,
+   "p90_abs_rel_diff_value": 0.00971347736070709,
+   "max_abs_rel_diff_value": 0.052129995283539454,
+   "spearman_dev_vs_refit": 0.8309232480533927
+  },
+  "mutant-ape-yacht-club": {
+   "n": 30,
+   "median_abs_rel_diff_value": 0.00634428163250067,
+   "p90_abs_rel_diff_value": 0.04833442291668812,
+   "max_abs_rel_diff_value": 0.11794488103906775,
+   "spearman_dev_vs_refit": 0.9741935483870968
+  },
+  "pudgypenguins": {
+   "n": 30,
+   "median_abs_rel_diff_value": 0.004154780977160932,
+   "p90_abs_rel_diff_value": 0.08697696371536846,
+   "max_abs_rel_diff_value": 0.2545732522478623,
+   "spearman_dev_vs_refit": 0.9684093437152391
+  }
+ },
+ "note": "Sanity check only (D83): no selection, no threshold, nothing changes on its result."
+}
