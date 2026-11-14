@@ -198,3 +198,9 @@ CHECKPOINT REPORT FORMAT
 2. Verdict tables copied from the JSON reports, no hand-typed numbers.
 3. Test results and snapshot hash check.
 4. Rule breaks and open questions. Then stop and wait.
+
+BACKLOG (after Phase 10)
+- Backend memory growth: the backend container went from 858 MiB after a
+  restart to 1.6 GiB over about 3 h with FinBERT loaded (docker stats,
+  2026-11-14, checkpoint_10.9b section 3). Investigate as a possible leak
+  (the in-process sentiment pipeline runs on a loop). Backend team.
