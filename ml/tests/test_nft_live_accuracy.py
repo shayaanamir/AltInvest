@@ -64,7 +64,7 @@ def test_due_months_are_settled_logged_and_not_yet_summarised(tmp_path):
 def test_jobs_report_failures_and_never_raise(tmp_path, monkeypatch):
     monkeypatch.setattr(fv_jobs.config, "ML_NFT_DIR", tmp_path)
     monkeypatch.setattr(fv_jobs.fv_refit, "due", lambda now: True)
-    monkeypatch.setattr(fv_jobs.fv_refit, "refit", lambda r: (_ for _ in ()).throw(RuntimeError("boom")))
+    monkeypatch.setattr(fv_jobs.fv_refit, "refit", lambda r, **kw: (_ for _ in ()).throw(RuntimeError("boom")))
     monkeypatch.setattr(fv_jobs.live_accuracy, "record", lambda now: {"rows": 3})
     monkeypatch.setattr(fv_jobs.live_accuracy, "due_months", lambda now: [])
     s = fv_jobs.after_refresh(datetime(2026, 12, 1, 0, 10, tzinfo=timezone.utc))

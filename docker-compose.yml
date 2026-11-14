@@ -82,9 +82,12 @@ services:
     restart: unless-stopped
     ports:
       - "8001:8001"
-    # The NFT fair-value model artifact (D78) is mounted read-only, never baked into the image (.dockerignore).
+    # The development fair-value artifact (D78) and accuracy.json are mounted read-only, never baked into the image
+    # (.dockerignore). The served refits, CURRENT and the refit log live on the ml-data volume (D83 as amended in
+    # 10.9b); at startup the service refits once if no refit is served there (ml.nft.fv_refit --ensure).
     environment:
       ML_NFT_FV_ARTIFACT_DIR: /artifacts/nft_fv
+      ML_NFT_FV_REFIT_DIR: /data/nft/fv_refits
     volumes:
       - ml-data:/data
       - ./ml/artifacts/nft_fv:/artifacts/nft_fv:ro
@@ -118,13 +121,15 @@ services:
     environment:
       OPENSEA_API_KEY: ${OPENSEA_API_KEY:-}
       ALCHEMY_API_KEY: ${ALCHEMY_API_KEY:-}
-      # D83/D85: monthly fair-value refits and the live accuracy log run in this sidecar after each refresh
+      # D83/D85: monthly fair-value refits and the live accuracy log run in this sidecar after each refresh. Every
+      # output (refits, CURRENT, refit_log.jsonl, the monthly summaries) goes to the ml-data volume; the repo
+      # folder is mounted read-only (10.9b). Copies of the log and summaries are committed to ml/docs by hand.
       ML_NFT_FV_ARTIFACT_DIR: /artifacts/nft_fv
-      ML_NFT_LIVE_ACCURACY_DIR: /live_accuracy
+      ML_NFT_FV_REFIT_DIR: /data/nft/fv_refits
+      ML_NFT_LIVE_ACCURACY_DIR: /data/nft/live_accuracy/summaries
     volumes:
       - ml-data:/data
-      - ./ml/artifacts/nft_fv:/artifacts/nft_fv
-      - ./ml/docs/phase10/live_accuracy:/live_accuracy
+      - ./ml/artifacts/nft_fv:/artifacts/nft_fv:ro
     healthcheck:
       disable: true
     depends_on:

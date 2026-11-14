@@ -128,8 +128,10 @@ NFT_FV_ARTIFACT_DIR = Path(os.environ.get("ML_NFT_FV_ARTIFACT_DIR")
 MODEL_VERSION_NFT_FV = "nft-fv-pooled-l1-nl15-dev-2025-12-25"
 NFT_FV_ACCURACY_NOTE = "Accuracy check pending"  # D78; since D84 only for an artifact without an accuracy block
 NFT_FV_MAX_BATCH = 50                            # D78: tokens per batch request
-# Phase 10 step 10.9: monthly serving refits (D83) and the live accuracy log (D85). The refit job writes versioned
-# folders under NFT_FV_ARTIFACT_DIR (the ml-nft-refresh sidecar mounts it read-write; the API reads it read-only);
-# monthly summaries go to NFT_LIVE_ACCURACY_DIR (ml/docs/phase10/live_accuracy, mounted into the sidecar).
-NFT_LIVE_ACCURACY_DIR = Path(os.environ.get("ML_NFT_LIVE_ACCURACY_DIR")
-                             or Path(__file__).resolve().parent / "docs" / "phase10" / "live_accuracy")
+# Phase 10 step 10.9: monthly serving refits (D83) and the live accuracy log (D85). Since the 10.9b fixes both live on
+# the serving data volume, never in the repository: the refit job writes CURRENT, refit_log.jsonl and refits/<R>/ to
+# NFT_FV_REFIT_DIR (/data/nft/fv_refits in Docker) and the monthly summaries to NFT_LIVE_ACCURACY_DIR
+# (/data/nft/live_accuracy/summaries). The development artifact (NFT_FV_ARTIFACT_DIR) is only ever read by containers.
+# Hand-committed copies of the log and the summaries are kept in ml/docs/phase10/refits and .../live_accuracy.
+NFT_FV_REFIT_DIR = Path(os.environ.get("ML_NFT_FV_REFIT_DIR") or ML_NFT_DIR / "fv_refits")
+NFT_LIVE_ACCURACY_DIR = Path(os.environ.get("ML_NFT_LIVE_ACCURACY_DIR") or ML_NFT_DIR / "live_accuracy" / "summaries")

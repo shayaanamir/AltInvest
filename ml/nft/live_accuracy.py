@@ -16,8 +16,9 @@ summarised only when its last sale is at least SETTLE_DAYS old (on the 1st of mo
 APE = |estimate / price - 1| for the served estimate and for B0 (the logged floor point).
 
 SUMMARY: MdAPE of served vs B0, pooled, by collection and by rarity decile, with counts, written to
-config.NFT_LIVE_ACCURACY_DIR/<M>.json and .md (ml/docs/phase10/live_accuracy/). A collection whose served MdAPE is
-above B0's in two consecutive summarised months is marked ALERT; nothing switches automatically.
+config.NFT_LIVE_ACCURACY_DIR/<M>.json and .md (on the data volume; hand-copied to ml/docs/phase10/live_accuracy/).
+A collection whose served MdAPE is above B0's in two consecutive summarised months is marked ALERT; nothing switches
+automatically.
 """
 
 import argparse

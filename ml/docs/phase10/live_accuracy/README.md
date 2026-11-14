@@ -1,7 +1,14 @@
 # Live accuracy of the item value estimates (D85)
 
-Generated monthly by the ml-nft-refresh sidecar (`ml.nft.fv_jobs`, `python -m ml.nft.live_accuracy`); do not edit
-the `YYYY-MM.json` / `.md` files by hand. Monitoring only: nothing here changes serving.
+Generated monthly by the ml-nft-refresh sidecar (`ml.nft.fv_jobs`, `python -m ml.nft.live_accuracy`). Monitoring
+only: nothing here changes serving.
+
+Since the 10.9b fixes the sidecar writes the summaries to the ml-data volume
+(`/data/nft/live_accuracy/summaries/YYYY-MM.json` and `.md`), never into the repository. The files in this folder are
+hand-committed copies; do not edit them. To copy a new month (PowerShell, repo root):
+
+    docker cp altinvest-ml-nft-refresh:/data/nft/live_accuracy/summaries/2026-11.json ml/docs/phase10/live_accuracy/
+    docker cp altinvest-ml-nft-refresh:/data/nft/live_accuracy/summaries/2026-11.md ml/docs/phase10/live_accuracy/
 
 - Every day after the NFT refresh the sidecar logs the served estimate of every token with traits (the same code as
   the API) and the floor point it used (B0), in the ml-data volume (`/data/nft/live_accuracy/estimates/`).

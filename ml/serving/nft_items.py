@@ -5,7 +5,7 @@ then per collection (config.NFT_FV_SERVE): "model" -> the fitted fv_pooled_l1_nl
 baseline (the 90-day same-decile median premium, 0 with fewer than 5 sales). estimated_value_eth = the last floor
 point before t x exp(predicted premium). ETH only, point estimate only: no range for any collection (D77), no
 feature-importance drivers. Tokens with no earlier sale get the training's missing-value handling and
-no_prior_sale = true. The served model is the refit named by the artifact folder's CURRENT (D83). The error line
+no_prior_sale = true. The served model is the refit named by CURRENT in the refit folder on the data volume (D83). The error line
 comes from the served metadata's accuracy block, generated from the 10.8 report (D84): 'Median error in testing
 (Feb-Nov 2026): X%' (the collection's served method), plus 'Rarest items: about Y%' for items in their
 collection's rarest 10% (rarity decile 1, as B1, computed from the live traits now).
@@ -37,9 +37,9 @@ def _num(x, digits: int = 6):
 def _signature() -> tuple:
     d = config.ML_NFT_DIR
     files = [d / f for f in SOURCE_FILES] + sorted((d / "traits").glob("*.csv")) + sorted((d / "tokens").glob("*.csv"))
-    a = config.NFT_FV_ARTIFACT_DIR
-    files += [a / fv_artifact.CURRENT, a / fv_artifact.META]                 # a new refit is picked up (D83)
-    pointer = a / fv_artifact.CURRENT
+    a, r = config.NFT_FV_ARTIFACT_DIR, config.NFT_FV_REFIT_DIR
+    files += [r / fv_artifact.CURRENT, a / fv_artifact.META]                 # a new refit is picked up (D83)
+    pointer = r / fv_artifact.CURRENT
     current = pointer.read_text(encoding="utf-8").strip() if pointer.exists() else ""
     return (str(d), current) + tuple(f.stat().st_mtime_ns if f.exists() else None for f in files)
 

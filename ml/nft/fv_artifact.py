@@ -7,7 +7,9 @@ clean development sales before config.NFT_FV_TRAIN_CUTOFF (2025-12-25, the last 
 cutoff), with W1/W2 decided from sales before that cutoff (D76 amended), i.e. the fold-9 fit of 10.6. Writes
 model.txt (LightGBM text) and metadata.json (AGENTS rule 10) to config.NFT_FV_ARTIFACT_DIR. Since step 10.9 the
 served model is a refit on the live data (ml.nft.fv_refit, D83) in the folder that the pointer file CURRENT names;
-this development fit stays as the reference. Serving loads the served one with load() (lightgbm only).
+CURRENT and the refits live in config.NFT_FV_REFIT_DIR (the serving data volume, 10.9b), never in this folder, which
+containers mount read-only. This development fit stays as the reference. Serving loads the served one with load()
+(lightgbm only).
 """
 
 import argparse
@@ -68,7 +70,6 @@ def train() -> dict:
             "static_sha256": fv_serving.static_hash(p["static"]),
             "trait_pairs_sha256": fv_serving.trait_pairs_hash(traits),
             "serve": dict(config.NFT_FV_SERVE), "range": None,
-            "accuracy_note": config.NFT_FV_ACCURACY_NOTE,
             "decisions": "D76, D77 (walk-forward approval), D78 (serving)", "walkforward_report":
                 "ml/reports/nft/walkforward_fair_value.json", "trial_count": fvm.TRIAL_COUNT,
             "created_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), **git}
@@ -76,23 +77,36 @@ def train() -> dict:
     return meta
 
 
-def served_dir(directory=None, follow_current: bool = True):
-    """The served artifact folder: the refit that CURRENT points to (D83), else the development artifact (D78)."""
+def served_dir(directory=None, follow_current: bool = True, refit_dir=None) -> Path:
+    """The served artifact folder: the refit that refit_dir/CURRENT points to (D83), else the development artifact
+    (D78) in `directory`. refit_dir defaults to config.NFT_FV_REFIT_DIR (the volume); the pointer must stay inside it."""
     d = Path(directory or config.NFT_FV_ARTIFACT_DIR)
-    pointer = d / CURRENT
+    r = Path(refit_dir or config.NFT_FV_REFIT_DIR)
+    pointer = r / CURRENT
     if follow_current and pointer.exists():
         rel = pointer.read_text(encoding="utf-8").strip()
-        target = (d / rel).resolve()
-        if d.resolve() not in target.parents:
-            raise OSError("CURRENT points outside the artifact folder")
+        target = (r / rel).resolve()
+        if r.resolve() not in target.parents:
+            raise OSError("CURRENT points outside the refit folder")
         return target
     return d
 
 
-def load(directory=None, follow_current: bool = True) -> tuple:
+def has_served_model(refit_dir=None) -> bool:
+    """True when refit_dir/CURRENT names a refit with a model file (10.9b MINOR 9: else the startup refit runs)."""
+    r = Path(refit_dir or config.NFT_FV_REFIT_DIR)
+    if not (r / CURRENT).exists():
+        return False
+    try:
+        return (served_dir(None, True, r) / MODEL).exists()
+    except OSError:
+        return False
+
+
+def load(directory=None, follow_current: bool = True, refit_dir=None) -> tuple:
     """(booster, metadata) of the served artifact (CURRENT's refit if present, D83; else the development fit)."""
     import lightgbm as lgb
-    d = served_dir(directory, follow_current)
+    d = served_dir(directory, follow_current, refit_dir)
     meta = json.loads((d / META).read_text(encoding="utf-8"))
     import hashlib
     if hashlib.sha256((d / MODEL).read_bytes()).hexdigest() != meta["model_sha256"]:
