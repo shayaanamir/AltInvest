@@ -8,7 +8,7 @@ import {
   buildCone, chartLayers, coneBand, coneStartLabel, coneVolatility, dailyVol, futureShare, shortDate,
 } from "./volCone.js";
 
-const EWMA_NOTE = "Risk model: EWMA volatility (lambda 0.94), which beat 30-day persistence (D50, D51).";
+const OLD_D51_NOTE = "Risk model: EWMA volatility (lambda 0.94), which beat 30-day persistence (D50, D51).";
 const PERSISTENCE_NOTE = "Risk measure: 30-day volatility (persistence). No risk model is served: the EWMA approval was "
   + "withdrawn when the Phase 9 results were re-checked with top-only selection (D81, D82).";
 const risk = (volatility, note = PERSISTENCE_NOTE) => ({ volatility, note });
@@ -66,9 +66,10 @@ test("cone is hidden when volatility is missing, null, not positive, not the ser
   assert.equal(coneVolatility(risk(0.5)), 0.5);
 });
 
-test("D82: the cone uses the served persistence volatility; an EWMA note (D51) is still accepted", () => {
+test("D82: the cone uses the served persistence volatility; an old stored D51 row draws no cone", () => {
   assert.equal(coneVolatility(risk(0.42)), 0.42);
-  assert.equal(coneVolatility(risk(0.42, EWMA_NOTE)), 0.42);
+  assert.equal(coneVolatility(risk(0.42, OLD_D51_NOTE)), null);
+  assert.equal(buildCone(history[1], risk(0.42, OLD_D51_NOTE)), null);
 });
 
 test("no forecast or center line is ever a chart layer", () => {

@@ -7,8 +7,8 @@ import {
   nftChartLayers, nftConeHiddenReason, nftConeStartLabel,
 } from "./nftCone.js";
 
-const NOTE = "Risk model: EWMA floor volatility (lambda 0.94) ... not comparable to crypto risk scores.";
-const risk = (over = {}) => ({ volatility: 0.9, note: NOTE, modelVersion: "nft-ewma-pooled-pct", isIlliquid: false, ...over });
+const NOTE = "Risk model: 30-day floor volatility (persistence) ... not comparable to crypto risk scores.";
+const risk = (over = {}) => ({ volatility: 0.9, note: NOTE, modelVersion: "nft-persistence-pooled-pct", isIlliquid: false, ...over });
 const history = [
   { date: "2026-11-08", floor_eth: 0.46, floor_usd: 1030.4 },
   { date: "2026-11-09", floor_eth: null, floor_usd: null },
@@ -45,7 +45,7 @@ test("hides the cone when the data is stale (ML 48 h or backend 36 h note) or th
   assert.deepEqual(nftChartLayers(floorPoints(history, "ETH"), risk({ isIlliquid: true })).layers, ["history"]);
 });
 
-test("does NOT hide just because EWMA was not approved: the served persistence vol draws (D52 amended, D73)", () => {
+test("draws for the served persistence vol, which no risk model replaced (D52 amended, D73)", () => {
   const persistence = risk({ modelVersion: "nft-persistence-pooled-pct", note: "Risk model: 30-day floor volatility (persistence)." });
   assert.equal(nftConeHiddenReason(persistence), null);
   assert.equal(buildCone({ date: "2026-11-10", price: 1 }, { volatility: 0.9, note: persistence.note }), null); // crypto gate differs

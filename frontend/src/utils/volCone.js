@@ -1,7 +1,7 @@
 // Illustrative 30-day volatility cone for the asset price chart (ml/docs/DECISIONS.md D52).
 //
-// Built only from the `volatility` the ML service already serves on /risk: since D82 the annualised 30-day
-// volatility (persistence); EWMA (D51) until its approval was withdrawn under top-only selection (D81, D82).
+// Built only from the `volatility` the ML service serves on /risk: since D82 the annualised 30-day volatility
+// (persistence). No risk model is served (D81, D82).
 // It is NOT a tested price range: no price or range model is approved, so lower_bound / upper_bound stay null
 // and no predicted price line is drawn. Pure functions, no React, so they can be unit-tested with `node --test`.
 
@@ -17,10 +17,10 @@ export const CONE_CAPTION = "Likely price range based on recent volatility, not 
 // so the 30-day cone stays readable next to a long history (1Y: 30 / 395 days would be about 7.6%).
 export const MIN_FUTURE_SHARE = 0.15;
 
-// The ML /risk note starts with one of these when it describes the volatility the ML service serves (D82:
-// persistence; D51: EWMA). Any other note (mock data, an asset ML does not cover) hides the cone. The ML side
-// tests the same wording (ml/tests/test_serving.py test_d52_risk_note_wording_the_frontend_cone_depends_on).
-export const SERVED_RISK_NOTE_PREFIXES = ["Risk measure: 30-day volatility", "Risk model: EWMA volatility"];
+// The ML /risk note starts with this when it describes the volatility the ML service serves (D82: persistence).
+// Any other note (mock data, an asset ML does not cover, an old stored row from before D82) hides the cone. The ML
+// side tests the same wording (ml/tests/test_serving.py test_d52_risk_note_wording_the_frontend_cone_depends_on).
+export const SERVED_RISK_NOTE_PREFIXES = ["Risk measure: 30-day volatility"];
 
 const DAY_MS = 86400000;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -57,8 +57,8 @@ export function coneBand(lastClose, sd, d, z) {
 
 /**
  * The served annualised vol when the cone may be drawn, else null. Hidden when the value is missing, null or
- * not a positive number, when the risk note is not the ML's served EWMA model (for example mock data for an
- * asset ML does not cover), or when the risk data is stale.
+ * not a positive number, when the risk note does not describe the ML's served 30-day volatility (for example mock
+ * data for an asset ML does not cover, or an old stored row), or when the risk data is stale.
  */
 export function coneVolatility(risk) {
   if (!risk) return null;
