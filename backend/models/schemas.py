@@ -273,6 +273,7 @@ class PortfolioHoldingOut(BaseModel):
     estimated_value_method: Optional[str] = None
     estimated_value_note: Optional[str] = None
     estimated_value_accuracy_note: Optional[str] = None
+    estimated_value_rarity_accuracy_note: Optional[str] = None   # D84
     date_added: Optional[str] = None
     updated_at: Optional[str] = None
 
@@ -415,7 +416,8 @@ class NFTItemValueOut(BaseModel):
     no_prior_sale: bool
     rarity_rank: Optional[int] = None
     rarity_ranked_tokens: Optional[int] = None
-    accuracy_note: str                               # 'Accuracy check pending' until the sealed test (10.9)
+    accuracy_note: str                               # D84: 'Median error in testing (Feb-Nov 2026): X%'
+    rarity_accuracy_note: Optional[str] = None       # D84: 'Rarest items: about Y%' for the rarest 10%, else null
     model_version: str
     note: Optional[str] = None
     as_of: str

@@ -3,7 +3,8 @@ backend/controllers/nft_items.py
 
 Fair-value item values from the ML service (Phase 10 step 10.7, ml/docs/DECISIONS.md D78; contract
 ml/docs/CONTRACT_NFT.md NftItemValueResponse / NftItemValuesResponse). ETH only, point estimate only: no range,
-no drivers, no USD conversion of the estimate.
+no drivers, no USD conversion of the estimate. Since 10.9 (D84) accuracy_note is the sealed-test error line and
+rarity_accuracy_note the extra line for an item in its collection's rarest 10% (null otherwise).
   pull_item_values   daily (from ml_pull_controller.pull_all): every NFT portfolio holding's token, in batches
                      of 50, upserted into nft_item_values on (slug, token_id); a failed batch writes nothing.
   live_item_value    the collection page's item lookup: one live call; stored on success. On failure the last
@@ -29,6 +30,7 @@ def item_row(body: dict, now: datetime) -> dict:
     if v is not None and (not isinstance(v, (int, float)) or v <= 0):
         raise ValueError("estimated_value_eth is not a positive number or null")
     return {"slug": body["slug"], "token_id": str(body["token_id"]), **{k: body[k] for k in FIELDS},
+            "rarity_accuracy_note": body.get("rarity_accuracy_note"),      # D84 (10.9), absent from older bodies
             "as_of_ts": _parse_ts(body["as_of"]), "source": "ml-service", "pulled_at": now}
 
 

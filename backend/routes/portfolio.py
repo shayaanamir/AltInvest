@@ -44,7 +44,8 @@ def with_item_estimates(holdings: list) -> list:
         r = rows.get((h.get("nft_collection_slug"), str(h.get("nft_token_id")))) if h.get("asset_type") == "nft" else None
         out.append({**h, **({"estimated_value_eth": r.get("estimated_value_eth"), "estimated_value_as_of": r.get("as_of"),
                              "estimated_value_method": r.get("method"), "estimated_value_note": r.get("note"),
-                             "estimated_value_accuracy_note": r.get("accuracy_note")} if r else {})})
+                             "estimated_value_accuracy_note": r.get("accuracy_note"),
+                             "estimated_value_rarity_accuracy_note": r.get("rarity_accuracy_note")} if r else {})})
     return out
 
 

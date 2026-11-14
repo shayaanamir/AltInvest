@@ -17,11 +17,15 @@ NOW = datetime(2026, 11, 14, 0, 16, tzinfo=timezone.utc)
 REAL_CLIENT = httpx.Client
 
 
-def _item(slug, token, value=1.25, method="model"):
-    return {"slug": slug, "token_id": token, "estimated_value_eth": value, "method": method, "last_floor_eth": 1.0,
+ACC = "Median error in testing (Feb-Nov 2026): 2.0%"
+RARE = "Rarest items: about 9%"
+
+
+def _item(slug, token, value=1.25, method="model", rare=None):
+    return {"rarity_accuracy_note": rare, "slug": slug, "token_id": token, "estimated_value_eth": value, "method": method, "last_floor_eth": 1.0,
             "last_floor_time": "2026-11-13T22:00:00Z", "last_sale": {"price_eth": 1.1, "timestamp": "2026-06-01T10:00:00Z"},
             "no_prior_sale": False, "rarity_rank": 120, "rarity_ranked_tokens": 8888,
-            "accuracy_note": "Accuracy check pending", "model_version": "nft-fv-pooled-l1-nl15-dev-2025-12-25",
+            "accuracy_note": ACC, "model_version": "nft-fv-pooled-l1-nl15-refit-2026-11-14",
             "note": None, "as_of": "2026-11-14T00:16:00Z", "timestamp": "2026-11-14T00:16:00Z"}
 
 
@@ -72,7 +76,7 @@ def _app(monkeypatch, handler):
 def test_item_route_live_then_stale_then_errors(monkeypatch, stored):
     c = _app(monkeypatch, lambda req: httpx.Response(200, json=_item("pudgypenguins", "7862")))
     body = c.get("/nft/collections/pudgypenguins/items/7862/value").json()
-    assert body["estimated_value_eth"] == 1.25 and body["stale"] is False and body["accuracy_note"] == "Accuracy check pending"
+    assert body["estimated_value_eth"] == 1.25 and body["stale"] is False and body["accuracy_note"] == ACC
     assert "lower_eth" not in body and "drivers" not in body
     c = _app(monkeypatch, lambda req: httpx.Response(503))
     body = c.get("/nft/collections/pudgypenguins/items/7862/value").json()
@@ -85,11 +89,12 @@ def test_item_route_live_then_stale_then_errors(monkeypatch, stored):
 
 def test_holdings_get_the_stored_estimate_without_changing_value(monkeypatch):
     monkeypatch.setattr(queries, "get_nft_item_values",
-                        lambda pairs: {("azuki", "8604"): _item("azuki", "8604", 0.9, "model")})
+                        lambda pairs: {("azuki", "8604"): _item("azuki", "8604", 0.9, "model", RARE)})
     hs = [{"asset_type": "nft", "nft_collection_slug": "azuki", "nft_token_id": "8604", "current_value_usd": 900.0},
           {"asset_type": "crypto", "symbol": "BTC", "current_value_usd": 10.0}]
     out = portfolio_route.with_item_estimates(hs)
-    assert out[0]["estimated_value_eth"] == 0.9 and out[0]["estimated_value_accuracy_note"] == "Accuracy check pending"
+    assert out[0]["estimated_value_eth"] == 0.9 and out[0]["estimated_value_accuracy_note"] == ACC
+    assert out[0]["estimated_value_rarity_accuracy_note"] == RARE                       # D84
     assert out[0]["current_value_usd"] == 900.0 and "estimated_value_eth" not in out[1]
     monkeypatch.setattr(queries, "get_nft_item_values", lambda pairs: (_ for _ in ()).throw(RuntimeError("db down")))
     assert portfolio_route.with_item_estimates(hs)[0].get("estimated_value_eth") is None   # never fails the list
@@ -101,3 +106,11 @@ def test_pull_all_includes_the_item_values(monkeypatch):
     monkeypatch.setattr(nft_items, "pull_item_values", lambda c, f, s: {"items": "no NFT holdings; nothing to pull"})
     out = pull.pull_all(client=httpx.Client(transport=httpx.MockTransport(lambda r: httpx.Response(404))))
     assert out["NFT items"] == {"items": "no NFT holdings; nothing to pull"}
+
+
+def test_rarity_accuracy_note_is_stored_and_optional_for_older_ml_bodies():
+    """D84: the rarest-10% line is passed through; an ML body from before 10.9 (no such field) still stores."""
+    row = nft_items.item_row(_item("azuki", "1", rare=RARE), NOW)
+    assert row["rarity_accuracy_note"] == RARE and row["accuracy_note"] == ACC
+    old = {k: v for k, v in _item("azuki", "1").items() if k != "rarity_accuracy_note"}
+    assert nft_items.item_row(old, NOW)["rarity_accuracy_note"] is None
