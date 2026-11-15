@@ -1,5 +1,6 @@
 import { apiFetch } from "./apiClient";
 import { mapItemValue } from "../utils/nftItemValue";
+import { mapNftSentiment } from "../utils/nftSentiment";
 
 // NFT collection page data (Phase 10, ml/docs/DECISIONS.md D61, D67): GET /nft/collections/{slug} on the backend,
 // which stores what the ML service serves (daily floor, liquidity, floor volatility and the NFT risk score).
@@ -27,6 +28,15 @@ function mapLiquidity(l) {
 }
 
 export const nftApi = {
+  /** News sentiment of a collection (or NFT_MARKET_SLUG for the market). Null when none was computed yet (404). */
+  getSentiment: async (slug) => {
+    try {
+      return mapNftSentiment(await apiFetch(`/nft/collections/${encodeURIComponent(slug)}/sentiment`));
+    } catch (e) {
+      if (e.status === 404) return null;
+      throw e;
+    }
+  },
   /** Item estimate (Phase 10 step 10.7, D78). Resolves to null for an unknown token (404); throws otherwise. */
   getItemValue: async (slug, tokenId) => {
     try {
