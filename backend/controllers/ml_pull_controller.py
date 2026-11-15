@@ -2,8 +2,9 @@
 backend/controllers/ml_pull_controller.py
 
 Daily pull of the ML service (ml/, port 8001) into MongoDB: GET /predict/{asset} -> `predictions`,
-GET /risk/{asset} -> `risk_scores`, for the assets in db.queries.ML_COVERED_ASSETS; and, from Phase 10,
-the NFT endpoints into the nft_* tables (controllers/nft_pull.py).
+GET /risk/{asset} -> `risk_scores`, for the assets in db.queries.ML_COVERED_ASSETS; from Phase 10,
+the NFT endpoints into the nft_* tables (controllers/nft_pull.py); from Phase 11, GET /past-ranges/{asset}
+-> `ml_past_ranges` (one document per asset, replaced each pull; ml/docs/DECISIONS.md D87).
 Responses follow ml/docs/CONTRACT.md and are stored field for field (including `note` and `signal`).
 
 Rules (ml/docs/PLAN_NEXT.md, task C1):
@@ -32,6 +33,10 @@ RETRY_AFTER_FAILURE_SECONDS = 15 * 60   # ML can be down for minutes after it st
 
 _PREDICT_REQUIRED = ("asset", "predicted_price", "prediction_30d", "confidence", "model_version", "timestamp")
 _RISK_REQUIRED = ("asset", "risk_score", "timestamp")
+_PAST_RANGES_REQUIRED = ("asset", "timestamp", "lag_days", "note", "points")
+PAST_RANGES_DAYS = 400   # the asset chart shows at most 366 days (routes/assets.py)
+_POINT_KEYS = ("date", "made_on", "centre", "volatility", "inner_lower", "inner_upper", "outer_lower",
+               "outer_upper", "close")
 
 
 def _log(msg: str) -> None:
@@ -120,6 +125,28 @@ def pull_asset(client: httpx.Client, asset: str, sleep=time.sleep, now: datetime
     return outcome
 
 
+def pull_past_ranges(client: httpx.Client, asset: str, sleep=time.sleep, now: datetime | None = None) -> str:
+    """Pulls /past-ranges for one asset (Phase 11, D87) and replaces its stored document. Returns the outcome."""
+    from db.queries import replace_ml_past_ranges
+
+    now = now or datetime.now(timezone.utc)
+    status, body, reason = fetch(client, f"/past-ranges/{asset.lower()}?days={PAST_RANGES_DAYS}", sleep=sleep)
+    if status == "not_covered":
+        return "skipped: 404 not covered"
+    if status == "failed":
+        return f"failed: {reason}; nothing written"
+    try:
+        row = _to_row(body, asset, _PAST_RANGES_REQUIRED, now)
+        pts = row["points"]
+        if not isinstance(pts, list) or any(not isinstance(p, dict) or any(k not in p for k in _POINT_KEYS)
+                                            for p in pts):
+            raise ValueError("points are not a list of complete range points")
+        replace_ml_past_ranges(row)
+        return f"stored: {len(pts)} points"
+    except ValueError as exc:
+        return f"failed: bad body ({exc}); nothing written"
+
+
 def pull_all(client: httpx.Client | None = None, sleep=time.sleep) -> dict:
     """Pulls every covered asset. Returns {asset: {endpoint: outcome}}. Never raises for HTTP errors."""
     from db.queries import ML_COVERED_ASSETS
@@ -131,6 +158,7 @@ def pull_all(client: httpx.Client | None = None, sleep=time.sleep) -> dict:
     client = client or httpx.Client()
     try:
         result = {a: pull_asset(client, a, sleep=sleep) for a in ML_COVERED_ASSETS}
+        result["past ranges"] = {a: pull_past_ranges(client, a, sleep=sleep) for a in ML_COVERED_ASSETS}   # D87
         result["NFT"] = pull_nft(client, fetch, sleep)          # Phase 10 (ml/docs/DECISIONS.md D61, D67)
         result["NFT items"] = pull_item_values(client, fetch, sleep)    # Phase 10 step 10.7 (D78)
         return result

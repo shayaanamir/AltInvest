@@ -75,6 +75,16 @@ def upsert_ml_risk(doc: dict) -> None:
     _upsert_ml_row("risk_scores", doc)
 
 
+def replace_ml_past_ranges(doc: dict) -> None:
+    """Phase 11 (ml/docs/DECISIONS.md D87): one document per asset in `ml_past_ranges`, replaced on each pull."""
+    get_db().ml_past_ranges.replace_one({"asset": doc["asset"].upper()}, {**doc, "asset": doc["asset"].upper()},
+                                        upsert=True)
+
+
+def get_ml_past_ranges(asset: str) -> dict | None:
+    return get_db().ml_past_ranges.find_one({"asset": asset.upper()}, projection={"_id": 0})
+
+
 def get_supported_assets() -> list:
     db = get_db()
     return list(db.assets.find({}, projection={"_id": 0}))

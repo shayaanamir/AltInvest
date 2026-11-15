@@ -41,6 +41,7 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
       about           -> description / website / ATH; fields are null where the asset row has none
       related/similar -> see controllers/asset_detail_controller.py (each item carries a `reason`)
       risk_overview   -> [] when `risk_breakdown` has no row
+      past_ranges     -> null when `ml_past_ranges` has no document for the asset (ml/docs/DECISIONS.md D87)
     """
     from datetime import date
     from controllers.market_controller import (
@@ -49,9 +50,9 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
     from db.queries import (
         get_asset, get_asset_market_data_latest, get_daily_price_series,
         get_latest_aai_score, get_latest_prediction, get_latest_risk_breakdown,
-        get_price_sparklines, get_user_flags, get_prediction_history,
+        get_price_sparklines, get_user_flags, get_prediction_history, get_ml_past_ranges,
     )
-    from controllers.asset_detail_controller import related_and_similar, build_forecast
+    from controllers.asset_detail_controller import related_and_similar, build_forecast, past_ranges_for_chart
     from db.mongo_connection import get_db
     from utils.ml_rows import with_stale_note
 
@@ -67,6 +68,7 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
         prediction_runs = get_prediction_history(symbol, 12)
         aai = get_latest_aai_score("crypto", symbol)
         breakdown = get_latest_risk_breakdown(symbol)
+        past_ranges_doc = get_ml_past_ranges(symbol)
         flags = get_user_flags(user_id)
 
         quantity_held = None
@@ -150,6 +152,7 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
             "watching": symbol in flags["watching"],
         },
         "price_history": history,
+        "past_ranges": past_ranges_for_chart(past_ranges_doc, history),
         "forecast": forecast,
         # The ML service's own signal and note (null when no prediction is stored). While ml_signal is
         # UNCERTAIN the frontend must not present the AAI-derived BUY/HOLD/SELL as the model's call.

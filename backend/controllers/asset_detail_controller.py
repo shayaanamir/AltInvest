@@ -13,6 +13,8 @@ related and similar assets, and the forecast with its band and past runs.
              each says which features are closest.
   forecast - the latest model run's 30-day target with its lower/upper band, plus earlier runs and,
              for runs whose target date has passed, the actual price that day and the error.
+  past_ranges - the ML's past ranges (ml/docs/DECISIONS.md D87: for each day, the volatility range the chart
+             would have drawn 30 days earlier), trimmed to the dates of the price history.
 """
 import math
 from datetime import datetime, timedelta, date
@@ -135,4 +137,39 @@ def build_forecast(prediction: dict | None, runs: list[dict], history: list[dict
         "model_version": prediction.get("model_version"),
         "runs": past,
         "mean_abs_error_pct": round(sum(abs(p["error_pct"]) for p in scored) / len(scored), 2) if scored else None,
+    }
+
+
+_PAST_RANGE_FIELDS = ("date", "made_on", "inner_lower", "inner_upper", "outer_lower", "outer_upper", "close")
+# D89: past ranges are drawn only when the chart's price line is the series the ranges were built from: the median
+# relative gap between the chart price and the ML close, over the shared dates, must be at most this.
+PAST_RANGE_MAX_PRICE_GAP = 0.02
+
+
+def price_gap(points: list[dict], history: list[dict]) -> float | None:
+    """Median |chart price / ML close - 1| over the dates both have; None when they share no date."""
+    by_day = {h["date"]: h.get("price") for h in history}
+    gaps = sorted(abs(by_day[p["date"]] / p["close"] - 1) for p in points
+                  if by_day.get(p.get("date")) and p.get("close"))
+    if not gaps:
+        return None
+    mid = len(gaps) // 2
+    return gaps[mid] if len(gaps) % 2 else (gaps[mid - 1] + gaps[mid]) / 2
+
+
+def past_ranges_for_chart(doc: dict | None, history: list[dict]) -> dict | None:
+    """The stored /past-ranges document (D87) as the chart needs it: the points whose date is within the price
+    history's dates, oldest first. Null when nothing is stored, no point falls in the window, or the chart's prices
+    are not the ML closes the ranges were built from (D89: for example demo seed prices)."""
+    if not doc or not history:
+        return None
+    first, last = history[0]["date"], history[-1]["date"]
+    pts = sorted((p for p in doc.get("points") or [] if first <= p.get("date", "") <= last), key=lambda p: p["date"])
+    gap = price_gap(pts, history)
+    if not pts or gap is None or gap > PAST_RANGE_MAX_PRICE_GAP:
+        return None
+    return {
+        "lag_days": doc.get("lag_days"),
+        "note": doc.get("note"),
+        "points": [{k: p.get(k) for k in _PAST_RANGE_FIELDS} for p in pts],
     }
