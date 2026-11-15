@@ -8,9 +8,9 @@
   "lag_days": 30,
   "volatility_measure": "vol_30d",
   "raw_dir": "C:\\Shail\\Somaiya\\LY-Project\\AltInvest\\AltInvest\\ml\\data\\raw",
-  "generated_at": "2026-11-15T18:52:03Z",
-  "git_commit": "aa35605b0e66c557f1115b9a7752a6873090ecf0",
-  "git_dirty": true,
+  "generated_at": "2026-11-15T19:12:16Z",
+  "git_commit": "9aa89aa1cf90d3b05a8561b99d1815091329b9cf",
+  "git_dirty": false,
   "assets": {
     "btc": {
       "first_date": "2017-10-16",

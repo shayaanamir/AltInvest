@@ -111,7 +111,7 @@ Source: `ml/docs/phase11/logs/guard_check.txt`. The same seed data also feeds th
 
 - The 50% band is close to nominal. The 80% band holds the price on about 72% of days, below its label: crypto has heavy tails, and the cone's normal z values understate them. Per-year shares are in both reports. For example, over full calendar years BTC's 80% share ranges from 0.63 (2020) to 0.85 (2025) (snapshot).
 - As asked, nothing was changed because of this. A calibrated range would need its own declared phase (compare the NFT range backlog item).
-- The snapshot report records `git_dirty: true`. The uncommitted files from before this phase (section 1) are outside `ml/reports/`, so the warning fires. The ML code of the run is the committed code, unchanged since d1a690d.
+- The snapshot report was regenerated on a clean tree at 9aa89aa (`git_dirty: false`); the numbers are unchanged. The first run recorded `git_dirty: true` only because of the uncommitted files from before this phase (section 1), since committed on branch nft-aai.
 
 ## 7. For the owner
 
