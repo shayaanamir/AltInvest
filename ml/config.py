@@ -64,6 +64,12 @@ MODEL_VERSION_PRICE = "baseline-last-value"  # D35: no price model approved
 MODEL_VERSION_RISK = "persistence-pooled-pct"  # D82: persistence vol_30d (D27) with the D36 pooled percentile mapping
 RISK_MODEL_SERVED = False  # D82: the D51 EWMA approval is withdrawn under top-only selection (D81)
 RISK_VOL_COLUMN = "vol_30d"  # D82: the served volatility measure (was "ewma_vol", D51)
+# Phase 11 past ranges (D87): the illustrative cone of D52 as it would have been drawn PAST_RANGE_LAG_DAYS earlier.
+# Same horizon and z values as the frontend cone (frontend/src/utils/volCone.js; a frontend test checks they match).
+PAST_RANGE_LAG_DAYS = 30  # D87: = the cone's horizon (volCone.js CONE_DAYS)
+CONE_Z_INNER = 0.6745  # D52: 50% band (normal 25th / 75th percentile)
+CONE_Z_OUTER = 1.2816  # D52: 80% band (normal 10th / 90th percentile)
+PAST_RANGE_MIN_CALIBRATION_DAYS = 60  # D88: fewer scored days than this and no calibration line is shown
 LIVE_ALERT_MIN_WINDOWS = 6  # D46/D51: non-overlapping scored windows per asset before live_score may ALERT
 
 # Data directories (D40). The evaluation snapshot is ml/data/raw + ml/reports/data as of 2026-10-17; splits are

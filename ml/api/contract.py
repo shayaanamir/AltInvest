@@ -8,6 +8,7 @@ from jsonschema import Draft7Validator
 
 CONTRACT_MD = Path(__file__).resolve().parent.parent / "docs" / "CONTRACT.md"
 CONTRACT_NFT_MD = CONTRACT_MD.with_name("CONTRACT_NFT.md")     # Phase 10 NFT endpoints (D61, D67)
+CONTRACT_PAST_RANGES_MD = CONTRACT_MD.with_name("CONTRACT_PAST_RANGES.md")     # Phase 11 past ranges (D87)
 _JSON_BLOCK = re.compile(r"```json\s*\n(.*?)```", re.S)
 
 
@@ -27,7 +28,8 @@ def validator(schema: dict) -> Draft7Validator:
     return Draft7Validator(schema, format_checker=Draft7Validator.FORMAT_CHECKER)
 
 
-VALIDATORS = {title: validator(s) for title, s in {**load_schemas(), **load_schemas(CONTRACT_NFT_MD)}.items()}
+VALIDATORS = {title: validator(s) for title, s in {**load_schemas(), **load_schemas(CONTRACT_NFT_MD),
+                                                     **load_schemas(CONTRACT_PAST_RANGES_MD)}.items()}
 
 
 def check(title: str, body: dict) -> dict:

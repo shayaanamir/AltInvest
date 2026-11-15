@@ -1,5 +1,5 @@
 """ML service on :8001 (Phase 6a): /predict/{asset}, /risk/{asset}, /health, /debug/{asset}; Phase 6d adds
-/debug/scorecard and /debug/live-scorecard.
+/debug/scorecard and /debug/live-scorecard; Phase 11 adds /past-ranges/{asset} (D87).
 
     python -m uvicorn ml.api.service:app --port 8001        (from the repo root)
 
@@ -20,6 +20,7 @@ from ml.api.contract import check
 from ml.evaluation import live_score, scorecard
 from ml.serving import nft_items
 from ml.serving import nft_responses as nft
+from ml.serving import past_ranges
 from ml.serving import responses as rs
 
 app = FastAPI(title="AltInvest ML", version="v2")
@@ -49,6 +50,14 @@ def predict(asset: str):
 @app.get("/risk/{asset}")
 def risk(asset: str):
     return check("RiskResponse", _serve(rs.risk, asset))
+
+
+@app.get("/past-ranges/{asset}")
+def past_ranges_(asset: str, days: int | None = None):
+    """Phase 11 (D87): the cone as drawn 30 days earlier, for each past day (docs/CONTRACT_PAST_RANGES.md)."""
+    if days is not None and days < 0:
+        raise HTTPException(422, "days must be >= 0")
+    return check("PastRangesResponse", _serve(lambda a, now: past_ranges.response(a, now, days), asset))
 
 
 @app.get("/health")
