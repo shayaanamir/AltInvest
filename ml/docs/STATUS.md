@@ -1,7 +1,31 @@
 # STATUS
 
-Current phase: 10 (NFTs, docs/PLAN_NFT.md) CLOSED at checkpoint 10.9 (ml/docs/phase10/checkpoint_10.9.md), branch phase-10-nft (pushed, not merged; 0 commits behind main). Pre-merge fixes from the independent review done in 10.9b (ml/docs/phase10/checkpoint_10.9b.md); the owner approved D63-D85 (D86). Next: the owner merges (steps in checkpoint_10.9.md) and rotates the Atlas credential (review SHOULD FIX 4). Previously: 9 (forecasting v2) DONE and merged as PR #8; phase-9-vol-cone and phase-7-integration are in main.
-Served now: crypto risk = persistence vol_30d (D82, the EWMA approval was withdrawn under top-only, D81); NFT risk = persistence vol_30d (D73); NFT item value = the monthly refit of fv_pooled_l1_nl15 for 6 collections, B2 for lilpudgys (D80, D83), no range; price = last value (D35); direction = UNCERTAIN (D33).
+Current phase: 11 (crypto past ranges, small) CLOSED at checkpoint 11 (ml/docs/phase11/checkpoint_11.md), branch phase-11-cone (from main at 180aa51; not pushed, not merged). Next: the owner reviews D87-D89 (the items marked AUTONOMOUS) and merges. Previously: 10 (NFTs) merged into main (180aa51).
+Served now: crypto risk = persistence vol_30d (D82); past ranges = the D52 cone as drawn 30 days earlier, from the same served volatility (D87), on /past-ranges/{asset}; NFT risk = persistence vol_30d (D73); NFT item value = the monthly refit of fv_pooled_l1_nl15 for 6 collections, B2 for lilpudgys (D80, D83), no range; price = last value (D35); direction = UNCERTAIN (D33).
+
+## Phase 11: past ranges on the crypto price chart (2026-11-16, ml/docs/phase11/checkpoint_11.md)
+
+- ML: `ml/serving/past_ranges.py`, endpoint `GET /past-ranges/{asset}?days=N` (schema `ml/docs/CONTRACT_PAST_RANGES.md`). Each day d: centre = ML close of d-30, width = the served volatility as of d-30 with the cone formula, 50% and 80% bands, plus the close of d. Leakage tests: each value equals the result from bars cut at d-30, and the volatility equals what /risk serves on cut data (D87).
+- Backend: the daily ML pull stores `/past-ranges?days=400` in `ml_past_ranges`; `/assets/{symbol}/detail` returns `past_ranges` trimmed to the chart window. It is null when the chart's prices are not the ML closes (median gap > 2%, D89). The shared Atlas database's demo prices fail this check (gap 0.42 for BTC), so the running backend on :8000 shows no past ranges.
+- Frontend: past bands behind the line, "Show past ranges" toggle (default on), caption, calibration line from 60 visible days (D88). No user-facing "EWMA" wording was found in the source or the live responses.
+- Coverage over the full history (monitoring only; live data to 2026-11-14): BTC 50% 0.490 / 80% 0.724; ETH 0.480 / 0.718; SOL 0.483 / 0.727 (`ml/docs/phase11/past_range_coverage_live.json`).
+- Tests: ML 467 passed; backend 61 passed, 1 skipped, 1 failed (pre-existing `test_seed_guard` with the Atlas MONGO_URI); frontend 26 passed.
+
+## How to verify Phase 11 yourself (PowerShell, from the repo root, Docker running, ML image rebuilt from this branch)
+
+```powershell
+Set-Location C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest
+$py = ".\.venv-train\Scripts\python.exe"
+& $py -m pytest ml/tests/test_past_ranges.py -q                         # 1. past-range and leakage tests
+& $py -m ml.evaluation.past_range_coverage                               # 2. coverage on the snapshot (monitoring only)
+docker compose build ml; docker compose up -d --no-deps ml               # 3. serve the branch's ML code (wait for /health)
+curl.exe -s "http://127.0.0.1:8001/past-ranges/btc?days=1"; ""          # 4. one point
+curl.exe -s -o NUL -w "%{http_code} " http://127.0.0.1:8001/past-ranges/doge; curl.exe -s -o NUL -w "%{http_code}`n" "http://127.0.0.1:8001/past-ranges/btc?days=-1"   # 5.
+docker exec -w /app/backend altinvest-backend python -m pytest tests/test_past_ranges.py -q -p no:cacheprovider   # 6. backend
+Set-Location frontend; npm test; Set-Location ..                         # 7. frontend
+```
+
+Expected (observed 2026-11-16): 1. 15 passed. 2. btc 3289 days, inside 50%: 0.489, inside 80%: 0.722; eth 0.483 / 0.719; sol 2199 days, 0.486 / 0.729. 4. `lag_days` 30, `volatility_measure` "vol_30d", one point whose `made_on` is 30 days before its `date`, with outer_lower < inner_lower < inner_upper < outer_upper. 5. `404 422`. 6. 12 passed. 7. 26 passed.
 
 ## Phase 10 step 10.9b: pre-merge fixes from the independent review (2026-11-14, ml/docs/phase10/checkpoint_10.9b.md)
 

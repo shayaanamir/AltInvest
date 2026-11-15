@@ -140,6 +140,13 @@ Terms marked *(not used yet)* appear in the plan docs but no code uses them so f
 - **Refit**: training the same model again, with the same settings and features, on newer data. The served item model is refitted monthly (D83).
 - **Live accuracy log**: each day's served estimates, later matched with the real sales to see how the served values actually did (D85).
 
+## Past ranges (Phase 11)
+- **Volatility cone**: the shaded 30-day range after the last close on the price chart: the last close x exp(±z x daily volatility x √days), with z = 0.6745 for the 50% band and 1.2816 for the 80% band (D52). It shows how far prices usually move, not where they will go.
+- **As of (a date)**: using only data that was available on that date. A value "as of d-30" is computed from bars up to d-30.
+- **Past range**: for day d, the cone's 30-day range as drawn on day d-30 (`made_on`), from that day's close and the volatility served then (D87).
+- **Coverage**: the share of days whose close was inside a band. A well-sized 80% band holds about 80% of days (ml/reports/past_range_coverage.json).
+- **Calibration line**: the coverage of the past ranges over the days visible on the chart. Shown only from 60 days up (D88).
+
 ## Engineering
 - **Unit test**: a tiny automatic check of one function using small made-up inputs (here, hand-made fixtures, not market data).
 - **Fixture**: the small made-up input a test uses.
