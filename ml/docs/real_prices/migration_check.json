@@ -1,0 +1,150 @@
+{
+  "collections": {
+    "ml_past_ranges": {
+      "real_rows_in_source": 3,
+      "missing_in_target": 3,
+      "newer_in_source": 0,
+      "missing_from": "2026-11-15 18:52:53",
+      "missing_to": "2026-11-15 18:52:53",
+      "key": [
+        "asset"
+      ],
+      "proposal": "RE-PULL",
+      "why": "the ML serves the whole series on every call (Phase 11 pull)"
+    },
+    "predictions": {
+      "real_rows_in_source": 21,
+      "missing_in_target": 12,
+      "newer_in_source": 9,
+      "missing_from": "2026-11-09T00:00:00",
+      "missing_to": "2026-11-14T00:00:00",
+      "key": [
+        "asset",
+        "date"
+      ],
+      "proposal": "COPY",
+      "why": "one row per day; the ML serves only today's"
+    },
+    "risk_scores": {
+      "real_rows_in_source": 21,
+      "missing_in_target": 12,
+      "newer_in_source": 9,
+      "missing_from": "2026-11-09T00:00:00",
+      "missing_to": "2026-11-14T00:00:00",
+      "key": [
+        "asset",
+        "date"
+      ],
+      "proposal": "COPY",
+      "why": "one row per day; the ML serves only today's"
+    },
+    "nft_market_data": {
+      "real_rows_in_source": 2835,
+      "missing_in_target": 35,
+      "newer_in_source": 2800,
+      "missing_from": "2025-10-07",
+      "missing_to": "2025-10-11",
+      "key": [
+        "slug",
+        "date"
+      ],
+      "proposal": "RE-PULL",
+      "why": "the ML /nft/{slug}/floor serves the floor history"
+    },
+    "nft_liquidity": {
+      "real_rows_in_source": 35,
+      "missing_in_target": 28,
+      "newer_in_source": 7,
+      "missing_from": "2026-11-10",
+      "missing_to": "2026-11-14",
+      "key": [
+        "slug",
+        "date"
+      ],
+      "proposal": "COPY",
+      "why": "one row per day; the ML serves only today's"
+    },
+    "nft_risk_breakdown": {
+      "real_rows_in_source": 35,
+      "missing_in_target": 28,
+      "newer_in_source": 7,
+      "missing_from": "2026-11-10",
+      "missing_to": "2026-11-14",
+      "key": [
+        "slug",
+        "date"
+      ],
+      "proposal": "COPY",
+      "why": "one row per day; the ML serves only today's"
+    },
+    "nft_sales": {
+      "real_rows_in_source": 5262,
+      "missing_in_target": 1614,
+      "newer_in_source": 3648,
+      "missing_from": "2026-10-11 00:07:35",
+      "missing_to": "2026-11-10 16:42:11",
+      "key": [
+        "slug",
+        "tx",
+        "token_id",
+        "seller",
+        "buyer"
+      ],
+      "proposal": "COPY",
+      "why": "the pull asks for the last 30 days only; older sales exist only here"
+    },
+    "nft_item_values": {
+      "real_rows_in_source": 4,
+      "missing_in_target": 4,
+      "newer_in_source": 0,
+      "missing_from": null,
+      "missing_to": null,
+      "key": [
+        "slug",
+        "token_id"
+      ],
+      "proposal": "RE-PULL",
+      "why": "latest estimate per held token; the pull refreshes it"
+    },
+    "fx_rates": {
+      "real_rows_in_source": 5,
+      "missing_in_target": 2,
+      "newer_in_source": 1,
+      "missing_from": null,
+      "missing_to": null,
+      "key": [
+        "base",
+        "as_of"
+      ],
+      "proposal": "SKIP",
+      "why": "only the latest rate is used; the backend refetches it"
+    },
+    "prices": {
+      "real_rows_in_source": 1200,
+      "missing_in_target": 219,
+      "newer_in_source": 0,
+      "missing_from": "2026-08-28 23:00:00",
+      "missing_to": "2026-11-08 23:00:00",
+      "key": [
+        "asset",
+        "timestamp"
+      ],
+      "proposal": "SKIP",
+      "why": "dev-loader daily closes; the price feed backfill replaces them"
+    },
+    "portfolio_snapshots": {
+      "real_rows_in_source": 18,
+      "missing_in_target": 18,
+      "newer_in_source": 0,
+      "missing_from": "2026-11-10T00:00:00",
+      "missing_to": "2026-11-15T00:00:00",
+      "key": [
+        "user_id",
+        "snapshot_date"
+      ],
+      "proposal": "SKIP",
+      "why": "belong to the local users, not Atlas users"
+    }
+  },
+  "real_collections_without_a_rule": []
+}

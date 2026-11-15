@@ -1,0 +1,196 @@
+{
+  "rules": [
+    {
+      "collection": "prices",
+      "matched": 86400,
+      "total": 86400,
+      "why": "simulated hourly prices (db/seed_prices.py)"
+    },
+    {
+      "collection": "asset_market_data",
+      "matched": 18,
+      "total": 18,
+      "why": "seeded price, change, market cap, rank, supply (db/seed_assets.py)"
+    },
+    {
+      "collection": "predictions",
+      "matched": 21,
+      "total": 36,
+      "why": "seeded predictions (seed_predictions_risk)"
+    },
+    {
+      "collection": "risk_scores",
+      "matched": 18,
+      "total": 33,
+      "why": "seeded risk scores (db/seed_predictions_risk.py)"
+    },
+    {
+      "collection": "risk_breakdown",
+      "matched": 36,
+      "total": 36,
+      "why": "seeded 4-part risk breakdown (db/seed_predictions_risk.py)"
+    },
+    {
+      "collection": "aai_scores",
+      "matched": 18,
+      "total": 33,
+      "why": "seeded AAI scores (old seed_aai_scores)"
+    },
+    {
+      "collection": "market_insights",
+      "matched": 6,
+      "total": 6,
+      "why": "seeded headlines (db/seed_insights.py)"
+    },
+    {
+      "collection": "sentiment_themes",
+      "matched": 5,
+      "total": 5,
+      "why": "seeded themes (db/seed_insights.py)"
+    },
+    {
+      "collection": "nft_collections",
+      "matched": 4,
+      "total": 11,
+      "why": "the 4 fictional collections"
+    },
+    {
+      "collection": "nft_market_data",
+      "matched": 10,
+      "total": 2810,
+      "why": "fictional collections and the old seed's made-up NFT rows"
+    },
+    {
+      "collection": "nft_sales",
+      "matched": 4,
+      "total": 3652,
+      "why": "fictional collections and the old seed's made-up NFT rows"
+    },
+    {
+      "collection": "nft_holder_stats",
+      "matched": 10,
+      "total": 10,
+      "why": "fictional collections and the old seed's made-up NFT rows"
+    },
+    {
+      "collection": "nft_liquidity",
+      "matched": 10,
+      "total": 17,
+      "why": "fictional collections and the old seed's made-up NFT rows"
+    },
+    {
+      "collection": "nft_risk_breakdown",
+      "matched": 10,
+      "total": 17,
+      "why": "fictional collections and the old seed's made-up NFT rows"
+    },
+    {
+      "collection": "nft_traits",
+      "matched": 1,
+      "total": 1,
+      "why": "fictional collections and the old seed's made-up NFT rows"
+    },
+    {
+      "collection": "nft_tokens",
+      "matched": 1,
+      "total": 1,
+      "why": "fictional collections and the old seed's made-up NFT rows"
+    },
+    {
+      "collection": "nft_token_sale_history",
+      "matched": 2,
+      "total": 2,
+      "why": "fictional collections and the old seed's made-up NFT rows"
+    },
+    {
+      "collection": "nft_token_ownership_history",
+      "matched": 4,
+      "total": 4,
+      "why": "fictional collections and the old seed's made-up NFT rows"
+    }
+  ],
+  "unsourced_assets": [
+    {
+      "asset_id": "ARB",
+      "watchlist_items": 0,
+      "holdings": 0,
+      "transactions": 0,
+      "alerts": 0,
+      "real_rows_left": {
+        "prices": 0,
+        "predictions": 0,
+        "risk_scores": 0
+      }
+    },
+    {
+      "asset_id": "BASE",
+      "watchlist_items": 0,
+      "holdings": 1,
+      "transactions": 1,
+      "alerts": 0,
+      "real_rows_left": {
+        "prices": 0,
+        "predictions": 0,
+        "risk_scores": 0
+      }
+    },
+    {
+      "asset_id": "DAI",
+      "watchlist_items": 0,
+      "holdings": 0,
+      "transactions": 0,
+      "alerts": 0,
+      "real_rows_left": {
+        "prices": 0,
+        "predictions": 0,
+        "risk_scores": 0
+      }
+    },
+    {
+      "asset_id": "DOGE",
+      "watchlist_items": 1,
+      "holdings": 0,
+      "transactions": 0,
+      "alerts": 0,
+      "real_rows_left": {
+        "prices": 0,
+        "predictions": 0,
+        "risk_scores": 0
+      }
+    },
+    {
+      "asset_id": "LINK",
+      "watchlist_items": 1,
+      "holdings": 0,
+      "transactions": 0,
+      "alerts": 0,
+      "real_rows_left": {
+        "prices": 0,
+        "predictions": 0,
+        "risk_scores": 0
+      }
+    },
+    {
+      "asset_id": "UNI",
+      "watchlist_items": 0,
+      "holdings": 0,
+      "transactions": 0,
+      "alerts": 0,
+      "real_rows_left": {
+        "prices": 0,
+        "predictions": 0,
+        "risk_scores": 0
+      }
+    }
+  ],
+  "unsourced_assets_lose": [
+    "price, 24h/7d change, market cap, rank, supply and volume (their only market rows are seeded)",
+    "the price chart and sparkline (their only price rows are simulated)",
+    "a place in Discover, the dashboard lists, compare and trending (built from asset_market_data)",
+    "seeded prediction, risk score, risk breakdown and AAI (no ML coverage, so nothing replaces them)"
+  ],
+  "fictional_collection_watchlist_items": {
+    "genesispunks": 1,
+    "astralcats": 1
+  }
+}
