@@ -126,3 +126,51 @@ Key settings can be overridden using environment variables or a `.env` file plac
 *   `CMC_API_KEY`: Your CoinMarketCap Pro API Key.
 *   `MONGO_URI`: Connection string for MongoDB (defaults to `mongodb://localhost:27017`).
 *   `MONGO_DB`: Name of the MongoDB database (defaults to `altinvest`).
+
+## 3. NFT News Sentiment (`nft_sentiment/`)
+
+A separate pipeline for the 7 tracked NFT collections (`ml/config.py` `NFT_SLUGS`) plus the NFT market
+as a whole (slug `nft-market`). It reuses the crypto collector's matching helpers and VADER + FinBERT as a
+fallback, but nothing in the crypto pipeline calls it, and its collections are not in `ASSETS`.
+
+**Why it differs from the crypto pipeline**
+
+| | Crypto | NFT |
+|---|---|---|
+| News source | 10 broad RSS feeds | Google News + Bing News searches per collection, plus the broad feeds |
+| Scorer | VADER + FinBERT | LLM on Groq (`openai/gpt-oss-120b`), VADER + FinBERT fallback |
+| Relevance | name match | name match, then the LLM drops articles not really about the collection |
+| Duplicates | title-word overlap | the LLM links rewordings of one story; each story counts once |
+| Market signal | CoinMarketCap | floor change (24h, 7d) and sales pace from `nft_market_data` / `nft_liquidity` |
+| Window / half-life | 72h / 12h | 7 days / 48h |
+
+In a live check on 2026-11-16 none of the 311 headlines from the past week in the broad feeds (NFT sites
+included) named a tracked collection, OpenSea or even "NFT"; the search feeds found 18 BAYC stories.
+
+**Scoring.** For each article the LLM returns `relevant`, `label` (positive/neutral/negative), `intensity`
+(low/medium/high), `same_story_as` and a short `reason`, under a strict JSON schema. The score is derived
+from label and intensity (0.3 / 0.6 / 0.9). Article text is treated as untrusted. A collection's articles go
+in one request and the verdicts are cached until its article list changes, so quiet collections cost nothing.
+
+**Output.** `sentiment_score` -1..1 = 65% news + 35% market signal (news only when there is no recent ML
+market row), confidence from the number of distinct stories (1.0 at 10), trend against ~24h ago.
+
+**Not validated.** There are no human-labelled NFT headlines; the score is a summary of recent news and
+trading, not a forecast. `python -m nft_sentiment.compare` measures scorer *agreement* on live headlines
+(`data/reports/nft_scorer_agreement.json`). On 2026-11-15 (62 articles): the LLM agreed with itself across two
+runs on 93.5% of labels (kappa 0.90) and on 100% of relevance calls; it agreed with VADER + FinBERT on 56% of
+the relevant articles (kappa 0.25, score correlation 0.52).
+
+**Running it**
+
+```bash
+cd sentiment_engine
+python -m nft_sentiment.run --collect-only        # which headlines matched (no LLM call)
+python -m nft_sentiment.run --slug azuki          # score and print, nothing saved
+python -m pytest tests -q                         # engine tests (no network)
+```
+
+In the app, `backend/controllers/nft_sentiment_controller.py` runs every 30 minutes and stores
+`nft_sentiment` / `nft_sentiment_history`; `GET /nft/sentiment` and `GET /nft/collections/{slug}/sentiment`
+only read. Environment: `GROQ_API_KEY` (without it everything falls back to VADER + FinBERT) and optionally
+`NFT_SENTIMENT_MODEL`.
