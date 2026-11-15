@@ -7,12 +7,17 @@ Local means localhost, 127.0.0.1, ::1, or `mongodb` (the docker-compose service,
 container). Any other host, and every mongodb+srv:// URI (Atlas), is refused unless the command line has
 --allow-remote. The URI is read the same way db/mongo_connection.py reads it (MONGO_URI, after backend/.env);
 an unset URI means pymongo's default, localhost. Only hosts are ever printed, never credentials.
+db/cleanup_seed_data.py goes through the same guard (ml/docs/DECISIONS.md D91).
+
+require_local_target(uri=...) checks exactly the URI given (None or "" = unset = localhost); leave `uri` out to
+check the configured MONGO_URI. Tests pass their URIs explicitly, so they never depend on the environment.
 """
 import os
 import sys
 
 LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1", "mongodb"}
 ALLOW_FLAG = "--allow-remote"
+FROM_ENV = object()   # default of require_local_target(uri=...): read MONGO_URI as db/mongo_connection.py does
 
 
 def uri_hosts(uri: str | None) -> tuple[str, list[str]]:
@@ -36,14 +41,15 @@ def is_local(uri: str | None) -> bool:
     return scheme == "mongodb" and bool(hosts) and all(h in LOCAL_HOSTS for h in hosts)
 
 
-def require_local_target(argv=None, uri: str | None = None) -> None:
-    """Exit with a message unless the seed target is local or --allow-remote was given."""
+def require_local_target(argv=None, uri=FROM_ENV, action: str = "seed",
+                         why: str = "seeds write demo data") -> None:
+    """Exit with a message unless the target is local or --allow-remote was given."""
     argv = sys.argv if argv is None else argv
-    if uri is None:
+    if uri is FROM_ENV:
         import db.mongo_connection  # noqa: F401  (loads backend/.env exactly as the seeds' connection does)
         uri = os.getenv("MONGO_URI")
     if is_local(uri) or ALLOW_FLAG in argv:
         return
     scheme, hosts = uri_hosts(uri)
-    sys.exit(f"refusing to seed a non-local MongoDB ({scheme}://{','.join(hosts)}); seeds write demo data. "
-             f"Point MONGO_URI at the local container, or pass {ALLOW_FLAG} to seed this database on purpose.")
+    sys.exit(f"refusing to {action} a non-local MongoDB ({scheme}://{','.join(hosts)}); {why}. "
+             f"Point MONGO_URI at the local container, or pass {ALLOW_FLAG} to {action} this database on purpose.")

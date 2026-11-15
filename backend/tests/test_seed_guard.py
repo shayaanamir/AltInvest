@@ -1,4 +1,5 @@
-"""D69 (Phase 10 step 10.5b): seeds refuse a non-local MongoDB unless --allow-remote; compose defaults to local."""
+"""D69 (Phase 10 step 10.5b): seeds refuse a non-local MongoDB unless --allow-remote; compose defaults to local.
+Every test passes its URI explicitly (or sets MONGO_URI itself), so none depends on the container's live MONGO_URI."""
 from pathlib import Path
 
 import pytest
@@ -23,6 +24,25 @@ def test_remote_targets_are_refused_without_the_flag_and_never_print_credentials
     assert "refusing to seed a non-local MongoDB" in msg and "--allow-remote" in msg
     assert "secret" not in msg and "u:p" not in msg
     g.require_local_target(argv=["seed", "--allow-remote"], uri=uri)       # explicit flag: allowed
+
+
+def test_explicit_none_means_unset_not_the_environment(monkeypatch):
+    """The bug fixed in D91: uri=None used to fall back to the live MONGO_URI (Atlas in the dev container)."""
+    monkeypatch.setenv("MONGO_URI", ATLAS)
+    g.require_local_target(argv=["seed"], uri=None)                          # unset = localhost: allowed
+    with pytest.raises(SystemExit, match="refusing to seed"):
+        g.require_local_target(argv=["seed"])                                # default: reads MONGO_URI
+
+
+def test_environment_path_with_a_local_uri(monkeypatch):
+    monkeypatch.setenv("MONGO_URI", "mongodb://mongodb:27017")
+    g.require_local_target(argv=["seed"])
+
+
+def test_cleanup_wording():
+    with pytest.raises(SystemExit) as e:
+        g.require_local_target(argv=["cleanup"], uri=ATLAS, action="clean up", why="the cleanup deletes rows")
+    assert "refusing to clean up a non-local MongoDB" in str(e.value) and "secret" not in str(e.value)
 
 
 def test_hosts_are_parsed_without_credentials():
