@@ -1,0 +1,2 @@
+shared Atlas database (running backend :8000): 2025-08-28 to 2026-08-28 | median price gap 0.4174 | past_ranges null
+local Mongo (backend :8010): 2025-11-08 to 2026-11-08 | median price gap 0.0 | past_ranges sent

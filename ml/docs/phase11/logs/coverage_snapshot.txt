@@ -1,0 +1,5 @@
+WARNING: uncommitted changes outside ml/reports/; git_commit does not fully describe this run
+btc: 2017-10-16 to 2026-10-17, 3289 days, inside 50%: 0.489, inside 80%: 0.722
+eth: 2017-10-16 to 2026-10-17, 3289 days, inside 50%: 0.483, inside 80%: 0.719
+sol: 2020-10-10 to 2026-10-17, 2199 days, inside 50%: 0.486, inside 80%: 0.729
+wrote C:\Shail\Somaiya\LY-Project\AltInvest\AltInvest\ml\reports\past_range_coverage.json

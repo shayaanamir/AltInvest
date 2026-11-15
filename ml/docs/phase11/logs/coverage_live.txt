@@ -1,0 +1,4 @@
+btc: 2017-10-16 to 2026-11-14, 3317 days, inside 50%: 0.490, inside 80%: 0.724
+eth: 2017-10-16 to 2026-11-14, 3317 days, inside 50%: 0.480, inside 80%: 0.718
+sol: 2020-10-10 to 2026-11-14, 2227 days, inside 50%: 0.483, inside 80%: 0.727
+wrote /app/ml/reports/past_range_coverage.json
