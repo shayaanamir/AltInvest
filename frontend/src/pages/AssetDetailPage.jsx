@@ -58,6 +58,7 @@ export default function AssetDetailPage({ onNavigate }) {
                 priceHistory={detail.priceHistory}
                 risk={detail.risk}
                 aaiPanel={detail.aaiPanel}
+                pastRanges={detail.pastRanges}
               />
             </ErrorBoundary>
 

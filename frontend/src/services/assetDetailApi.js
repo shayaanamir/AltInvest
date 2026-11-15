@@ -60,6 +60,9 @@ export const assetDetailApi = {
         watching: h.watching,
       },
       priceHistory: d.price_history,
+      // Phase 11 (ml/docs/DECISIONS.md D87-D89): the range the cone showed 30 days earlier for each day; null when the
+      // backend has none or the chart's prices are not the closes the ranges were built from.
+      pastRanges: d.past_ranges ?? null,
       // No forecast line is drawn (no price model is approved); the chart shows a volatility cone instead (D52).
       risk: risk && { volatility: risk.volatility ?? null, note: risk.note ?? null, timestamp: risk.timestamp ?? null },
       aaiPanel: d.aai_panel && {

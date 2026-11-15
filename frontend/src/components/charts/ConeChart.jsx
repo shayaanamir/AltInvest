@@ -16,8 +16,11 @@ const fmtPath = (pts) => pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p[0].toFixe
  *
  * history: [{date, price}] oldest first; layers / cone: from utils/volCone.chartLayers or utils/nftCone.nftChartLayers;
  * formatAxis / formatValue: number -> label; startText: the cone start label ("Last close, 8 Nov").
+ * pastBands (optional, Phase 11, D87): [{date, inner, outer}] from utils/pastRanges.pastBandsForWindow, the range
+ * shown 30 days earlier for each history day, drawn lightly behind the line and continuing into the cone.
  */
-export default function ConeChart({ history, layers, cone, formatAxis, formatValue, startText, emptyText, gradientId }) {
+export default function ConeChart({ history, layers, cone, formatAxis, formatValue, startText, emptyText, gradientId,
+  pastBands = [] }) {
   const [containerRef, dims] = useElementSize({ W: 900, H: 320 });
 
   const chart = useMemo(() => {
@@ -42,13 +45,17 @@ export default function ConeChart({ history, layers, cone, formatAxis, formatVal
       ? PAD_L + (histW * day) / histSpan
       : PAD_L + histW + (futW * (day - histSpan)) / CONE_DAYS);
 
-    const values = [...history.map((d) => d.price), ...(cone ? cone.flatMap((c) => [c.outer.lower, c.outer.upper]) : [])];
+    const past = pastBands.length >= 2 ? pastBands : [];
+    const values = [...history.map((d) => d.price), ...(cone ? cone.flatMap((c) => [c.outer.lower, c.outer.upper]) : []),
+      ...past.flatMap((b) => [b.outer.lower, b.outer.upper])];
     const minV = Math.min(...values) * 0.985;
     const maxV = Math.max(...values) * 1.015;
     const vRange = Math.max(1e-9, maxV - minV);
     const yFor = (v) => PAD_T + plotH - ((v - minV) / vRange) * plotH;
 
-    const histPts = history.map((d) => ({ x: xForDay(daysApart(d.date, firstDate)), y: yFor(d.price), date: d.date, price: d.price }));
+    const pastByDate = new Map(past.map((b) => [b.date, b]));
+    const histPts = history.map((d) => ({ x: xForDay(daysApart(d.date, firstDate)), y: yFor(d.price), date: d.date, price: d.price,
+      past: pastByDate.get(d.date) }));
     const last = histPts[histPts.length - 1];
     const linePath = fmtPath(histPts.map((p) => [p.x, p.y]));
     const areaPath = `${linePath} L ${last.x.toFixed(1)} ${PAD_T + plotH} L ${histPts[0].x.toFixed(1)} ${PAD_T + plotH} Z`;
@@ -58,6 +65,13 @@ export default function ConeChart({ history, layers, cone, formatAxis, formatVal
       if (!cone) return "";
       const fwd = cone.map((c) => [xForDay(histSpan + c.d), yFor(c[key].upper)]);
       const back = [...cone].reverse().map((c) => [xForDay(histSpan + c.d), yFor(c[key].lower)]);
+      return `${fmtPath([...fwd, ...back])} Z`;
+    };
+    // Past bands (D87): the same closed shape along the history days that have one.
+    const pastBandPath = (key) => {
+      if (!past.length) return "";
+      const fwd = past.map((b) => [xForDay(daysApart(b.date, firstDate)), yFor(b[key].upper)]);
+      const back = [...past].reverse().map((b) => [xForDay(daysApart(b.date, firstDate)), yFor(b[key].lower)]);
       return `${fmtPath([...fwd, ...back])} Z`;
     };
     const conePts = cone
@@ -77,8 +91,9 @@ export default function ConeChart({ history, layers, cone, formatAxis, formatVal
     const startLabel = cone && { text: startText(lastDate), right: futW >= 100 };
 
     return { W, H, PAD_L, PAD_R, PAD_T, plotH, linePath, areaPath, outerPath: bandPath("outer"), innerPath: bandPath("inner"),
+      pastOuterPath: pastBandPath("outer"), pastInnerPath: pastBandPath("inner"),
       last, yTicks, yFor, xLabels, futureLabels, startLabel, histPts, conePts };
-  }, [history, cone, layers, dims, startText]);
+  }, [history, cone, layers, dims, startText, pastBands]);
 
   const [hoverPt, setHoverPt] = useState(null);
 
@@ -98,7 +113,7 @@ export default function ConeChart({ history, layers, cone, formatAxis, formatVal
     if (!closest) return setHoverPt(null);
     // Tooltip position in container pixels, computed here (not during render) from the container's size.
     const w = containerRef.current.clientWidth, h = containerRef.current.clientHeight;
-    const left = Math.max(6, Math.min((closest.x / chart.W) * w - 70, w - (closest.cone ? 200 : 130)));
+    const left = Math.max(6, Math.min((closest.x / chart.W) * w - 70, w - (closest.cone || closest.past ? 230 : 130)));
     const top = Math.max(6, (closest.y / chart.H) * h - 60);
     setHoverPt({ ...closest, left, top });
   };
@@ -140,6 +155,9 @@ export default function ConeChart({ history, layers, cone, formatAxis, formatVal
             {chart.futureLabels.map((l, i) => (
               <text key={`f${i}`} x={l.x} y={chart.H - 8} fontSize="10" fill="var(--sv2-text-mute)" textAnchor="middle">{l.label}</text>
             ))}
+
+            {chart.pastOuterPath && <path d={chart.pastOuterPath} fill="var(--sv2-accent)" opacity="0.07" data-layer="past-outer" />}
+            {chart.pastInnerPath && <path d={chart.pastInnerPath} fill="var(--sv2-accent)" opacity="0.11" data-layer="past-inner" />}
 
             {layers.includes("cone-outer") && (
               <line x1={chart.last.x} y1={chart.PAD_T} x2={chart.last.x} y2={chart.PAD_T + chart.plotH} stroke="var(--sv2-border-strong)" strokeWidth="1" strokeDasharray="3,3" />
@@ -200,7 +218,14 @@ export default function ConeChart({ history, layers, cone, formatAxis, formatVal
                   </div>
                 </>
               ) : (
-                <div style={{ fontSize: 12.5, color: "var(--sv2-text)", fontWeight: 800 }}>{formatValue(hoverPt.price)}</div>
+                <>
+                  <div style={{ fontSize: 12.5, color: "var(--sv2-text)", fontWeight: 800 }}>{formatValue(hoverPt.price)}</div>
+                  {hoverPt.past && (
+                    <div style={{ fontSize: 11, color: "var(--sv2-text-mute)" }} data-role="past-range-tip">
+                      Range shown 30 days earlier (80%): {formatValue(hoverPt.past.outer.lower)}–{formatValue(hoverPt.past.outer.upper)}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
