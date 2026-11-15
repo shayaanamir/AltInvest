@@ -879,6 +879,26 @@ def get_nft_floor_history(slug: str, days: int = 365) -> list:
     return list(cursor)[::-1]
 
 
+# ── Real crypto prices from Binance (backend/controllers/price_feed.py, ml/docs/DECISIONS.md D90) ───────────
+
+def upsert_real_prices(rows: list) -> int:
+    """Hourly price rows, upserted on (asset, timestamp): re-running overwrites the same hours (also any old
+    seeded row at that hour, which then carries the real price and its source)."""
+    return _bulk_upsert("prices", ("asset", "timestamp"), rows)
+
+
+def upsert_real_market_data(doc: dict) -> int:
+    """One asset_market_data row per (asset_id, date); the newest timestamp is what every reader shows."""
+    return _bulk_upsert("asset_market_data", ("asset_id", "date"), [doc])
+
+
+def latest_real_price_time(asset: str, source: str):
+    """Timestamp of the newest `prices` row of `asset` with this source, or None."""
+    row = get_db().prices.find_one({"asset": asset.upper(), "source": source}, sort=[("timestamp", -1)],
+                                   projection={"_id": 0, "timestamp": 1})
+    return row["timestamp"] if row else None
+
+
 def get_all_latest_nft_risk() -> dict:
     """{slug: newest nft_risk_breakdown row}."""
     return _latest_per_key("nft_risk_breakdown", "slug")

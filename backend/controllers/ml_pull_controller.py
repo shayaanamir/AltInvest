@@ -3,7 +3,8 @@ backend/controllers/ml_pull_controller.py
 
 Daily pull of the ML service (ml/, port 8001) into MongoDB: GET /predict/{asset} -> `predictions`,
 GET /risk/{asset} -> `risk_scores`, for the assets in db.queries.ML_COVERED_ASSETS; and, from Phase 10,
-the NFT endpoints into the nft_* tables (controllers/nft_pull.py).
+the NFT endpoints into the nft_* tables (controllers/nft_pull.py). The same daily run also writes real Binance
+prices into `prices` and `asset_market_data` (controllers/price_feed.py, ml/docs/DECISIONS.md D90).
 Responses follow ml/docs/CONTRACT.md and are stored field for field (including `note` and `signal`).
 
 Rules (ml/docs/PLAN_NEXT.md, task C1):
@@ -124,6 +125,7 @@ def pull_all(client: httpx.Client | None = None, sleep=time.sleep) -> dict:
     """Pulls every covered asset. Returns {asset: {endpoint: outcome}}. Never raises for HTTP errors."""
     from db.queries import ML_COVERED_ASSETS
 
+    from controllers import price_feed
     from controllers.nft_items import pull_item_values
     from controllers.nft_pull import pull_nft
 
@@ -133,6 +135,7 @@ def pull_all(client: httpx.Client | None = None, sleep=time.sleep) -> dict:
         result = {a: pull_asset(client, a, sleep=sleep) for a in ML_COVERED_ASSETS}
         result["NFT"] = pull_nft(client, fetch, sleep)          # Phase 10 (ml/docs/DECISIONS.md D61, D67)
         result["NFT items"] = pull_item_values(client, fetch, sleep)    # Phase 10 step 10.7 (D78)
+        result["prices"] = price_feed.pull(client, sleep=sleep)          # real Binance prices (D90)
         return result
     finally:
         if own:
