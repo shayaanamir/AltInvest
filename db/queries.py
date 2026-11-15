@@ -75,9 +75,15 @@ def upsert_ml_risk(doc: dict) -> None:
     _upsert_ml_row("risk_scores", doc)
 
 
+# Assets the seed cleanup marked hidden (no real price source; db/cleanup_seed_data.py, ml/docs/DECISIONS.md D91)
+# are left out of lists, search and the detail page. Holdings and transactions still resolve them
+# (get_assets_by_id), so a user's own records keep their names.
+VISIBLE = {"hidden": {"$ne": True}}
+
+
 def get_supported_assets() -> list:
     db = get_db()
-    return list(db.assets.find({}, projection={"_id": 0}))
+    return list(db.assets.find(VISIBLE, projection={"_id": 0}))
 
 def upsert_aai_score(asset: str, payload: dict) -> None:
     db = get_db()
@@ -193,7 +199,7 @@ def get_user_by_email(email: str) -> dict | None:
 
 def get_asset(asset_id: str) -> dict | None:
     db = get_db()
-    return db.assets.find_one({"asset_id": asset_id.upper()}, projection={"_id": 0})
+    return db.assets.find_one({"asset_id": asset_id.upper(), **VISIBLE}, projection={"_id": 0})
 
 
 def get_assets_by_id(asset_ids) -> dict:
@@ -554,7 +560,8 @@ def search_all(q: str, limit: int = 10) -> dict:
     # can't be run as a (possibly catastrophic) regular expression.
     regex = {"$regex": re.escape(q), "$options": "i"}
     assets = list(db.assets.find(
-        {"$or": [{"name": regex}, {"symbol": regex}, {"asset_id": regex}]}, limit=limit, projection={"_id": 0}
+        {"$or": [{"name": regex}, {"symbol": regex}, {"asset_id": regex}], **VISIBLE}, limit=limit,
+        projection={"_id": 0},
     ))
     nfts = list(db.nft_collections.find(
         {"$or": [{"name": regex}, {"symbol": regex}, {"slug": regex}]}, limit=limit, projection={"_id": 0}
