@@ -12,8 +12,11 @@ import path_setup  # noqa: F401
 from fastapi import APIRouter, HTTPException, Query
 from utils.http_errors import db_unavailable
 
-from models.schemas import NFTCollectionListItem, NFTCollectionDetail, NFTItemValueOut, NFTTokenDetail
+from models.schemas import NFTCollectionListItem, NFTCollectionDetail, NFTItemValueOut, NFTTokenDetail, NFTSentimentOut
 from db.queries import (
+    get_all_nft_sentiment,
+    get_nft_sentiment,
+    get_nft_sentiment_history,
     get_nft_collections,
     get_nft_collection,
     get_nft_market_data_latest,
@@ -29,7 +32,7 @@ from db.queries import (
     get_latest_aai_score,
     get_nft_floor_history,
 )
-from utils.ml_rows import iso, with_stale_note
+from utils.ml_rows import as_utc, iso, with_stale_note
 
 router = APIRouter(tags=["NFT"])
 
@@ -120,6 +123,56 @@ def get_nft_collection_detail(slug: str):
         "risk_model_version": ml_risk.get("model_version") if ml_risk else None,
         "risk_as_of": ml_risk.get("date") if ml_risk else None,
         "last_updated": iso(raw_risk.get("timestamp")) if ml_risk else None,
+    }
+
+
+# ── NFT sentiment ────────────────────────────────────────────────────────────
+# Stored readings only (controllers/nft_sentiment_controller.py writes them every 30 min): a request never
+# runs the pipeline, so it never costs an LLM call.
+
+NFT_SENTIMENT_STALE_AFTER_HOURS = 3      # six missed 30-minute cycles
+
+
+def sentiment_view(doc: dict, now=None) -> dict:
+    """A stored nft_sentiment row as NFTSentimentOut fields (without history)."""
+    from datetime import datetime, timedelta, timezone
+    now = now or datetime.now(timezone.utc)
+    placeholder = bool((doc.get("data_quality") or {}).get("reason"))
+    ts = as_utc(doc.get("timestamp"))
+    out = {k: v for k, v in doc.items() if k in NFTSentimentOut.model_fields and k != "history"}
+    out["status"] = "no_articles" if placeholder else "ok"
+    if placeholder:
+        out["sentiment_score"] = None          # a placeholder's 0.0 is not a reading
+    out["last_updated"] = iso(ts) if ts else doc.get("last_updated")
+    out["stale"] = ts is not None and now - ts > timedelta(hours=NFT_SENTIMENT_STALE_AFTER_HOURS)
+    return out
+
+
+@router.get("/nft/sentiment", response_model=list[NFTSentimentOut])
+def list_nft_sentiment():
+    """Latest reading for every collection plus the NFT market (slug "nft-market")."""
+    try:
+        docs = get_all_nft_sentiment()
+    except Exception as exc:
+        raise db_unavailable(exc)
+    return sorted((sentiment_view(d) for d in docs), key=lambda d: (d["slug"] == "nft-market", d["slug"]))
+
+
+@router.get("/nft/collections/{slug}/sentiment", response_model=NFTSentimentOut)
+def get_nft_collection_sentiment(slug: str, days: int = Query(7, ge=1, le=90)):
+    """A collection's latest reading and its history; slug "nft-market" for the NFT market as a whole."""
+    try:
+        doc = get_nft_sentiment(slug)
+        history = get_nft_sentiment_history(slug, days) if doc else []
+    except Exception as exc:
+        raise db_unavailable(exc)
+    if not doc:
+        raise HTTPException(status_code=404, detail=f"No sentiment computed for '{slug}' yet.")
+    return {
+        **sentiment_view(doc),
+        "history": [{"timestamp": iso(h["timestamp"]), "sentiment_score": h["sentiment_score"],
+                     "confidence": h["confidence"], "story_count": h.get("story_count")}
+                    for h in history if h.get("sentiment_score") is not None],
     }
 
 

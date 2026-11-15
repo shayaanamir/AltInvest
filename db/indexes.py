@@ -67,6 +67,8 @@ INDEXES = {
     "nft_tokens": [([("slug", ASC), ("token_id", ASC)], {"unique": True})],
     "nft_token_sale_history": [([("slug", ASC), ("token_id", ASC), ("timestamp", DESC)], {})],
     "nft_token_ownership_history": [([("slug", ASC), ("token_id", ASC), ("since", DESC)], {})],
+    "nft_sentiment": [([("slug", ASC)], {"unique": True})],
+    "nft_sentiment_history": [([("slug", ASC), ("timestamp", DESC)], {})],
     "user_search_history": [
         ([("user_id", ASC), ("query_key", ASC)], {"unique": True}),       # one row per distinct query
         ([("user_id", ASC), ("searched_at", DESC)], {}),

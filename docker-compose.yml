@@ -38,6 +38,9 @@ services:
 
       MONGO_DB: altinvest
       CMC_API_KEY: ${CMC_API_KEY:-}
+      # NFT news sentiment (sentiment_engine/nft_sentiment). Without the key it falls back to VADER + FinBERT.
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      NFT_SENTIMENT_MODEL: ${NFT_SENTIMENT_MODEL:-openai/gpt-oss-120b}
       JWT_SECRET: ${JWT_SECRET:-}
       FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:5173}
       TRUST_PROXY_HEADERS: ${TRUST_PROXY_HEADERS:-false}

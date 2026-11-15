@@ -1,6 +1,6 @@
 import re
 from db.mongo_connection import get_db
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from bson import ObjectId
 from pymongo.errors import OperationFailure
 
@@ -517,6 +517,55 @@ def get_nft_risk_breakdown(slug: str) -> dict | None:
     return db.nft_risk_breakdown.find_one(
         {"slug": slug}, sort=[("timestamp", -1)], projection={"_id": 0}
     )
+
+
+# ── NFT sentiment (sentiment_engine/nft_sentiment, written by controllers/nft_sentiment_controller) ──
+#   nft_sentiment          the latest reading per slug (upsert)
+#   nft_sentiment_history  a slim time series of real readings (no placeholders), for trend and charts
+
+_NFT_SENTIMENT_HISTORY_FIELDS = ("slug", "sentiment_score", "confidence", "article_count", "story_count",
+                                 "trend", "source")
+
+
+def save_nft_sentiment(result: dict) -> str:
+    """
+    Stores one reading. Returns "saved", or "placeholder" for a no-articles result, which only fills an
+    empty slot: it never overwrites the last real reading and never goes into history.
+    """
+    db = get_db()
+    ts = datetime.fromisoformat(result["last_updated"])
+    doc = {**result, "timestamp": ts}
+    if (result.get("data_quality") or {}).get("reason"):
+        db.nft_sentiment.update_one({"slug": result["slug"]}, {"$setOnInsert": doc}, upsert=True)
+        return "placeholder"
+    db.nft_sentiment.update_one({"slug": result["slug"]}, {"$set": doc}, upsert=True)
+    db.nft_sentiment_history.insert_one(
+        {**{k: result.get(k) for k in _NFT_SENTIMENT_HISTORY_FIELDS}, "timestamp": ts})
+    return "saved"
+
+
+def get_nft_sentiment(slug: str) -> dict | None:
+    return get_db().nft_sentiment.find_one({"slug": slug}, projection={"_id": 0})
+
+
+def get_all_nft_sentiment() -> list:
+    return list(get_db().nft_sentiment.find({}, projection={"_id": 0}))
+
+
+def get_nft_sentiment_history(slug: str, days: int = 7) -> list:
+    """Real readings of the last `days` days, oldest first."""
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    return list(get_db().nft_sentiment_history.find(
+        {"slug": slug, "timestamp": {"$gte": cutoff}}, sort=[("timestamp", 1)], projection={"_id": 0}))
+
+
+def get_nft_sentiment_baseline(slug: str, lookback_hours: int = 24, tolerance_hours: int = 6) -> list:
+    """The readings around `lookback_hours` ago, for the engine's trend detection to pick the closest from."""
+    target = datetime.now(timezone.utc) - timedelta(hours=lookback_hours)
+    tol = timedelta(hours=tolerance_hours)
+    return list(get_db().nft_sentiment_history.find(
+        {"slug": slug, "timestamp": {"$gte": target - tol, "$lte": target + tol}},
+        projection={"_id": 0, "timestamp": 1, "sentiment_score": 1, "confidence": 1}, limit=500))
 
 
 def get_nft_traits(slug: str) -> dict | None:
