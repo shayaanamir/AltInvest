@@ -125,6 +125,8 @@ def build_nft_items(user_id=None) -> list[dict]:
     aai_scores = get_all_latest_aai_scores("nft")
     liquidity = get_all_latest_nft_liquidity()
     flags = get_user_flags(user_id)
+    # Empty until the sentiment engine covers NFT collections (asset_id = slug), see aai_controller C6.
+    live_sentiment = live_sentiment_by_symbol()
 
     items = []
     for slug, m in market.items():
@@ -152,6 +154,6 @@ def build_nft_items(user_id=None) -> list[dict]:
             "held": slug in flags["held"],
             "watching": slug in flags["watching"],
             "sparkline": [],
-            **_aai_fields(aai_scores.get(slug)),
+            **_aai_fields(aai_scores.get(slug), live_sentiment.get(slug.upper())),
         })
     return items

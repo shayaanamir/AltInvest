@@ -20,6 +20,17 @@ BASELINE_NOTE = (
     "baseline-last-value): no model beat it, so it counts as a neutral 50, not as a forecast."
 )
 
+# NFT AAI (decision C6, 2026-11-15; same rule as C5): there is no NFT floor forecast, so the
+# prediction part is a neutral 50. Risk is the ML NFT risk score (higher = safer, but ranked
+# against the tracked NFT collections only, ml/docs/DECISIONS.md D59). Sentiment comes from the
+# sentiment engine under asset_id = the collection slug; until it is there no NFT AAI is stored.
+NFT_AAI_MODEL_VERSION = "nft-aai-neutral-pred-v1"
+NFT_AAI_NOTE = (
+    "There is no NFT price forecast, so the prediction part counts as a neutral 50, not as a forecast. "
+    "The risk part is ranked against the tracked NFT collections only, so this score is not "
+    "comparable to a crypto AAI score."
+)
+
 
 def _get_real_prediction(asset: str) -> dict | None:
     """Latest row in `predictions`, or None. Database errors propagate (503 via main.py)."""
@@ -126,6 +137,50 @@ def compute_aai_response(asset: str, sentiment: dict | None = None) -> dict:
     }
 
 
+def _get_nft_risk(slug: str) -> dict | None:
+    """Latest ML NFT risk row (source ml-service), or None. Seeded or other rows don't count."""
+    from db.queries import get_nft_risk_breakdown
+    row = get_nft_risk_breakdown(slug)
+    return row if (row or {}).get("source") == "ml-service" else None
+
+
+def compute_nft_aai_response(slug: str, sentiment: dict) -> dict:
+    """
+    AAI for one NFT collection (C6): 0.4 x neutral 50 + 0.3 x sentiment + 0.3 x ML NFT risk.
+    `sentiment` is {sentiment_score, confidence, available} as for crypto. Same response shape
+    as compute_aai_response, so is_complete() and the aai_scores readers work unchanged.
+    """
+    pred_score = 50.0
+    raw_sent_score = normalise_sentiment(sentiment.get("sentiment_score", 0.0))
+    confidence = float(sentiment.get("confidence", 0.0))
+    sent_score = round(confidence * raw_sent_score + (1 - confidence) * 50.0, 2)
+
+    risk_value = (_get_nft_risk(slug) or {}).get("risk_score")
+    risk_score = float(risk_value) if isinstance(risk_value, (int, float)) else None
+
+    sentiment_available = bool(sentiment.get("available", True))
+    missing = [] if risk_score is not None else ["risk score"]
+    notes = [f"No ML risk score is stored for {slug} yet, so the AAI score can't be computed."] if missing else []
+    notes.append(NFT_AAI_NOTE)
+    return {
+        "asset": slug,
+        "aai_score": compute_aai(pred_score, sent_score, risk_score) if risk_score is not None else None,
+        "pred_score": pred_score,
+        "expected_return_30d": None,
+        "sentiment_score": round(sent_score, 2),
+        "sentiment_confidence": round(confidence, 2),
+        "sentiment_available": sentiment_available,
+        "sentiment_note": None if sentiment_available else (
+            "No recent sentiment reading was available, so a neutral value was used for the sentiment component."
+        ),
+        "risk_score": round(risk_score, 2) if risk_score is not None else None,
+        "missing_inputs": missing,
+        "note": " ".join(notes),
+        "model_version": NFT_AAI_MODEL_VERSION,
+        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+
+
 def is_complete(result: dict) -> bool:
     """True when every input was real (prediction, risk and sentiment): only then may it be cached."""
     return result.get("aai_score") is not None and result.get("sentiment_available") is not False
@@ -141,7 +196,7 @@ AAI_REFRESH_SECONDS = 30 * 60   # well inside the 60-minute freshness window the
 
 def refresh_all_aai_scores() -> dict:
     """
-    Computes and stores the AAI for every covered crypto asset. Uses only stored sentiment
+    Computes and stores the AAI for every covered crypto asset and NFT collection. Uses only stored sentiment
     readings (never runs the sentiment pipeline), and stores only complete scores; an asset
     missing a prediction, risk score or recent sentiment keeps its previous row.
     Returns {"stored": [...], "skipped": {asset: reason}}.
@@ -168,6 +223,30 @@ def refresh_all_aai_scores() -> dict:
              "timestamp": datetime.now(timezone.utc)},
         )
         stored.append(symbol)
+
+    # NFT collections (C6). The sentiment engine keys them by slug; live_sentiment_by_symbol
+    # upper-cases ids. Nothing is stored until a usable reading for the slug exists, so the
+    # NFT AAI appears on its own once the engine covers the collections.
+    from db.queries import get_nft_collections
+    for c in get_nft_collections():
+        slug = c.get("slug")
+        if not slug:
+            continue
+        reading = live.get(slug.upper())
+        if not reading:
+            skipped[f"nft:{slug}"] = "recent sentiment"
+            continue
+        sentiment = {"sentiment_score": reading["score"], "confidence": reading["confidence"], "available": True}
+        result = compute_nft_aai_response(slug, sentiment)
+        if not is_complete(result):
+            skipped[f"nft:{slug}"] = ", ".join(result["missing_inputs"])
+            continue
+        upsert_aai_score_generalized(
+            "nft", slug,
+            {**result, "target_type": "nft", "target_id": slug, "sentiment_trend": reading.get("trend"),
+             "timestamp": datetime.now(timezone.utc)},
+        )
+        stored.append(f"nft:{slug}")
     return {"stored": stored, "skipped": skipped}
 
 
