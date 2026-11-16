@@ -43,6 +43,27 @@ Then visit:
 To stop: `docker compose down` (add `-v` to also wipe the volumes: Mongo's data and the ML service's
 `ml-data`; the `ml` service re-fetches its data from Binance at the next start).
 
+## First run: fill the database once
+
+**Every machine has its own MongoDB** (the `mongodb` container and its `mongo_data` volume). Git shares code,
+never databases, so a fresh clone starts empty and shows tickers instead of names ("BTC", not "Bitcoin"), no
+descriptions, no trending list and no themes. The live jobs fill prices and news by themselves; the rest comes
+from one command, safe to run again:
+
+```bash
+docker exec -w /app/backend altinvest-backend python -m controllers.bootstrap_controller
+```
+
+It creates the coin names and colours, the NFT collection details and the live prices and history, runs one news
+sentiment pass, builds the insights and themes, and finally fetches every coin's CoinGecko profile (about 6 minutes;
+CoinGecko's free tier is slow). It writes no made-up numbers and refuses a non-local database. Add
+`--skip profiles` to leave out the slow step, or `--only coins,market` to run just some. Then hard-refresh the browser.
+
+Put your own keys in `.env` first (they are never in git), then `docker compose up -d` (a plain `restart` does not
+re-read `.env`): `GROQ_API_KEY` for themes and the NFT sentiment LLM; `OPENSEA_API_KEY` and `ALCHEMY_API_KEY` for the
+NFT floor prices and sales, whose first download takes a while. Predictions, risk and AAI for the coins the ML
+service does not cover are not set up by this command.
+
 ## Important things to know before you build
 
 1. **The backend build context is the repo root, not `backend/`.**
