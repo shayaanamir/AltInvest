@@ -22,6 +22,14 @@ export default function SecuritySection({ data }) {
   const [sessionsError, setSessionsError] = useState(null);
   const [sessionStatus, setSessionStatus] = useState(null);
   const [revoking, setRevoking] = useState(null); // "others" | a session id | null
+  // False for an account made with Google that has no password yet: the form then sets one.
+  const [hasPassword, setHasPassword] = useState(true);
+
+  useEffect(() => {
+    let live = true;
+    authApi.me().then((u) => live && setHasPassword(u.has_password !== false)).catch(() => {});
+    return () => { live = false; };
+  }, []);
 
   const loadSessions = useCallback(async () => {
     setSessionsError(null);
@@ -39,8 +47,8 @@ export default function SecuritySection({ data }) {
   const handleUpdatePassword = async (e) => {
     e.preventDefault();
     if (saving) return;
-    if (!current || !next || !confirm) {
-      setStatus({ type: "error", message: "Fill in all three fields." });
+    if ((hasPassword && !current) || !next || !confirm) {
+      setStatus({ type: "error", message: hasPassword ? "Fill in all three fields." : "Fill in both fields." });
       return;
     }
     if (next.length < 8) {
@@ -51,21 +59,22 @@ export default function SecuritySection({ data }) {
       setStatus({ type: "error", message: "New password and confirmation don't match." });
       return;
     }
-    if (next === current) {
+    if (hasPassword && next === current) {
       setStatus({ type: "error", message: "New password must be different from your current one." });
       return;
     }
     setSaving(true);
     setStatus(null);
     try {
-      const res = await authApi.changePassword(current, next);
+      const res = await authApi.changePassword(hasPassword ? current : "", next);
       const signedOut = res?.signed_out_sessions || 0;
       setStatus({
         type: "success",
         message: signedOut
           ? `Password updated. Your other ${signedOut === 1 ? "session was" : `${signedOut} sessions were`} logged out.`
-          : "Password updated.",
+          : hasPassword ? "Password updated." : "Password set. You can now also sign in with your email and password.",
       });
+      setHasPassword(true);
       setCurrent(""); setNext(""); setConfirm("");
       if (signedOut) loadSessions();
     } catch (err) {
@@ -103,13 +112,18 @@ export default function SecuritySection({ data }) {
   return (
     <>
       <div className="sv2-card set-subcard">
-        <div className="set-section-title">Change password</div>
+        <div className="set-section-title">{hasPassword ? "Change password" : "Set a password"}</div>
+        {!hasPassword && (
+          <div className="set-row-desc set-mb-16">You sign in with Google. Add a password to also sign in with your email.</div>
+        )}
         <form onSubmit={handleUpdatePassword}>
           <div className="set-password-grid">
-            <label className="set-field">
-              <span>Current</span>
-              <input className="set-input" type="password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} />
-            </label>
+            {hasPassword && (
+              <label className="set-field">
+                <span>Current</span>
+                <input className="set-input" type="password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} />
+              </label>
+            )}
             <label className="set-field">
               <span>New</span>
               <input className="set-input" type="password" autoComplete="new-password" value={next} onChange={(e) => setNext(e.target.value)} />
@@ -121,7 +135,7 @@ export default function SecuritySection({ data }) {
           </div>
           {status && <div className={`set-form-status ${status.type}`}>{status.message}</div>}
           <button type="submit" className="set-btn-accent" disabled={saving}>
-            {saving ? "Updating…" : "Update password"}
+            {saving ? "Updating…" : hasPassword ? "Update password" : "Set password"}
           </button>
         </form>
       </div>

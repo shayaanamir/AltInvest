@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { IconTrash, IconDownload } from "../icons";
 import { portfolioApi } from "../../services/portfolioApi";
@@ -74,6 +74,14 @@ export default function DataAccountSection({ data }) {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState(null);
   const [exporting, setExporting] = useState(false);
+  // Accounts made with Google may have no password to re-enter.
+  const [hasPassword, setHasPassword] = useState(true);
+
+  useEffect(() => {
+    let live = true;
+    authApi.me().then((u) => live && setHasPassword(u.has_password !== false)).catch(() => {});
+    return () => { live = false; };
+  }, []);
   const toast = useToast();
   const navigate = useNavigate();
 
@@ -108,7 +116,7 @@ export default function DataAccountSection({ data }) {
   };
 
   const requiredPhrase = data.accountDeletion?.confirmationPhrase || "DELETE";
-  const canDelete = confirmText.trim() === requiredPhrase && !!password && !deleting;
+  const canDelete = confirmText.trim() === requiredPhrase && (!hasPassword || !!password) && !deleting;
 
   const cancelDelete = () => {
     setConfirming(false); setConfirmText(""); setPassword(""); setDeleteError(null);
@@ -172,7 +180,7 @@ export default function DataAccountSection({ data }) {
                 autoComplete="off"
               />
             </label>
-            <label className="set-field">
+            {hasPassword && <label className="set-field">
               <span>Your password</span>
               <input
                 className="set-input"
@@ -181,7 +189,7 @@ export default function DataAccountSection({ data }) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
-            </label>
+            </label>}
             {deleteError && <div className="set-form-status error">{deleteError}</div>}
             <div className="set-delete-actions">
               <button type="submit" className="set-btn-danger" disabled={!canDelete}>

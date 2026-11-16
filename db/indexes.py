@@ -27,7 +27,10 @@ SEARCH_HISTORY_TTL_SECONDS = 90 * 24 * 60 * 60
 
 # collection -> [(keys, options)]
 INDEXES = {
-    "users": [([("email", ASC)], {"unique": True})],
+    "users": [
+        ([("email", ASC)], {"unique": True}),
+        ([("google_sub", ASC)], {"unique": True, "partialFilterExpression": {"google_sub": {"$type": "string"}}}),
+    ],
     "user_settings": [([("user_id", ASC)], {"unique": True})],
     "assets": [([("asset_id", ASC)], {"unique": True})],
     "asset_market_data": [([("asset_id", ASC), ("timestamp", DESC)], {})],
