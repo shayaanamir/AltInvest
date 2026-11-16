@@ -133,6 +133,8 @@ class AuthUser(BaseModel):
 class AuthResponse(BaseModel):
     user: AuthUser
     token: str
+    # Google sign-in: True when this call created the account (the client sends them to onboarding).
+    created: bool = False
 
 
 class AssetHeader(BaseModel):
@@ -622,7 +624,7 @@ class SecurityPatch(_SettingsPatch):
 
 
 class ConnectedAccountsPatch(_SettingsPatch):
-    google: Optional[bool] = None
+    # Not `google`: that follows the account's real Google link (POST /auth/google/link, /unlink).
     github: Optional[bool] = None
     wallet: Optional[bool] = None
 
@@ -655,8 +657,17 @@ class ResetPasswordRequest(BaseModel):
 
 
 class ChangePasswordRequest(BaseModel):
-    current_password: str
+    # Empty for an account that has no password yet (Google sign-in only): this then sets one.
+    current_password: str = ""
     new_password: str
+
+
+class GoogleAuthRequest(BaseModel):
+    code: str
+
+
+class GoogleUnlinkRequest(BaseModel):
+    password: str
 
 class SessionInfo(BaseModel):
     id: str
@@ -676,7 +687,12 @@ class MeOut(BaseModel):
     avatar_color: Optional[str] = None
     onboarding_completed: bool
     created_at: Optional[datetime] = None
+    # False for accounts created with Google that haven't set a password.
+    has_password: bool = True
+    google_linked: bool = False
+    google_email: Optional[str] = None
 
 
 class DeleteAccountRequest(BaseModel):
-    password: str
+    # Not needed for an account with no password; the typed confirmation phrase is checked client-side.
+    password: str = ""

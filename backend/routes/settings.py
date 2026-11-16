@@ -20,7 +20,7 @@ from models.schemas import (
     SecurityPatch,
     ConnectedAccountsPatch,
 )
-from db.queries import get_user_settings, update_user_settings
+from db.queries import get_user_settings, update_user_settings, get_user_by_id
 from controllers.fx_controller import SUPPORTED_CURRENCIES
 
 router = APIRouter(tags=["Settings"])
@@ -40,7 +40,17 @@ def get_settings(user_id: ObjectId = Depends(get_current_user_id)):
     if not settings:
         raise HTTPException(status_code=404, detail="Settings not found for this user.")
 
-    return {**settings, "user_id": str(user_id)}
+    return _with_real_links(settings, user_id)
+
+
+def _with_real_links(settings: dict, user_id: ObjectId) -> dict:
+    """connected_accounts.google reflects whether the account is actually linked to Google."""
+    try:
+        user = get_user_by_id(str(user_id)) or {}
+    except Exception as exc:
+        raise db_unavailable(exc)
+    connected = {**(settings.get("connected_accounts") or {}), "google": bool(user.get("google_sub"))}
+    return {**settings, "connected_accounts": connected, "user_id": str(user_id)}
 
 
 # ── PATCH /settings/{section} ────────────────────────────────────────────────
@@ -69,7 +79,7 @@ def _save_section(section: str, body, user_id: ObjectId) -> dict:
         settings = get_user_settings(user_id)
     except Exception as exc:
         raise db_unavailable(exc)
-    return {**settings, "user_id": str(user_id)}
+    return _with_real_links(settings, user_id)
 
 
 @router.patch("/settings/preferences", response_model=UserSettingsOut)

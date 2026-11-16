@@ -77,6 +77,20 @@ export const authApi = {
     },
 
     /**
+     * Sign in (or sign up) with a Google authorization code from requestGoogleCode().
+     * @returns {Promise<{ user: any, token: string, created: boolean }>} created: a new account was made
+     */
+    googleSignIn: async (code) => {
+        return authPost("/auth/google", { code }, "Google sign-in didn't complete. Try again.");
+    },
+
+    /** Link a Google account to the signed-in account. Resolves with { message, google_email }. */
+    linkGoogle: (code) => apiFetch("/auth/google/link", { method: "POST", body: JSON.stringify({ code }) }),
+
+    /** Disconnect Google; needs the account's password (and so an account that has one). */
+    unlinkGoogle: (password) => apiFetch("/auth/google/unlink", { method: "POST", body: JSON.stringify({ password }) }),
+
+    /**
     * Request a password reset email. Always resolves with a generic
     * message — never reveals whether the account exists.
     */

@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { describeError } from "../errors/errorCatalog";
 import { motion } from "framer-motion";
 import AuthLayout from "../components/auth/AuthLayout";
-import { AuthInput, AuthButton, OAuthButton, Divider, GoogleIcon } from "../components/auth/AuthPrimitives";
+import { AuthInput, AuthButton, Divider } from "../components/auth/AuthPrimitives";
+import GoogleSignInButton from "../components/auth/GoogleSignInButton";
 import { authApi } from "../services/authApi";
 import { useLandingTheme } from "../components/landingPage/landingTokens";
 import { setSession, isAuthenticated } from "../hooks/useAuth";
@@ -148,7 +149,7 @@ export default function SignupPage({ onNavigate }) {
 
                 <Divider label="or" />
 
-                <OAuthButton icon={<GoogleIcon />} label="Google" disabled title="Google sign-in is coming soon" />
+                <GoogleSignInButton onError={setError} />
 
                 <p style={{
                     textAlign: "center", fontSize: 11,

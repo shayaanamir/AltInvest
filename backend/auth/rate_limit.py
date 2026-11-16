@@ -41,6 +41,7 @@ SIGNUPS_PER_IP = Limit("signup_ip", 10, timedelta(hours=1), "Too many accounts c
 FORGOT_PER_EMAIL = Limit("forgot_email", 3, timedelta(hours=1), "Too many password reset requests for this email.")
 FORGOT_PER_IP = Limit("forgot_ip", 10, timedelta(hours=1), "Too many password reset requests.")
 RESET_PER_IP = Limit("reset_ip", 10, timedelta(minutes=15), "Too many password reset attempts.")
+GOOGLE_SIGNINS_PER_IP = Limit("google_ip", 30, timedelta(minutes=15), "Too many Google sign-in attempts from this network.")
 WRONG_PASSWORD_PER_USER = Limit(
     "wrong_pw_user", 5, timedelta(minutes=15), "Too many incorrect password attempts.",
 )

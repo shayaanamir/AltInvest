@@ -44,7 +44,8 @@ function mapBackendSettings(s) {
       // Active sessions are loaded by SecuritySection itself from GET /auth/sessions.
     },
     connectedAccounts: {
-      google: { connected: !!s.connected_accounts?.google, status: "coming_soon" },
+      // Google is linked/unlinked through /auth/google/*, never PATCHed here (ConnectedAccountsSection).
+      google: { connected: !!s.connected_accounts?.google, status: "available" },
       github: { connected: !!s.connected_accounts?.github, status: "coming_soon" },
       wallet: { connected: !!s.connected_accounts?.wallet, status: "proposed" },
     },
@@ -92,6 +93,7 @@ function toBackendPayload(section, patch) {
     // backend section key is "connected_accounts", handled by caller
     const out = {};
     Object.entries(patch).forEach(([k, v]) => {
+      if (k === "google") return; // the backend refuses it: see GoogleRow
       out[k] = !!v.connected;
     });
     return out;

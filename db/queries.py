@@ -740,26 +740,47 @@ def _ensure_user_indexes(db) -> None:
         return
     try:
         db.users.create_index("email", unique=True)
+        # One AltInvest account per Google account; partial so password-only users don't collide on null.
+        db.users.create_index(
+            "google_sub", unique=True,
+            partialFilterExpression={"google_sub": {"$type": "string"}},
+        )
     except OperationFailure as exc:
         # Existing duplicate emails block the index; signup still checks email_exists() first.
         print(f"[users] couldn't create unique index on users.email (duplicate emails in the data?): {exc}")
     _user_indexes_ready = True
 
 
-def create_user(email: str, name: str, password_hash: str) -> str:
-    """Raises pymongo.errors.DuplicateKeyError if the email is already registered."""
+def create_user(email: str, name: str, password_hash: str | None, *,
+                email_verified: bool = False, extra: dict | None = None) -> str:
+    """Raises pymongo.errors.DuplicateKeyError if the email (or Google account) is already registered.
+    password_hash is None for accounts that sign in with Google only."""
     db = get_db()
     _ensure_user_indexes(db)
+    now = datetime.now(timezone.utc)
     doc = {
         "email": email.lower().strip(), "name": name, "password_hash": password_hash,
-        "created_at": datetime.now(timezone.utc), "email_verified": False,
+        "created_at": now, "email_verified": email_verified,
+        **({"email_verified_at": now} if email_verified else {}),
         "risk_profile": "balanced", "layout_preference": "ai-first",
         "display_currency": "USD",
         "onboarding": {"completed": False, "completed_at": None, "skipped": False, "answers": {}},
         "bio": None,
+        **(extra or {}),
     }
     result = db.users.insert_one(doc)
     return str(result.inserted_id)
+
+
+def get_user_by_google_sub(google_sub: str) -> dict | None:
+    db = get_db()
+    _ensure_user_indexes(db)
+    return db.users.find_one({"google_sub": google_sub})
+
+
+def unset_user_fields(user_id: ObjectId, *fields: str) -> bool:
+    result = get_db().users.update_one({"_id": user_id}, {"$unset": {f: "" for f in fields}})
+    return result.matched_count > 0
 
 
 def upsert_aai_score_generalized(target_type: str, target_id: str, payload: dict) -> None:
@@ -881,6 +902,10 @@ def delete_user_session(user_id: ObjectId, session_id: ObjectId) -> bool:
 
 def delete_other_user_sessions(user_id: ObjectId, keep_session_id: ObjectId) -> int:
     return _sessions().delete_many({"user_id": user_id, "_id": {"$ne": keep_session_id}}).deleted_count
+
+
+def delete_all_user_sessions(user_id: ObjectId) -> int:
+    return _sessions().delete_many({"user_id": user_id}).deleted_count
 
 
 # Every collection holding rows that belong to one user (keyed by user_id).

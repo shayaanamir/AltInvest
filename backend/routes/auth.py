@@ -17,6 +17,8 @@ Attempt limits on login, signup, password reset and password re-entry: see auth/
 AUTH-10 — POST /auth/refresh: sliding sessions (see auth/security.py JWT_EXPIRY_HOURS / SESSION_MAX_DAYS).
 AUTH-07 — Sessions: every login is a row in `user_sessions`; Settings lists them and can
           revoke them (one, or all but this one). Logout drops the caller's own row.
+AUTH-11 — Google: POST /auth/google signs in (or up) with a Google authorization code; Settings can
+          link/unlink Google on an existing account. See auth/google_oauth.py.
 
 Emails go out through utils/mailer.py (SMTP when configured, otherwise the link is logged).
 """
@@ -34,6 +36,7 @@ from models.schemas import (
     LoginRequest, AuthResponse, AuthUser, SignupRequest,
     ForgotPasswordRequest, ResetPasswordRequest, VerifyEmailRequest,
     ChangePasswordRequest, SessionInfo, MeOut, DeleteAccountRequest,
+    GoogleAuthRequest, GoogleUnlinkRequest,
 )
 from auth.security import (
     verify_password, create_access_token, hash_password,
@@ -43,6 +46,7 @@ from auth.security import (
 )
 from auth.dependencies import get_current_user_id, get_current_session, CurrentSession
 from auth import rate_limit as rl
+from auth import google_oauth
 from utils.mailer import send_email, smtp_configured
 from db.queries import create_default_user_settings
 
@@ -170,6 +174,9 @@ def me(user_id: ObjectId = Depends(get_current_user_id)):
         avatar_color=user.get("avatar_color"),
         onboarding_completed=bool((user.get("onboarding") or {}).get("completed")),
         created_at=_utc(created_at) if isinstance(created_at, datetime) else None,
+        has_password=bool(user.get("password_hash")),
+        google_linked=bool(user.get("google_sub")),
+        google_email=user.get("google_email"),
     )
 
 
@@ -187,7 +194,9 @@ def delete_account(payload: DeleteAccountRequest, user_id: ObjectId = Depends(ge
         raise HTTPException(status_code=401, detail="Account not found.")
 
     # 400, not 401, for the same reason as change-password: a typo mustn't look like a lost session.
-    if not verify_password(payload.password or "", user.get("password_hash", "")):
+    # An account without a password (Google only) has nothing to re-enter; the signed-in session and
+    # the typed confirmation are what stand between a click and the deletion.
+    if user.get("password_hash") and not verify_password(payload.password or "", user["password_hash"]):
         rl.record(rl.WRONG_PASSWORD_PER_USER, str(user_id))
         raise HTTPException(status_code=400, detail="Password is incorrect.")
 
@@ -278,9 +287,6 @@ def change_password(payload: ChangePasswordRequest, session: CurrentSession = De
     new_password = payload.new_password or ""
     if problem := password_problem(new_password, "New password"):
         raise HTTPException(status_code=422, detail=problem)
-    if new_password == payload.current_password:
-        raise HTTPException(status_code=422, detail="New password must be different from your current one.")
-
     rl.check(rl.WRONG_PASSWORD_PER_USER, str(user_id))
     from db.queries import get_user_by_id, update_user, delete_other_user_sessions
     try:
@@ -290,10 +296,14 @@ def change_password(payload: ChangePasswordRequest, session: CurrentSession = De
     if not user:
         raise HTTPException(status_code=404, detail="Account not found.")
 
-    # 400, not 401: a wrong current password must not look like an expired session to the client.
-    if not verify_password(payload.current_password or "", user.get("password_hash", "")):
-        rl.record(rl.WRONG_PASSWORD_PER_USER, str(user_id))
-        raise HTTPException(status_code=400, detail="Current password is incorrect.")
+    # An account created with Google has no password yet: this sets its first one.
+    if user.get("password_hash"):
+        if new_password == payload.current_password:
+            raise HTTPException(status_code=422, detail="New password must be different from your current one.")
+        # 400, not 401: a wrong current password must not look like an expired session to the client.
+        if not verify_password(payload.current_password or "", user["password_hash"]):
+            rl.record(rl.WRONG_PASSWORD_PER_USER, str(user_id))
+            raise HTTPException(status_code=400, detail="Current password is incorrect.")
 
     try:
         update_user(user_id, {
@@ -501,3 +511,151 @@ def logout(authorization: str | None = Header(None)):
             # The token still lapses at its expiry; logging out locally shouldn't fail over this.
             log.warning("logout: couldn't delete session: %s", exc)
     return Response(status_code=204)
+
+
+# ── AUTH-11 — Google ─────────────────────────────────────────────────────────
+
+@router.get("/auth/providers")
+def auth_providers():
+    """Which sign-in providers this server has set up, and the public client ID the browser needs."""
+    return {"google": {"enabled": google_oauth.configured(), "client_id": google_oauth.client_id() or None}}
+
+
+def _google_link_fields(identity: google_oauth.GoogleIdentity) -> dict:
+    return {
+        "google_sub": identity.sub,
+        "google_email": identity.email,
+        "google_linked_at": datetime.now(timezone.utc),
+    }
+
+
+def _sync_connected_flag(user_id: ObjectId, linked: bool) -> None:
+    from db.queries import update_user_settings
+    try:
+        update_user_settings(user_id, "connected_accounts", {"google": linked})
+    except Exception as exc:
+        # Only a copy of the link state; GET /settings reads the real one from the user.
+        log.warning("couldn't sync connected_accounts.google for %s: %s", user_id, exc)
+
+
+@router.post("/auth/google", response_model=AuthResponse)
+def google_sign_in(payload: GoogleAuthRequest, request: Request):
+    """
+    Signs in with Google, creating the account on first use. Matching, in order:
+      1. an account already linked to this Google account (by Google's `sub`, not by email);
+      2. an account with the same email: Google is linked to it. If that account never verified
+         its email, whoever set its password didn't prove they own the address, so the password is
+         removed and its sessions are ended (otherwise anyone could pre-register a victim's email);
+      3. otherwise a new account with no password and a verified email.
+    """
+    rl.hit(rl.GOOGLE_SIGNINS_PER_IP, rl.client_ip(request))
+    identity = google_oauth.identity_from_code(payload.code)
+    if not identity.email_verified:
+        raise HTTPException(status_code=400, detail="Your Google account's email isn't verified, so it can't be used to sign in.")
+
+    from db.queries import (
+        get_user_by_google_sub, get_user_by_email, create_user, update_user, delete_all_user_sessions,
+    )
+    created = False
+    try:
+        user = get_user_by_google_sub(identity.sub)
+        if not user:
+            user = get_user_by_email(identity.email)
+            if user:
+                updates = _google_link_fields(identity)
+                if not user.get("email_verified"):
+                    updates.update({
+                        "email_verified": True, "email_verified_at": datetime.now(timezone.utc), "password_hash": None,
+                    })
+                    ended = delete_all_user_sessions(user["_id"])
+                    log.info("google sign-in took over unverified account %s (%s sessions ended)", user["_id"], ended)
+                update_user(user["_id"], updates)
+                _sync_connected_flag(user["_id"], True)
+                user = {**user, **updates}
+            else:
+                rl.hit(rl.SIGNUPS_PER_IP, rl.client_ip(request))
+                extra = _google_link_fields(identity)
+                if identity.picture:
+                    extra["avatar_url"] = identity.picture
+                try:
+                    new_id = create_user(identity.email, identity.name, None, email_verified=True, extra=extra)
+                except DuplicateKeyError:
+                    # Two sign-ins for the same new Google account raced; the other one created it.
+                    user = get_user_by_google_sub(identity.sub)
+                    if not user:
+                        raise HTTPException(status_code=409, detail="Couldn't finish signing in with Google. Try again.")
+                else:
+                    create_default_user_settings(ObjectId(new_id))
+                    _sync_connected_flag(ObjectId(new_id), True)
+                    user = {"_id": ObjectId(new_id), "name": identity.name, "email": identity.email}
+                    created = True
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise db_unavailable(exc)
+
+    user_id = str(user["_id"])
+    email = user.get("email") or identity.email
+    token = _issue_token(user_id, email, request)
+    return AuthResponse(
+        user=AuthUser(id=user_id, name=user.get("name", ""), email=email),
+        token=token,
+        created=created,
+    )
+
+
+@router.post("/auth/google/link")
+def google_link(payload: GoogleAuthRequest, request: Request, user_id: ObjectId = Depends(get_current_user_id)):
+    """Links a Google account to the signed-in account, so either can be used to sign in."""
+    rl.hit(rl.GOOGLE_SIGNINS_PER_IP, rl.client_ip(request))
+    identity = google_oauth.identity_from_code(payload.code)
+
+    from db.queries import get_user_by_id, get_user_by_google_sub, update_user
+    try:
+        user = get_user_by_id(str(user_id))
+        if not user:
+            raise HTTPException(status_code=404, detail="Account not found.")
+        if user.get("google_sub") == identity.sub:
+            return {"message": "Google is already connected.", "google_email": identity.email}
+        if user.get("google_sub"):
+            raise HTTPException(status_code=409, detail="A different Google account is already connected. Disconnect it first.")
+        other = get_user_by_google_sub(identity.sub)
+        if other and other["_id"] != user_id:
+            raise HTTPException(status_code=409, detail="That Google account is already used by another AltInvest account.")
+        update_user(user_id, _google_link_fields(identity))
+    except HTTPException:
+        raise
+    except DuplicateKeyError:
+        raise HTTPException(status_code=409, detail="That Google account is already used by another AltInvest account.")
+    except Exception as exc:
+        raise db_unavailable(exc)
+
+    _sync_connected_flag(user_id, True)
+    return {"message": "Google connected.", "google_email": identity.email}
+
+
+@router.post("/auth/google/unlink")
+def google_unlink(payload: GoogleUnlinkRequest, user_id: ObjectId = Depends(get_current_user_id)):
+    """Disconnects Google. Only once the account has a password, so it can still be signed in to."""
+    rl.check(rl.WRONG_PASSWORD_PER_USER, str(user_id))
+    from db.queries import get_user_by_id, unset_user_fields
+    try:
+        user = get_user_by_id(str(user_id))
+    except Exception as exc:
+        raise db_unavailable(exc)
+    if not user:
+        raise HTTPException(status_code=404, detail="Account not found.")
+    if not user.get("google_sub"):
+        return {"message": "Google isn't connected."}
+    if not user.get("password_hash"):
+        raise HTTPException(status_code=400, detail="Set a password first, so you can still sign in after disconnecting Google.")
+    if not verify_password(payload.password or "", user["password_hash"]):
+        rl.record(rl.WRONG_PASSWORD_PER_USER, str(user_id))
+        raise HTTPException(status_code=400, detail="Password is incorrect.")
+
+    try:
+        unset_user_fields(user_id, "google_sub", "google_email", "google_linked_at")
+    except Exception as exc:
+        raise db_unavailable(exc)
+    _sync_connected_flag(user_id, False)
+    return {"message": "Google disconnected."}
