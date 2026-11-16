@@ -49,11 +49,13 @@ class RateLimited(Exception):
 SUBCATEGORY_RULES = [
     (re.compile(r"stablecoin", re.I), "Stablecoin"),
     (re.compile(r"\bmeme", re.I), "Meme"),
+    # DEX before exchange token: CoinGecko tags UNI with both "Decentralized Exchange (DEX)" and
+    # "Exchange-based Tokens"; BNB has only the latter.
+    (re.compile(r"decentralized exchange", re.I), "DEX"),
     (re.compile(r"exchange-based tokens|centralized exchange \(cex\) token", re.I), "Exchange token"),
     (re.compile(r"^layer 2", re.I), "Layer 2"),
     (re.compile(r"^layer 0", re.I), "Layer 0"),
     (re.compile(r"^oracle", re.I), "Oracle"),
-    (re.compile(r"decentralized exchange", re.I), "DEX"),
     (re.compile(r"decentralized finance|^defi$", re.I), "DeFi"),
     (re.compile(r"interoperability", re.I), "Interoperability"),
     (re.compile(r"^layer 1", re.I), "Layer 1"),
@@ -71,7 +73,7 @@ def subcategory_of(categories: list) -> str | None:
     return None
 
 
-def short_description(raw: str) -> str | None:
+def short_description(raw: str | None) -> str | None:
     text = html.unescape(re.sub(r"<[^>]+>", "", raw or "")).strip()
     if not text:
         return None
@@ -171,7 +173,9 @@ def refresh_profiles(client: httpx.Client | None = None, db=None, now: datetime 
     cats = {a: assets[a].get("categories") for a in SOURCES if a in assets and assets[a].get("categories")}
     caps = {m["asset_id"]: m.get("market_cap") for m in db.asset_market_data.find({}, {"_id": 0, "asset_id": 1, "market_cap": 1})}
     for a, (related, basis) in related_from_categories(cats, caps).items():
-        db.assets.update_one({"asset_id": a}, {"$set": {"related_assets": related, "related_basis": basis}})
+        # subcategory re-derived from the stored tags too, so a change to SUBCATEGORY_RULES applies at once
+        db.assets.update_one({"asset_id": a}, {"$set": {"related_assets": related, "related_basis": basis,
+                                                         "subcategory": subcategory_of(cats[a])}})
     return {"refreshed": done, "due_left": max(0, len(due) - len(done)) if stopped else 0,
             "related_computed": len(cats), "stopped": stopped}
 

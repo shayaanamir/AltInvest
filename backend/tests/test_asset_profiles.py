@@ -31,6 +31,7 @@ def test_subcategory_follows_the_coingecko_tags():
     assert ap.subcategory_of(BNB) == "Exchange token"          # more specific than its Layer 1 tag
     assert ap.subcategory_of(DAI) == "Stablecoin"              # before DeFi
     assert ap.subcategory_of(UNI) == "DEX"
+    assert ap.subcategory_of(UNI + ["Exchange-based Tokens"]) == "DEX"   # UNI's real tags carry both
     assert ap.subcategory_of(["Layer 2 (L2)", "Ethereum Ecosystem"]) == "Layer 2"
     assert ap.subcategory_of(["Meme", "Dog-Themed"]) == "Meme"
     assert ap.subcategory_of(["Something new"]) is None and ap.subcategory_of([]) is None
