@@ -5,6 +5,12 @@
 Writes {asset}_1d.csv and {asset}_1d.fetch.json (fetch time, source) to config.ML_RAW_DIR (D40; the evaluation
 snapshot ml/data/raw unless the ML_RAW_DIR env var is set).
 Only fully closed bars are kept. No forward-fill, no interpolation.
+
+Hosts (no D-number yet): api.binance.com first, then data-api.binance.vision, Binance's official public market-data mirror
+(same /api/v3/klines, same data). The mirror is used only when the main host gives a network error (timeout,
+refused connection), which happens intermittently from Docker on the dev machine. An HTTP answer is never
+retried on the mirror: a 403/451 still raises FetchBlocked (do not work around a block), and 418/429/5xx are
+handled on the host that answered. The URL(s) actually used are recorded in the fetch metadata's `source`.
 """
 
 import argparse
@@ -20,6 +26,8 @@ from ml import config
 from ml.data.loader import COLUMNS, fetch_meta_path, raw_csv_path
 
 KLINES_URL = "https://api.binance.com/api/v3/klines"
+KLINES_MIRROR_URL = "https://data-api.binance.vision/api/v3/klines"     # network-error fallback only
+KLINES_URLS = (KLINES_URL, KLINES_MIRROR_URL)
 INTERVAL = "1d"
 LIMIT = 1000
 MAX_ATTEMPTS = 5
@@ -31,11 +39,27 @@ class FetchBlocked(RuntimeError):
     """Region block or forbidden: stop, do not work around it."""
 
 
-def _get_page(session: requests.Session, symbol: str, start_ms: int) -> list:
+def _request(session: requests.Session, params: dict, urls=KLINES_URLS) -> tuple[requests.Response, str]:
+    """GET the first host in `urls` that answers at all; (response, url). A network error moves on to the next
+    host; any HTTP answer (even an error status) is returned as is. Raises the last network error if none answer."""
+    if not urls:
+        raise ValueError("no klines URL given")
+    for i, url in enumerate(urls):
+        try:
+            return session.get(url, params=params, timeout=30), url
+        except requests.RequestException as exc:
+            if i == len(urls) - 1:
+                raise
+            print(f"  network error on {url} ({type(exc).__name__}); trying {urls[i + 1]}")
+    raise AssertionError("unreachable")
+
+
+def _get_page(session: requests.Session, symbol: str, start_ms: int, used: set | None = None) -> list:
+    """One page of klines. `used` collects the URL(s) that answered (for the metadata's `source`)."""
     params = {"symbol": symbol, "interval": INTERVAL, "startTime": start_ms, "limit": LIMIT}
     for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
-            resp = session.get(KLINES_URL, params=params, timeout=30)
+            resp, url = _request(session, params)
         except requests.RequestException as exc:
             if attempt == MAX_ATTEMPTS:
                 raise
@@ -54,6 +78,8 @@ def _get_page(session: requests.Session, symbol: str, start_ms: int) -> list:
             time.sleep(2 ** attempt)
             continue
         resp.raise_for_status()
+        if used is not None:
+            used.add(url)
         return resp.json()
     raise RuntimeError(f"gave up after {MAX_ATTEMPTS} attempts")
 
@@ -78,8 +104,9 @@ def fetch(asset: str, raw_dir: Path | None = None) -> dict:
     symbol = config.ASSET_SYMBOLS[asset]
     session = requests.Session()
     klines, start_ms, pages = [], 0, 0      # startTime=0 -> earliest available bar
+    used: set[str] = set()                  # the host(s) that answered
     while True:
-        page = _get_page(session, symbol, start_ms)
+        page = _get_page(session, symbol, start_ms, used)
         pages += 1
         klines.extend(page)
         if len(page) < LIMIT:
@@ -98,7 +125,7 @@ def fetch(asset: str, raw_dir: Path | None = None) -> dict:
     meta = {
         "asset": asset,
         "symbol": symbol,
-        "source": KLINES_URL,
+        "source": ", ".join(u for u in KLINES_URLS if u in used),     # main host, mirror, or both
         "interval": INTERVAL,
         "fetched_at": datetime.fromtimestamp(now_ms / 1000, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "pages": pages,
