@@ -4,7 +4,7 @@ import { describeError } from "../errors/errorCatalog";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import AuthLayout from "../components/auth/AuthLayout";
-import { AuthInput, AuthButton, OAuthButton, Divider, GitHubIcon } from "../components/auth/AuthPrimitives";
+import { AuthInput, AuthButton, Divider } from "../components/auth/AuthPrimitives";
 import GoogleSignInButton from "../components/auth/GoogleSignInButton";
 import { authApi } from "../services/authApi";
 import { useLandingTheme } from "../components/landingPage/landingTokens";
@@ -145,15 +145,7 @@ export default function LoginPage({ onNavigate }) {
 
                 <Divider label="or" />
 
-                <div style={{ display: "flex", gap: 8 }}>
-                    <GoogleSignInButton returnPath={returnPath} onError={setError} />
-                    <OAuthButton
-                        icon={<GitHubIcon />}
-                        label="GitHub"
-                        disabled
-                        title="GitHub sign-in is coming soon"
-                    />
-                </div>
+                <GoogleSignInButton returnPath={returnPath} onError={setError} />
 
                 <p style={{
                     textAlign: "center", fontSize: 12,
