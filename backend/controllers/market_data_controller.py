@@ -11,6 +11,11 @@ and a random-walk price history):
                      USD), backfilled PRICE_HISTORY_DAYS on the first run and topped up every 15 minutes.
                      DAI's Binance pair is delisted (its last kline is from 2020), so DAI comes from
                      CoinGecko's hourly chart, which the free API serves for the last 90 days.
+                     Hosts (ml/docs/DECISIONS.md D95): api.binance.com first, then data-api.binance.vision (Binance's official public
+                     market-data mirror, same /api/v3/klines and data) ONLY on a network error (timeout, refused
+                     connection), which happens intermittently from Docker on the dev machine. An HTTP answer is
+                     never retried on the mirror (a 403/451 block is not worked around); same rule as
+                     ml/data/fetch.py. Each row's `host` says which one answered.
 
 Every live row carries `source`. Rows without one are the old seed's made-up data and are deleted once
 the live source has answered, so fake and real numbers are never shown side by side. An asset with no real
@@ -56,6 +61,8 @@ LIVE_PRICE_SOURCES = (BINANCE_SOURCE, COINGECKO_HISTORY_SOURCE)
 COINGECKO_MARKETS_URL = "https://api.coingecko.com/api/v3/coins/markets"
 COINGECKO_CHART_URL = "https://api.coingecko.com/api/v3/coins/{id}/market_chart"
 BINANCE_KLINES_URL = "https://api.binance.com/api/v3/klines"
+BINANCE_MIRROR_KLINES_URL = "https://data-api.binance.vision/api/v3/klines"     # D95: network-error fallback only
+BINANCE_KLINES_URLS = (BINANCE_KLINES_URL, BINANCE_MIRROR_KLINES_URL)
 
 PRICE_HISTORY_DAYS = 400            # the trending / volatility / snapshot code needs > 30 days
 COINGECKO_HOURLY_MAX_DAYS = 90      # the free API returns hourly points only up to 90 days
@@ -70,13 +77,34 @@ HOUR_MS = 3600 * 1000
 _sleep = time.sleep   # replaced in tests
 
 
-def _get_json(client: httpx.Client, url: str, params: dict):
-    """GET with retries on 429 / 5xx / network errors. Raises after MAX_ATTEMPTS."""
+def _get_from_hosts(client: httpx.Client, urls, params: dict) -> tuple[httpx.Response, str]:
+    """GET the first host in `urls` that answers at all; (response, url). A network error (httpx.TransportError:
+    connect error, timeout) moves on to the next host; any HTTP answer, even an error status, is returned as is.
+    Raises the last network error if no host answers."""
+    if not urls:
+        raise ValueError("no URL given")
+    for i, url in enumerate(urls):
+        try:
+            return client.get(url, params=params, timeout=TIMEOUT_SECONDS), url
+        except httpx.TransportError as exc:
+            if i == len(urls) - 1:
+                raise
+            log.info("[market-data] network error on %s (%s); trying %s", url, type(exc).__name__, urls[i + 1])
+    raise AssertionError("unreachable")
+
+
+def _get_json(client: httpx.Client, url, params: dict, used: set | None = None):
+    """GET with retries on 429 / 5xx / network errors. Raises after MAX_ATTEMPTS. `url` may be a tuple of hosts
+    (main first, then fallbacks for network errors only, see _get_from_hosts); `used` collects the host that
+    answered."""
+    urls = (url,) if isinstance(url, str) else tuple(url)
     last = None
     for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
-            resp = client.get(url, params=params, timeout=TIMEOUT_SECONDS)
+            resp, answered = _get_from_hosts(client, urls, params)
             if resp.status_code == 200:
+                if used is not None:
+                    used.add(answered)
                 return resp.json()
             last = f"HTTP {resp.status_code}: {resp.text[:200]}"
             if resp.status_code not in (429, 500, 502, 503, 504):
@@ -89,7 +117,7 @@ def _get_json(client: httpx.Client, url: str, params: dict):
                 _sleep(min(float(wait), 60.0) if wait else 2 ** attempt)
             except ValueError:
                 _sleep(2 ** attempt)
-    raise RuntimeError(f"{url} failed: {last}")
+    raise RuntimeError(f"{urls[0]} failed: {last}")
 
 
 def _num(v):
@@ -213,11 +241,12 @@ def chart_docs(asset: str, chart: dict) -> list:
 def fetch_binance_hourly(client: httpx.Client, asset: str, symbol: str, start_ms: int, now_ms: int) -> list:
     docs = []
     while start_ms < now_ms:
-        klines = _get_json(client, BINANCE_KLINES_URL,
-                           {"symbol": symbol, "interval": "1h", "startTime": start_ms, "limit": BINANCE_PAGE})
+        used: set[str] = set()
+        klines = _get_json(client, BINANCE_KLINES_URLS,
+                           {"symbol": symbol, "interval": "1h", "startTime": start_ms, "limit": BINANCE_PAGE}, used)
         if not klines:
             break
-        docs += kline_docs(asset, klines, now_ms)
+        docs += [{**d, "host": next(iter(used))} for d in kline_docs(asset, klines, now_ms)]
         last_open = int(klines[-1][0])
         if len(klines) < BINANCE_PAGE or last_open + HOUR_MS <= start_ms:
             break

@@ -4,5 +4,6 @@ pymongo
 python-dotenv
 pydantic
 httpx
+requests            # used by the sentiment engine the backend imports (collectors, insights)
 bcrypt
 PyJWT[crypto]

@@ -251,6 +251,10 @@ RSS_FEEDS = [
 
 COINGECKO_BASE_URL = "https://api.coingecko.com/api/v3"
 BINANCE_KLINES_URL = "https://api.binance.com/api/v3/klines"
+# ml/docs/DECISIONS.md D95: Binance's official public market-data mirror, tried ONLY after a network error on
+# api.binance.com (timeout, refused or unreachable connection). An HTTP answer is never retried on the mirror.
+BINANCE_MIRROR_KLINES_URL = "https://data-api.binance.vision/api/v3/klines"
+BINANCE_KLINES_URLS = (BINANCE_KLINES_URL, BINANCE_MIRROR_KLINES_URL)
 MARKET_HTTP_TIMEOUT = 10  # seconds
 
 # How long a fetched market response is reused across assets and pipeline runs.
