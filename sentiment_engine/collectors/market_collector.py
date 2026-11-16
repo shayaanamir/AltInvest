@@ -32,12 +32,12 @@ import requests
 
 try:
     from sentiment_engine.utils.config import (
-        ASSETS, BINANCE_KLINES_URL, COINGECKO_BASE_URL, MARKET_CACHE_TTL_SECONDS, MARKET_HTTP_TIMEOUT,
+        ASSETS, BINANCE_KLINES_URLS, COINGECKO_BASE_URL, MARKET_CACHE_TTL_SECONDS, MARKET_HTTP_TIMEOUT,
     )
     from sentiment_engine.utils.logger import get_logger
 except ImportError:
     from utils.config import (
-        ASSETS, BINANCE_KLINES_URL, COINGECKO_BASE_URL, MARKET_CACHE_TTL_SECONDS, MARKET_HTTP_TIMEOUT,
+        ASSETS, BINANCE_KLINES_URLS, COINGECKO_BASE_URL, MARKET_CACHE_TTL_SECONDS, MARKET_HTTP_TIMEOUT,
     )
     from utils.logger import get_logger
 
@@ -72,11 +72,30 @@ def reset_cache() -> None:
 
 # ── Fetching (cached, single flight) ──────────────────────────────────────────
 
-def _get_json(url: str, params: dict) -> Any:
-    """GET + JSON, with one retry after a short wait on a 429. Raises on anything else."""
+NETWORK_ERRORS = (requests.exceptions.ConnectionError, requests.exceptions.Timeout)
+
+
+def _get_from_hosts(urls: tuple, params: dict):
+    """GET the first host in `urls` that answers at all (D95). A network error (no connection, timeout) moves on
+    to the next host; any HTTP answer, even an error status, is returned as is. Raises the last network error if
+    no host answers."""
+    for i, url in enumerate(urls):
+        try:
+            return _http_get(url, params=params, headers={"User-Agent": USER_AGENT, "Accept": "application/json"},
+                             timeout=MARKET_HTTP_TIMEOUT)
+        except NETWORK_ERRORS as exc:
+            if i == len(urls) - 1:
+                raise
+            logger.info(f"network error on {url} ({type(exc).__name__}); trying {urls[i + 1]}")
+    raise ValueError("no URL given")
+
+
+def _get_json(url, params: dict) -> Any:
+    """GET + JSON, with one retry after a short wait on a 429. Raises on anything else. `url` may be a tuple of
+    hosts: the first, then the others only after a network error (D95, Binance klines)."""
+    urls = (url,) if isinstance(url, str) else tuple(url)
     for attempt in (1, 2):
-        resp = _http_get(url, params=params, headers={"User-Agent": USER_AGENT, "Accept": "application/json"},
-                         timeout=MARKET_HTTP_TIMEOUT)
+        resp = _get_from_hosts(urls, params)
         if resp.status_code == 429 and attempt == 1:
             try:
                 wait = min(float(resp.headers.get("Retry-After", "")), RATE_LIMIT_RETRY_MAX_SECONDS)
@@ -164,7 +183,7 @@ def volume_change_from_klines(klines: list, now_ms: Optional[int] = None) -> Opt
 
 def fetch_volume_change(binance_symbol: str) -> Optional[float]:
     def fetch():
-        klines = _get_json(BINANCE_KLINES_URL, {"symbol": binance_symbol, "interval": "1h", "limit": 50})
+        klines = _get_json(BINANCE_KLINES_URLS, {"symbol": binance_symbol, "interval": "1h", "limit": 50})   # D95
         change = volume_change_from_klines(klines)
         if change is None:
             raise ValueError("fewer than 48 complete hours of volume")

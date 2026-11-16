@@ -6,7 +6,7 @@ Writes {asset}_1d.csv and {asset}_1d.fetch.json (fetch time, source) to config.M
 snapshot ml/data/raw unless the ML_RAW_DIR env var is set).
 Only fully closed bars are kept. No forward-fill, no interpolation.
 
-Hosts (no D-number yet): api.binance.com first, then data-api.binance.vision, Binance's official public market-data mirror
+Hosts (D95): api.binance.com first, then data-api.binance.vision, Binance's official public market-data mirror
 (same /api/v3/klines, same data). The mirror is used only when the main host gives a network error (timeout,
 refused connection), which happens intermittently from Docker on the dev machine. An HTTP answer is never
 retried on the mirror: a 403/451 still raises FetchBlocked (do not work around a block), and 418/429/5xx are
@@ -26,7 +26,7 @@ from ml import config
 from ml.data.loader import COLUMNS, fetch_meta_path, raw_csv_path
 
 KLINES_URL = "https://api.binance.com/api/v3/klines"
-KLINES_MIRROR_URL = "https://data-api.binance.vision/api/v3/klines"     # network-error fallback only
+KLINES_MIRROR_URL = "https://data-api.binance.vision/api/v3/klines"     # D95: network-error fallback only
 KLINES_URLS = (KLINES_URL, KLINES_MIRROR_URL)
 INTERVAL = "1d"
 LIMIT = 1000

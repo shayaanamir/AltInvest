@@ -1,4 +1,4 @@
-"""Binance klines fall back to data-api.binance.vision ONLY on a network error from api.binance.com
+"""D95: Binance klines fall back to data-api.binance.vision ONLY on a network error from api.binance.com
 (controllers/market_data_controller.py; same rule as ml/data/fetch.py). No network: httpx.MockTransport
 answers per host with hand-made klines (NOT market data)."""
 from datetime import datetime, timezone

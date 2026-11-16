@@ -11,7 +11,7 @@ and a random-walk price history):
                      USD), backfilled PRICE_HISTORY_DAYS on the first run and topped up every 15 minutes.
                      DAI's Binance pair is delisted (its last kline is from 2020), so DAI comes from
                      CoinGecko's hourly chart, which the free API serves for the last 90 days.
-                     Hosts: api.binance.com first, then data-api.binance.vision (Binance's official public
+                     Hosts (ml/docs/DECISIONS.md D95): api.binance.com first, then data-api.binance.vision (Binance's official public
                      market-data mirror, same /api/v3/klines and data) ONLY on a network error (timeout, refused
                      connection), which happens intermittently from Docker on the dev machine. An HTTP answer is
                      never retried on the mirror (a 403/451 block is not worked around); same rule as
@@ -61,7 +61,7 @@ LIVE_PRICE_SOURCES = (BINANCE_SOURCE, COINGECKO_HISTORY_SOURCE)
 COINGECKO_MARKETS_URL = "https://api.coingecko.com/api/v3/coins/markets"
 COINGECKO_CHART_URL = "https://api.coingecko.com/api/v3/coins/{id}/market_chart"
 BINANCE_KLINES_URL = "https://api.binance.com/api/v3/klines"
-BINANCE_MIRROR_KLINES_URL = "https://data-api.binance.vision/api/v3/klines"     # network-error fallback only
+BINANCE_MIRROR_KLINES_URL = "https://data-api.binance.vision/api/v3/klines"     # D95: network-error fallback only
 BINANCE_KLINES_URLS = (BINANCE_KLINES_URL, BINANCE_MIRROR_KLINES_URL)
 
 PRICE_HISTORY_DAYS = 400            # the trending / volatility / snapshot code needs > 30 days

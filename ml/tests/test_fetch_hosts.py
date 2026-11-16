@@ -1,4 +1,4 @@
-"""ml/data/fetch.py falls back to data-api.binance.vision only on a network error from api.binance.com.
+"""D95: ml/data/fetch.py falls back to data-api.binance.vision only on a network error from api.binance.com.
 No network: the session is a stand-in that returns hand-made klines (NOT market data)."""
 
 import json
