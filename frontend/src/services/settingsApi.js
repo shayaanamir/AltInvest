@@ -1,4 +1,5 @@
 import { apiFetch } from "./apiClient";
+import { normalizeFocus } from "../utils/homeFocus";
 import {
   CURRENCY_OPTIONS,
   DATE_FORMAT_OPTIONS,
@@ -18,7 +19,7 @@ function mapBackendSettings(s) {
       dateFormatOptions: DATE_FORMAT_OPTIONS,
       defaultLandingPage: s.preferences?.default_landing_page ?? "Dashboard",
       landingPageOptions: LANDING_PAGE_OPTIONS,
-      defaultDashboardLayout: s.preferences?.default_dashboard_layout ?? "ai-first",
+      defaultDashboardLayout: normalizeFocus(s.preferences?.default_dashboard_layout), // old saved names read as "everything"
       dashboardLayoutOptions: DASHBOARD_LAYOUT_OPTIONS,
     },
     appearance: {

@@ -1,6 +1,7 @@
 // frontend/src/content/uiOptions.js
 // Fixed choices the UI offers in dropdowns and forms. This is interface vocabulary, not data:
 // nothing here describes a user, asset or market.
+import { FOCUS_PRESETS } from "../utils/homeFocus";
 
 export const CURRENCY_OPTIONS = [
   { code: "USD", label: "US Dollar ($)" },
@@ -11,8 +12,9 @@ export const CURRENCY_OPTIONS = [
 ];
 
 export const DATE_FORMAT_OPTIONS = ["MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD"];
-export const LANDING_PAGE_OPTIONS = ["Dashboard", "Portfolio", "Sentiment"];
-export const DASHBOARD_LAYOUT_OPTIONS = ["minimal", "analyst", "trader", "ai-first"];
+export const LANDING_PAGE_OPTIONS = ["Dashboard", "Portfolio", "Discover", "Sentiment"];
+// The home focus choices (what the dashboard shows first); defined in utils/homeFocus.js.
+export const DASHBOARD_LAYOUT_OPTIONS = FOCUS_PRESETS.map(({ key, label, blurb }) => ({ key, label, blurb }));
 export const DENSITY_OPTIONS = ["comfortable", "compact"];
 
 // Defaults shown for a notification setting the server hasn't stored yet (same as the

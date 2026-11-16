@@ -54,14 +54,14 @@ export default function PreferencesSection({ data, onChange }) {
         </select>
       </SettingsRow>
 
-      <SettingsRow title="Default dashboard layout" description="Chosen during onboarding — editable any time">
+      <SettingsRow title="Home focus" description="What the dashboard shows first. Changes apply right away. Pick a landing page above to open somewhere else.">
         <select
           className="sv2-select set-select"
           value={data.defaultDashboardLayout}
           onChange={(e) => onChange({ defaultDashboardLayout: e.target.value })}
         >
-          {(data.dashboardLayoutOptions || []).map((l) => (
-            <option key={l} value={l}>{l}</option>
+          {(data.dashboardLayoutOptions || []).map((o) => (
+            <option key={o.key} value={o.key}>{o.label} · {o.blurb}</option>
           ))}
         </select>
       </SettingsRow>
