@@ -169,7 +169,20 @@ def on_startup():
     from controllers.ml_pull_controller import run_ml_pull_scheduler
     threading.Thread(target=run_ml_pull_scheduler, daemon=True, name="ml-pull").start()
 
-    # 8. NFT news sentiment (Groq LLM, VADER + FinBERT fallback) for every collection, every 30 minutes.
+    # 8. Live crypto market data: CoinGecko snapshot every 2 min, Binance hourly price history every 15 min.
+    from controllers.market_data_controller import run_market_data_scheduler
+    threading.Thread(target=run_market_data_scheduler, daemon=True, name="market-data").start()
+
+    # 8b. Asset profiles (description, website, CoinGecko tags -> subcategory and related assets), weekly,
+    #     a few per 10 minutes because of CoinGecko's free rate limit.
+    from controllers.asset_profile_controller import run_profile_scheduler
+    threading.Thread(target=run_profile_scheduler, daemon=True, name="asset-profiles").start()
+
+    # 9. Market insights (the engines' real headlines) every 15 min, LLM-named themes every 2 h.
+    from controllers.insights_controller import run_insights_scheduler
+    threading.Thread(target=run_insights_scheduler, daemon=True, name="insights").start()
+
+    # 10. NFT news sentiment (Groq LLM, VADER + FinBERT fallback) for every collection, every 30 minutes.
     from controllers.nft_sentiment_controller import run_nft_sentiment_scheduler
     threading.Thread(target=run_nft_sentiment_scheduler, daemon=True, name="nft-sentiment").start()
 

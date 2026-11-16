@@ -64,6 +64,16 @@ def test_bored_ape_does_not_match_mutant_ape():
     assert out["boredapeyachtclub"] == [] and len(out["mutant-ape-yacht-club"]) == 1
 
 
+def test_pengu_the_game_character_is_not_the_pengu_token():
+    out = _build([_broad([
+        {"title": "TFT Prismatic Tour Set Revealed With Pengu's All-Star Lineup", "age": 2},
+        {"title": "PENGU rallies 12% as Pudgy toys hit Walmart", "age": 3},
+        {"title": "Whales accumulate $PENGU", "age": 4},
+    ])], slugs=("pudgypenguins",))
+    assert [a["title"] for a in out["pudgypenguins"]] == ["PENGU rallies 12% as Pudgy toys hit Walmart",
+                                                         "Whales accumulate $PENGU"]
+
+
 def test_old_and_undated_entries_are_dropped():
     out = _build([_search("azuki", [
         {"title": "Azuki news from last month - X", "source": "X", "age": cfg.NFT_MAX_ARTICLE_AGE_HOURS + 1},

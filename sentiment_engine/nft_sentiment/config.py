@@ -50,6 +50,9 @@ NFT_COLLECTIONS: dict[str, dict] = {
         "name": "Pudgy Penguins",
         "names": ["pudgy penguins", "pudgy penguin"],
         "tickers": ["pengu"],          # the PENGU token: its news moves the collection
+        # "Pengu" is also a League of Legends character (a TFT headline matched on 2026-11-16), so the
+        # bare ticker only counts in UPPERCASE in a title; "$PENGU" always counts.
+        "ambiguous_ticker": True,
         "google_query": '"Pudgy Penguins" OR PENGU',
         "bing_queries": ['"Pudgy Penguins"'],
     },

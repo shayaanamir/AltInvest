@@ -408,16 +408,22 @@ def get_all_sentiment():
 
 @router.get("/sentiment/themes")
 def get_themes():
-    """Recurring themes in the coverage, from the `sentiment_themes` collection."""
+    """
+    Recurring themes in the real headlines the sentiment engines read, named by an LLM
+    (controllers/insights_controller.py), each with how many headlines back it and some of them.
+    """
     from utils.http_errors import db_unavailable
+    from utils.ml_rows import iso
     try:
         from db.queries import get_sentiment_themes
         docs = get_sentiment_themes()
     except Exception as exc:
         raise db_unavailable(exc)
     return [
-        {"label": d.get("label"), "direction": d.get("direction"), "category": d.get("category")}
-        for d in docs
+        {"label": d.get("label"), "direction": d.get("direction"), "category": d.get("category"),
+         "count": d.get("count"), "headlines": d.get("headlines") or [], "model": d.get("model"),
+         "generated_at": iso(d.get("generated_at")) if d.get("generated_at") else None}
+        for d in sorted(docs, key=lambda d: -(d.get("count") or 0))
         if d.get("label")
     ]
 

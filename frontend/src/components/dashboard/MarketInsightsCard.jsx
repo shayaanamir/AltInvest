@@ -32,6 +32,7 @@ export default function MarketInsightsCard() {
                 </span>
               </div>
               <p className="dv2-insight-title">{item.title}</p>
+              {item.reason && <div className="sv2-tiny sv2-mute2">{item.reason}</div>}
               <div className="dv2-insight-links">
                 {item.url && (
                   <a className="dv2-insight-link" href={item.url} target="_blank" rel="noopener noreferrer">
@@ -41,6 +42,11 @@ export default function MarketInsightsCard() {
                 {item.relatedAssetSymbol && (
                   <button type="button" className="dv2-insight-link" onClick={() => navigate(`/asset-detail?symbol=${item.relatedAssetSymbol}`)}>
                     Open asset →
+                  </button>
+                )}
+                {item.relatedNftSlug && (
+                  <button type="button" className="dv2-insight-link" onClick={() => navigate(`/nft-collection?slug=${encodeURIComponent(item.relatedNftSlug)}`)}>
+                    Open collection →
                   </button>
                 )}
               </div>

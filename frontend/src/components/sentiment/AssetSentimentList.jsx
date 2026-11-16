@@ -14,7 +14,6 @@ const CATEGORY_TABS = [
   { key: "tokenized", label: "Tokenized soon", disabled: true },
 ];
 
-const SUBCATEGORIES = ["All", "Layer 1", "Layer 2", "DeFi", "Infrastructure", "Stablecoin-adjacent", "Meme/Community"];
 
 function barColor(score) {
   return score == null ? "var(--sv2-border)" : getAaiTierColor(score);

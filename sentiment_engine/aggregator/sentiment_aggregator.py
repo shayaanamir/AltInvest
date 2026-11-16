@@ -152,6 +152,7 @@ def _extract_top_headlines(articles: list[dict], n: int = 5) -> list[dict]:
     return [
         {
             "title":  a.get("title", ""),
+            "summary": (a.get("summary") or "")[:300],
             "score":  round(a.get("nlp_score", 0.0), 4),
             "contribution": round(contribution, 4),
             "vader_score":   _round_or_none(a.get("vader_score")),
