@@ -195,3 +195,37 @@ def test_days_is_bounded(client, monkeypatch):
     monkeypatch.setattr(nft_route, "get_nft_sentiment", lambda slug: _stored(_reading()))
     monkeypatch.setattr(nft_route, "get_nft_sentiment_history", lambda slug, days: [])
     assert client.get("/nft/collections/azuki/sentiment?days=365").status_code == 422
+
+
+# ── Discover and the Sentiment hub ───────────────────────────────────────────
+
+def test_discover_gets_only_real_recent_nft_readings(monkeypatch):
+    from controllers import market_controller as mc
+    monkeypatch.setattr(queries, "get_all_nft_sentiment", lambda: [
+        _stored(_reading("azuki", 0.4)),
+        _stored(_reading("milady", placeholder=True)),                              # no news: not a reading
+        _stored(_reading("pudgypenguins", 0.2, when=NOW - timedelta(hours=5))),     # stale
+    ])
+    live = mc.live_nft_sentiment()
+    assert list(live) == ["azuki"]
+    assert live["azuki"] == {"score": 0.4, "confidence": 0.6, "trend": "unknown"}
+    fields = mc._aai_fields(None, live["azuki"])
+    assert fields["sentiment_score"] == 0.4 and fields["sentiment_confidence_label"] is not None
+
+
+def test_discover_survives_a_database_error(monkeypatch):
+    from controllers import market_controller as mc
+
+    def boom():
+        raise RuntimeError("db down")
+    monkeypatch.setattr(queries, "get_all_nft_sentiment", boom)
+    assert mc.live_nft_sentiment() == {}
+
+
+def test_nft_mood_trend_route(client, monkeypatch):
+    seen = {}
+    monkeypatch.setattr(nft_route, "get_nft_mood_trend",
+                        lambda days: seen.setdefault("days", days) and [{"date": "2026-11-15T00:00:00Z", "value": 0.12, "assets": 3}])
+    r = client.get("/nft/sentiment/mood-trend?days=7")
+    assert r.status_code == 200 and r.json()[0]["assets"] == 3 and seen["days"] == 7
+    assert client.get("/nft/sentiment/mood-trend?days=0").status_code == 422

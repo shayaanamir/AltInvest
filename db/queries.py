@@ -559,6 +559,27 @@ def get_nft_sentiment_history(slug: str, days: int = 7) -> list:
         {"slug": slug, "timestamp": {"$gte": cutoff}}, sort=[("timestamp", 1)], projection={"_id": 0}))
 
 
+def get_nft_mood_trend(days: int, exclude=("nft-market",)) -> list:
+    """
+    Average NFT sentiment over time across collections, like the crypto engine's get_mood_trend: each
+    collection is averaged within a bucket (hourly up to 2 days, daily beyond), then the collections'
+    averages are averaged. The NFT market pseudo-collection is left out. -> [{date, value, assets}] oldest first.
+    """
+    hourly = days <= 2
+    fmt = "%Y-%m-%dT%H:00:00Z" if hourly else "%Y-%m-%dT00:00:00Z"
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    pipeline = [
+        {"$match": {"slug": {"$nin": list(exclude)}, "timestamp": {"$gte": cutoff},
+                    "confidence": {"$gt": 0}, "sentiment_score": {"$ne": None}}},
+        {"$group": {"_id": {"slug": "$slug", "bucket": {"$dateToString": {"format": fmt, "date": "$timestamp"}}},
+                    "score": {"$avg": "$sentiment_score"}}},
+        {"$group": {"_id": "$_id.bucket", "value": {"$avg": "$score"}, "assets": {"$sum": 1}}},
+        {"$sort": {"_id": 1}},
+    ]
+    return [{"date": r["_id"], "value": round(r["value"], 4), "assets": r["assets"]}
+            for r in get_db().nft_sentiment_history.aggregate(pipeline)]
+
+
 def get_nft_sentiment_baseline(slug: str, lookback_hours: int = 24, tolerance_hours: int = 6) -> list:
     """The readings around `lookback_hours` ago, for the engine's trend detection to pick the closest from."""
     target = datetime.now(timezone.utc) - timedelta(hours=lookback_hours)

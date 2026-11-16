@@ -15,6 +15,7 @@ from utils.http_errors import db_unavailable
 from models.schemas import NFTCollectionListItem, NFTCollectionDetail, NFTItemValueOut, NFTTokenDetail, NFTSentimentOut
 from db.queries import (
     get_all_nft_sentiment,
+    get_nft_mood_trend,
     get_nft_sentiment,
     get_nft_sentiment_history,
     get_nft_collections,
@@ -156,6 +157,15 @@ def list_nft_sentiment():
     except Exception as exc:
         raise db_unavailable(exc)
     return sorted((sentiment_view(d) for d in docs), key=lambda d: (d["slug"] == "nft-market", d["slug"]))
+
+
+@router.get("/nft/sentiment/mood-trend")
+def nft_mood_trend(days: int = Query(30, ge=1, le=365)):
+    """Average collection sentiment over time (-1..1), like GET /sentiment/mood-trend for crypto."""
+    try:
+        return get_nft_mood_trend(days)
+    except Exception as exc:
+        raise db_unavailable(exc)
 
 
 @router.get("/nft/collections/{slug}/sentiment", response_model=NFTSentimentOut)
