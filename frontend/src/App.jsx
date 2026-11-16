@@ -4,6 +4,7 @@ import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import "./styles/tokens.css";
 import Sidebar from "./components/layout/Sidebar";
 import Topbar from "./components/layout/Topbar";
+import Disclaimer from "./components/layout/Disclaimer";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import SessionExpiredModal from "./components/auth/SessionExpiredModal";
 import { ErrorBoundary, ConnectionBanner, ToastProvider } from "./errors";
@@ -99,7 +100,7 @@ function ShellRoutes() {
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--sv2-bg)", transition: "background 0.25s" }}>
         <Topbar />
         <ConnectionBanner />
-        <div className="app-content">{wrappedPageContent}</div>
+        <div className="app-content">{wrappedPageContent}<Disclaimer /></div>
       </div>
     </div>
   );

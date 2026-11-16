@@ -1,5 +1,6 @@
 import { deriveAaiSignal } from "../../services/assetDetailApi";
 import { isMlUncertain } from "../../utils/scoring";
+import { DISCLAIMER_SHORT } from "../layout/Disclaimer";
 
 export default function AaiScoreCard({ aaiPanel, mlSignal }) {
   if (!aaiPanel) return null;
@@ -27,6 +28,7 @@ export default function AaiScoreCard({ aaiPanel, mlSignal }) {
         verdict — the panels below are what it is made of.
       </p>
       {note && <p className="adt-panel-desc sv2-muted">{note}</p>}
+      <p className="adt-panel-desc sv2-small sv2-muted">{DISCLAIMER_SHORT}</p>
     </div>
   );
 }
