@@ -56,7 +56,7 @@ export const assetDetailApi = {
         price: h.price,
         priceAsOf: h.price_as_of ?? null,       // audit N-05
         priceDelayed: h.price_delayed === true,
-        change24h: h.change_24h ?? 0,
+        change24h: h.change_24h ?? null,      // null: no market data (e.g. BASE), shown as no change pill
         held: h.held,
         quantityHeld: h.quantity_held,
         watching: h.watching,

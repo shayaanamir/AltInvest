@@ -31,10 +31,13 @@ export default function AssetHeaderCard({ header, onBack }) {
                 {header.held && <span className="adt-tag held">Held</span>}
               </div>
               <div className="adt-price-row">
-                <span className="adt-price">{formatAssetPrice(header.price)}</span>
-                <span className={`adt-change ${positive ? "positive" : "negative"}`}>
-                  {positive ? "↗" : "↘"} {formatPct(Math.abs(header.change24h))}
-                </span>
+                {/* No market data (e.g. BASE): a dash, never "$0.00 ↗ 0.00%". */}
+                <span className="adt-price">{header.price != null ? formatAssetPrice(header.price) : "—"}</span>
+                {header.change24h != null && (
+                  <span className={`adt-change ${positive ? "positive" : "negative"}`}>
+                    {positive ? "↗" : "↘"} {formatPct(Math.abs(header.change24h))}
+                  </span>
+                )}
                 {header.priceDelayed && (
                   <span className="price-delayed-badge" title={delayedTitle(header.priceAsOf)}>Delayed</span>
                 )}
