@@ -1,7 +1,11 @@
 """
 db/seed_assets.py
-Seeds: assets, asset_market_data
+Seeds: assets (names, categories, colours, descriptions)
 Source: db/seed_data/assets.json (seed input only; the frontend ships no data files)
+
+No market numbers are written. Prices, market caps, volumes, changes and all-time highs are live:
+backend/controllers/market_data_controller.py (CoinGecko + Binance) writes them, and deletes any
+asset_market_data row it did not write.
 """
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -59,30 +63,8 @@ ASSETS = [
      "related_assets": ["ETH", "ARB"]},
 ]
 
-MARKET_DATA = [
-    {"asset_id": "BTC", "price": 71450.30, "change_1h": 0.18, "change_24h": 2.14, "change_7d": 5.62,
-     "market_cap": 1415945000000, "volume_24h": 38200000000, "circulating_supply": 19820000, "market_rank": 1},
-    {"asset_id": "ETH", "price": 3845.60, "change_1h": -0.06, "change_24h": -0.85, "change_7d": 1.94,
-     "market_cap": 463743360000, "volume_24h": 19600000000, "circulating_supply": 120600000, "market_rank": 2},
-    {"asset_id": "SOL", "price": 178.92, "change_1h": 0.42, "change_24h": 1.83, "change_7d": -3.10,
-     "market_cap": 86101000000, "volume_24h": 6800000000, "circulating_supply": 481200000, "market_rank": 5},
-    {"asset_id": "LINK", "price": 16.40, "change_1h": 0.09, "change_24h": 1.10, "change_7d": 4.02,
-     "market_cap": 9626800000, "volume_24h": 612000000, "circulating_supply": 587000000, "market_rank": 14},
-    {"asset_id": "DOGE", "price": 0.187, "change_1h": 0.31, "change_24h": 11.62, "change_7d": 18.40,
-     "market_cap": 27676000000, "volume_24h": 2100000000, "circulating_supply": 148000000000, "market_rank": 9},
-    {"asset_id": "ARB", "price": 1.28, "change_1h": -0.02, "change_24h": 3.87, "change_7d": -1.20,
-     "market_cap": 5068800000, "volume_24h": 284000000, "circulating_supply": 3960000000, "market_rank": 38},
-    {"asset_id": "DAI", "price": 1.00, "change_1h": 0.00, "change_24h": 0.00, "change_7d": 0.01,
-     "market_cap": 5300000000, "volume_24h": 3900000000, "circulating_supply": 5300000000, "market_rank": 19},
-    {"asset_id": "UNI", "price": 9.14, "change_1h": -0.21, "change_24h": -4.06, "change_7d": -8.90,
-     "market_cap": 6882420000, "volume_24h": 198000000, "circulating_supply": 753000000, "market_rank": 22},
-    {"asset_id": "BASE", "price": 22.35, "change_1h": 0.04, "change_24h": 0.42, "change_7d": 2.11,
-     "market_cap": 1117500000, "volume_24h": 41000000, "circulating_supply": 50000000, "market_rank": 102},
-]
-
-
 # ── Remaining covered assets, built from the same sample JSON ───────────────
-# The sample catalogue has 18 assets; the hand-written rows above cover 9.
+# The sample catalogue has 18 assets; the hand-written rows above cover 9 (metadata only).
 # Fields the sample data doesn't have (description, website, related_assets)
 # are left empty rather than invented.
 
@@ -104,14 +86,6 @@ def _add_remaining_from_sample():
             "all_time_high": s.get("ath"), "ath_date": s.get("athDate"),
             "related_assets": [],
         })
-        MARKET_DATA.append({
-            "asset_id": s["symbol"], "price": s["price"],
-            "change_1h": s.get("change1h"), "change_24h": s.get("change24h"),
-            "change_7d": s.get("change7d"), "market_cap": s.get("marketCap"),
-            "volume_24h": s.get("volume24h"),
-            "circulating_supply": s.get("circulatingSupply"),
-            "market_rank": s.get("marketRank"),
-        })
 
 
 _add_remaining_from_sample()
@@ -127,16 +101,6 @@ def seed():
             upsert=True,
         )
         print(f"[assets] upserted {a['asset_id']}")
-
-    for m in MARKET_DATA:
-        # One snapshot per asset per day, so re-running the seed doesn't stack duplicates.
-        day = NOW.strftime("%Y-%m-%dT00:00:00Z")
-        db.asset_market_data.update_one(
-            {"asset_id": m["asset_id"], "date": day},
-            {"$set": {**m, "date": day, "timestamp": NOW}},
-            upsert=True,
-        )
-        print(f"[asset_market_data] inserted snapshot for {m['asset_id']}")
 
     db.assets.create_index("asset_id", unique=True)
     db.asset_market_data.create_index([("asset_id", 1), ("timestamp", -1)])

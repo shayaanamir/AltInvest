@@ -20,8 +20,8 @@ from db import (
 )
 
 STEPS = [
-    ("assets + asset_market_data", seed_assets.seed),
-    ("prices (from ml/data/raw CSVs)", seed_prices.seed),
+    ("assets (metadata only)", seed_assets.seed),
+    ("live prices + market data (CoinGecko, Binance)", seed_prices.seed),
     ("nft_*", seed_nft.seed),
     ("market_insights + sentiment_themes", seed_insights.seed),
     ("predictions + risk_scores + risk_breakdown", seed_predictions_risk.seed),
