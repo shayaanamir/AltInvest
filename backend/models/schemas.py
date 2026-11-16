@@ -392,6 +392,52 @@ class NFTCollectionDetail(BaseModel):
     last_updated: Optional[str] = None
 
 
+class NFTSentimentHeadline(BaseModel):
+    title: str
+    score: float
+    contribution: float
+    label: Optional[str] = None
+    reason: Optional[str] = None
+    source: str = ""
+    copies: int = 1
+    age_hours: float = 0.0
+    link: str = ""
+
+
+class NFTSentimentHistoryPoint(BaseModel):
+    timestamp: str
+    sentiment_score: float
+    confidence: float
+    story_count: Optional[int] = None
+
+
+class NFTSentimentOut(BaseModel):
+    """A collection's (or, slug "nft-market", the NFT market's) news sentiment: sentiment_engine/nft_sentiment.
+    sentiment_score is -1..1. `status` is "ok", or "no_articles" when nothing relevant was found yet."""
+    slug: str
+    name: str
+    status: str
+    sentiment_score: Optional[float] = None
+    source: Optional[str] = None
+    confidence: float = 0.0
+    confidence_label: str = "low"
+    signal_strength: Optional[str] = None
+    trend: str = "unknown"
+    last_updated: Optional[str] = None
+    stale: bool = False
+    article_count: int = 0
+    story_count: int = 0
+    source_count: int = 0
+    source_breakdown: Dict = {}
+    sentiment_distribution: Dict = {}
+    top_headlines: List[NFTSentimentHeadline] = []
+    market_signals: Dict = {}
+    data_quality: Dict = {}
+    validated: bool = False
+    validation_note: Optional[str] = None
+    history: List[NFTSentimentHistoryPoint] = []
+
+
 class NFTTokenTrait(BaseModel):
     category: str
     value: str

@@ -7,6 +7,7 @@ import { formatAssetPrice, formatPct } from "../utils/formatters";
 import { NFT_RISK_RELATIVE_NOTE } from "../utils/nftCone";
 import NftFloorCard from "../components/nft/NftFloorCard";
 import NftItemCard from "../components/nft/NftItemCard";
+import NftSentimentCard from "../components/nft/NftSentimentCard";
 import { IconArrowLeft } from "../components/icons";
 import { ErrorState, ErrorBoundary } from "../errors";
 
@@ -140,6 +141,8 @@ export default function NftCollectionPage() {
               <ErrorBoundary variant="section" label="Liquidity"><LiquidityCard liquidity={c.liquidity} /></ErrorBoundary>
               <ErrorBoundary variant="section" label="Sales"><SalesCard sales={c.recentSales} /></ErrorBoundary>
             </div>
+
+            <ErrorBoundary variant="section" label="News sentiment"><NftSentimentCard slug={c.slug} /></ErrorBoundary>
 
             <ErrorBoundary variant="section" label="Item value"><NftItemCard slug={c.slug} initialToken={token} /></ErrorBoundary>
 

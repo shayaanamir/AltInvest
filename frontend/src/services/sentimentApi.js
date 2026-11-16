@@ -4,6 +4,9 @@ import { reportApiReachable } from "../errors/connectionStatus";
 import { confidenceLabelFromValue, getEvidencePhrase as evidencePhrase, bandByThreshold } from "../utils/scoring";
 import { fetchUniverse } from "./assetRepository";
 import { watchlistApi } from "./watchlistApi";
+import {
+  normaliseNftRecord, nftMoodOverview, nftSourceSplit, nftNarrative, nftMarketSignals,
+} from "../utils/nftSentimentHub";
 
 /*
  * Sentiment screens. Every figure here comes from the API:
@@ -11,9 +14,12 @@ import { watchlistApi } from "./watchlistApi";
  *   GET /sentiment/{id}/history readings over time
  *   GET /sentiment/mood-trend   the average of all assets over time
  *   GET /sentiment/themes       recurring themes
+ *   GET /nft/sentiment          latest NFT reading per collection (sentiment_engine/nft_sentiment), and
+ *   GET /nft/sentiment/mood-trend, GET /nft/collections/{slug}/sentiment for its history
  *   GET /discover               names, categories, prices, 24h change and the user's held flags
- * Where there is no data (no NFT or real-estate sentiment source, no history yet) the result is empty
- * or null so the screen can say so; nothing is filled in.
+ * Where there is no data (no real-estate sentiment source, no history yet) the result is empty
+ * or null so the screen can say so; nothing is filled in. NFT readings refresh on the server every
+ * 30 minutes; they are never computed on request.
  */
 
 /* ---------------- transport ---------------- */
@@ -123,8 +129,21 @@ const loadMeta = shared(async () => {
   return new Map(rows.map((r) => [(r.type === "nft" ? r.id : r.symbol).toLowerCase(), r]));
 });
 
+// NFT readings. A failure here leaves the NFT parts empty instead of breaking the crypto ones.
+const fetchAllNftRaw = shared(async () => {
+  try {
+    const data = await getJson("/nft/sentiment", "NFT sentiment request");
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+});
+
+const nftRecords = async () => (await fetchAllNftRaw()).map(normaliseNftRecord);
+
 const resetCaches = () => {
   fetchAllSentimentRaw.reset();
+  fetchAllNftRaw.reset();
   loadMeta.reset();
 };
 
@@ -203,16 +222,77 @@ const toScore100 = (s) => Math.round((s + 1) * 50);
 export { confidenceLabelFromValue, evidencePhrase };
 export { relativeTime } from "../utils/dateTime";
 
+/** The drill-down for an NFT collection, in the same shape as the crypto one in getAssetDetail. */
+function nftDetail(record, meta) {
+  const m = meta.get(record.assetId);
+  const score = toScore100(record.sentimentScore);
+  const d = record.distribution;
+  const distTotal = Math.max(1, d.positive + d.neutral + d.negative);
+  const pct = (n) => Math.round((n / distTotal) * 100);
+  const signals = nftMarketSignals(record);
+  const headlines = record.topHeadlines;
+  return {
+    assetId: record.assetId,
+    symbol: m?.symbol || record.assetId.toUpperCase(),
+    name: m?.name || record.name,
+    category: "nft",
+    subcategory: m?.subcategory || null,
+    held: !!m?.held,
+    price: m?.price ?? null,
+    priceChangePct: signals.priceChange24h ?? m?.changePct ?? null,
+    score,
+    sentimentScore: record.sentimentScore,
+    label: qualitativeLabel(score) ?? "Neutral",
+    confidencePct: Math.round(record.confidence * 100),
+    confidenceLabel: record.confidenceLabel,
+    narrative: nftNarrative(record),
+    trend: record.trend,
+    distribution: { positive: pct(d.positive), neutral: pct(d.neutral), negative: pct(d.negative) },
+    articleCount: record.articleCount,
+    sourceCount: record.sourceCount,
+    drivingFactors: headlines
+      .filter((h) => h.contribution != null)
+      .sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution))
+      .slice(0, 3)
+      .map((h) => ({
+        direction: h.contribution >= 0 ? "up" : "down",
+        title: h.title,
+        description: [
+          h.reason || null,
+          h.source,
+          h.age_hours != null ? `${Math.round(h.age_hours)}h ago` : null,
+          h.copies > 1 ? `${h.copies} outlets` : null,
+        ].filter(Boolean).join(" · "),
+      })),
+    headlines,
+    sourceBreakdown: nftSourceSplit(record),
+    articlesBySource: record.articlesBySource,
+    marketSignals: { ...signals, volumeChange24h: null, isTrending: null, btcDominance: null },
+    dataQuality: {
+      cmcKeyMissing: false,
+      cmcFallback: false,
+      finbertUnavailable: false,
+      llmUnavailable: record.dataQuality.llm_unavailable === true,
+      marketFallback: record.dataQuality.market_fallback === true,
+    },
+    scorer: record.scorer,
+    validationNote: record.validationNote,
+    lastUpdated: record.lastUpdated,
+  };
+}
+
 /* ---------------- public API ---------------- */
 
 export const sentimentApi = {
   /**
-   * Mood gauges for the hub header. Only crypto has a sentiment source, so `nft` and `realEstate`
-   * are always null and `crypto` is null until the engine has produced a reading.
+   * Mood gauges for the hub header: the average reading of the crypto assets and of the NFT collections.
+   * Each is null until its engine has produced a reading; `realEstate` has no source and is always null.
    */
   getMoodOverview: async () => {
-    const records = (await fetchAllSentimentRaw()).map(normaliseRecord).filter(hasReading);
-    if (!records.length) return { crypto: null, nft: null, realEstate: null };
+    const [raw, nfts] = await Promise.all([fetchAllSentimentRaw(), nftRecords()]);
+    const records = raw.map(normaliseRecord).filter(hasReading);
+    const nft = nftMoodOverview(nfts, { moodLabel, confidenceLabelFromValue });
+    if (!records.length) return { crypto: null, nft, realEstate: null };
 
     const avgScore = Math.round(records.reduce((s, r) => s + r.sentimentScore * 100, 0) / records.length);
     const avgConfidence = records.reduce((s, r) => s + r.confidence, 0) / records.length;
@@ -224,38 +304,49 @@ export const sentimentApi = {
         assetCount: records.length,
         excludedCount: 0,
       },
-      nft: null,
+      nft,
       realEstate: null,
     };
   },
 
   /**
    * Average mood over time, on the same -100..+100 scale as the mood gauge (getMoodOverview).
-   * Only crypto has history; other scopes are empty.
+   * Crypto and NFTs have history; real estate is empty.
    */
   getMoodTrend: async (scope = "crypto", days = 30) => {
     const crypto = async () => {
       const rows = await getJson(`/sentiment/mood-trend?days=${encodeURIComponent(days)}`, "Mood trend request");
       return rows.map((r) => ({ date: r.date, value: Math.round(r.value * 100) }));
     };
-    if (scope === "both") return { crypto: await crypto(), nft: [], realEstate: [] };
+    const nft = async () => {
+      const rows = await getJson(`/nft/sentiment/mood-trend?days=${encodeURIComponent(days)}`, "NFT mood trend request");
+      return rows.map((r) => ({ date: r.date, value: Math.round(r.value * 100) }));
+    };
+    if (scope === "both") {
+      const [c, n] = await Promise.all([crypto(), nft().catch(() => [])]);
+      return { crypto: c, nft: n, realEstate: [] };
+    }
     if (scope === "crypto") return crypto();
+    if (scope === "nft") return nft();
     return [];
   },
 
   /** Ranked asset list ("What stands out"). category: 'crypto' | 'nft' | 'all' */
   getAssetList: async (category = "crypto") => {
-    const [raw, meta] = await Promise.all([fetchAllSentimentRaw(), loadMeta()]);
-    const records = raw.map(normaliseRecord).filter(hasReading);
+    const [raw, nfts, meta] = await Promise.all([fetchAllSentimentRaw(), nftRecords(), loadMeta()]);
+    const records = [
+      ...raw.map(normaliseRecord).filter(hasReading),
+      ...nfts.filter((r) => !r.isMarket && hasReading(r)),
+    ];
 
     const scored = records.map((r) => {
       const m = metaFor(meta, r.assetId);
       const score = toScore100(r.sentimentScore);
       return {
         assetId: r.assetId,
-        name: m.name,
+        name: r.isNft && !meta.has(r.assetId) ? r.name : m.name,
         symbol: m.symbol,
-        category: m.category,
+        category: r.isNft ? "nft" : m.category,
         subcategory: m.subcategory,
         held: m.held,
         score,
@@ -296,18 +387,23 @@ export const sentimentApi = {
     return rows.map((t) => ({ label: t.label, direction: t.direction, category: t.category }));
   },
 
-  /** Headlines behind the readings. There is no NFT news source, so that tab is empty. */
+  /** Headlines behind the readings: "news" is crypto and NFT together, "nft" is NFT only. */
   getWhatWereReading: async (tab = "news") => {
-    if (tab === "nft") return [];
-    const records = (await fetchAllSentimentRaw()).map(normaliseRecord).filter(hasReading);
-    const headlines = records.flatMap((r) => r.topHeadlines.map((h) => ({ ...h, assetId: r.assetId })));
+    const [raw, nfts] = await Promise.all([tab === "nft" ? [] : fetchAllSentimentRaw(), nftRecords()]);
+    const records = [...raw.map(normaliseRecord), ...nfts].filter(hasReading);
+    const seen = new Set();
+    const headlines = records
+      .flatMap((r) => r.topHeadlines.map((h) => ({ ...h, assetId: r.assetId })))
+      .filter((h) => (seen.has(h.title) ? false : seen.add(h.title)));   // one story can back several readings
     return headlines.sort((a, b) => (a.age_hours ?? 0) - (b.age_hours ?? 0));
   },
 
   /** Full detail for the asset drill-down. Throws a "not found" ApiError if there is no reading for the asset. */
   getAssetDetail: async (assetId) => {
-    const [raw, meta] = await Promise.all([fetchAllSentimentRaw(), loadMeta()]);
+    const [raw, nfts, meta] = await Promise.all([fetchAllSentimentRaw(), nftRecords(), loadMeta()]);
     const record = raw.map(normaliseRecord).find((r) => r.assetId === assetId && hasReading(r));
+    const nftRecord = record ? null : nfts.find((r) => r.assetId === assetId && hasReading(r));
+    if (nftRecord) return nftDetail(nftRecord, meta);
     if (!record) {
       const name = metaFor(meta, assetId).name;
       throw new ApiError("No sentiment reading", { status: 404, kind: "notFound", detail: `There is no sentiment reading for ${name} yet.` });
@@ -387,6 +483,13 @@ export const sentimentApi = {
   /** An asset's sentiment over time (0–100). Empty until the engine has stored at least two readings. */
   getAssetOverTime: async (assetId, days = 30) => {
     const lookback = days === "24h" ? 1 : days; // the chart's "24h" option is one day of readings
+    if ((await fetchAllNftRaw()).some((r) => r.slug === assetId)) {
+      const json = await getJson(`/nft/collections/${encodeURIComponent(assetId)}/sentiment?days=${encodeURIComponent(lookback)}`,
+        "NFT history request");
+      const history = json.history || [];                       // oldest first
+      if (history.length < 2) return [];
+      return history.map((h) => ({ date: h.timestamp, value: toScore100(h.sentiment_score ?? 0) }));
+    }
     const json = await getJson(`/sentiment/${assetId}/history?days=${encodeURIComponent(lookback)}`, "History request");
     const history = json.history || [];
     if (history.length < 2) return [];
@@ -398,7 +501,9 @@ export const sentimentApi = {
 
   /** Throws an ApiError if the refresh itself failed, so the UI can say so instead of re-showing old data. */
   refreshAsset: async (assetId) => {
-    await postRefresh(assetId);
+    // NFT readings are refreshed by the server every 30 minutes (never on request, so a click never costs
+    // an LLM call); refreshing one just re-reads the latest stored reading.
+    if (!(await fetchAllNftRaw()).some((r) => r.slug === assetId)) await postRefresh(assetId);
     resetCaches();
     return sentimentApi.getAssetDetail(assetId);
   },

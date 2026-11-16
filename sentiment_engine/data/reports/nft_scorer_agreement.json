@@ -1,0 +1,1295 @@
+{
+  "generated_at": "2026-11-15T19:49:39+00:00",
+  "model": "openai/gpt-oss-120b",
+  "note": "Agreement between scorers on live headlines, NOT accuracy: there are no human labels.",
+  "articles_scored": 62,
+  "llm_self": {
+    "relevance_agreement": 1.0,
+    "n": 62,
+    "label_agreement": 0.935,
+    "cohen_kappa": 0.9,
+    "confusion_rows_first_cols_second": {
+      "positive": {
+        "positive": 12,
+        "neutral": 0,
+        "negative": 0
+      },
+      "neutral": {
+        "positive": 1,
+        "neutral": 22,
+        "negative": 3
+      },
+      "negative": {
+        "positive": 0,
+        "neutral": 0,
+        "negative": 24
+      }
+    },
+    "score_mean_abs_diff": 0.068
+  },
+  "llm_vs_finbert_on_relevant": {
+    "n": 34,
+    "label_agreement": 0.559,
+    "cohen_kappa": 0.251,
+    "confusion_rows_first_cols_second": {
+      "positive": {
+        "positive": 3,
+        "neutral": 2,
+        "negative": 4
+      },
+      "neutral": {
+        "positive": 0,
+        "neutral": 3,
+        "negative": 4
+      },
+      "negative": {
+        "positive": 0,
+        "neutral": 5,
+        "negative": 13
+      }
+    },
+    "score_pearson": 0.517
+  },
+  "rows": [
+    {
+      "target": "boredapeyachtclub",
+      "title": "Machi Sells Bored Ape Bought for 125 ETH for 7.3 ETH After Five Years",
+      "source": "Koin Bülteni",
+      "llm_a": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "ensemble": {
+        "score": -0.1729,
+        "label": "negative",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "boredapeyachtclub",
+      "title": "Machi Sells Bored Ape NFT #2894 for 7.3 Ether After 125 ETH Purchase",
+      "source": "www.tokenpost.com",
+      "llm_a": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "ensemble": {
+        "score": -0.1729,
+        "label": "negative",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "boredapeyachtclub",
+      "title": "Machi Sells Bored Ape #2894 at $204K Loss After Five-Year Hold",
+      "source": "phemex",
+      "llm_a": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "ensemble": {
+        "score": -0.3082,
+        "label": "negative",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "boredapeyachtclub",
+      "title": "RR/BAYC NFT Latest Floor Price, Charts, and Market Cap Data",
+      "source": "Forbes",
+      "llm_a": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "llm_b": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "ensemble": {
+        "score": 0.0,
+        "label": "neutral",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "boredapeyachtclub",
+      "title": "Bored Ape Yacht Club Holder Count Hits a Nearly One-Year High",
+      "source": "www.tokenpost.com",
+      "llm_a": {
+        "relevant": true,
+        "label": "positive",
+        "score": 0.3
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "positive",
+        "score": 0.6
+      },
+      "ensemble": {
+        "score": -0.1729,
+        "label": "negative",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "boredapeyachtclub",
+      "title": "Machi Big Brother sells 31 BAYC NFTs at a loss to fund leveraged long crypto positions",
+      "source": "Pluang",
+      "llm_a": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.9
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "ensemble": {
+        "score": -0.1951,
+        "label": "negative",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "boredapeyachtclub",
+      "title": "Trader sold 31 Bored Ape NFTs at a total loss o...",
+      "source": "Pluang",
+      "llm_a": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.9
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "ensemble": {
+        "score": -0.2842,
+        "label": "negative",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "boredapeyachtclub",
+      "title": "Machi Big Brother Sells 31 BAYC NFTs at a Loss, Keeps 75",
+      "source": "TOKENPOST",
+      "llm_a": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.9
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "ensemble": {
+        "score": -0.1951,
+        "label": "negative",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "boredapeyachtclub",
+      "title": "Two Bored Ape NFTs sold at $30,400, $86,980 bel...",
+      "source": "Pluang",
+      "llm_a": {
+        "relevant": true,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "ensemble": {
+        "score": -0.1729,
+        "label": "negative",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "boredapeyachtclub",
+      "title": "Bored Ape NFT #7256 sold for 7 ETH, much lower than its prior 34.2 ETH valuation.",
+      "source": "Pluang",
+      "llm_a": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "ensemble": {
+        "score": -0.8091,
+        "label": "negative",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "boredapeyachtclub",
+      "title": "Otherside’s The Blight puts a Bored Ape, seven Mutant Apes and a 10,000 APE jackpot up for grabs over eight weeks",
+      "source": "eGamers.io",
+      "llm_a": {
+        "relevant": true,
+        "label": "positive",
+        "score": 0.6
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "positive",
+        "score": 0.6
+      },
+      "ensemble": {
+        "score": -0.1729,
+        "label": "negative",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "boredapeyachtclub",
+      "title": "Bored Ape Yacht Club: hacks, mishaps and controversies since 2021",
+      "source": "CryptoTicker.io",
+      "llm_a": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "ensemble": {
+        "score": -0.1729,
+        "label": "negative",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "boredapeyachtclub",
+      "title": "Six Bored Ape Yacht Club NFTs sold for $83,880 in 15 hours via OpenSea wallet linked to 黄立成",
+      "source": "Pluang",
+      "llm_a": {
+        "relevant": true,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "ensemble": {
+        "score": -0.1729,
+        "label": "negative",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "boredapeyachtclub",
+      "title": "Wallet Linked to 黄立成 Receives $83,880 From Six BAYC NFT Sales",
+      "source": "TOKENPOST",
+      "llm_a": {
+        "relevant": true,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "ensemble": {
+        "score": 0.0,
+        "label": "neutral",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "boredapeyachtclub",
+      "title": "黄立成 Sells Six Bored Ape NFTs for About $83,880 in 15 Hours",
+      "source": "TOKENPOST",
+      "llm_a": {
+        "relevant": true,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "ensemble": {
+        "score": -0.1729,
+        "label": "negative",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "boredapeyachtclub",
+      "title": "Three Bored Ape NFTs sold at a $246K loss, high...",
+      "source": "Pluang",
+      "llm_a": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "ensemble": {
+        "score": -0.8521,
+        "label": "negative",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "boredapeyachtclub",
+      "title": "Investor sells BAYC NFTs to fund $1.48M Ether l...",
+      "source": "Pluang",
+      "llm_a": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "ensemble": {
+        "score": 0.0,
+        "label": "neutral",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "boredapeyachtclub",
+      "title": "黄立成 Sells Three More BAYC NFTs to Fund $1.479 Million Ether Longs",
+      "source": "TOKENPOST",
+      "llm_a": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "ensemble": {
+        "score": 0.0,
+        "label": "neutral",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "boredapeyachtclub",
+      "title": "Machi Big Brother: Sells Six BAYC for $83.88K",
+      "source": "Blockchain News",
+      "llm_a": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "ensemble": {
+        "score": 0.0,
+        "label": "neutral",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "boredapeyachtclub",
+      "title": "Machi Big Brother Sells Bored Ape 32 for 12.5 Ether (ETH)",
+      "source": "TOKENPOST",
+      "llm_a": {
+        "relevant": true,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "ensemble": {
+        "score": -0.1729,
+        "label": "negative",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "mutant-ape-yacht-club",
+      "title": "Machibigbrother Adds Bored and Mutant Ape NFTs to $3 to $8 MachiPool Draws",
+      "source": "www.tokenpost.com",
+      "llm_a": {
+        "relevant": true,
+        "label": "positive",
+        "score": 0.3
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "positive",
+        "score": 0.6
+      },
+      "ensemble": {
+        "score": -0.1729,
+        "label": "negative",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "pudgypenguins",
+      "title": "Pudgy Penguins technical analysis: Watch $0.00455 support as downside risk increases",
+      "source": "Traders Union",
+      "llm_a": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "llm_b": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "ensemble": {
+        "score": -0.0708,
+        "label": "neutral",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "pudgypenguins",
+      "title": "What's behind Pudgy Penguins's latest 17.3% price pullback?",
+      "source": "Traders Union",
+      "llm_a": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "llm_b": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "ensemble": {
+        "score": 0.0,
+        "label": "neutral",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "pudgypenguins",
+      "title": "LBank announces Republic Day promotion for Brazil featuring 200 USDT pool and exclusive Pudgy Penguins merch",
+      "source": "tradersunion",
+      "llm_a": {
+        "relevant": true,
+        "label": "positive",
+        "score": 0.6
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "positive",
+        "score": 0.6
+      },
+      "ensemble": {
+        "score": 0.1843,
+        "label": "positive",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "pudgypenguins",
+      "title": "PENGU slides around 15.5% as intraday volatility and negative momentum weigh",
+      "source": "Traders Union",
+      "llm_a": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "llm_b": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "ensemble": {
+        "score": -0.9008,
+        "label": "negative",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "pudgypenguins",
+      "title": "Will Pudgy Penguins extend losses as seller pressure intensifies?",
+      "source": "Traders Union",
+      "llm_a": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "llm_b": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "ensemble": {
+        "score": -0.2715,
+        "label": "negative",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "pudgypenguins",
+      "title": "Pudgy Penguins (PENGU) Volatility Explained: 3.01% Drop",
+      "source": "CoinMarketCap",
+      "llm_a": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "llm_b": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "ensemble": {
+        "score": -0.1729,
+        "label": "negative",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "pudgypenguins",
+      "title": "Pudgy Penguins Card Featured in eBay-Owned Goldin's 2026 Fall TCG Elite Auction",
+      "source": "Cryptonews.net",
+      "llm_a": {
+        "relevant": true,
+        "label": "positive",
+        "score": 0.9
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "positive",
+        "score": 0.9
+      },
+      "ensemble": {
+        "score": 0.0,
+        "label": "neutral",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "pudgypenguins",
+      "title": "Convert 10000 JPY (Japanese Yen) to PENGU (Pudgy Penguins)",
+      "source": "Bybit",
+      "llm_a": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "llm_b": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "ensemble": {
+        "score": 0.0,
+        "label": "neutral",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "pudgypenguins",
+      "title": "Pudgy Penguins' Abstract Blockchain To Shut Down Dec. 15",
+      "source": "CoinMarketCap",
+      "llm_a": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.9
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.9
+      },
+      "ensemble": {
+        "score": 0.0,
+        "label": "neutral",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "pudgypenguins",
+      "title": "Pudgy Penguins (PENGU) token trades near $0.006 on Binance with slight daily fluctuation.",
+      "source": "Pluang",
+      "llm_a": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "llm_b": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "ensemble": {
+        "score": 0.0,
+        "label": "neutral",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "pudgypenguins",
+      "title": "Pudgy Penguins Price Shows Bearish Trend in November",
+      "source": "The Cryptonomist",
+      "llm_a": {
+        "relevant": false,
+        "label": "negative",
+        "score": -0.6
+      },
+      "llm_b": {
+        "relevant": false,
+        "label": "negative",
+        "score": -0.6
+      },
+      "ensemble": {
+        "score": 0.0,
+        "label": "neutral",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "pudgypenguins",
+      "title": "PENGU/GBP Price: Convert Pudgy Penguin (Base - pudgypenguin.io) to British Pound",
+      "source": "Crypto.com",
+      "llm_a": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "llm_b": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "ensemble": {
+        "score": 0.0,
+        "label": "neutral",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "pudgypenguins",
+      "title": "Perplexity AI Predicts a Huge Move Pudgy Penguins: Is PENGU Set to 150X?",
+      "source": "Yahoo Finance",
+      "llm_a": {
+        "relevant": false,
+        "label": "positive",
+        "score": 0.3
+      },
+      "llm_b": {
+        "relevant": false,
+        "label": "positive",
+        "score": 0.3
+      },
+      "ensemble": {
+        "score": 0.2125,
+        "label": "positive",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "pudgypenguins",
+      "title": "Pudgy Penguins Price Prediction 2026, 2027–2030: How High Can PENGU Go?",
+      "source": "Coinpedia",
+      "llm_a": {
+        "relevant": false,
+        "label": "positive",
+        "score": 0.3
+      },
+      "llm_b": {
+        "relevant": false,
+        "label": "positive",
+        "score": 0.3
+      },
+      "ensemble": {
+        "score": 0.0,
+        "label": "neutral",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "pudgypenguins",
+      "title": "#pengu Community Insights & Market Sentiment | Binance Square",
+      "source": "Binance",
+      "llm_a": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "llm_b": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "ensemble": {
+        "score": 0.0,
+        "label": "neutral",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "pudgypenguins",
+      "title": "Pudgy Penguins stays bearish below all three daily EMAs",
+      "source": "The Cryptonomist",
+      "llm_a": {
+        "relevant": false,
+        "label": "negative",
+        "score": -0.6
+      },
+      "llm_b": {
+        "relevant": false,
+        "label": "negative",
+        "score": -0.6
+      },
+      "ensemble": {
+        "score": 0.0,
+        "label": "neutral",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "pudgypenguins",
+      "title": "Convert 50 HUF (Hungarian Forint) to PENGU (Pudgy Penguins)",
+      "source": "Bybit",
+      "llm_a": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "llm_b": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "ensemble": {
+        "score": 0.0,
+        "label": "neutral",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "pudgypenguins",
+      "title": "The TICKER that is increasing mentions on X is $PENGU",
+      "source": "KuCoin",
+      "llm_a": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "llm_b": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "ensemble": {
+        "score": 0.0,
+        "label": "neutral",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "pudgypenguins",
+      "title": "What Is Pudgy Penguins? PENGU Token and Brand Explained",
+      "source": "Coin Gabbar",
+      "llm_a": {
+        "relevant": true,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "ensemble": {
+        "score": 0.0,
+        "label": "neutral",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "pudgypenguins",
+      "title": "Top 3 Crypto To Buy Now: Pepeto, PENGU and Kaspa as Meme Coins Gain While Ether Drops. Which Leads?",
+      "source": "openPR.com",
+      "llm_a": {
+        "relevant": false,
+        "label": "positive",
+        "score": 0.3
+      },
+      "llm_b": {
+        "relevant": false,
+        "label": "positive",
+        "score": 0.3
+      },
+      "ensemble": {
+        "score": 0.3037,
+        "label": "positive",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "pudgypenguins",
+      "title": "Pudgy Penguins Price: Bearish Trend Dominates",
+      "source": "The Cryptonomist",
+      "llm_a": {
+        "relevant": false,
+        "label": "negative",
+        "score": -0.6
+      },
+      "llm_b": {
+        "relevant": false,
+        "label": "negative",
+        "score": -0.6
+      },
+      "ensemble": {
+        "score": 0.0359,
+        "label": "neutral",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "pudgypenguins",
+      "title": "Top Trending Cryptocurrencies Today: Super Inu and Initia Surge as PENGU Holds Steady",
+      "source": "Altcoin Buzz",
+      "llm_a": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "llm_b": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "ensemble": {
+        "score": 0.3101,
+        "label": "positive",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "pudgypenguins",
+      "title": "Pudgy Penguins trades below all three daily averages as rebound stalls",
+      "source": "The Cryptonomist",
+      "llm_a": {
+        "relevant": false,
+        "label": "negative",
+        "score": -0.6
+      },
+      "llm_b": {
+        "relevant": false,
+        "label": "negative",
+        "score": -0.6
+      },
+      "ensemble": {
+        "score": -0.1843,
+        "label": "negative",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "pudgypenguins",
+      "title": "Pudgy Penguins Launches Flake Finder Tool to Locate Forgotten Crypto Across Multiple Chains",
+      "source": "Cryptonews.net",
+      "llm_a": {
+        "relevant": true,
+        "label": "positive",
+        "score": 0.6
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "positive",
+        "score": 0.6
+      },
+      "ensemble": {
+        "score": -0.1475,
+        "label": "negative",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "pudgypenguins",
+      "title": "Pudgy Penguins Price Rebounds But Bears Control Momentum",
+      "source": "The Cryptonomist",
+      "llm_a": {
+        "relevant": false,
+        "label": "negative",
+        "score": -0.6
+      },
+      "llm_b": {
+        "relevant": false,
+        "label": "negative",
+        "score": -0.6
+      },
+      "ensemble": {
+        "score": 0.0,
+        "label": "neutral",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "pudgypenguins",
+      "title": "Pudgy Penguins (PENGU) Drops 7% Amid Weak Altcoin Market",
+      "source": "CoinMarketCap",
+      "llm_a": {
+        "relevant": false,
+        "label": "negative",
+        "score": -0.6
+      },
+      "llm_b": {
+        "relevant": false,
+        "label": "negative",
+        "score": -0.6
+      },
+      "ensemble": {
+        "score": -0.8714,
+        "label": "negative",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "lilpudgys",
+      "title": "Lil Pudgys NFT Latest Floor Price, Charts, and Market Cap Data",
+      "source": "Forbes",
+      "llm_a": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "llm_b": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "ensemble": {
+        "score": 0.0,
+        "label": "neutral",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "nft-market",
+      "title": "Weekly NFT sales drop 2.56% to $33.63M; Ethereu...",
+      "source": "Pluang",
+      "llm_a": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "ensemble": {
+        "score": -0.8054,
+        "label": "negative",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "nft-market",
+      "title": "NFT Sales Total $33.63 Million in Latest Seven-Day Snapshot",
+      "source": "TOKENPOST",
+      "llm_a": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "ensemble": {
+        "score": 0.0,
+        "label": "neutral",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "nft-market",
+      "title": "NFT sales fall to $33.63M as Bitcoin volume rises",
+      "source": "Crypto News",
+      "llm_a": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "ensemble": {
+        "score": -0.6282,
+        "label": "negative",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "nft-market",
+      "title": "OpenSea Is Back on Solana—Can It Revive the NFT Market?",
+      "source": "CoinMarketCap",
+      "llm_a": {
+        "relevant": true,
+        "label": "positive",
+        "score": 0.6
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "positive",
+        "score": 0.6
+      },
+      "ensemble": {
+        "score": 0.2213,
+        "label": "positive",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "nft-market",
+      "title": "Latest NFT News Today – NFT Market, Digital Art & Web3 Updates 2026",
+      "source": "CoinGabbar",
+      "llm_a": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "llm_b": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "ensemble": {
+        "score": 0.0,
+        "label": "neutral",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "nft-market",
+      "title": "Opensea Price (SEA/USD) Today | Live Price, Market Cap & Chart",
+      "source": "Binance",
+      "llm_a": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "llm_b": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "ensemble": {
+        "score": 0.0,
+        "label": "neutral",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "nft-market",
+      "title": "Weekly NFT sales fall 11% to $34.95 million as Base gains 29%",
+      "source": "TOKENPOST",
+      "llm_a": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.9
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "ensemble": {
+        "score": -0.4266,
+        "label": "negative",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "nft-market",
+      "title": "NFT Market Capitalization Hits 2025 Low of $2.5B in December",
+      "source": "CoinMarketCap",
+      "llm_a": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "negative",
+        "score": -0.6
+      },
+      "ensemble": {
+        "score": -0.7777,
+        "label": "negative",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "nft-market",
+      "title": "NFT Market To Shift Toward Tokenized Collectibles",
+      "source": "CoinMarketCap",
+      "llm_a": {
+        "relevant": true,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "positive",
+        "score": 0.6
+      },
+      "ensemble": {
+        "score": 0.0,
+        "label": "neutral",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "nft-market",
+      "title": "NFT Market Cap Surges to $9.3B on ETH Rally",
+      "source": "CoinMarketCap",
+      "llm_a": {
+        "relevant": true,
+        "label": "positive",
+        "score": 0.9
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "positive",
+        "score": 0.9
+      },
+      "ensemble": {
+        "score": 0.5149,
+        "label": "positive",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "nft-market",
+      "title": "Six Bored Ape Yacht Club NFTs sold for $83,880 in 15 hours via OpenSea wallet linked to 黄立成",
+      "source": "Pluang",
+      "llm_a": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "llm_b": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "ensemble": {
+        "score": -0.1729,
+        "label": "negative",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "nft-market",
+      "title": "Wallet Linked to 黄立成 Receives $83,880 From Six BAYC NFT Sales",
+      "source": "TOKENPOST",
+      "llm_a": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "llm_b": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "ensemble": {
+        "score": 0.0,
+        "label": "neutral",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "nft-market",
+      "title": "OpenSea Mobile Launches with Social Trading Feed and 25% Referral Fees",
+      "source": "The Fintech Times",
+      "llm_a": {
+        "relevant": true,
+        "label": "positive",
+        "score": 0.6
+      },
+      "llm_b": {
+        "relevant": true,
+        "label": "positive",
+        "score": 0.6
+      },
+      "ensemble": {
+        "score": 0.0,
+        "label": "neutral",
+        "models": "vader+finbert"
+      }
+    },
+    {
+      "target": "nft-market",
+      "title": "Elysium Punks 0.009 HYPE - Collection | OpenSea",
+      "source": "Howl.Link",
+      "llm_a": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "llm_b": {
+        "relevant": false,
+        "label": "neutral",
+        "score": 0.0
+      },
+      "ensemble": {
+        "score": 0.0,
+        "label": "neutral",
+        "models": "vader+finbert"
+      }
+    }
+  ]
+}

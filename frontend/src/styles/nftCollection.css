@@ -54,3 +54,24 @@
 }
 .pv2-nft-token a { color: inherit; text-decoration: none; }
 .pv2-nft-token a:hover { text-decoration: underline; }
+
+/* News sentiment card (sentiment_engine/nft_sentiment) */
+.nft-sent-card { margin-bottom: 14px; }
+.nft-sent-parts { max-width: 420px; }
+.nft-mood-badge {
+  display: inline-flex; align-items: center; font-size: 11px; font-weight: 700; padding: 3px 9px;
+  border-radius: 999px; border: 1px solid var(--sv2-border); background: var(--sv2-chip); color: var(--sv2-text-soft);
+  vertical-align: middle;
+}
+.nft-mood-badge.bullish { color: var(--sv2-green); background: var(--sv2-green-soft); border-color: transparent; }
+.nft-mood-badge.bearish { color: var(--sv2-red); background: var(--sv2-red-soft); border-color: transparent; }
+.nft-sent-subhead { font-size: 12px; font-weight: 700; color: var(--sv2-text-mute); margin: 16px 0 8px; }
+.nft-sent-headlines { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.nft-sent-headline { display: grid; grid-template-columns: 10px 1fr; gap: 10px; align-items: start; }
+.nft-sent-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; background: var(--sv2-text-mute); }
+.nft-sent-dot.positive { background: var(--sv2-green); }
+.nft-sent-dot.negative { background: var(--sv2-red); }
+.nft-sent-title { font-size: 13px; font-weight: 600; color: var(--sv2-text); line-height: 1.4; overflow-wrap: anywhere; }
+.nft-sent-title a { color: inherit; text-decoration: none; }
+.nft-sent-title a:hover { text-decoration: underline; }
+.nft-sent-reason { font-size: 12px; color: var(--sv2-text-soft); margin-top: 2px; }

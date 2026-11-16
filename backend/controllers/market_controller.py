@@ -7,6 +7,8 @@ One place that joins the per-asset / per-collection collections into the flat
 Every field comes from the database. A field with no backing data is None —
 nothing is estimated here.
 """
+from datetime import datetime, timedelta, timezone
+
 from db.queries import (
     get_all_latest_aai_scores,
     get_all_latest_nft_liquidity,
@@ -58,6 +60,32 @@ def live_sentiment_by_symbol() -> dict:
         for d in docs
         if d.get("asset_id")
     }
+
+
+# NFT readings refresh every 30 minutes (controllers/nft_sentiment_controller.py); one older than this is
+# left out of lists, like routes/nft.py marks it stale.
+NFT_SENTIMENT_MAX_AGE_HOURS = 3
+
+
+def live_nft_sentiment(now: datetime | None = None) -> dict:
+    """{slug: {score, confidence, trend}} for collections with a real, recent NFT sentiment reading."""
+    from db.queries import get_all_nft_sentiment
+    from utils.ml_rows import as_utc
+    now = now or datetime.now(timezone.utc)
+    try:
+        docs = get_all_nft_sentiment()
+    except Exception as exc:
+        print(f"[market_controller] NFT sentiment unavailable ({exc})")
+        return {}
+    out = {}
+    for d in docs:
+        ts = as_utc(d.get("timestamp"))
+        if ((d.get("data_quality") or {}).get("reason") or not (d.get("confidence") or 0) > 0
+                or d.get("sentiment_score") is None or ts is None
+                or now - ts > timedelta(hours=NFT_SENTIMENT_MAX_AGE_HOURS)):
+            continue
+        out[d["slug"]] = {"score": d["sentiment_score"], "confidence": d["confidence"], "trend": d.get("trend")}
+    return out
 
 
 def _aai_fields(aai: dict | None, live: dict | None = None) -> dict:
@@ -125,6 +153,7 @@ def build_nft_items(user_id=None) -> list[dict]:
     aai_scores = get_all_latest_aai_scores("nft")
     liquidity = get_all_latest_nft_liquidity()
     flags = get_user_flags(user_id)
+    live_sentiment = live_nft_sentiment()
 
     items = []
     for slug, m in market.items():
@@ -152,6 +181,6 @@ def build_nft_items(user_id=None) -> list[dict]:
             "held": slug in flags["held"],
             "watching": slug in flags["watching"],
             "sparkline": [],
-            **_aai_fields(aai_scores.get(slug)),
+            **_aai_fields(aai_scores.get(slug), live_sentiment.get(slug)),
         })
     return items
