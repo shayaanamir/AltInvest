@@ -8,6 +8,7 @@ The **AltInvest Sentiment Engine** is a high-performance Python application that
 
 *   **NLP Ensemble:** Integrates VADER (fast, rules-based) and FinBERT (heavy, financial context-aware) to score news headlines.
 *   **Shared, polite collectors:** every RSS feed is downloaded at most once per 10 minutes for all assets together (conditional requests, a real User-Agent, cool-down after a 429, last good copy served meanwhile: `collectors/feed_cache.py`), and one CoinGecko call covers every asset's market data (`collectors/market_collector.py`).
+*   **Per-coin news search:** the 10 publisher feeds only list each site's latest stories, so a coin that is not in those headlines had no news. Each coin's pipeline also reads a Google News RSS search for that coin (`collectors/news_search.py`, queries in `NEWS_SEARCH_QUERIES`): results must still name the coin, price-tracker pages, "X% in an hour" blurbs, truncated headlines and SEO/press-release outlets are dropped, outlets weigh by trust (`OUTLET_TRUST`, unknown 0.5, below the fixed feeds), and at most the 15 newest results per coin are scored. `exclude_names` stops "Ethereum Classic" or "Bitcoin Cash" counting as ETH or BTC news.
 *   **Blended Scoring:** Combines news sentiment (NLP) with market dynamics (price, volume, and dominance signals).
 *   **Caching & Resiliency:** Uses a MongoDB cache with a built-in **Circuit Breaker** to prevent performance degradation when the database is unreachable.
 

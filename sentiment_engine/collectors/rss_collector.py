@@ -17,11 +17,11 @@ from datetime import datetime, timezone
 from typing import Optional
 
 try:
-    from sentiment_engine.collectors import feed_cache
+    from sentiment_engine.collectors import feed_cache, news_search
     from sentiment_engine.utils.config import RSS_FEEDS, ASSETS, MAX_ARTICLE_AGE_HOURS
     from sentiment_engine.utils.logger import get_logger
 except ImportError:
-    from collectors import feed_cache
+    from collectors import feed_cache, news_search
     from utils.config import RSS_FEEDS, ASSETS, MAX_ARTICLE_AGE_HOURS
     from utils.logger import get_logger
 
@@ -171,50 +171,89 @@ def _clean_html(raw: str) -> str:
     return clean
 
 
+class _Probe:
+    """The fields _entry_matches_asset reads, for text that has been cleaned before matching."""
+    def __init__(self, title: str, summary: str, tags):
+        self.title, self.summary, self.tags = title, summary, tags
+
+
+def _without_excluded(text: str, asset: dict) -> str:
+    """`text` with the asset's exclude_names (a different coin's name that contains this one's) blanked out."""
+    for phrase in asset.get("exclude_names", []):
+        text = re.sub(r"\b" + re.escape(phrase) + r"\b", " ", text, flags=re.IGNORECASE)
+    return text
+
+
+def _match(title: str, summary: str, tags, asset: dict) -> tuple[bool, float]:
+    return _entry_matches_asset(
+        _Probe(_without_excluded(title, asset), _without_excluded(summary, asset), tags), asset)
+
+
 def articles_from_feeds(parsed_feeds: list, asset_id: str, asset: dict) -> list[dict]:
     """
     Pure matching step (no network): [(feed config, parsed feed)] -> this asset's articles, newest first,
     near-duplicates folded together.
-    """
-    articles    = []
-    seen_titles = set()
 
-    for feed_config, feed in parsed_feeds:
+    Publisher feeds come first, so when the same headline arrives from a publisher and from a news search the
+    publisher's copy (which has a summary) is the one kept. A news-search feed (kind "search", see
+    collectors/news_search.py) differs: the outlet is in each entry, the title carries a " - Outlet" suffix,
+    price-tracker pages are dropped, and only the newest SEARCH_MAX_PER_ASSET results are used.
+    """
+    articles        = []
+    search_articles = []
+    seen_titles     = set()
+
+    ordered = sorted(parsed_feeds, key=lambda pair: pair[0].get("kind") == "search")   # publishers first
+
+    for feed_config, feed in ordered:
+        is_search    = feed_config.get("kind") == "search"
         feed_name    = feed_config["name"]
         trust_weight = feed_config["trust_weight"]
 
         for entry in feed.entries:
-            is_match, relevance = _entry_matches_asset(entry, asset)
-            if not is_match:
-                continue
-
             published = _parse_published_date(entry)
             age_hours = _article_age_hours(published)
-
             if age_hours > MAX_ARTICLE_AGE_HOURS:
                 continue
 
             title   = getattr(entry, "title", "").strip()
             summary = _clean_html(getattr(entry, "summary", ""))
             link    = getattr(entry, "link", "")
+            source  = feed_name
+
+            if is_search:
+                source  = news_search.publisher(entry, feed_config)
+                title   = news_search.clean_title(title, source)
+                summary = news_search.clean_summary(summary, title, source)
+                if news_search.is_junk(title, source):
+                    continue
+                trust_weight = news_search.trust_for(source)
+            is_match, relevance = _match(title, summary, getattr(entry, "tags", []), asset)
+            if not is_match:
+                continue
 
             title_key = title.lower().strip()
-            if title_key in seen_titles:
+            if not title_key or title_key in seen_titles:
                 continue
             seen_titles.add(title_key)
 
-            articles.append({
+            article = {
                 "title":        title,
                 "summary":      summary,
-                "full_text":    f"{title}. {summary}",
+                "full_text":    f"{title}. {summary}" if summary else title,
                 "link":         link,
-                "source":       feed_name,
+                "source":       source,
+                "via":          feed_name if is_search else None,
                 "trust_weight": trust_weight,
                 "published":    published.isoformat(),
                 "age_hours":    round(age_hours, 2),
                 "asset_id":     asset_id,
                 "relevance_score": relevance,
-            })
+            }
+            (search_articles if is_search else articles).append(article)
+
+    search_articles.sort(key=lambda a: a["age_hours"])
+    articles += search_articles[: news_search.SEARCH_MAX_PER_ASSET]
 
     articles.sort(key=lambda a: a["age_hours"])
     articles = _cluster_near_duplicates(articles)
@@ -224,20 +263,24 @@ def articles_from_feeds(parsed_feeds: list, asset_id: str, asset: dict) -> list[
 
 def fetch_articles_for_asset(asset_id: str) -> list[dict]:
     """
-    Articles from the configured RSS feeds that are about the given asset. The feeds are shared: this does
-    not download them itself unless the cache is due (see collectors/feed_cache.py).
+    Articles about the given asset from the publisher feeds plus a Google News search for the coin
+    (collectors/news_search.py). Nothing is downloaded here unless the cache is due (collectors/feed_cache.py).
+    If the search is unavailable (throttled, blocked) the publisher feeds alone are used.
     """
     if asset_id not in ASSETS:
         raise ValueError(f"Unknown asset: {asset_id}. Must be one of {list(ASSETS.keys())}")
 
     t0 = time.perf_counter()
-    parsed_feeds = feed_cache.get_feeds(RSS_FEEDS)
+    search = news_search.search_feed(asset_id)
+    feeds = RSS_FEEDS + ([search] if search else [])
+    parsed_feeds = feed_cache.get_feeds(feeds)
     articles = articles_from_feeds(parsed_feeds, asset_id, ASSETS[asset_id])
 
+    via_search = sum(1 for a in articles if a.get("via"))
     elapsed = time.perf_counter() - t0
     logger.info(
-        f"{len(articles)} relevant articles for {asset_id.upper()} "
-        f"from {len(parsed_feeds)}/{len(RSS_FEEDS)} feeds in {elapsed:.2f}s"
+        f"{len(articles)} relevant articles for {asset_id.upper()} ({via_search} via news search) "
+        f"from {len(parsed_feeds)}/{len(feeds)} feeds in {elapsed:.2f}s"
     )
     return articles
 

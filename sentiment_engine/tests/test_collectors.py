@@ -28,7 +28,8 @@ def test_every_asset_reads_the_same_downloaded_feeds(monkeypatch):
     eth = rc.fetch_articles_for_asset("eth")
     assert len(btc) == 1 and len(eth) == 1
     assert btc[0]["asset_id"] == "btc" and eth[0]["asset_id"] == "eth"
-    assert calls == [RSS_FEEDS, RSS_FEEDS]                 # the cache decides what is actually downloaded
+    # both ask for the same 10 publisher feeds (plus their own news search); the cache decides what is downloaded
+    assert [c[:len(RSS_FEEDS)] for c in calls] == [RSS_FEEDS, RSS_FEEDS]
 
 
 def test_an_unrelated_article_is_not_matched(monkeypatch):

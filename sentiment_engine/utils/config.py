@@ -29,6 +29,9 @@ MONGO_DB    = os.getenv("MONGO_DB", "altinvest")
 #   ambiguous_ticker  The ticker is also an everyday word or acronym (link, near, uni, atom,
 #                   dot, sol, ada, pol), so a bare ticker only counts when it is written in
 #                   UPPERCASE in the article TITLE (e.g. "LINK jumps 10%", not "click the link").
+#   exclude_names   Phrases of a DIFFERENT coin that contain this coin's name ("Ethereum Classic"). They are
+#                   removed from the title and text before matching, so "Ethereum Classic forecast" is not
+#                   Ethereum news but "Ethereum and Ethereum Classic rally" still is.
 #
 # Deliberately NOT keywords: generic terms like "defi", "oracle", "ibc", "shiba" (a different
 # coin), "ether" (a chemical), or bare "binance" (exchange news isn't BNB news).
@@ -44,6 +47,7 @@ ASSETS = {
         "binance_symbol": "BTCUSDT",
         "names": ["bitcoin", "satoshi nakamoto"],
         "tickers": ["btc"],
+        "exclude_names": ["bitcoin cash", "bitcoin sv", "bitcoin gold"],
     },
     "eth": {
         "symbol": "ETH",
@@ -51,6 +55,7 @@ ASSETS = {
         "binance_symbol": "ETHUSDT",
         "names": ["ethereum", "vitalik buterin"],
         "tickers": ["eth"],
+        "exclude_names": ["ethereum classic"],
     },
     "sol": {
         "symbol": "SOL",
@@ -151,6 +156,28 @@ ASSETS = {
         "tickers": ["near"],
         "ambiguous_ticker": True,
     },
+}
+
+# ── Per-coin news search (Google News RSS, collectors/news_search.py) ─────────
+# The search text for each coin; "when:3d" (the article age limit) is added. Results still have to name the
+# coin (ASSETS names / tickers above), so a loose query only costs a few discarded results. An asset with no
+# entry here simply gets the fixed publisher feeds.
+NEWS_SEARCH_QUERIES = {
+    "btc":   'Bitcoin',
+    "eth":   'Ethereum',
+    "sol":   'Solana',
+    "bnb":   '"BNB Chain" OR "Binance Coin" OR BNB',
+    "xrp":   'XRP OR "XRP Ledger"',
+    "ada":   'Cardano',
+    "avax":  'Avalanche AVAX crypto',
+    "doge":  'Dogecoin',
+    "dot":   'Polkadot',
+    "link":  'Chainlink',
+    "matic": 'Polygon blockchain',     # bare "Polygon" returns the gaming site Polygon.com; "POL" returns price pages
+    "uni":   'Uniswap',
+    "ltc":   'Litecoin',
+    "atom":  '"Cosmos Hub" OR "Cosmos blockchain"',
+    "near":  '"NEAR Protocol"',
 }
 
 # ── RSS Feed Sources ───────────────────────────────────────────────────────────
