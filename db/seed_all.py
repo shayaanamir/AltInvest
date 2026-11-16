@@ -10,6 +10,7 @@ from db import (
     seed as seed_legacy,            # existing db/seed.py (BTC/ETH assets shortlist — superseded by seed_assets)
     seed_assets,
     seed_prices,
+    enrich_asset_profiles,
     seed_nft,
     seed_insights,
     seed_predictions_risk,
@@ -22,6 +23,7 @@ from db import (
 STEPS = [
     ("assets (metadata only)", seed_assets.seed),
     ("live prices + market data (CoinGecko, Binance)", seed_prices.seed),
+    ("asset profiles (CoinGecko description, website, tags)", enrich_asset_profiles.seed),
     ("nft_*", seed_nft.seed),
     ("market insights + themes (real headlines, LLM themes)", seed_insights.seed),
     ("predictions + risk_scores + risk_breakdown", seed_predictions_risk.seed),

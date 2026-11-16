@@ -56,7 +56,10 @@ def related_and_similar(asset: dict, universe: list[dict], limit: int = 4) -> tu
 
     curated = [r.upper() for r in (asset.get("related_assets") or []) if r and r.upper() in by_id and r.upper() != symbol]
     if curated:
-        related = [{**by_id[r], "reason": "Listed as related"} for r in curated]
+        # related_assets / related_basis come from shared CoinGecko tags (controllers/asset_profile_controller.py)
+        basis = asset.get("related_basis") or {}
+        related = [{**by_id[r], "reason": f"Both tagged “{basis[r][0]}” on CoinGecko" if basis.get(r) else "Listed as related"}
+                   for r in curated]
     else:
         sub = asset.get("subcategory")
         peers = [i for i in universe if sub and i.get("subcategory") == sub and i["id"] != symbol]
