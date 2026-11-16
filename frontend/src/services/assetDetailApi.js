@@ -54,6 +54,8 @@ export const assetDetailApi = {
         subcategory: h.subcategory,
         logoColor: h.logo_color || "var(--sv2-accent)",
         price: h.price,
+        priceAsOf: h.price_as_of ?? null,       // audit N-05
+        priceDelayed: h.price_delayed === true,
         change24h: h.change_24h ?? 0,
         held: h.held,
         quantityHeld: h.quantity_held,

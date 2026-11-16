@@ -4,6 +4,7 @@ import AssetAvatar from "../shared/AssetAvatar";
 import WatchStar from "../watchlists/WatchStar";
 import { getAaiTierColor, AAI_BADGE_LABEL as SIGNAL_LABEL } from "../../utils/scoring";
 import { formatAssetPrice } from "../../utils/formatters";
+import { priceAsOfLabel, delayedTitle } from "../../utils/priceFreshness";
 
 const SIGNAL_CLASS = { BUY: "signal-buy", HOLD: "signal-hold", SELL: "signal-sell" };
 
@@ -47,7 +48,10 @@ export default function DiscoverAssetCard({ item, isComparing, onToggleCompare }
       </div>
 
       <div className="disc-price-row">
-        <span className="disc-price">{formatAssetPrice(item.price)}</span>
+        <span className="disc-price" title={priceAsOfLabel(item.priceAsOf) ?? undefined}>{formatAssetPrice(item.price)}</span>
+        {item.priceDelayed && (
+          <span className="price-delayed-badge" title={delayedTitle(item.priceAsOf)}>Delayed</span>
+        )}
         <span className={`disc-change ${positive ? "positive" : "negative"}`}>
           {positive ? "↗" : "↘"} {item.changePct != null ? `${Math.abs(item.changePct).toFixed(2)}%` : "—"}
         </span>

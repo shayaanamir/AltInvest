@@ -157,6 +157,8 @@ class AssetHeader(BaseModel):
     logo_color: Optional[str] = None
     logo_url: Optional[str] = None
     price: Optional[float] = None
+    price_as_of: Optional[str] = None       # the price's time, ISO UTC (audit N-05)
+    price_delayed: Optional[bool] = None    # True when the price is more than 15 minutes old
     change_24h: Optional[float] = None
     market_cap: Optional[float] = None
     market_rank: Optional[int] = None
@@ -506,6 +508,8 @@ class DiscoverItem(BaseModel):
     subcategory: Optional[str] = None
     logo_color: Optional[str] = None
     price: Optional[float] = None   # crypto price or nft floor_usd
+    price_as_of: Optional[str] = None        # crypto only: the price's time, ISO UTC (audit N-05)
+    price_delayed: Optional[bool] = None     # crypto only: True when the price is more than 15 minutes old
     floor_eth: Optional[float] = None        # nft only
     change_24h: Optional[float] = None
     change_7d: Optional[float] = None

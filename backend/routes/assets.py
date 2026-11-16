@@ -1,5 +1,6 @@
 # backend/routes/assets.py
 import path_setup  # noqa
+from utils.price_freshness import price_freshness
 from datetime import datetime, timezone, timedelta
 
 from bson import ObjectId
@@ -136,6 +137,7 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
             "category": asset.get("category"), "subcategory": asset.get("subcategory"),
             "logo_color": asset.get("logo_color"),
             "price": market.get("price"), "change_24h": market.get("change_24h"),
+            **price_freshness(market),       # price_as_of, price_delayed (audit N-05)
             "held": symbol in flags["held"], "quantity_held": quantity_held,
             "watching": symbol in flags["watching"],
         },
@@ -195,6 +197,7 @@ def get_asset_header(symbol: str):
         logo_color=asset.get("logo_color"),
         logo_url=asset.get("logo_url"),
         price=market.get("price"),
+        **price_freshness(market),
         change_24h=market.get("change_24h"),
         market_cap=market.get("market_cap"),
         market_rank=market.get("market_rank"),

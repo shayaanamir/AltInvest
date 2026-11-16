@@ -592,6 +592,9 @@
 /* "Not financial advice" notice at the end of every app page (audit G-38). */
 .app-disclaimer { max-width: 760px; margin: 32px 0 0; padding-top: 14px; border-top: 1px solid var(--sv2-border); line-height: 1.5; }
 [data-density="compact"] .app-disclaimer { margin: 24px 24px 16px; }
+/* Price freshness (audit N-05): "as of" time and a badge when the price is over 15 minutes old. */
+.price-as-of { font-size: 11.5px; color: var(--sv2-text-soft); }
+.price-delayed-badge { font-size: 10.5px; font-weight: 600; padding: 2px 7px; border-radius: 999px; color: var(--sv2-red); background: var(--sv2-red-soft); letter-spacing: 0.02em; }
 
 /* ---------- density: compact (Settings > Appearance) ----------
    Comfortable is the default and has no rules here. Compact zooms the page content out, drops the

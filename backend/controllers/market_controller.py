@@ -7,6 +7,7 @@ One place that joins the per-asset / per-collection collections into the flat
 Every field comes from the database. A field with no backing data is None —
 nothing is estimated here.
 """
+from utils.price_freshness import price_freshness
 from datetime import datetime, timedelta, timezone
 
 from db.queries import (
@@ -143,6 +144,7 @@ def build_crypto_items(user_id=None, with_sparklines: bool = False) -> list[dict
             "subcategory": meta.get("subcategory"),
             "logo_color": meta.get("logo_color"),
             "price": m.get("price"),
+            **price_freshness(m),            # price_as_of, price_delayed (audit N-05)
             "floor_eth": None,
             "change_24h": m.get("change_24h"),
             "change_7d": m.get("change_7d"),
