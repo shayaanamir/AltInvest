@@ -67,7 +67,7 @@ def seed():
             },
             "appearance": {"theme": "dark", "density": "comfortable"},
             "notifications": {
-                "channels": {"inApp": True, "push": True, "email": False},
+                "channels": {"inApp": True, "email": True},
                 "alert_types": {
                     "aaiThresholdOnly": True, "priceAlerts": True, "sentimentShifts": False,
                     "minorPriceWiggles": False, "marketNews": True, "systemMessages": True,
@@ -128,13 +128,13 @@ def seed():
     alerts = [
         {"user_id": user_id, "target_type": "crypto", "target_symbol": "SOL", "target_name": "Solana",
          "metric_type": "aai_score", "condition": "below", "threshold_value": 55,
-         "status": "triggered", "delivery_channel": "push",
+         "status": "triggered", "delivery_channel": "in-app",
          "created_at": datetime(2026, 8, 15, 16, 40, tzinfo=timezone.utc),
          "last_triggered_at": datetime(2026, 8, 26, 9, 14, tzinfo=timezone.utc),
          "last_observed_value": 53.1},
         {"user_id": user_id, "target_type": "crypto", "target_symbol": "BTC", "target_name": "Bitcoin",
          "metric_type": "price", "condition": "above", "threshold_value": 100000,
-         "status": "active", "delivery_channel": "push",
+         "status": "active", "delivery_channel": "in-app",
          "created_at": datetime(2026, 7, 2, 12, 0, tzinfo=timezone.utc),
          "last_triggered_at": None, "last_observed_value": 71450.30},
         {"user_id": user_id, "target_type": "crypto", "target_symbol": "ETH", "target_name": "Ethereum",

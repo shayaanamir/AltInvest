@@ -685,7 +685,7 @@ def update_user_settings(user_id: ObjectId, section: str, payload: dict) -> bool
     """
     Shallow merge: sets each top-level key within `section` individually via
     dot-path, rather than replacing the whole section. E.g. section=
-    "notifications", payload={"channels": {"push": False}} only touches
+    "notifications", payload={"channels": {"email": False}} only touches
     notifications.channels, leaving notifications.alert_types and
     notifications.quiet_hours untouched.
     """
@@ -710,7 +710,8 @@ def create_default_user_settings(user_id: ObjectId) -> None:
             },
             "appearance": {"theme": "dark", "density": "comfortable"},
             "notifications": {
-                "channels": {"inApp": True, "push": True, "email": False},
+                # Email on: it only affects alerts the user sets to the Email channel (audit G-23).
+                "channels": {"inApp": True, "email": True},
                 "alert_types": {
                     "aaiThresholdOnly": True, "priceAlerts": True, "sentimentShifts": False,
                     "minorPriceWiggles": False, "marketNews": True, "systemMessages": True,
@@ -829,6 +830,16 @@ def update_user(user_id: ObjectId, payload: dict) -> bool:
     return result.matched_count > 0
 
 
+def mark_email_verified(user_id: ObjectId, email: str) -> bool:
+    """Marks the email verified if it isn't already and is still `email`. True only for the call that
+    made the change, so a verification link signs in at most once."""
+    result = get_db().users.update_one(
+        {"_id": user_id, "email": email, "email_verified": {"$ne": True}},
+        {"$set": {"email_verified": True, "email_verified_at": datetime.now(timezone.utc)}},
+    )
+    return result.modified_count > 0
+
+
 def replace_password_if_unchanged(user_id: ObjectId, expected_hash: str | None, payload: dict) -> bool:
     """$sets payload only while the stored password_hash is still `expected_hash` (None: no password
     yet). False if the password changed in between, so a reset link can be used at most once."""
@@ -920,8 +931,49 @@ def delete_all_user_sessions(user_id: ObjectId) -> int:
 # backend/tests/test_account_deletion.py fails if code writes user_id rows to a collection not listed here.
 _USER_OWNED_COLLECTIONS = (
     "portfolio_holdings", "portfolio_transactions", "portfolio_snapshots", "watchlists",
-    "alerts", "alert_triggers", "notifications", "user_settings", "user_search_history",
+    "alerts", "alert_triggers", "notifications", "pending_alert_emails", "user_settings", "user_search_history",
 )
+
+
+# Fields of the user record left out of an export: credentials and internal bookkeeping.
+_EXPORT_HIDDEN_USER_FIELDS = ("password_hash", "google_sub", "verification_sent_at")
+
+
+def _export_safe(value):
+    """ObjectIds to strings and datetimes to ISO-8601 UTC, all the way down."""
+    if isinstance(value, ObjectId):
+        return str(value)
+    if isinstance(value, datetime):
+        return (value if value.tzinfo else value.replace(tzinfo=timezone.utc)).isoformat()
+    if isinstance(value, dict):
+        return {k: _export_safe(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_export_safe(v) for v in value]
+    return value
+
+
+def export_user_data(user_id: ObjectId) -> dict:
+    """
+    Everything stored about a user, for GET /account/export (audit G-49): the account record without
+    credentials, its sign-in sessions, and every collection in _USER_OWNED_COLLECTIONS, the same list
+    account deletion uses, so the two can't drift apart.
+    """
+    db = get_db()
+    user = db.users.find_one({"_id": user_id}) or {}
+    for field in _EXPORT_HIDDEN_USER_FIELDS:
+        user.pop(field, None)
+    sessions = list(_sessions().find({"user_id": user_id}, projection={
+        "_id": 0, "user_agent": 1, "ip": 1, "created_at": 1, "last_active": 1, "expires_at": 1,
+    }))
+    data = {name: [{k: v for k, v in row.items() if k != "user_id"}
+                   for row in db[name].find({"user_id": user_id})]
+            for name in _USER_OWNED_COLLECTIONS}
+    return _export_safe({
+        "exported_at": datetime.now(timezone.utc),
+        "account": user,
+        "user_sessions": sessions,
+        **data,
+    })
 
 
 def delete_user_account(user_id: ObjectId) -> dict:

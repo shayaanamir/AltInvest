@@ -602,7 +602,6 @@ class AppearancePatch(_SettingsPatch):
 
 class NotificationChannelsPatch(_SettingsPatch):
     inApp: Optional[bool] = None
-    push: Optional[bool] = None
     email: Optional[bool] = None
 
 

@@ -6,7 +6,7 @@ import { AuthInput, AuthButton, Divider } from "../components/auth/AuthPrimitive
 import GoogleSignInButton from "../components/auth/GoogleSignInButton";
 import { authApi } from "../services/authApi";
 import { useLandingTheme } from "../components/landingPage/landingTokens";
-import { setSession, isAuthenticated } from "../hooks/useAuth";
+import { isAuthenticated } from "../hooks/useAuth";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -17,6 +17,7 @@ export default function SignupPage({ onNavigate }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [fieldErrors, setFieldErrors] = useState({});
+    const [sentTo, setSentTo] = useState(null);
 
     const T = useLandingTheme();
 
@@ -45,19 +46,12 @@ export default function SignupPage({ onNavigate }) {
 
         setLoading(true);
         try {
-            const response = await authApi.signup(name.trim(), email.trim(), password);
-            setSession({ token: response.token, user: response.user });
-            onNavigate && onNavigate("Dashboard");
+            // The server answers the same way whether or not the email is taken (it says which in
+            // the email it sends), so there is no session yet: the link in the email signs in.
+            await authApi.signup(name.trim(), email.trim(), password);
+            setSentTo(email.trim());
         } catch (err) {
-            // Duplicate-account errors come through as a specific message
-            // from authApi (backend returns 409 -> "An account with this
-            // email already exists."); surface it on the email field.
-            const { message } = describeError(err);
-            if (/already exists/i.test(message)) {
-                setFieldErrors({ email: message });
-            } else {
-                setError(message);
-            }
+            setError(describeError(err).message);
         } finally {
             setLoading(false);
         }
@@ -66,6 +60,32 @@ export default function SignupPage({ onNavigate }) {
     const handleKeyDown = (e) => {
         if (e.key === "Enter") handleContinue();
     };
+
+    if (sentTo) {
+        return (
+            <AuthLayout onNavigate={onNavigate}>
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    style={{
+                        width: "100%", maxWidth: 420, padding: "40px 32px",
+                        background: "var(--sv2-card-alt)", border: `1px solid ${T.border2}`, borderRadius: 16,
+                    }}
+                >
+                    <h1 style={{ fontSize: 22, fontWeight: 700, color: T.ink, margin: "0 0 10px" }}>Check your email.</h1>
+                    <p style={{ fontSize: 13, color: T.ink2, lineHeight: 1.6, margin: "0 0 12px" }}>
+                        We've sent a link to <strong style={{ color: T.ink }}>{sentTo}</strong>. Open it to confirm your
+                        address and finish setting up your account. The link works for 24 hours.
+                    </p>
+                    <p style={{ fontSize: 12, color: T.ink3, lineHeight: 1.6, margin: "0 0 24px" }}>
+                        Nothing there? Check your spam folder. You can also sign in with the password you just
+                        chose, and we'll send a new link.
+                    </p>
+                    <AuthButton onClick={() => onNavigate && onNavigate("Login")}>Go to sign in</AuthButton>
+                </motion.div>
+            </AuthLayout>
+        );
+    }
 
     return (
         <AuthLayout onNavigate={onNavigate}>

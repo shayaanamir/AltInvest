@@ -18,7 +18,7 @@ export const DENSITY_OPTIONS = ["comfortable", "compact"];
 // Defaults shown for a notification setting the server hasn't stored yet (same as the
 // defaults backend/db/queries.py writes for a new account).
 export const NOTIFICATION_DEFAULTS = {
-  channels: { inApp: true, push: true, email: false },
+  channels: { inApp: true, email: true },
   alertTypes: {
     aaiThresholdOnly: true,
     priceAlerts: true,

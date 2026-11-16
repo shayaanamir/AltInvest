@@ -11,7 +11,6 @@ import "../portfolio/addHoldingModal.css";
 
 const CHANNELS = [
   { key: "in-app", label: "In-app" },
-  { key: "push", label: "Push" },
   { key: "email", label: "Email" },
 ];
 
@@ -40,7 +39,8 @@ export default function CreateAlertModal({ target: fixedTarget, alert, hint, def
   const [metric, setMetric] = useState(alert?.metricType ?? defaults?.metric ?? "price");
   const [condition, setCondition] = useState(alert?.condition ?? defaults?.condition ?? "above");
   const [threshold, setThreshold] = useState(alert?.thresholdValue != null ? String(alert.thresholdValue) : "");
-  const [channel, setChannel] = useState(alert?.deliveryChannel ?? "in-app");
+  // Alerts saved with the retired "push" channel open as in-app.
+  const [channel, setChannel] = useState(alert?.deliveryChannel === "email" ? "email" : "in-app");
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -235,6 +235,11 @@ export default function CreateAlertModal({ target: fixedTarget, alert, hint, def
         <select className="ahm-input" value={channel} onChange={(e) => setChannel(e.target.value)}>
           {CHANNELS.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
         </select>
+        <div className="ahm-hint">
+          {channel === "email"
+            ? "Also shown in-app. Emails follow Settings → Notifications: none while Email is off, and held until your quiet hours end."
+            : "Shown in the notification center."}
+        </div>
 
         <div className="ahm-footer">
           <button type="button" className="ahm-cancel" onClick={onClose} disabled={submitting}>Cancel</button>

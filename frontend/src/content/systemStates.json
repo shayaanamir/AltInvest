@@ -41,7 +41,6 @@
     "passwordTooShort": "Password must be at least 8 characters.",
     "nameRequired": "Full name is required.",
     "loginFailedGeneric": "Invalid email or password.",
-    "signupEmailInUse": "An account with this email already exists.",
     "resetTokenExpired": "This reset link has expired. Request a new one.",
     "resetTokenInvalid": "This reset link is invalid.",
     "verifyTokenExpired": "This verification link has expired.",

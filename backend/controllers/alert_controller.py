@@ -13,11 +13,14 @@ Evaluation (every 5 minutes): conditions fire on a *crossing*. The first check o
 records the current value; it triggers when a later value crosses the line (e.g. was <= 80,000,
 now > 80,000). A triggered alert stops being checked until the user re-arms it. Each trigger is
 written to `alert_triggers` (the alert's history) and to `notifications`, and emailed when the
-alert's channel is email.
+alert's channel is email, following Settings → Notifications: no email while Email is off, and
+emails during quiet hours are held in `pending_alert_emails` and sent once the window ends.
+Alerts saved with the old "push" channel are treated as in-app.
 """
 import time
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta, time as dt_time
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from bson import ObjectId
 from fastapi import HTTPException
@@ -37,7 +40,7 @@ CONDITIONS_BY_METRIC = {
     "sentiment": {"above", "below", "shifts_bullish", "shifts_bearish"},
 }
 RANGES = {"price": (0, None), "aai_score": (0, 100), "risk": (0, 100), "sentiment": (-1, 1)}
-CHANNELS = {"in-app", "push", "email"}
+CHANNELS = {"in-app", "email"}   # no push: there is no mobile app to push to (audit G-23)
 METRIC_LABELS = {"price": "price", "aai_score": "AAI score", "risk": "risk score", "sentiment": "sentiment"}
 
 
@@ -154,6 +157,7 @@ def evaluate_alerts() -> dict:
     values = _current_values()
     now = datetime.now(timezone.utc)
     checked = triggered = 0
+    settings_cache = {}   # user_id -> notification settings, read once per pass
     for a in db.alerts.find({"status": "active"}):
         key_id = a.get("target_symbol") if a.get("target_type") == "crypto" else a.get("target_slug")
         value = values.get((a.get("target_type"), key_id, a.get("metric_type")))
@@ -179,13 +183,96 @@ def evaluate_alerts() -> dict:
                 if a.get("target_type") == "crypto" else {"page": "Discover", "symbol": None, "slug": a.get("target_slug")},
             })
             if a.get("delivery_channel") == "email":
-                user = db.users.find_one({"_id": a["user_id"]}, {"email": 1})
-                if user and user.get("email"):
-                    from utils.mailer import send_email
-                    send_email(user["email"], f"AltInvest alert: {title}", f"{message}\n\nThe alert is paused until you re-arm it on the Alerts page.")
+                _deliver_email(db, a["user_id"], title, message, now, settings_cache)
             triggered += 1
         db.alerts.update_one({"_id": a["_id"]}, {"$set": update})
+    _send_due_emails(db, now)
     return {"checked": checked, "triggered": triggered}
+
+
+# ── email delivery: Settings → Notifications (audit G-23) ────────────────────
+
+def _notification_settings(db, user_id, cache: dict) -> dict:
+    if user_id not in cache:
+        doc = db.user_settings.find_one({"user_id": user_id}, {"notifications": 1}) or {}
+        cache[user_id] = doc.get("notifications") or {}
+    return cache[user_id]
+
+
+def _hhmm(text: str):
+    h, m = (text or "").split(":")
+    return dt_time(int(h), int(m))
+
+
+def quiet_hours_end(quiet: dict, now: datetime) -> datetime | None:
+    """
+    When the user's quiet hours are on and `now` falls inside them, the UTC time they end; otherwise
+    None. Times are in the user's own timezone, and a window may cross midnight (22:00 - 07:00).
+    """
+    if not (quiet or {}).get("enabled"):
+        return None
+    try:
+        tz = ZoneInfo(quiet.get("timezone") or "UTC")
+        start, end = _hhmm(quiet.get("start")), _hhmm(quiet.get("end"))
+    except (ValueError, ZoneInfoNotFoundError):
+        return None
+    if start == end:
+        return None
+    local = now.astimezone(tz)
+    t = local.time().replace(second=0, microsecond=0)
+    inside = (start <= t < end) if start < end else (t >= start or t < end)
+    if not inside:
+        return None
+    end_day = local.date() if t < end else local.date() + timedelta(days=1)
+    return datetime.combine(end_day, end, tzinfo=tz).astimezone(timezone.utc)
+
+
+def email_plan(settings: dict, now: datetime) -> tuple[str, datetime | None]:
+    """
+    What to do with an alert email: ("skip", None) when Email is off in Settings, ("hold", end) during
+    quiet hours, otherwise ("send", None). The in-app notification is written regardless.
+    """
+    if (settings.get("channels") or {}).get("email") is False:
+        return "skip", None
+    held_until = quiet_hours_end(settings.get("quiet_hours") or {}, now)
+    return ("hold", held_until) if held_until else ("send", None)
+
+
+def _deliver_email(db, user_id, title: str, message: str, now: datetime, cache: dict) -> None:
+    action, held_until = email_plan(_notification_settings(db, user_id, cache), now)
+    if action == "skip":
+        return
+    user = db.users.find_one({"_id": user_id}, {"email": 1})
+    if not (user and user.get("email")):
+        return
+    subject = f"AltInvest alert: {title}"
+    body = f"{message}\n\nThe alert is paused until you re-arm it on the Alerts page."
+    if action == "hold":
+        db.pending_alert_emails.insert_one({
+            "user_id": user_id, "subject": subject, "body": body, "created_at": now, "send_after": held_until,
+        })
+        return
+    from utils.mailer import send_email
+    send_email(user["email"], subject, body)
+
+
+def _send_due_emails(db, now: datetime) -> int:
+    """Sends the emails held by quiet hours whose window has ended. Settings are re-read, so turning
+    Email off meanwhile drops them; the address is looked up now, in case it changed."""
+    from utils.mailer import send_email
+    sent = 0
+    for row in db.pending_alert_emails.find({"send_after": {"$lte": now}}):
+        # Claim the row first, so a slow send can't be repeated by the next pass.
+        if not db.pending_alert_emails.delete_one({"_id": row["_id"]}).deleted_count:
+            continue
+        settings = (db.user_settings.find_one({"user_id": row["user_id"]}, {"notifications": 1}) or {}).get("notifications") or {}
+        if (settings.get("channels") or {}).get("email") is False:
+            continue
+        user = db.users.find_one({"_id": row["user_id"]}, {"email": 1})
+        if user and user.get("email"):
+            send_email(user["email"], row["subject"], row["body"] + "\n\n(Held until your quiet hours ended.)")
+            sent += 1
+    return sent
 
 
 def run_alert_scheduler(initial_delay_seconds: int = 60) -> None:

@@ -69,8 +69,9 @@ export const authApi = {
     },
 
     /**
-     * Register a new user
-     * @returns {Promise<{ user: any, token: string }>}
+     * Start a signup. The answer is the same whether or not the email already has an account (no
+     * session yet): the emailed link confirms the address and signs in (see verifyEmail).
+     * @returns {Promise<{ message: string }>}
      */
     signup: async (name, email, password) => {
         return authPost("/auth/signup", { name, email, password }, "We couldn't create that account. Check the details and try again.");
@@ -105,7 +106,10 @@ export const authApi = {
         return authPost("/auth/reset-password", { token, new_password: newPassword }, "This reset link is invalid or has expired.");
     },
 
-    /** Confirm an email address with the token from the verification link. */
+    /**
+     * Confirm an email address with the token from the verification link. The first use of a link
+     * also signs in: the reply then carries { token, user }.
+     */
     verifyEmail: async (token) => {
         return authPost("/auth/verify-email", { token }, "This verification link is invalid or has expired.");
     },
@@ -123,6 +127,12 @@ export const authApi = {
     /** Permanently delete the signed-in account and all its data. A wrong password is a 400. */
     deleteAccount: (password) =>
         apiFetch("/auth/account", { method: "DELETE", body: JSON.stringify({ password }) }),
+
+    /**
+     * Everything the server stores about the signed-in user: { exported_at, account, user_sessions,
+     * portfolio_holdings, …, notifications, user_settings } (one key per stored collection).
+     */
+    exportData: () => apiFetch("/account/export"),
 
     /** Signed-in sessions for this account: [{ id, device, ip, created_at, last_active, current }]. */
     listSessions: () => apiFetch("/auth/sessions"),
