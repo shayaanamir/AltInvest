@@ -99,7 +99,7 @@ export const alertsApi = {
     // payload matches backend/models/schemas.py::AlertCreate, e.g.:
     // { target_type: "crypto", target_symbol: "BTC", target_name: "Bitcoin",
     //   metric_type: "price", condition: "above", threshold_value: 80000,
-    //   delivery_channel: "push" }
+    //   delivery_channel: "in-app" }
     return apiFetch("/alerts", { method: "POST", body: JSON.stringify(payload) });
   },
 

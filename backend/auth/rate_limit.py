@@ -38,6 +38,10 @@ LOGIN_FAILURES_PER_IP = Limit(
     "Too many failed sign-in attempts from this network.",
 )
 SIGNUPS_PER_IP = Limit("signup_ip", 10, timedelta(hours=1), "Too many accounts created from this network.")
+# Emails a signup sends to an address (verification link or "you already have an account"). Past the
+# cap the reply is unchanged and nothing is sent, so it can't flood an inbox or single out an address.
+SIGNUP_EMAILS_PER_EMAIL = Limit("signup_email", 3, timedelta(hours=1), "Too many sign-up emails for this address.")
+EXPORTS_PER_USER = Limit("export_user", 10, timedelta(hours=1), "Too many exports. Try again later.")
 FORGOT_PER_EMAIL = Limit("forgot_email", 3, timedelta(hours=1), "Too many password reset requests for this email.")
 FORGOT_PER_IP = Limit("forgot_ip", 10, timedelta(hours=1), "Too many password reset requests.")
 RESET_PER_IP = Limit("reset_ip", 10, timedelta(minutes=15), "Too many password reset attempts.")

@@ -1,9 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { IconTrash, IconDownload } from "../icons";
-import { portfolioApi } from "../../services/portfolioApi";
-import { watchlistApi } from "../../services/watchlistApi";
-import { alertsApi } from "../../services/alertsApi";
 import { authApi } from "../../services/authApi";
 import { clearSession } from "../../hooks/useAuth";
 import { resetAppPreferences } from "../../services/appPreferences";
@@ -17,53 +14,33 @@ const cell = (v) => {
   return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
-// One section per kind of data, each with its own header row, separated by a blank line.
-function section(title, columns, records) {
-  const lines = [cell(title), columns.map(([label]) => cell(label)).join(",")];
-  records.forEach((r) => lines.push(columns.map(([, get]) => cell(get(r))).join(",")));
+// Nested fields become dotted columns ({ quiet_hours: { start } } -> "quiet_hours.start"); lists are
+// written as JSON in one cell.
+function flatten(obj, prefix = "", out = {}) {
+  Object.entries(obj ?? {}).forEach(([k, v]) => {
+    const key = prefix ? `${prefix}.${k}` : k;
+    if (v && typeof v === "object" && !Array.isArray(v)) flatten(v, key, out);
+    else out[key] = Array.isArray(v) ? JSON.stringify(v) : v;
+  });
+  return out;
+}
+
+// One section per stored collection, each with its own header row, separated by a blank line.
+function section(title, records) {
+  const rows = records.map((r) => flatten(r));
+  const columns = [...new Set(rows.flatMap((r) => Object.keys(r)))];
+  const lines = [cell(title), columns.map(cell).join(",")];
+  rows.forEach((r) => lines.push(columns.map((c) => cell(r[c])).join(",")));
   return lines.join("\n");
 }
 
-function toCsv({ cryptoHoldings, nftHoldings, watchlists, alerts }) {
-  const watchlistItems = watchlists.flatMap((l) => l.items.map((i) => ({ list: l.name, item: i })));
+// The server export as CSV: the account record first, then every collection it returned.
+function toCsv(data) {
+  const { account, ...collections } = data;
+  delete collections.exported_at;
   return [
-    section("Crypto holdings", [
-      ["Symbol", (h) => h.symbol],
-      ["Name", (h) => h.name],
-      ["Quantity", (h) => h.quantity],
-      ["Avg buy price (USD)", (h) => h.avgBuyPriceUsd],
-      ["Cost basis (USD)", (h) => h.costBasisUsd],
-      ["Current value (USD)", (h) => h.valueUsd],
-      ["Date added", (h) => h.dateAdded],
-    ], cryptoHoldings),
-    section("NFT holdings", [
-      ["Collection", (h) => h.collectionName],
-      ["Slug", (h) => h.collectionSlug],
-      ["Token ID", (h) => h.tokenId],
-      ["Quantity", (h) => h.quantity],
-      ["Avg buy price (ETH)", (h) => h.avgBuyPriceEth],
-      ["ETH/USD at buy", (h) => h.ethUsdRateAtBuy],
-      ["Cost basis (USD)", (h) => h.costBasisUsd],
-      ["Current value (USD)", (h) => h.valueUsd],
-      ["Date added", (h) => h.dateAdded],
-    ], nftHoldings),
-    section("Watchlists", [
-      ["Watchlist", (r) => r.list],
-      ["Type", (r) => r.item.type],
-      ["Asset", (r) => r.item.name || r.item.symbol || r.item.id],
-      ["ID", (r) => r.item.id],
-    ], watchlistItems),
-    section("Alerts", [
-      ["Target", (a) => a.targetName || a.targetSymbol || a.targetSlug],
-      ["Target type", (a) => a.targetType],
-      ["Metric", (a) => a.metricType],
-      ["Condition", (a) => a.condition],
-      ["Threshold", (a) => a.thresholdValue],
-      ["Status", (a) => a.status],
-      ["Channel", (a) => a.deliveryChannel],
-      ["Created", (a) => a.createdAt],
-      ["Last triggered", (a) => a.lastTriggeredAt],
-    ], alerts),
+    section("account", account ? [account] : []),
+    ...Object.entries(collections).map(([name, rows]) => section(name, Array.isArray(rows) ? rows : [])),
   ].join("\n\n");
 }
 
@@ -87,18 +64,12 @@ export default function DataAccountSection({ data }) {
 
   if (!data) return null;
 
-  // Exports what is actually stored for this account, fetched at click time.
+  // The server assembles the export from everything stored for this account (GET /account/export).
   const handleExport = async (format) => {
     setExporting(true);
     let payload;
     try {
-      const [cryptoHoldings, nftHoldings, watchlists, alerts] = await Promise.all([
-        portfolioApi.getCryptoHoldings(),
-        portfolioApi.getNftHoldings(),
-        watchlistApi.getInitialListsAsync(),
-        alertsApi.getAlerts(),
-      ]);
-      payload = { cryptoHoldings, nftHoldings, watchlists, alerts };
+      payload = await authApi.exportData();
     } catch (e) {
       toast.error(e, { title: "Couldn't export your data" });
       return;
@@ -145,7 +116,7 @@ export default function DataAccountSection({ data }) {
     <>
       <div className="sv2-card set-subcard">
         <div className="set-section-title">Export your data</div>
-        <div className="set-row-desc set-mb-16">Holdings, watchlists and alerts</div>
+        <div className="set-row-desc set-mb-16">Everything we store for your account: profile, settings, holdings, watchlists, alerts and notifications</div>
         <div className="set-export-row">
           {(data.exportFormats || []).map((fmt) => (
             <button key={fmt} className="sv2-btn-outline set-export-btn" disabled={exporting} onClick={() => handleExport(fmt)}>

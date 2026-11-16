@@ -2,7 +2,9 @@
 routes/auth.py
 
 AUTH-01 — Login.
-AUTH-02 — Signup.
+AUTH-02 — Signup. Answers 202 "check your email" whether or not the address has an account, and
+          login costs one bcrypt check even for unknown emails (audit G-15: no account enumeration).
+          Email-signup accounts sign in for the first time through their verification link.
 
 POST /auth/login and POST /auth/signup check/write against the `users`
 collection in the unified MongoDB database (db/mongo_connection.py) and
@@ -13,6 +15,7 @@ AUTH-05 — Email verification: a link is emailed at signup and on request from 
 AUTH-06 — Change password from Settings (requires the current password).
 AUTH-08 — GET /auth/me: who the token belongs to (light; /profile adds activity counts).
 AUTH-09 — DELETE /auth/account: permanent, password-confirmed, removes everything the user owns.
+          GET /account/export: everything stored about the user, as JSON (audit G-49).
 Attempt limits on login, signup, password reset and password re-entry: see auth/rate_limit.py.
 AUTH-10 — POST /auth/refresh: sliding sessions (see auth/security.py JWT_EXPIRY_HOURS / SESSION_MAX_DAYS).
 AUTH-07 — Sessions: every login is a row in `user_sessions`; Settings lists them and can
@@ -28,7 +31,8 @@ import path_setup  # noqa: F401 — must be first, fixes sys.path
 
 from datetime import datetime, timezone, timedelta
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Request, Response
+from fastapi.responses import JSONResponse
 from utils.http_errors import db_unavailable
 from bson import ObjectId
 from pymongo.errors import DuplicateKeyError
@@ -57,6 +61,10 @@ log = logging.getLogger("auth")
 # any deployment where the frontend isn't on localhost:5173.
 FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL") or "http://localhost:5173"
 
+# Checked against when the email has no account (or no password), so every login attempt costs one
+# bcrypt check. Hash of a random value nobody knows; made once at import.
+_DUMMY_HASH = hash_password(os.urandom(24).hex())
+
 
 def _issue_token(user_id: str, email: str, request: Request) -> str:
     """Opens a session row for this sign-in and returns a token bound to it."""
@@ -74,7 +82,7 @@ def _issue_token(user_id: str, email: str, request: Request) -> str:
 
 
 @router.post("/auth/login", response_model=AuthResponse)
-def login(payload: LoginRequest, request: Request):
+def login(payload: LoginRequest, request: Request, background: BackgroundTasks):
     email = (payload.email or "").strip().lower()
     password = payload.password or ""
 
@@ -99,13 +107,31 @@ def login(payload: LoginRequest, request: Request):
         status_code=401, detail="Invalid email or password."
     )
 
-    if not user or not verify_password(password, user.get("password_hash", "")):
+    # Always one bcrypt check, so an unknown email (or a Google-only account) takes as long to
+    # reject as a wrong password: the timing doesn't reveal which emails have accounts.
+    stored_hash = (user or {}).get("password_hash")
+    password_ok = verify_password(password, stored_hash or _DUMMY_HASH) and bool(stored_hash)
+    if not password_ok:
         rl.record(rl.LOGIN_FAILURES_PER_ACCOUNT_IP, account_ip)
         rl.record(rl.LOGIN_FAILURES_PER_IP, ip)
         raise invalid_credentials
 
     rl.clear(rl.LOGIN_FAILURES_PER_ACCOUNT_IP, account_ip)
     user_id = str(user["_id"])
+
+    # Accounts made through the email signup can't be used until the address is confirmed. Only the
+    # right password gets this far, so saying so reveals nothing; a fresh link goes out with it.
+    if user.get("email_verification_required") and not user.get("email_verified"):
+        if _verification_cooldown_over(user):
+            _mark_verification_sent(user["_id"])
+            background.add_task(_send_verification, user_id, email)
+        # Returned, not raised: FastAPI drops background tasks when a route raises.
+        return JSONResponse(
+            status_code=403,
+            content={"detail": f"Confirm your email to sign in. We've sent a link to {email}; it works for 24 hours."},
+            background=background,
+        )
+
     token = _issue_token(user_id, email, request)
 
     return AuthResponse(
@@ -114,8 +140,23 @@ def login(payload: LoginRequest, request: Request):
     )
 
 
-@router.post("/auth/signup", response_model=AuthResponse, status_code=201)
-def signup(payload: SignupRequest, request: Request):
+SIGNUP_RESPONSE = {
+    "message": "Check your email. We've sent a link to finish setting up your account; it works for 24 hours.",
+}
+
+
+@router.post("/auth/signup", status_code=202)
+def signup(payload: SignupRequest, request: Request, background: BackgroundTasks):
+    """
+    Answers the same way whether or not the email already has an account, so signup can't be used to
+    find out who is registered (audit G-15). The difference goes to the inbox instead:
+      - new email: the account is created unverified and a verification link is sent. Following the
+        link confirms the address and signs in; until then the account can't sign in.
+      - existing, unverified account and the same password (someone retrying their own signup): a
+        fresh verification link.
+      - any other existing account: a "you already have an account" email with sign-in and reset links.
+    Both paths do one bcrypt operation and send mail in the background, so they take as long.
+    """
     email = (payload.email or "").strip().lower()
     password = payload.password or ""
     name = (payload.name or "").strip()
@@ -128,27 +169,56 @@ def signup(payload: SignupRequest, request: Request):
         raise HTTPException(status_code=422, detail=problem)
     rl.hit(rl.SIGNUPS_PER_IP, rl.client_ip(request))
 
+    from db.queries import get_user_by_email, create_user
     try:
-        from db.queries import email_exists, create_user
-        if email_exists(email):
-            raise HTTPException(status_code=409, detail="An account with this email already exists.")
-
-        user_id = create_user(email, name, hash_password(password))
-        create_default_user_settings(ObjectId(user_id))
-    except HTTPException:
-        raise
-    except DuplicateKeyError:
-        # Lost a race with another signup for the same email.
-        raise HTTPException(status_code=409, detail="An account with this email already exists.")
+        existing = get_user_by_email(email)
+        if not existing:
+            try:
+                user_id = create_user(email, name, hash_password(password),
+                                      extra={"email_verification_required": True})
+            except DuplicateKeyError:
+                # Lost a race with another signup for the same email: answer as for an existing one.
+                existing = get_user_by_email(email)
+            else:
+                create_default_user_settings(ObjectId(user_id))
+                _mark_verification_sent(ObjectId(user_id))
+                _queue_signup_email(background, email, lambda: _send_verification(user_id, email))
+                return SIGNUP_RESPONSE
     except Exception as exc:
         raise db_unavailable(exc)
 
-    token = _issue_token(user_id, email, request)
-    _send_verification(user_id, email)
+    if existing is None:
+        return SIGNUP_RESPONSE
+    stored_hash = existing.get("password_hash")
+    same_password = verify_password(password, stored_hash or _DUMMY_HASH) and bool(stored_hash)
+    if same_password and not existing.get("email_verified"):
+        user_id = str(existing["_id"])
+        _queue_signup_email(background, email, lambda: _send_verification(user_id, email))
+    else:
+        _queue_signup_email(background, email, lambda: _send_account_exists(email))
+    return SIGNUP_RESPONSE
 
-    return AuthResponse(
-        user=AuthUser(id=user_id, name=name, email=email),
-        token=token,
+
+def _queue_signup_email(background: BackgroundTasks, email: str, send) -> None:
+    """Sends in the background, up to SIGNUP_EMAILS_PER_EMAIL an hour per address; past that, nothing."""
+    try:
+        rl.check(rl.SIGNUP_EMAILS_PER_EMAIL, email)
+    except HTTPException as exc:
+        if exc.status_code != 429:
+            raise
+        return
+    rl.record(rl.SIGNUP_EMAILS_PER_EMAIL, email)
+    background.add_task(send)
+
+
+def _send_account_exists(email: str) -> bool:
+    return send_email(
+        email,
+        "You already have an AltInvest account",
+        f"Someone tried to create an AltInvest account with this email, but you already have one.\n\n"
+        f"Sign in: {FRONTEND_BASE_URL}/login\n"
+        f"Forgot your password? Reset it here: {FRONTEND_BASE_URL}/forgot-password\n\n"
+        f"If that wasn't you, you can ignore this email; nothing about your account has changed.",
     )
 
 # ── AUTH-08 — Current user ───────────────────────────────────────────────────
@@ -210,10 +280,25 @@ def delete_account(payload: DeleteAccountRequest, user_id: ObjectId = Depends(ge
     return {"message": "Your account has been deleted."}
 
 
+# ── Data export (audit G-49) ─────────────────────────────────────────────────
+
+@router.get("/account/export")
+def export_account(user_id: ObjectId = Depends(get_current_user_id)):
+    """Everything stored about the signed-in user, as a JSON download (see queries.export_user_data)."""
+    rl.hit(rl.EXPORTS_PER_USER, str(user_id))
+    from db.queries import export_user_data
+    try:
+        data = export_user_data(user_id)
+    except Exception as exc:
+        raise db_unavailable(exc)
+    filename = f"altinvest-export-{datetime.now(timezone.utc):%Y-%m-%d}.json"
+    return JSONResponse(data, headers={"Content-Disposition": f'attachment; filename="{filename}"'})
+
+
 # ── AUTH-03 — Forgot Password ────────────────────────────────────────────────
 
 @router.post("/auth/forgot-password")
-def forgot_password(payload: ForgotPasswordRequest, request: Request):
+def forgot_password(payload: ForgotPasswordRequest, request: Request, background: BackgroundTasks):
     email = (payload.email or "").strip().lower()
     if not email:
         raise HTTPException(status_code=422, detail="Email is required.")
@@ -244,7 +329,9 @@ def forgot_password(payload: ForgotPasswordRequest, request: Request):
     if user:
         token = create_reset_token(str(user["_id"]), email, user.get("password_hash"))
         reset_link = f"{FRONTEND_BASE_URL}/reset-password?token={token}"
-        send_email(
+        # In the background: sending inline would make the reply slower only for registered emails.
+        background.add_task(
+            send_email,
             email,
             "Reset your AltInvest password",
             f"Someone asked to reset the password for this AltInvest account.\n\n"
@@ -285,10 +372,12 @@ def reset_password(payload: ResetPasswordRequest, request: Request):
 
     try:
         # Conditional on the hash we just checked, so two concurrent uses of one link can't both win.
-        replaced = replace_password_if_unchanged(user_id, current_hash, {
-            "password_hash": hash_password(payload.new_password),
-            "password_changed_at": datetime.now(timezone.utc),
-        })
+        now = datetime.now(timezone.utc)
+        changes = {"password_hash": hash_password(payload.new_password), "password_changed_at": now}
+        # The link was emailed to this address, so using it proves the user owns it.
+        if not user.get("email_verified") and user.get("email") == token_payload.get("email"):
+            changes.update({"email_verified": True, "email_verified_at": now})
+        replaced = replace_password_if_unchanged(user_id, current_hash, changes)
         if not replaced:
             raise invalid_link
         # Whoever knew the old password (or holds a stolen session) is signed out everywhere.
@@ -355,9 +444,22 @@ def _send_verification(user_id: str, email: str) -> bool:
     )
 
 
+def _verification_cooldown_over(user: dict) -> bool:
+    last = user.get("verification_sent_at")
+    return last is None or datetime.now(timezone.utc) - _utc(last) >= _RESEND_COOLDOWN
+
+
+def _mark_verification_sent(user_id: ObjectId) -> None:
+    from db.queries import update_user
+    try:
+        update_user(user_id, {"verification_sent_at": datetime.now(timezone.utc)})
+    except Exception as exc:
+        raise db_unavailable(exc)
+
+
 @router.post("/auth/resend-verification")
 def resend_verification(user_id: ObjectId = Depends(get_current_user_id)):
-    from db.queries import get_user_by_id, update_user
+    from db.queries import get_user_by_id
     try:
         user = get_user_by_id(str(user_id))
     except Exception as exc:
@@ -367,19 +469,11 @@ def resend_verification(user_id: ObjectId = Depends(get_current_user_id)):
     if user.get("email_verified"):
         return {"message": "Your email is already verified.", "already_verified": True}
 
-    last = user.get("verification_sent_at")
-    now = datetime.now(timezone.utc)
-    if last is not None:
-        if last.tzinfo is None:
-            last = last.replace(tzinfo=timezone.utc)
-        if now - last < _RESEND_COOLDOWN:
-            raise HTTPException(status_code=429, detail="A verification email was just sent. Try again in a minute.")
+    if not _verification_cooldown_over(user):
+        raise HTTPException(status_code=429, detail="A verification email was just sent. Try again in a minute.")
 
     sent = _send_verification(str(user_id), user["email"])
-    try:
-        update_user(user_id, {"verification_sent_at": now})
-    except Exception as exc:
-        raise db_unavailable(exc)
+    _mark_verification_sent(user_id)
 
     if not sent and smtp_configured():
         raise HTTPException(status_code=502, detail="We couldn't send the verification email. Try again later.")
@@ -391,24 +485,37 @@ def resend_verification(user_id: ObjectId = Depends(get_current_user_id)):
 
 
 @router.post("/auth/verify-email")
-def verify_email(payload: VerifyEmailRequest):
+def verify_email(payload: VerifyEmailRequest, request: Request):
+    """
+    Confirms the address. The first use of a link also signs in (the reply carries `token` and
+    `user`): signup no longer hands out a session, so this is how a new account gets its first one.
+    Using a link again, or for an address that is already verified, only confirms.
+    """
     data = decode_verify_token(payload.token)
     if not data:
         raise HTTPException(status_code=400, detail="This verification link is invalid or has expired.")
 
-    from db.queries import get_user_by_id, update_user
+    from db.queries import get_user_by_id, mark_email_verified
     try:
         user = get_user_by_id(data.get("sub"))
         # The link only counts for the address it was sent to.
         if not user or user.get("email") != data.get("email"):
             raise HTTPException(status_code=400, detail="This verification link is invalid or has expired.")
-        update_user(user["_id"], {"email_verified": True, "email_verified_at": datetime.now(timezone.utc)})
+        newly_verified = mark_email_verified(user["_id"], user["email"])
     except HTTPException:
         raise
     except Exception as exc:
         raise db_unavailable(exc)
 
-    return {"message": "Your email is verified."}
+    if not newly_verified:
+        return {"message": "Your email is verified."}
+    user_id = str(user["_id"])
+    return {
+        "message": "Your email is verified.",
+        "token": _issue_token(user_id, user["email"], request),
+        "user": AuthUser(id=user_id, name=user.get("name", ""), email=user["email"],
+                         is_admin=is_admin_user(user)).model_dump(),
+    }
 
 
 # ── AUTH-07 — Sessions ───────────────────────────────────────────────────────

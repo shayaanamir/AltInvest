@@ -58,7 +58,7 @@ def _with_real_links(settings: dict, user_id: ObjectId) -> dict:
 # models/schemas.py), so only known keys with valid values ever reach the database.
 
 def _flatten(updates: dict, prefix: str = "") -> dict:
-    """{"channels": {"push": False}} -> {"channels.push": False}, so a partial nested update
+    """{"channels": {"email": False}} -> {"channels.email": False}, so a partial nested update
     changes just that key instead of replacing the whole nested object."""
     out = {}
     for key, value in updates.items():

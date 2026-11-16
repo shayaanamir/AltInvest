@@ -58,6 +58,8 @@ INDEXES = {
         ([("user_id", ASC), ("triggered_at", DESC)], {}),
     ],
     "notifications": [([("user_id", ASC), ("timestamp", DESC)], {}), ([("user_id", ASC), ("read", ASC)], {})],
+    # Alert emails held back by quiet hours; the alert job sends each once send_after passes.
+    "pending_alert_emails": [([("send_after", ASC)], {}), ([("user_id", ASC)], {})],
     "market_insights": [
         ([("published_at", DESC)], {}),
         ([("title", "text"), ("summary", "text")], {"weights": {"title": 3, "summary": 1}, "name": "insights_text"}),
