@@ -829,6 +829,14 @@ def update_user(user_id: ObjectId, payload: dict) -> bool:
     return result.matched_count > 0
 
 
+def replace_password_if_unchanged(user_id: ObjectId, expected_hash: str | None, payload: dict) -> bool:
+    """$sets payload only while the stored password_hash is still `expected_hash` (None: no password
+    yet). False if the password changed in between, so a reset link can be used at most once."""
+    match = {"_id": user_id, "password_hash": expected_hash} if expected_hash else {
+        "_id": user_id, "$or": [{"password_hash": None}, {"password_hash": ""}]}
+    return get_db().users.update_one(match, {"$set": payload}).modified_count > 0
+
+
 def get_activity_counts(user_id: ObjectId) -> dict:
     db = get_db()
     return {
@@ -909,9 +917,10 @@ def delete_all_user_sessions(user_id: ObjectId) -> int:
 
 
 # Every collection holding rows that belong to one user (keyed by user_id).
+# backend/tests/test_account_deletion.py fails if code writes user_id rows to a collection not listed here.
 _USER_OWNED_COLLECTIONS = (
-    "portfolio_holdings", "portfolio_snapshots", "watchlists", "alerts", "notifications",
-    "user_settings", "user_search_history",
+    "portfolio_holdings", "portfolio_transactions", "portfolio_snapshots", "watchlists",
+    "alerts", "alert_triggers", "notifications", "user_settings", "user_search_history",
 )
 
 

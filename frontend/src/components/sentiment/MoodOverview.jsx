@@ -55,7 +55,7 @@ export default function MoodOverview({ colors }) {
           {...gauge}
         />
       ) : (
-        <NoReadingCard eyebrow="Crypto Market Mood" reason="No sentiment readings yet. Use Refresh Pipeline to collect them." />
+        <NoReadingCard eyebrow="Crypto Market Mood" reason="No sentiment readings yet. The server collects them every 15 minutes." />
       )}
 
       {nft ? (

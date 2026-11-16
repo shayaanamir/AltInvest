@@ -3,11 +3,12 @@ backend/auth/security.py
 
 Password hashing and JWT helpers for AUTH-01 (Login).
 
-SECURITY NOTE (see AltInvest_Implementation_Checklist.md, Section 23):
-JWT_SECRET MUST be set via environment variable in any real deployment.
-The default below is for local development only and must never be
-relied on outside a dev machine.
+SECURITY NOTE: JWT_SECRET must be set (at least 32 bytes) in every environment except
+APP_ENV=dev/test (shared/app_env.py). Without it, or with a short one, the backend refuses to
+start; in dev it falls back to a public development secret and logs a warning.
 """
+import hashlib
+import hmac
 import logging
 import os
 from datetime import datetime, timedelta, timezone
@@ -15,14 +16,32 @@ from datetime import datetime, timedelta, timezone
 import bcrypt
 import jwt
 
+from shared.app_env import app_env, is_dev
+
 _DEV_JWT_SECRET = "insecure-dev-secret-change-me"
-# `or`, not a getenv default: docker-compose passes an unset variable through as "".
-JWT_SECRET = os.getenv("JWT_SECRET") or _DEV_JWT_SECRET
-if JWT_SECRET == _DEV_JWT_SECRET:
+JWT_SECRET_MIN_BYTES = 32
+
+
+def _load_jwt_secret() -> str:
+    # `or`, not a getenv default: docker-compose passes an unset variable through as "".
+    secret = os.getenv("JWT_SECRET") or ""
+    if len(secret.encode("utf-8")) >= JWT_SECRET_MIN_BYTES and secret != _DEV_JWT_SECRET:
+        return secret
+    if not is_dev():
+        raise RuntimeError(
+            f"JWT_SECRET must be set to at least {JWT_SECRET_MIN_BYTES} bytes (APP_ENV={app_env()!r}). "
+            'Generate one with: python -c "import secrets; print(secrets.token_urlsafe(48))" '
+            "or set APP_ENV=dev on a development machine."
+        )
     logging.getLogger("auth").warning(
-        "JWT_SECRET is not set; signing tokens with the built-in development secret. "
-        "Anyone who knows it can forge logins. Set JWT_SECRET in .env for any shared or deployed instance."
+        "JWT_SECRET is missing or shorter than %d bytes; APP_ENV=%s, so signing tokens with the "
+        "built-in development secret. Anyone who knows it can forge logins.",
+        JWT_SECRET_MIN_BYTES, app_env(),
     )
+    return secret or _DEV_JWT_SECRET
+
+
+JWT_SECRET = _load_jwt_secret()
 JWT_ALGORITHM = "HS256"
 # Sliding sessions: a token lives JWT_EXPIRY_HOURS; while the user is active the client trades it for
 # a fresh one (POST /auth/refresh), so only 24h of inactivity signs them out — or SESSION_MAX_DAYS
@@ -87,13 +106,22 @@ def decode_access_token(token: str) -> dict | None:
         return None
     return payload
 
-def create_reset_token(user_id: str, email: str) -> str:
-    """Issues a short-lived, single-purpose JWT for password reset."""
+def password_fingerprint(password_hash: str | None) -> str:
+    """A short keyed digest of the stored password hash. A reset token carries it, so the token
+    stops working the moment the password changes: it is single-use, and any reset or change
+    invalidates every other outstanding link."""
+    digest = hmac.new(JWT_SECRET.encode("utf-8"), (password_hash or "").encode("utf-8"), hashlib.sha256)
+    return digest.hexdigest()[:32]
+
+
+def create_reset_token(user_id: str, email: str, password_hash: str | None) -> str:
+    """Issues a short-lived, single-purpose, single-use JWT for password reset."""
     now = datetime.now(timezone.utc)
     payload = {
         "sub": user_id,
         "email": email,
         "purpose": "password_reset",
+        "pwf": password_fingerprint(password_hash),
         "iat": now,
         "exp": now + timedelta(minutes=RESET_TOKEN_EXPIRY_MINUTES),
     }
@@ -131,6 +159,6 @@ def decode_reset_token(token: str) -> dict | None:
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
     except jwt.PyJWTError:
         return None
-    if payload.get("purpose") != "password_reset":
+    if payload.get("purpose") != "password_reset" or not payload.get("pwf"):
         return None
     return payload

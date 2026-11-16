@@ -40,8 +40,12 @@ services:
       # NFT news sentiment (sentiment_engine/nft_sentiment). Without the key it falls back to VADER + FinBERT.
       GROQ_API_KEY: ${GROQ_API_KEY:-}
       NFT_SENTIMENT_MODEL: ${NFT_SENTIMENT_MODEL:-openai/gpt-oss-120b}
+      # Unset APP_ENV means production: no JWT_SECRET -> the backend won't start (see .env.example).
+      APP_ENV: ${APP_ENV:-production}
       JWT_SECRET: ${JWT_SECRET:-}
       FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:5173}
+      CORS_EXTRA_ORIGINS: ${CORS_EXTRA_ORIGINS:-}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
       TRUST_PROXY_HEADERS: ${TRUST_PROXY_HEADERS:-false}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}

@@ -25,11 +25,12 @@ import logging
 import threading
 import time
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import ValidationError
 from fastapi.responses import JSONResponse
 
 from models.schemas import SentimentResponse
+from auth.dependencies import require_admin
 
 router = APIRouter(tags=["Sentiment"])
 
@@ -506,9 +507,10 @@ def get_sentiment_history_route(
 
 # ── POST /sentiment/{asset}/refresh ───────────────────────────────────────────
 
-@router.post("/sentiment/{asset}/refresh")
+@router.post("/sentiment/{asset}/refresh", dependencies=[Depends(require_admin)])
 def refresh_sentiment(asset: str):
-    """Forces a fresh pipeline run for the asset, bypassing the cache."""
+    """Forces a fresh pipeline run for the asset, bypassing the cache. Admins only (ADMIN_EMAILS):
+    each run fetches every source and runs FinBERT, so it must not be open to anonymous callers."""
     _engine()  # fail early with a clear error if the engine isn't installed
 
     asset_id = asset.lower()
@@ -548,9 +550,10 @@ def _run_refresh_job() -> None:
         _refresh_job.update(running=False, finished_at=datetime.now(tz=timezone.utc).isoformat(), results=results)
 
 
-@router.post("/sentiment/refresh", status_code=202)
+@router.post("/sentiment/refresh", status_code=202, dependencies=[Depends(require_admin)])
 def start_refresh_all():
-    """Starts a forced refresh of every covered asset in the background and returns immediately."""
+    """Starts a forced refresh of every covered asset in the background and returns immediately.
+    Admins only (ADMIN_EMAILS); the scheduler refreshes every asset every 15 minutes anyway."""
     _engine()  # fail early with a clear error if the engine isn't installed
 
     with _refresh_job_lock:

@@ -1,13 +1,13 @@
 """
 db/seed_users.py
 
-Seeds one demo user so AUTH-01 (Login) can be tested end-to-end before
-AUTH-02 (Signup) exists.
+Seeds one demo user for local development. Only when APP_ENV=dev (or test): the demo password
+is public, so an account with it must never exist on a shared or deployed database.
 
 Usage:
-    python db/seed_users.py
+    APP_ENV=dev python db/seed_users.py
 
-Demo credentials:
+Demo credentials (development only):
     email:    demo@altinvest.com
     password: Demo1234!
 """
@@ -20,23 +20,25 @@ sys.path.insert(0, PROJECT_ROOT)
 sys.path.insert(0, BACKEND_DIR)
 
 from db.mongo_connection import get_db
-from auth.security import hash_password
+from shared.app_env import app_env, is_dev
 
-DEMO_USER = {
-    "email": "demo@altinvest.com",
-    "name": "Demo User",
-    "password_hash": hash_password("Demo1234!"),
-}
+DEMO_EMAIL = "demo@altinvest.com"
+DEMO_PASSWORD = "Demo1234!"
 
 
 def seed():
+    if not is_dev():
+        print(f"Skipped demo user: APP_ENV={app_env()!r}; it is only created when APP_ENV=dev.")
+        return
+    from auth.security import hash_password
+    DEMO_USER = {"email": DEMO_EMAIL, "name": "Demo User", "password_hash": hash_password(DEMO_PASSWORD)}
     db = get_db()
     db.users.update_one(
         {"email": DEMO_USER["email"]},
         {"$set": DEMO_USER},
         upsert=True,
     )
-    print(f"Seeded demo user: {DEMO_USER['email']} / Demo1234!")
+    print(f"Seeded demo user: {DEMO_EMAIL} (development only)")
 
 
 if __name__ == "__main__":

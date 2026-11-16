@@ -133,6 +133,8 @@ class AuthUser(BaseModel):
     id: str
     name: str
     email: str
+    # In ADMIN_EMAILS with a verified email: may force sentiment pipeline refreshes.
+    is_admin: bool = False
 
 
 class AuthResponse(BaseModel):
@@ -695,6 +697,7 @@ class MeOut(BaseModel):
     has_password: bool = True
     google_linked: bool = False
     google_email: Optional[str] = None
+    is_admin: bool = False
 
 
 class DeleteAccountRequest(BaseModel):

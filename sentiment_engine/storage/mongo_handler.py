@@ -82,7 +82,8 @@ def _get_db():
         _client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=1000)
         _client.admin.command("ping")
         _db = _client[MONGO_DB]
-        logger.info(f"Connected to MongoDB at {MONGO_URI} | db={MONGO_DB}")
+        # Never log MONGO_URI: it can carry a username and password.
+        logger.info(f"Connected to MongoDB | db={MONGO_DB}")
     except (ConnectionFailure, ServerSelectionTimeoutError) as e:
         logger.error(f"MongoDB connection failed: {e}")
         _client = None

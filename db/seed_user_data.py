@@ -11,13 +11,17 @@ sys.path.insert(0, BACKEND_DIR)
 
 from datetime import datetime, timezone
 from db.mongo_connection import get_db
-from auth.security import hash_password
+from shared.app_env import app_env, is_dev
 
 NOW = datetime.now(timezone.utc)
 DEMO_EMAIL = "demo@altinvest.com"
 
 
 def seed():
+    # The demo account (db/seed_users.py) exists only in development; so does its data.
+    if not is_dev():
+        print(f"Skipped demo user data: APP_ENV={app_env()!r}; it is only created when APP_ENV=dev.")
+        return
     db = get_db()
 
     # 1. Extend the demo user (created by db/seed_users.py) with full profile fields
