@@ -179,10 +179,14 @@ def evaluate_alerts() -> dict:
                 if a.get("target_type") == "crypto" else {"page": "Discover", "symbol": None, "slug": a.get("target_slug")},
             })
             if a.get("delivery_channel") == "email":
-                user = db.users.find_one({"_id": a["user_id"]}, {"email": 1})
-                if user and user.get("email"):
+                user = db.users.find_one({"_id": a["user_id"]}, {"email": 1, "email_verified": 1})
+                if user and user.get("email") and user.get("email_verified") is True:
                     from utils.mailer import send_email
                     send_email(user["email"], f"AltInvest alert: {title}", f"{message}\n\nThe alert is paused until you re-arm it on the Alerts page.")
+                elif user and user.get("email"):
+                    # Unverified address: the in-app notification above is still delivered, but we don't
+                    # mail an address nobody has proven they own (G-34).
+                    log.info("[alerts] email skipped for alert %s: address not verified", a["_id"])
             triggered += 1
         db.alerts.update_one({"_id": a["_id"]}, {"$set": update})
     return {"checked": checked, "triggered": triggered}
