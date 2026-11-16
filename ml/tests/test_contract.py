@@ -11,6 +11,7 @@ from ml import config
 from ml.api.contract import load_schemas, validator
 from ml.api.service import app
 from ml.data.loader import raw_csv_path
+from ml.data.validate import report_path
 
 pytestmark = pytest.mark.skipif(not all(raw_csv_path(a).exists() for a in config.ASSETS),
                                 reason="raw CSVs missing (git-ignored); run ml.data.fetch and ml.data.validate")
@@ -55,7 +56,26 @@ def test_predict_and_risk_validate_against_contract(asset):
 
 @pytest.mark.parametrize("route", ["predict", "risk", "debug"])
 def test_unknown_asset_is_404(route):
-    assert client.get(f"/{route}/doge").status_code == 404
+    assert client.get(f"/{route}/dai").status_code == 404           # D87: DAI is not served
+
+
+@pytest.mark.parametrize("route", ["predict", "risk"])
+def test_served_asset_without_data_is_503_and_does_not_block_the_evaluated_ones(route, monkeypatch, tmp_path):
+    """D87: a served (not evaluated) asset whose data fails the serving gate is left out of the pool and is 503
+    itself; the evaluated assets keep serving. Here LINK's CSV is missing from a copy of the serving data."""
+    import shutil
+    for a in config.ASSETS:
+        for src in (raw_csv_path(a), report_path(a)):
+            dst = tmp_path / src.parent.name / src.name
+            dst.parent.mkdir(exist_ok=True)
+            shutil.copy2(src, dst)
+    monkeypatch.setattr(config, "ML_RAW_DIR", tmp_path / raw_csv_path("btc").parent.name)
+    monkeypatch.setattr(config, "ML_VALIDATION_DIR", tmp_path / report_path("btc").parent.name)
+    r = client.get(f"/{route}/link")
+    assert r.status_code == 503 and "link" in r.json()["detail"]
+    ok = client.get(f"/{route}/btc")
+    assert ok.status_code == 200
+    assert client.get("/debug/btc").json()["inputs"]["pool_assets"] == list(config.ASSETS)
 
 
 @pytest.mark.parametrize("asset", config.ASSETS)
@@ -70,7 +90,7 @@ def test_health_and_debug():
     h = client.get("/health").json()
     assert h["status"] == "ok"
     assert h["model_version"] == {"price": config.MODEL_VERSION_PRICE, "risk": config.MODEL_VERSION_RISK}
-    assert set(h["data_last_bar"]) == set(config.ASSETS)
+    assert set(h["data_last_bar"]) == set(config.SERVED_ASSETS)     # D87
     d = client.get("/debug/btc").json()
     assert d["inputs"]["risk_score"] == pytest.approx(client.get("/risk/btc").json()["risk_score"], abs=1e-6)
-    assert d["inputs"]["pool_assets"] == list(config.ASSETS)
+    assert set(config.ASSETS) <= set(d["inputs"]["pool_assets"]) <= set(config.SERVED_ASSETS)   # D87

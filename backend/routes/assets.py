@@ -36,8 +36,8 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
     Everything the Asset Detail page renders, in one call. Every value comes
     from the database; a section with no backing row is null (or empty) rather
     than estimated:
-      forecast        -> null when `predictions` has no row for the asset
-      aai_panel       -> null when `aai_scores` has no row
+      (no forecast: no price model is approved, ml/docs/DECISIONS.md D35; the chart draws a volatility cone, D52)
+      aai_panel      -> null when `aai_scores` has no row
       about           -> description / website / ATH; fields are null where the asset row has none
       related/similar -> see controllers/asset_detail_controller.py (each item carries a `reason`)
       risk_overview   -> [] when `risk_breakdown` has no row
@@ -49,9 +49,9 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
     from db.queries import (
         get_asset, get_asset_market_data_latest, get_daily_price_series,
         get_latest_aai_score, get_latest_prediction, get_latest_risk_breakdown,
-        get_price_sparklines, get_user_flags, get_prediction_history,
+        get_price_sparklines, get_user_flags,
     )
-    from controllers.asset_detail_controller import related_and_similar, build_forecast
+    from controllers.asset_detail_controller import related_and_similar
     from db.mongo_connection import get_db
     from utils.ml_rows import with_stale_note
 
@@ -64,7 +64,6 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
         market = get_asset_market_data_latest(symbol) or {}
         history = get_daily_price_series(symbol, 365)
         prediction = get_latest_prediction(symbol)
-        prediction_runs = get_prediction_history(symbol, 12)
         aai = get_latest_aai_score("crypto", symbol)
         breakdown = get_latest_risk_breakdown(symbol)
         flags = get_user_flags(user_id)
@@ -82,8 +81,6 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
         raise
     except Exception as exc:
         raise db_unavailable(exc)
-
-    forecast = build_forecast(prediction, prediction_runs, history)
 
     aai_panel = None
     sentiment = None
@@ -150,7 +147,6 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
             "watching": symbol in flags["watching"],
         },
         "price_history": history,
-        "forecast": forecast,
         # The ML service's own signal and note (null when no prediction is stored). While ml_signal is
         # UNCERTAIN the frontend must not present the AAI-derived BUY/HOLD/SELL as the model's call.
         "ml_signal": (prediction or {}).get("signal"),
@@ -217,24 +213,22 @@ def get_asset_header(symbol: str):
 @router.get("/assets/{symbol}/performance")
 def get_asset_performance(
     symbol: str,
-    mode: str = Query("Price", pattern="^(Price|AI Prediction)$"),
+    # Price only: the "AI Prediction" mode drew stored predicted prices as a line, and only seeded rows ever had
+    # one (no price model is approved, ml/docs/DECISIONS.md D35; removed with D87).
+    mode: str = Query("Price", pattern="^Price$"),
     filter: str = Query("1M", pattern="^(1D|1W|1M|3M|1Y)$"),
 ):
-    from db.queries import get_price_history, get_prediction_history
+    from db.queries import get_price_history
 
     symbol = symbol.upper()
     days_map = {"1D": 1, "1W": 7, "1M": 30, "3M": 90, "1Y": 365}
     days = days_map[filter]
 
     try:
-        if mode == "Price":
-            # `prices` is hourly; cap the row count so 1Y doesn't pull 400 days of hourly data.
-            n_rows = min(days * 24, 24 * 400)
-            history = get_price_history(symbol, days=n_rows)
-            points = [{"timestamp": h["timestamp"], "value": h["price"]} for h in reversed(history)]
-        else:
-            history = get_prediction_history(symbol, days=days)
-            points = [{"timestamp": h["timestamp"], "value": h["predicted_price"]} for h in reversed(history)]
+        # `prices` is hourly; cap the row count so 1Y doesn't pull 400 days of hourly data.
+        n_rows = min(days * 24, 24 * 400)
+        history = get_price_history(symbol, days=n_rows)
+        points = [{"timestamp": h["timestamp"], "value": h["price"]} for h in reversed(history)]
     except Exception as exc:
         raise db_unavailable(exc)
 

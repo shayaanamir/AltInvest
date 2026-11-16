@@ -2,7 +2,7 @@
 backend/controllers/asset_detail_controller.py
 
 The parts of GET /assets/{symbol}/detail that are worked out rather than read straight from a row:
-related and similar assets, and the forecast with its band and past runs.
+related and similar assets.
 
   related  - assets the database lists as related (assets.related_assets); if none are listed,
              the other assets in the same subcategory. Each says why it's there.
@@ -11,11 +11,10 @@ related and similar assets, and the forecast with its band and past runs.
              mean absolute gap over the features both assets have. Related assets are left out so
              the two lists don't repeat. Only assets at least MIN_SIMILARITY alike are shown, and
              each says which features are closest.
-  forecast - the latest model run's 30-day target with its lower/upper band, plus earlier runs and,
-             for runs whose target date has passed, the actual price that day and the error.
+  No forecast is built: no price model is approved (ml/docs/DECISIONS.md D35), and the old builder only
+  ever drew the seeded predictions as a line (removed with D87).
 """
 import math
-from datetime import datetime, timedelta, date
 
 MIN_SIMILARITY = 0.5   # 1 = identical profile; below this an asset isn't shown as "similar"
 
@@ -89,53 +88,3 @@ def related_and_similar(asset: dict, universe: list[dict], limit: int = 4) -> tu
     scored = [t for t in scored if t[1]["similarity"] >= MIN_SIMILARITY]
     scored.sort(key=lambda t: t[0])
     return related, [s for _, s in scored[:limit]]
-
-
-def _price_on(history_by_day: dict, day: str):
-    return history_by_day.get(day)
-
-
-def build_forecast(prediction: dict | None, runs: list[dict], history: list[dict]) -> dict | None:
-    if not prediction or prediction.get("predicted_price") is None or not history:
-        return None
-    last = history[-1]
-    target_day = (datetime.strptime(last["date"], "%Y-%m-%d") + timedelta(days=30)).strftime("%Y-%m-%d")
-    by_day = {h["date"]: h["price"] for h in history}
-    today = date.today().isoformat()
-
-    past = []
-    for r in runs:
-        ts = r.get("timestamp")
-        made = ts.strftime("%Y-%m-%d") if hasattr(ts, "strftime") else (str(ts)[:10] if ts else None)
-        if not made or r.get("predicted_price") is None:
-            continue
-        due = (datetime.strptime(made, "%Y-%m-%d") + timedelta(days=30)).strftime("%Y-%m-%d")
-        actual = _price_on(by_day, due) if due <= today else None
-        past.append({
-            "made_on": made,
-            "target_date": due,
-            "predicted_price": r["predicted_price"],
-            "lower_bound": r.get("lower_bound"),
-            "upper_bound": r.get("upper_bound"),
-            "actual_price": actual,
-            "error_pct": round((r["predicted_price"] - actual) / actual * 100, 2) if actual else None,
-            "model_version": r.get("model_version"),
-        })
-    scored = [p for p in past if p["error_pct"] is not None]
-
-    return {
-        # The model gives one 30-day target per run, not a path; the chart draws a straight
-        # branch from today's price to it, with the band at the target.
-        "points": [
-            {"date": last["date"], "price": last["price"]},
-            {"date": target_day, "price": prediction["predicted_price"]},
-        ],
-        "lower_bound": prediction.get("lower_bound"),
-        "upper_bound": prediction.get("upper_bound"),
-        "change_30d_pct": prediction.get("prediction_30d"),
-        "confidence": prediction.get("confidence"),
-        "trend": prediction.get("trend"),
-        "model_version": prediction.get("model_version"),
-        "runs": past,
-        "mean_abs_error_pct": round(sum(abs(p["error_pct"]) for p in scored) / len(scored), 2) if scored else None,
-    }

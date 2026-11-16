@@ -101,7 +101,7 @@ def closed_bars(klines: list, asset: str, now_ms: int) -> list[list]:
 
 def fetch(asset: str, raw_dir: Path | None = None) -> dict:
     """Download every closed daily bar into raw_dir (default config.ML_RAW_DIR). Returns the fetch metadata."""
-    symbol = config.ASSET_SYMBOLS[asset]
+    symbol = config.SERVED_ASSET_SYMBOLS[asset]     # D87: served assets (a superset of the evaluated ones)
     session = requests.Session()
     klines, start_ms, pages = [], 0, 0      # startTime=0 -> earliest available bar
     used: set[str] = set()                  # the host(s) that answered

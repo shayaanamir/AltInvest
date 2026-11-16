@@ -26,7 +26,8 @@ Steps, in dependency order (the app is usable after the first few; the slow prof
 It writes no made-up numbers. It is safe to run again (every step is idempotent), and like the seed scripts it
 refuses a non-local database unless --allow-remote is given. Not covered, because they come from elsewhere:
 NFT floor prices and sales (the ML service's first download, which needs OPENSEA_API_KEY / ALCHEMY_API_KEY in
-.env) and the predictions, risk scores and AAI scores of the coins the ML service does not cover.
+.env); predictions and risk scores (the ML pull, for the 16 coins the ML service serves, ml/docs/DECISIONS.md
+D87; DAI has none); and AAI scores (the backend's AAI refresh, from those rows and the sentiment readings).
 
     --only coins,market      run just these steps        --skip profiles      leave these out
     --allow-remote           allow a non-local database (not recommended)

@@ -68,8 +68,8 @@ def test_signature_has_no_price_input():
 
 def test_bad_inputs_raise():
     with pytest.raises(KeyError):
-        generate_signal("doge")
+        generate_signal("dai")
     with pytest.raises(KeyError):
-        generate_signal("doge", PROBS, serve=True)
+        generate_signal("dai", PROBS, serve=True)
     with pytest.raises(ValueError):
         generate_signal("eth", {"UP": 0.7, "DOWN": 0.3}, serve=True)

@@ -2,6 +2,10 @@
 db/seed_all.py
 Runs every seed script in dependency order.
 Run: python db/seed_all.py
+
+No seed writes predictions, risk_scores, risk_breakdown or aai_scores (ml/docs/DECISIONS.md D87): predictions and
+risk scores come only from the ML pull (backend/controllers/ml_pull_controller.py), AAI scores only from the AAI
+refresh (backend/controllers/aai_controller.py). db/cleanup_seeded_ml_rows.py removes rows an older seed wrote.
 """
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -13,8 +17,6 @@ from db import (
     enrich_asset_profiles,
     seed_nft,
     seed_insights,
-    seed_predictions_risk,
-    seed_aai_scores,
     seed_users,                     # existing db/seed_users.py (demo user login credentials)
     seed_user_data,
     seed_portfolio_snapshots,
@@ -26,8 +28,6 @@ STEPS = [
     ("asset profiles (CoinGecko description, website, tags)", enrich_asset_profiles.seed),
     ("nft_*", seed_nft.seed),
     ("market insights + themes (real headlines, LLM themes)", seed_insights.seed),
-    ("predictions + risk_scores + risk_breakdown", seed_predictions_risk.seed),
-    ("aai_scores (crypto + nft)", seed_aai_scores.seed),
     ("users (demo login)", seed_users.seed),
     ("user_settings + portfolio_holdings + watchlists + alerts + notifications", seed_user_data.seed),
     ("portfolio_snapshots (history backfill)", seed_portfolio_snapshots.seed),

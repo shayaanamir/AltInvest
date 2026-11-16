@@ -33,8 +33,8 @@ def get_prediction(asset: str):
     Returns the ML engine's prediction for the asset.
 
     Reads the latest doc from MongoDB `predictions` (written by the ML pull,
-    controllers/ml_pull_controller.py, for BTC/ETH/SOL; by db/seed_predictions_risk.py
-    for the other assets). 404 if none is stored yet; nothing is substituted.
+    controllers/ml_pull_controller.py, for db.queries.ML_COVERED_ASSETS, D87; never by a seed).
+    404 if none is stored yet (always for DAI, which ML does not cover); nothing is substituted.
     """
     asset = require_known_asset(asset)
 

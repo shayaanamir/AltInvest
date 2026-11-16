@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException
 from models.schemas import RiskResponse
-from shared.mock_data import mock_risk
 from utils.asset_gate import require_known_asset
 from utils.ml_rows import iso, with_stale_note
 
@@ -22,30 +21,20 @@ def _map_risk(doc: dict, asset: str) -> dict:
 @router.get("/risk/{asset}", response_model=RiskResponse)
 def get_risk(asset: str):
     """
-    Returns the risk engine's normalised score for the asset.
+    Returns the ML service's risk score for the asset (ml/docs/DECISIONS.md D36, D82, D87).
 
-    Reads the latest doc from MongoDB `risk_scores`. For the ML-covered assets (BTC, ETH, SOL)
-    nothing is substituted: 404 when no usable row is stored, 503 when the database is down
-    (main.py). Other assets still fall back to mock data.
+    Reads the latest doc from MongoDB `risk_scores`, written only by the ML pull
+    (controllers/ml_pull_controller.py) for db.queries.ML_COVERED_ASSETS. Nothing is substituted:
+    404 for an asset the ML service does not cover (DAI) or when no usable row is stored yet,
+    503 when the database is down (main.py).
     """
     from db.queries import ML_COVERED_ASSETS, get_latest_risk
 
     asset = require_known_asset(asset)
+    if asset not in ML_COVERED_ASSETS:
+        raise HTTPException(status_code=404, detail=f"{asset} is not covered by the risk model.")
 
-    if asset in ML_COVERED_ASSETS:
-        doc = get_latest_risk(asset)   # database errors become a 503 (main.py)
-        if not doc or not isinstance(doc.get("risk_score"), (int, float)):
-            raise HTTPException(status_code=404, detail=f"No risk score has been stored for {asset} yet.")
-        return _map_risk(doc, asset)
-
-    try:
-        doc = get_latest_risk(asset)
-        if doc and isinstance(doc.get("risk_score"), (int, float)):
-            return _map_risk(doc, asset)
-    except Exception as exc:
-        print(f"[risk] MongoDB unavailable ({exc}), falling back to mock")
-
-    result = mock_risk(asset)
-    if isinstance(result, dict) and not result.get("note"):
-        result["note"] = "mock data — no risk score found in DB yet"
-    return result
+    doc = get_latest_risk(asset)   # database errors become a 503 (main.py)
+    if not doc or not isinstance(doc.get("risk_score"), (int, float)):
+        raise HTTPException(status_code=404, detail=f"No risk score has been stored for {asset} yet.")
+    return _map_risk(doc, asset)
