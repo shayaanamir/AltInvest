@@ -21,11 +21,11 @@ def _map_risk(doc: dict, asset: str) -> dict:
 @router.get("/risk/{asset}", response_model=RiskResponse)
 def get_risk(asset: str):
     """
-    Returns the ML service's risk score for the asset (ml/docs/DECISIONS.md D36, D82, D87).
+    Returns the ML service's risk score for the asset (ml/docs/DECISIONS.md D36, D82, D94).
 
     Reads the latest doc from MongoDB `risk_scores`, written only by the ML pull
     (controllers/ml_pull_controller.py) for db.queries.ML_COVERED_ASSETS. Nothing is substituted:
-    404 for an asset the ML service does not cover (DAI) or when no usable row is stored yet,
+    404 for an asset the ML service does not cover (DAI, BASE) or when no usable row is stored yet,
     503 when the database is down (main.py).
     """
     from db.queries import ML_COVERED_ASSETS, get_latest_risk

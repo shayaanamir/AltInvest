@@ -105,10 +105,11 @@ class RiskResponse(BaseModel):
 
 class AAIResponse(BaseModel):
     asset: str
+    covered: bool = True                    # False: the ML service does not cover the asset (DAI, BASE; D94)
     aai_score: Optional[float] = None       # [0, 100]; null when the prediction or risk score is missing
     pred_score: Optional[float] = None
     expected_return_30d: Optional[float] = None
-    sentiment_score: float
+    sentiment_score: Optional[float] = None     # null only when not covered
     sentiment_confidence: Optional[float] = None
     sentiment_available: Optional[bool] = None      # False: no recent sentiment, neutral 50 was used
     sentiment_note: Optional[str] = None

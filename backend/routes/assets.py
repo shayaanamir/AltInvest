@@ -214,7 +214,7 @@ def get_asset_header(symbol: str):
 def get_asset_performance(
     symbol: str,
     # Price only: the "AI Prediction" mode drew stored predicted prices as a line, and only seeded rows ever had
-    # one (no price model is approved, ml/docs/DECISIONS.md D35; removed with D87).
+    # one (no price model is approved, ml/docs/DECISIONS.md D35; removed with D94).
     mode: str = Query("Price", pattern="^Price$"),
     filter: str = Query("1M", pattern="^(1D|1W|1M|3M|1Y)$"),
 ):

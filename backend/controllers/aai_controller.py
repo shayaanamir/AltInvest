@@ -80,7 +80,13 @@ def compute_aai_response(asset: str, sentiment: dict | None = None) -> dict:
     """
     `sentiment` lets a caller pass a reading it already has ({sentiment_score, confidence,
     available}); without it the engine is asked, which may refresh a stale reading.
+
+    An asset outside db.queries.ML_COVERED_ASSETS (DAI, BASE; ml/docs/DECISIONS.md D94) gets no AAI at all: no
+    database read, no sentiment call, every score null and `covered` False.
     """
+    from db.queries import ML_COVERED_ASSETS
+    if asset.upper() not in ML_COVERED_ASSETS:
+        return not_covered_response(asset)
     pred = _get_real_prediction(asset)
     sent = sentiment if sentiment is not None else _get_real_sentiment(asset)
     risk = _get_real_risk(asset)
@@ -109,6 +115,7 @@ def compute_aai_response(asset: str, sentiment: dict | None = None) -> dict:
 
     return {
         "asset": asset,
+        "covered": True,
         "aai_score": aai_score,
         "pred_score": pred_score,
         "expected_return_30d": round(expected, 2) if expected is not None else None,
@@ -122,6 +129,30 @@ def compute_aai_response(asset: str, sentiment: dict | None = None) -> dict:
         "missing_inputs": missing,
         "note": " ".join(notes) or None,
         "model_version": (pred or {}).get("model_version"),
+        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+
+
+NOT_COVERED_NOTE = ("The ML service does not cover this asset (no forecast and no risk score), so it has no AAI "
+                    "score.")
+
+
+def not_covered_response(asset: str) -> dict:
+    """The AAI response for an asset the ML service does not cover (D94): nothing is computed or made up."""
+    return {
+        "asset": asset.upper(),
+        "covered": False,
+        "aai_score": None,
+        "pred_score": None,
+        "expected_return_30d": None,
+        "sentiment_score": None,
+        "sentiment_confidence": None,
+        "sentiment_available": False,
+        "sentiment_note": None,
+        "risk_score": None,
+        "missing_inputs": ["prediction", "risk score"],
+        "note": NOT_COVERED_NOTE,
+        "model_version": None,
         "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
 
@@ -151,8 +182,12 @@ def refresh_all_aai_scores() -> dict:
 
     live = live_sentiment_by_symbol()
     stored, skipped = [], {}
+    from db.queries import ML_COVERED_ASSETS
     for a in get_supported_assets():
         symbol = a["asset_id"].upper()
+        if symbol not in ML_COVERED_ASSETS:          # D94: DAI, BASE get no AAI row
+            skipped[symbol] = "not covered by the ML service"
+            continue
         reading = live.get(symbol)
         sentiment = (
             {"sentiment_score": reading["score"], "confidence": reading["confidence"], "available": True}

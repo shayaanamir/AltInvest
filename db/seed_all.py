@@ -3,7 +3,7 @@ db/seed_all.py
 Runs every seed script in dependency order.
 Run: python db/seed_all.py
 
-No seed writes predictions, risk_scores, risk_breakdown or aai_scores (ml/docs/DECISIONS.md D87): predictions and
+No seed writes predictions, risk_scores, risk_breakdown or aai_scores (ml/docs/DECISIONS.md D94): predictions and
 risk scores come only from the ML pull (backend/controllers/ml_pull_controller.py), AAI scores only from the AAI
 refresh (backend/controllers/aai_controller.py). db/cleanup_seeded_ml_rows.py removes rows an older seed wrote.
 """

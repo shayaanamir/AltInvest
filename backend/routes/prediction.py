@@ -33,12 +33,15 @@ def get_prediction(asset: str):
     Returns the ML engine's prediction for the asset.
 
     Reads the latest doc from MongoDB `predictions` (written by the ML pull,
-    controllers/ml_pull_controller.py, for db.queries.ML_COVERED_ASSETS, D87; never by a seed).
-    404 if none is stored yet (always for DAI, which ML does not cover); nothing is substituted.
+    controllers/ml_pull_controller.py, for db.queries.ML_COVERED_ASSETS, D94; never by a seed).
+    404 for an asset ML does not cover (DAI, BASE), whatever rows remain, or when none is stored yet; nothing is
+    substituted.
     """
     asset = require_known_asset(asset)
 
-    from db.queries import get_latest_prediction
+    from db.queries import ML_COVERED_ASSETS, get_latest_prediction
+    if asset not in ML_COVERED_ASSETS:
+        raise HTTPException(status_code=404, detail=f"{asset} is not covered by the forecast model.")
     doc = get_latest_prediction(asset)  # database errors become a 503 (main.py)
     if not doc:
         raise HTTPException(status_code=404, detail=f"No prediction has been stored for {asset} yet.")

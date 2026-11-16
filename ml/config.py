@@ -10,10 +10,11 @@ ASSET_SYMBOLS = {"btc": "BTCUSDT", "eth": "ETHUSDT", "sol": "SOLUSDT"}
 # Evaluated assets (docs/REQUIREMENTS.md, D4). Lowercase ids; the API uppercases them.
 ASSETS = tuple(ASSET_SYMBOLS)
 
-# SERVED assets (D87): the evaluated ones plus 13 more that get serving only: the daily Binance history (fetch,
+# SERVED assets (D94): the evaluated ones plus 13 more that get serving only: the daily Binance history (fetch,
 # validate, serving gate), the no-change baseline (D35), 30-day volatility, Sharpe and the D36 risk score over this
 # pool. No model is fitted or evaluated on them. "matic" is served from POLUSDT (Polygon's MATIC->POL migration;
-# Binance's POLUSDT history starts 2024-09-13). DAI is not served (a stablecoin: no meaningful forecast or risk).
+# Binance's POLUSDT history starts 2024-09-13). DAI is not served (a stablecoin: no meaningful forecast or risk), nor
+# BASE (a made-up index with no market; it has no Binance pair).
 SERVED_ASSET_SYMBOLS = {
     **ASSET_SYMBOLS,
     "bnb": "BNBUSDT", "xrp": "XRPUSDT", "ada": "ADAUSDT", "avax": "AVAXUSDT", "doge": "DOGEUSDT",
@@ -62,7 +63,7 @@ ANNUALISATION_DAYS = 365
 SIGNALS = ("BUY", "HOLD", "SELL", "UNCERTAIN")
 
 # Whether a direction model is served per asset. All False: signal UNCERTAIN, confidence null (D33).
-DIRECTION_SERVED = {a: False for a in SERVED_ASSETS}  # D33 (D87: every served asset)
+DIRECTION_SERVED = {a: False for a in SERVED_ASSETS}  # D33 (D94: every served asset)
 
 # Backtest (D34): cost per side on each change of position; random-signal baseline settings.
 BACKTEST_FEE_PER_SIDE = 0.001  # D34

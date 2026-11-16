@@ -97,7 +97,7 @@ def test_fetch_failure_restores_csv_meta_and_report(monkeypatch, dirs, error):
     before = _files(raw, val)
     monkeypatch.setattr(fetch, "fetch", fake_fetch(401, fail=error))
     assert refresh.run_once() == 0                  # still servable: the previous data was restored
-    assert _files(raw, val) == before and len(before) == 3 * len(config.SERVED_ASSETS)      # D87: every served asset
+    assert _files(raw, val) == before and len(before) == 3 * len(config.SERVED_ASSETS)      # D94: every served asset
     a = _status(val)["assets"]["btc"]
     assert a["status"] == "failed" and a["reason"].startswith(type(error).__name__) and a["servable"]
     assert a["last_bar"] == "2026-10-17"
@@ -239,7 +239,7 @@ def test_refresh_rejects_gaps_and_older_data(monkeypatch, dirs, n, edit, reason)
     before = _files(raw, val)
     monkeypatch.setattr(fetch, "fetch", fake_fetch(n, edit=edit))
     assert refresh.run_once() == 0                  # still servable on the previous data
-    assert _files(raw, val) == before and len(before) == 3 * len(config.SERVED_ASSETS)      # D87: every served asset
+    assert _files(raw, val) == before and len(before) == 3 * len(config.SERVED_ASSETS)      # D94: every served asset
     a = _status(val)["assets"]["btc"]
     assert a["status"] == "failed" and a["reason"].startswith(reason) and a["servable"] and a["rows"] == 400
     monkeypatch.setattr(fetch, "fetch", fake_fetch(401))      # control: longer and later data is accepted

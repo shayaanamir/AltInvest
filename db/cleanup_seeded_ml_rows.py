@@ -1,14 +1,14 @@
 """
 db/cleanup_seeded_ml_rows.py
 
-Removes the prediction, risk, risk-breakdown and AAI rows that older seeds typed in (ml/docs/DECISIONS.md D87):
+Removes the prediction, risk, risk-breakdown and AAI rows that older seeds typed in (ml/docs/DECISIONS.md D94):
 db/seed_predictions_risk.py and db/seed_aai_scores.py (both deleted) wrote invented forecasts (model_version
 "seed-v1", e.g. LINK +5 % to $17.22), risk scores, risk breakdowns and AAI scores. After this the pages show only
 what the ML pull and the AAI refresh store, or "not covered" / "missing inputs".
 
 What counts as real, and is kept:
   predictions, risk_scores   rows with source "ml-service" (written only by controllers/ml_pull_controller.py)
-  risk_breakdown             rows with a `source` field (none exist before Stage 2 of D87; every older row is seeded)
+  risk_breakdown             rows with a `source` field (none exist before Stage 2 of D94; every older row is seeded)
   aai_scores (crypto)        rows whose model_version is an ML price model ("baseline-last-value"): computed by the
                              AAI refresh from an ML prediction. Rows computed from a seeded prediction carry
                              "seed-v1" and are removed, as are the "mock-v1" rows (db/cleanup_mock_aai.py).

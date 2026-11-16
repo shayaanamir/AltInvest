@@ -56,12 +56,12 @@ def test_predict_and_risk_validate_against_contract(asset):
 
 @pytest.mark.parametrize("route", ["predict", "risk", "debug"])
 def test_unknown_asset_is_404(route):
-    assert client.get(f"/{route}/dai").status_code == 404           # D87: DAI is not served
+    assert client.get(f"/{route}/dai").status_code == 404           # D94: DAI is not served
 
 
 @pytest.mark.parametrize("route", ["predict", "risk"])
 def test_served_asset_without_data_is_503_and_does_not_block_the_evaluated_ones(route, monkeypatch, tmp_path):
-    """D87: a served (not evaluated) asset whose data fails the serving gate is left out of the pool and is 503
+    """D94: a served (not evaluated) asset whose data fails the serving gate is left out of the pool and is 503
     itself; the evaluated assets keep serving. Here LINK's CSV is missing from a copy of the serving data."""
     import shutil
     for a in config.ASSETS:
@@ -90,7 +90,7 @@ def test_health_and_debug():
     h = client.get("/health").json()
     assert h["status"] == "ok"
     assert h["model_version"] == {"price": config.MODEL_VERSION_PRICE, "risk": config.MODEL_VERSION_RISK}
-    assert set(h["data_last_bar"]) == set(config.SERVED_ASSETS)     # D87
+    assert set(h["data_last_bar"]) == set(config.SERVED_ASSETS)     # D94
     d = client.get("/debug/btc").json()
     assert d["inputs"]["risk_score"] == pytest.approx(client.get("/risk/btc").json()["risk_score"], abs=1e-6)
-    assert set(config.ASSETS) <= set(d["inputs"]["pool_assets"]) <= set(config.SERVED_ASSETS)   # D87
+    assert set(config.ASSETS) <= set(d["inputs"]["pool_assets"]) <= set(config.SERVED_ASSETS)   # D94

@@ -1,4 +1,4 @@
-"""D87 Stage 1: no seed writes predictions, risk scores, risk breakdowns or AAI scores, and
+"""D94 Stage 1: no seed writes predictions, risk scores, risk breakdowns or AAI scores, and
 db/cleanup_seeded_ml_rows.py removes exactly the rows older seeds typed in (dry run by default)."""
 import json
 

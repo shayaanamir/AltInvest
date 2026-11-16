@@ -1,7 +1,16 @@
 import { riskLevelTone } from "../../services/assetDetailApi";
 
 export default function RiskOverviewCard({ riskOverview }) {
-  if (!riskOverview || riskOverview.length === 0) return null;
+  // No stored breakdown (the seeded one was removed, ml/docs/DECISIONS.md D94; measured values come later):
+  // say so rather than hiding the panel or showing made-up numbers.
+  if (!riskOverview || riskOverview.length === 0) {
+    return (
+      <div className="sv2-card adt-panel-card">
+        <div className="adt-panel-label">Risk Overview</div>
+        <div className="sv2-small sv2-muted">Risk breakdown not available yet.</div>
+      </div>
+    );
+  }
 
   return (
     <div className="sv2-card adt-panel-card">

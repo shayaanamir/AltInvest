@@ -6,7 +6,7 @@
 Serves baselines only; nothing is approved (D27, D33, D35). /predict and /risk bodies are validated against
 docs/CONTRACT.md before they are returned (AGENTS rule 14). A violation raises ContractViolation, which the
 server turns into a 500 and TestClient re-raises in tests. Extras only on /debug (D6). Assets are
-case-insensitive; an asset not in config.SERVED_ASSETS (D87) -> 404 ("not covered"); data that fails the serving gate
+case-insensitive; an asset not in config.SERVED_ASSETS (D94) -> 404 ("not covered"); data that fails the serving gate
 (missing CSV or report, failed report, or a report that does not match the CSV; D40) -> 503.
 """
 
@@ -33,7 +33,7 @@ def _warm_nft_items():
 
 def _serve(build, asset: str) -> dict:
     a = asset.lower()
-    if a not in config.SERVED_ASSETS:     # D87: the served list, not just the evaluated assets
+    if a not in config.SERVED_ASSETS:     # D94: the served list, not just the evaluated assets
         raise HTTPException(404, f"asset '{asset}' is not covered; covered: {[x.upper() for x in config.SERVED_ASSETS]}")
     try:
         return build(a, datetime.now(timezone.utc))

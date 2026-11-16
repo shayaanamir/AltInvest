@@ -1,4 +1,4 @@
-"""D87: 13 more assets are SERVED (data, no-change baseline, 30-day volatility, D36 risk score); every evaluation
+"""D94: 13 more assets are SERVED (data, no-change baseline, 30-day volatility, D36 risk score); every evaluation
 stays on the 3 EVALUATED assets. No network: the serving tables here are hand-made, NOT market data."""
 
 import inspect
@@ -49,7 +49,7 @@ def _table(n: int, level: float) -> pd.DataFrame:
 
 
 def test_risk_score_is_pooled_over_every_served_asset():
-    """D36 over the D87 pool: the calmest asset scores highest, and widening the pool moves BTC's score."""
+    """D36 over the D94 pool: the calmest asset scores highest, and widening the pool moves BTC's score."""
     now = pd.Timestamp("2025-03-01", tz="UTC").to_pydatetime()
     small = {"btc": _table(60, 0.03), "eth": _table(60, 0.04), "sol": _table(60, 0.05)}
     wide = {**small, "link": _table(60, 0.02), "doge": _table(60, 0.06)}
@@ -75,3 +75,21 @@ def test_a_failing_served_asset_is_left_out_but_an_evaluated_one_refuses_all(mon
         rs.risk_inputs("link", pd.Timestamp("2025-03-01", tz="UTC").to_pydatetime(), feats)
     with pytest.raises(NotServable, match="sol"):
         rs.feature_tables(assets=("btc", "sol", "link"))
+
+
+@pytest.mark.parametrize("asset", config.SERVED_ASSETS)
+def test_fetch_cli_accepts_every_served_asset(monkeypatch, asset):
+    """D94: python -m ml.data.fetch --asset X works for all 16 served assets (any case); DAI is refused."""
+    from ml.data import fetch
+    seen = []
+    monkeypatch.setattr(fetch, "fetch", lambda a: seen.append(a) or {"asset": a})
+    monkeypatch.setattr("sys.argv", ["fetch", "--asset", asset.upper()])
+    fetch.main()
+    assert seen == [asset]
+
+
+def test_fetch_cli_refuses_dai(monkeypatch):
+    from ml.data import fetch
+    monkeypatch.setattr("sys.argv", ["fetch", "--asset", "dai"])
+    with pytest.raises(SystemExit):
+        fetch.main()

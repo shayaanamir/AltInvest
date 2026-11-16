@@ -58,7 +58,7 @@ ML_CONFIG = Path(__file__).resolve().parents[2] / "ml" / "config.py"
 
 @pytest.mark.skipif(not ML_CONFIG.exists(), reason="ml/ is not in the backend image; runs from a repo checkout")
 def test_every_served_asset_is_covered_and_dai_is_not():
-    """D87: the backend pulls exactly the assets the ML service serves (ml/config.py SERVED_ASSET_SYMBOLS, read
+    """D94: the backend pulls exactly the assets the ML service serves (ml/config.py SERVED_ASSET_SYMBOLS, read
     as text: ml is not installed in the backend image); DAI, a stablecoin, is not one of them."""
     import ast
     tree = ast.parse(ML_CONFIG.read_text(encoding="utf-8"))
@@ -71,11 +71,16 @@ def test_every_served_asset_is_covered_and_dai_is_not():
     assert "DAI" not in queries.ML_COVERED_ASSETS
 
 
-def test_uncovered_asset_is_404_even_with_a_stored_row(db, client):
-    """No mock and no seeded row is served for an asset the ML service does not cover (DAI)."""
-    db["risk"] = _row({**RISK_BTC, "asset": "DAI"}, 1)
-    resp = client.get("/risk/DAI")
-    assert resp.status_code == 404 and "not covered" in resp.json()["detail"]
+@pytest.mark.parametrize("asset", ["DAI", "BASE"])
+def test_uncovered_asset_is_404_even_with_a_stored_row(db, client, asset):
+    """D94: no mock and no seeded row is served for an asset the ML service does not cover (DAI, BASE), on /risk or
+    /prediction, even when an old seeded row is still in the database."""
+    db["risk"] = _row({**RISK_BTC, "asset": asset}, 1)
+    db["pred"] = _row({**PREDICT_BTC, "asset": asset, "model_version": "seed-v1"}, 1)
+    for route in ("risk", "prediction"):
+        resp = client.get(f"/{route}/{asset}")
+        assert resp.status_code == 404 and "not covered" in resp.json()["detail"]
+    assert "BASE" not in queries.ML_COVERED_ASSETS and "DAI" not in queries.ML_COVERED_ASSETS
 
 
 def test_database_error_is_not_turned_into_mock_risk(db, monkeypatch, client):

@@ -28,7 +28,7 @@ from ml.features.features import build_features, ewma_vol
 from ml.signal.signal_logic import generate_signal
 
 BAR = pd.Timedelta(days=1)
-DECISIONS_IN_FORCE = ("D6", "D27", "D33", "D35", "D36", "D37", "D38", "D40", "D81", "D82", "D87")
+DECISIONS_IN_FORCE = ("D6", "D27", "D33", "D35", "D36", "D37", "D38", "D40", "D81", "D82", "D94")
 NOTE_PRICE = ("No model beats the no-change baseline (D35): prediction_30d is the last-value baseline (0%); "
               "no predicted price or interval.")
 
@@ -55,7 +55,7 @@ def _table(asset: str) -> pd.DataFrame:
 
 def feature_tables(assets=config.SERVED_ASSETS, required=config.ASSETS) -> dict[str, pd.DataFrame]:
     """Serving table of every pooled asset (D36). If a `required` (evaluated) asset fails the serving gate (D40)
-    all are refused, as before D87. Any other served asset that fails is left out of the pool (D87); it is then
+    all are refused, as before D94. Any other served asset that fails is left out of the pool (D94); it is then
     NotServable itself (risk_inputs), and the risk note names the assets actually pooled."""
     out = {}
     for a in assets:
@@ -104,7 +104,7 @@ def risk_inputs(asset: str, now: datetime, feats: Mapping[str, pd.DataFrame] | N
     """Every input /risk, /predict and /debug use for one asset. `feats` defaults to feature_tables()."""
     feats = feature_tables() if feats is None else feats
     if asset not in feats:
-        _table(asset)                   # raises the asset's own NotServable reason (D87)
+        _table(asset)                   # raises the asset's own NotServable reason (D94)
         raise NotServable(f"{asset}: not in the served pool")
     own = feats[asset]
     today = own.index[-1]

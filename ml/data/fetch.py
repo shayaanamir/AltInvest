@@ -1,6 +1,6 @@
 """Download daily klines from the Binance public API (docs/DATA.md).
 
-    python -m ml.data.fetch --asset btc
+    python -m ml.data.fetch --asset btc        # any of config.SERVED_ASSETS (D94)
 
 Writes {asset}_1d.csv and {asset}_1d.fetch.json (fetch time, source) to config.ML_RAW_DIR (D40; the evaluation
 snapshot ml/data/raw unless the ML_RAW_DIR env var is set).
@@ -101,7 +101,7 @@ def closed_bars(klines: list, asset: str, now_ms: int) -> list[list]:
 
 def fetch(asset: str, raw_dir: Path | None = None) -> dict:
     """Download every closed daily bar into raw_dir (default config.ML_RAW_DIR). Returns the fetch metadata."""
-    symbol = config.SERVED_ASSET_SYMBOLS[asset]     # D87: served assets (a superset of the evaluated ones)
+    symbol = config.SERVED_ASSET_SYMBOLS[asset]     # D94: served assets (a superset of the evaluated ones)
     session = requests.Session()
     klines, start_ms, pages = [], 0, 0      # startTime=0 -> earliest available bar
     used: set[str] = set()                  # the host(s) that answered
@@ -139,7 +139,7 @@ def fetch(asset: str, raw_dir: Path | None = None) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Fetch Binance daily klines")
-    parser.add_argument("--asset", required=True, choices=config.ASSETS)
+    parser.add_argument("--asset", required=True, type=str.lower, choices=config.SERVED_ASSETS)     # D94: all 16
     args = parser.parse_args()
     meta = fetch(args.asset)
     print(json.dumps(meta, indent=2))

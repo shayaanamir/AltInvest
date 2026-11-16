@@ -12,7 +12,7 @@ related and similar assets.
              the two lists don't repeat. Only assets at least MIN_SIMILARITY alike are shown, and
              each says which features are closest.
   No forecast is built: no price model is approved (ml/docs/DECISIONS.md D35), and the old builder only
-  ever drew the seeded predictions as a line (removed with D87).
+  ever drew the seeded predictions as a line (removed with D94).
 """
 import math
 
