@@ -706,7 +706,7 @@ def create_default_user_settings(user_id: ObjectId) -> None:
             "user_id": user_id,
             "preferences": {
                 "display_currency": "USD", "date_format": "MM/DD/YYYY",
-                "default_landing_page": "Dashboard", "default_dashboard_layout": "ai-first",
+                "default_landing_page": "Dashboard", "default_dashboard_layout": "everything",
             },
             "appearance": {"theme": "dark", "density": "comfortable"},
             "notifications": {
@@ -762,7 +762,7 @@ def create_user(email: str, name: str, password_hash: str | None, *,
         "email": email.lower().strip(), "name": name, "password_hash": password_hash,
         "created_at": now, "email_verified": email_verified,
         **({"email_verified_at": now} if email_verified else {}),
-        "risk_profile": "balanced", "layout_preference": "ai-first",
+        "risk_profile": "balanced", "layout_preference": "everything",
         "display_currency": "USD",
         "onboarding": {"completed": False, "completed_at": None, "skipped": False, "answers": {}},
         "bio": None,

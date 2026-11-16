@@ -19,19 +19,23 @@ from auth.dependencies import get_current_user_id
 from models.schemas import OnboardingIn, ProfileOut, ProfileUpdate
 from db.queries import (
     get_user_by_id, update_user, get_activity_counts, set_onboarding_if_open, update_user_settings,
-    get_assets_by_id, create_watchlist, watchlist_name_taken,
+    get_assets_by_id, get_nft_collections_by_slug, create_watchlist, watchlist_name_taken,
 )
 
 log = logging.getLogger("profile")
 router = APIRouter(tags=["Profile"])
 
 _VALID_RISK_PROFILES = {"conservative", "balanced", "aggressive"}
-_VALID_LAYOUTS = {"minimal", "analyst", "trader", "ai-first"}
+# The home focus: which dashboard widgets show, and which page the user lands on. The keys and the
+# landing pages must match frontend/src/utils/homeFocus.js (a frontend test reads this file to check).
+FOCUS_LANDING = {"everything": "Dashboard", "portfolio": "Portfolio", "markets": "Discover", "sentiment": "Sentiment"}
+_VALID_FOCUS = set(FOCUS_LANDING)
 # Same keys the onboarding goal step and the profile page offer.
 _VALID_GOALS = {"longterm", "trading", "research", "discovery", "portfolio"}
-# The market tiles in the onboarding market step ("nfts" there; Discover's own key is "nft").
-_VALID_MARKETS = {"crypto", "nfts", "commodities", "tokenized"}
+# The markets AltInvest covers ("nfts" in onboarding; Discover's own key is "nft").
+_VALID_MARKETS = {"crypto", "nfts"}
 _SYMBOL = re.compile(r"^[A-Za-z0-9]{1,15}$")
+_SLUG = re.compile(r"^[a-z0-9][a-z0-9-]{0,62}$")
 STARTER_WATCHLIST_NAME = "My Watchlist"
 _MAX_NAME = 80
 _MAX_BIO = 500
@@ -82,8 +86,8 @@ def patch_profile(payload: ProfileUpdate, user_id: ObjectId = Depends(get_curren
 
     if "risk_profile" in update and update["risk_profile"] not in _VALID_RISK_PROFILES:
         raise HTTPException(status_code=422, detail=f"risk_profile must be one of {_VALID_RISK_PROFILES}.")
-    if "layout_preference" in update and update["layout_preference"] not in _VALID_LAYOUTS:
-        raise HTTPException(status_code=422, detail=f"layout_preference must be one of {_VALID_LAYOUTS}.")
+    if "layout_preference" in update and update["layout_preference"] not in _VALID_FOCUS:
+        raise HTTPException(status_code=422, detail=f"layout_preference must be one of {sorted(_VALID_FOCUS)}.")
     if "investment_goal" in update and update["investment_goal"] not in _VALID_GOALS:
         raise HTTPException(status_code=422, detail=f"investment_goal must be one of {sorted(_VALID_GOALS)}.")
     if "name" in update:
@@ -120,16 +124,21 @@ def _clean_onboarding_answers(a) -> dict:
     bad = [g for g in a.goals if g not in _VALID_GOALS]
     if bad:
         raise HTTPException(status_code=422, detail=f"goals must be from {sorted(_VALID_GOALS)}.")
-    if a.layout is not None and a.layout not in _VALID_LAYOUTS:
-        raise HTTPException(status_code=422, detail=f"layout must be one of {sorted(_VALID_LAYOUTS)}.")
+    if a.focus is not None and a.focus not in _VALID_FOCUS:
+        raise HTTPException(status_code=422, detail=f"focus must be one of {sorted(_VALID_FOCUS)}.")
     if any(not _SYMBOL.match(s) for s in a.assets):
         raise HTTPException(status_code=422, detail="assets must be coin symbols such as BTC.")
+    if any(not _SLUG.match(s) for s in a.nfts):
+        raise HTTPException(status_code=422, detail="nfts must be collection slugs such as azuki.")
     return {
         "markets": list(dict.fromkeys(a.markets)),
         "risk": int(round(a.risk)) if a.risk is not None else None,
         "goals": list(dict.fromkeys(a.goals)),
         "assets": list(dict.fromkeys(s.upper() for s in a.assets)),
-        "layout": a.layout,
+        "nfts": list(dict.fromkeys(a.nfts)),
+        "focus": a.focus,
+        "density": a.density,
+        "theme": a.theme,
     }
 
 
@@ -137,9 +146,9 @@ def _clean_onboarding_answers(a) -> dict:
 def save_onboarding(payload: OnboardingIn, user_id: ObjectId = Depends(get_current_user_id)):
     """
     Saves the onboarding answers (or records a skip). Finishing also fills the profile from them
-    (risk profile, first goal, layout), sets the default dashboard layout, and creates a starter
-    watchlist from the coins picked. Once onboarding is completed this changes nothing, so a double
-    submit, or a second tab, is harmless.
+    (risk profile, first goal, home focus), sets the home focus and the page to land on, the density
+    and the theme, and creates a starter watchlist from the coins and NFT collections picked. Once
+    onboarding is completed this changes nothing, so a double submit, or a second tab, is harmless.
     """
     now = datetime.now(timezone.utc)
     skipped = payload.skipped
@@ -153,8 +162,8 @@ def save_onboarding(payload: OnboardingIn, user_id: ObjectId = Depends(get_curre
             derived["risk_profile"] = risk_profile_from_score(answers["risk"])
         if answers["goals"]:
             derived["investment_goal"] = answers["goals"][0]
-        if answers["layout"]:
-            derived["layout_preference"] = answers["layout"]
+        if answers["focus"]:
+            derived["layout_preference"] = answers["focus"]
 
     try:
         if not get_user_by_id(str(user_id)):
@@ -174,14 +183,23 @@ def _apply_onboarding_side_effects(user_id: ObjectId, answers: dict) -> None:
     """Follow-up work after onboarding was recorded. Best effort: a failure here is logged and doesn't
     undo the saved answers (the profile fields are already written with them)."""
     try:
-        if answers["layout"]:
-            update_user_settings(user_id, "preferences", {"default_dashboard_layout": answers["layout"]})
+        prefs = {}
+        if answers["focus"]:
+            prefs["default_dashboard_layout"] = answers["focus"]
+            prefs["default_landing_page"] = FOCUS_LANDING[answers["focus"]]
+        if prefs:
+            update_user_settings(user_id, "preferences", prefs)
+        look = {k: answers[k] for k in ("theme", "density") if answers[k]}
+        if look:
+            update_user_settings(user_id, "appearance", look)
     except Exception as exc:
-        log.warning("[onboarding] default layout not saved: %s", type(exc).__name__)
+        log.warning("[onboarding] display settings not saved: %s", type(exc).__name__)
     try:
-        known = get_assets_by_id(answers["assets"])
-        symbols = [s for s in answers["assets"] if s in known]
-        if symbols and not watchlist_name_taken(user_id, STARTER_WATCHLIST_NAME):
-            create_watchlist(user_id, STARTER_WATCHLIST_NAME, [("crypto", s) for s in symbols])
+        coins = get_assets_by_id(answers["assets"])
+        collections = get_nft_collections_by_slug(answers["nfts"])
+        items = ([("crypto", s) for s in answers["assets"] if s in coins]
+                 + [("nft", s) for s in answers["nfts"] if s in collections])
+        if items and not watchlist_name_taken(user_id, STARTER_WATCHLIST_NAME):
+            create_watchlist(user_id, STARTER_WATCHLIST_NAME, items)
     except Exception as exc:
         log.warning("[onboarding] starter watchlist not created: %s", type(exc).__name__)

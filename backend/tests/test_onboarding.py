@@ -10,14 +10,15 @@ from routes import profile as profile_routes
 
 UID = ObjectId()
 ANSWERS = {"markets": ["crypto", "nfts"], "risk": 55, "goals": ["trading", "longterm"],
-           "assets": ["btc", "ETH", "NOPE", "eth"], "layout": "analyst"}
+           "assets": ["btc", "ETH", "NOPE", "eth"], "nfts": ["azuki", "ghost-collection", "azuki"],
+           "focus": "markets", "density": "compact", "theme": "light"}
 
 
 class Fake:
     """In-memory stand-ins for the db.queries functions profile.py imports."""
     def __init__(self):
         self.user = {"_id": UID, "email": "a@x.com", "name": "A", "risk_profile": "balanced",
-                     "investment_goal": None, "layout_preference": "ai-first",
+                     "investment_goal": None, "layout_preference": "everything",
                      "onboarding": {"completed": False, "completed_at": None, "skipped": False, "answers": {}}}
         self.settings, self.watchlists = [], []
         self.fail_settings = self.fail_watchlist = False
@@ -40,6 +41,9 @@ class Fake:
     def get_assets_by_id(self, ids):
         return {i.upper(): {} for i in ids if i.upper() in {"BTC", "ETH"}}
 
+    def get_nft_collections_by_slug(self, slugs):
+        return {s: {} for s in slugs if s in {"azuki", "doodles"}}
+
     def watchlist_name_taken(self, uid, name, except_id=None):
         return any(n.lower() == name.lower() for n, _ in self.watchlists)
 
@@ -54,7 +58,7 @@ class Fake:
 def env(monkeypatch):
     fake = Fake()
     for name in ("get_user_by_id", "set_onboarding_if_open", "update_user_settings", "get_assets_by_id",
-                 "watchlist_name_taken", "create_watchlist"):
+                 "get_nft_collections_by_slug", "watchlist_name_taken", "create_watchlist"):
         monkeypatch.setattr(profile_routes, name, getattr(fake, name))
     monkeypatch.setattr(profile_routes, "get_activity_counts",
                         lambda uid: {"holdings_count": 0, "watchlists_count": len(fake.watchlists), "alerts_count": 0,
@@ -76,11 +80,15 @@ def test_finishing_stores_the_answers_and_fills_the_profile(env):
     ob = fake.user["onboarding"]
     assert ob["completed"] is True and ob["skipped"] is False and ob["completed_at"] is not None
     assert ob["answers"] == {"markets": ["crypto", "nfts"], "risk": 55, "goals": ["trading", "longterm"],
-                             "assets": ["BTC", "ETH", "NOPE"], "layout": "analyst"}   # upper-cased, de-duplicated
+                             "assets": ["BTC", "ETH", "NOPE"], "nfts": ["azuki", "ghost-collection"],
+                             "focus": "markets", "density": "compact", "theme": "light"}   # de-duplicated
     assert fake.user["risk_profile"] == "balanced"
     assert fake.user["investment_goal"] == "trading"          # the first goal picked
-    assert fake.user["layout_preference"] == "analyst"
-    assert fake.settings == [("preferences", {"default_dashboard_layout": "analyst"})]
+    assert fake.user["layout_preference"] == "markets"
+    assert fake.settings == [
+        ("preferences", {"default_dashboard_layout": "markets", "default_landing_page": "Discover"}),
+        ("appearance", {"theme": "light", "density": "compact"}),
+    ]
     body = r.json()
     assert body["markets_followed"] == ["crypto", "nfts"] and body["risk_profile"] == "balanced"
 
@@ -93,10 +101,30 @@ def test_risk_buckets_match_the_slider(env, score, expected):
     assert fake.user["risk_profile"] == expected
 
 
-def test_a_starter_watchlist_is_built_from_the_known_coins_only(env):
+def test_a_starter_watchlist_is_built_from_the_known_coins_and_nft_collections_only(env):
     client, fake = env
     _put(client, answers=ANSWERS)
-    assert fake.watchlists == [("My Watchlist", [("crypto", "BTC"), ("crypto", "ETH")])]   # NOPE dropped
+    assert fake.watchlists == [("My Watchlist", [("crypto", "BTC"), ("crypto", "ETH"), ("nft", "azuki")])]   # NOPE, ghost-collection dropped
+
+
+def test_nfts_alone_are_enough_for_a_watchlist(env):
+    client, fake = env
+    _put(client, answers={"nfts": ["doodles"]})
+    assert fake.watchlists == [("My Watchlist", [("nft", "doodles")])]
+
+
+@pytest.mark.parametrize("focus,landing", [("everything", "Dashboard"), ("portfolio", "Portfolio"),
+                                           ("markets", "Discover"), ("sentiment", "Sentiment")])
+def test_each_focus_sets_the_matching_landing_page(env, focus, landing):
+    client, fake = env
+    _put(client, answers={"focus": focus})
+    assert fake.settings == [("preferences", {"default_dashboard_layout": focus, "default_landing_page": landing})]
+
+
+def test_density_and_theme_are_optional_and_written_only_when_sent(env):
+    client, fake = env
+    _put(client, answers={"theme": "dark"})
+    assert fake.settings == [("appearance", {"theme": "dark"})]
 
 
 def test_no_known_coins_means_no_watchlist(env):
@@ -116,7 +144,7 @@ def test_unanswered_steps_leave_those_profile_fields_alone(env):
     client, fake = env
     _put(client, answers={"markets": ["crypto"]})
     assert fake.user["risk_profile"] == "balanced" and fake.user["investment_goal"] is None
-    assert fake.user["layout_preference"] == "ai-first" and fake.settings == []
+    assert fake.user["layout_preference"] == "everything" and fake.settings == []
 
 
 def test_skip_records_the_skip_and_changes_nothing_else(env):
@@ -124,7 +152,7 @@ def test_skip_records_the_skip_and_changes_nothing_else(env):
     r = _put(client, skipped=True, answers=ANSWERS)        # answers sent with a skip are ignored
     assert r.status_code == 200
     assert fake.user["onboarding"] == {"completed": False, "completed_at": None, "skipped": True, "answers": {}}
-    assert fake.user["risk_profile"] == "balanced" and fake.user["layout_preference"] == "ai-first"
+    assert fake.user["risk_profile"] == "balanced" and fake.user["layout_preference"] == "everything"
     assert fake.watchlists == [] and fake.settings == []
 
 
@@ -132,7 +160,7 @@ def test_a_second_call_after_finishing_changes_nothing(env):
     client, fake = env
     _put(client, answers=ANSWERS)
     snapshot = (dict(fake.user["onboarding"]), list(fake.watchlists), list(fake.settings))
-    r = _put(client, answers={"markets": ["commodities"], "risk": 99, "assets": ["ETH"], "layout": "minimal"})
+    r = _put(client, answers={"markets": ["crypto"], "risk": 99, "assets": ["ETH"], "focus": "portfolio"})
     assert r.status_code == 200
     assert (fake.user["onboarding"], fake.watchlists, fake.settings) == snapshot
     assert fake.user["risk_profile"] == "balanced"
@@ -153,7 +181,10 @@ def test_finishing_after_a_skip_still_works(env):
 
 
 @pytest.mark.parametrize("answers", [
-    {"markets": ["stocks"]}, {"goals": ["getrich"]}, {"layout": "wild"}, {"assets": ["BT C"]},
+    {"markets": ["stocks"]}, {"markets": ["commodities"]}, {"markets": ["tokenized"]}, {"goals": ["getrich"]},
+    {"focus": "wild"}, {"focus": "ai-first"}, {"layout": "analyst"},          # the old "layout" answer is gone
+    {"theme": "blue"}, {"density": "tiny"},
+    {"nfts": ["Bad Slug"]}, {"nfts": ["-leading-dash"]}, {"nfts": ["x" * 64]}, {"assets": ["BT C"]},
     {"assets": ["X" * 16]}, {"risk": 101}, {"risk": -1}, {"unknown": 1},
 ])
 def test_bad_answers_are_rejected(env, answers):
@@ -172,7 +203,7 @@ def test_a_failing_follow_up_does_not_undo_the_saved_answers(env):
     fake.fail_settings = fake.fail_watchlist = True
     r = _put(client, answers=ANSWERS)
     assert r.status_code == 200
-    assert fake.user["onboarding"]["completed"] is True and fake.user["layout_preference"] == "analyst"
+    assert fake.user["onboarding"]["completed"] is True and fake.user["layout_preference"] == "markets"
 
 
 def test_unknown_user_is_404(env):
