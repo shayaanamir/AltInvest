@@ -6,7 +6,6 @@ import { describeError } from "../../errors/errorCatalog";
 
 const LABELS = {
   google: { title: "Google", description: "Use Google to sign in" },
-  github: { title: "GitHub", description: "Use GitHub to sign in" },
   wallet: { title: "Wallet", description: "Read-only address for holdings import" },
 };
 

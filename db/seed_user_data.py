@@ -72,7 +72,7 @@ def seed():
                                  "timezone": "America/New_York"},
             },
             "security": {"two_factor_enabled": False},
-            "connected_accounts": {"google": False, "github": False, "wallet": False},
+            "connected_accounts": {"google": False, "wallet": False},
         }},
         upsert=True,
     )

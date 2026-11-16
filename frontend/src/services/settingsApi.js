@@ -46,7 +46,6 @@ function mapBackendSettings(s) {
     connectedAccounts: {
       // Google is linked/unlinked through /auth/google/*, never PATCHed here (ConnectedAccountsSection).
       google: { connected: !!s.connected_accounts?.google, status: "available" },
-      github: { connected: !!s.connected_accounts?.github, status: "coming_soon" },
       wallet: { connected: !!s.connected_accounts?.wallet, status: "proposed" },
     },
     dataControls: {

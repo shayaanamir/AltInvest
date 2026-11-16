@@ -625,7 +625,6 @@ class SecurityPatch(_SettingsPatch):
 
 class ConnectedAccountsPatch(_SettingsPatch):
     # Not `google`: that follows the account's real Google link (POST /auth/google/link, /unlink).
-    github: Optional[bool] = None
     wallet: Optional[bool] = None
 
 

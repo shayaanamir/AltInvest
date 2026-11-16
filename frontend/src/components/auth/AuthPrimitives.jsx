@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useLandingTheme } from "../landingPage/landingTokens";
-import { IconEye, IconEyeOff, GoogleIcon, GitHubIcon } from "../icons";
+import { IconEye, IconEyeOff, GoogleIcon } from "../icons";
 
-export { GoogleIcon, GitHubIcon };
+export { GoogleIcon };
 
 export function AuthInput({ label, type = "text", placeholder, value, onChange }) {
     const [focused, setFocused] = useState(false);

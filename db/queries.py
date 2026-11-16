@@ -719,7 +719,7 @@ def create_default_user_settings(user_id: ObjectId) -> None:
                                  "timezone": "UTC"},
             },
             "security": {"two_factor_enabled": False},
-            "connected_accounts": {"google": False, "github": False, "wallet": False},
+            "connected_accounts": {"google": False, "wallet": False},
         }},
         upsert=True,
     )
