@@ -71,11 +71,17 @@ def get_latest_rates() -> dict | None:
 
 
 def run_fx_scheduler() -> None:
-    """Daemon-thread loop: fetch at startup, then every 6 hours (retry sooner after a failure). Never raises."""
+    """
+    Daemon-thread loop: fetch at startup, then every 6 hours (retry sooner after a failure). Never raises.
+    The claim's gap is the retry interval, so a failed fetch can be retried by any worker; an extra
+    fetch is harmless (one stored row per rate date).
+    """
+    from utils.scheduler_gate import claim_run
     while True:
         try:
-            doc = refresh_rates()
-            log.info("[fx] stored %s rates as of %s", doc["base"], doc["as_of"])
+            if claim_run("fx-rates", _RETRY_SECONDS - 60):
+                doc = refresh_rates()
+                log.info("[fx] stored %s rates as of %s", doc["base"], doc["as_of"])
             delay = _INTERVAL_SECONDS
         except Exception as exc:
             log.error("[fx] refresh failed: %s: %s", type(exc).__name__, exc)

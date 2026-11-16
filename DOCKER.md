@@ -99,12 +99,13 @@ service does not cover are not set up by this command.
    later.
 
 4. **Env vars / secrets:** `db/mongo_connection.py` and
-   `sentiment_engine/utils/config.py` read `MONGO_URI`, `MONGO_DB_NAME` /
-   `MONGO_DB` via `os.getenv(...)` (the NFT sentiment also reads `GROQ_API_KEY`). These are set
+   `sentiment_engine/utils/config.py` read `MONGO_URI` and `MONGO_DB_NAME` via `os.getenv(...)`
+   (the NFT sentiment also reads `GROQ_API_KEY`). Both use the same database. These are set
    directly in `docker-compose.yml`'s `environment:` block for `backend`,
-   pointing at the `mongodb` service by its container name — no `.env`
-   file inside `backend/` is needed for Docker (that `.env` file is only
-   used when running the backend outside Docker).
+   pointing at the `mongodb` service by its container name. Outside Docker the repo-root `.env`
+   is read as a fallback; it never overrides variables that are already set.
+   Before the one-database change the sentiment engine wrote to a separate `altinvest`
+   database; copy that data over once with `python db/migrate_sentiment_db.py` (see its docstring).
 
 5. **Vite envs are baked at build time, not run time**, for the
    *production* image (`Dockerfile.prod`). Pass them as `--build-arg`

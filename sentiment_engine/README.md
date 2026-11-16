@@ -126,7 +126,7 @@ Key settings can be overridden using environment variables or a `.env` file plac
 
 *   Market data (CoinGecko, Binance) and the news feeds need no key. (`CMC_API_KEY` is no longer read.)
 *   `MONGO_URI`: Connection string for MongoDB (defaults to `mongodb://localhost:27017`).
-*   `MONGO_DB`: Name of the MongoDB database (defaults to `altinvest`).
+*   `MONGO_DB_NAME`: Name of the MongoDB database, the same one the backend uses (defaults to `aaip_db`). The old `MONGO_DB` is still read when it is unset.
 
 ## 3. NFT News Sentiment (`nft_sentiment/`)
 

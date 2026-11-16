@@ -24,6 +24,9 @@ log = logging.getLogger("indexes")
 
 # How long a search stays in a user's recent-search history.
 SEARCH_HISTORY_TTL_SECONDS = 90 * 24 * 60 * 60
+# How long a sentiment reading stays in sentiment_history (TTL on its `ts` date). Must equal
+# sentiment_engine/utils/config.py SENTIMENT_HISTORY_TTL_SECONDS: the engine creates the same index.
+SENTIMENT_HISTORY_TTL_SECONDS = 120 * 24 * 60 * 60
 
 # collection -> [(keys, options)]
 INDEXES = {
@@ -78,6 +81,12 @@ INDEXES = {
         ([("searched_at", ASC)], {"expireAfterSeconds": SEARCH_HISTORY_TTL_SECONDS}),
     ],
     "fx_rates": [([("base", ASC), ("as_of", DESC)], {"unique": True})],
+    # Written by the sentiment engine (same database since audit G-18). Keep in step with
+    # sentiment_engine/storage/mongo_handler.py HISTORY_INDEXES.
+    "sentiment_history": [
+        ([("asset_id", ASC), ("timestamp", DESC)], {}),
+        ([("ts", ASC)], {"expireAfterSeconds": SENTIMENT_HISTORY_TTL_SECONDS}),
+    ],
 }
 
 

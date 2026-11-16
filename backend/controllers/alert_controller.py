@@ -189,13 +189,18 @@ def evaluate_alerts() -> dict:
 
 
 def run_alert_scheduler(initial_delay_seconds: int = 60) -> None:
-    """Daemon-thread loop: every 5 minutes. Never raises."""
+    """
+    Daemon-thread loop: every 5 minutes. Never raises. With several workers or replicas only the one
+    that claims the tick evaluates, so an alert fires (and emails) once, not once per worker.
+    """
+    from utils.scheduler_gate import claim_run
     time.sleep(initial_delay_seconds)
     while True:
         try:
-            result = evaluate_alerts()
-            if result["triggered"]:
-                log.info("[alerts] %s", result)
+            if claim_run("alerts", EVAL_SECONDS - 30):
+                result = evaluate_alerts()
+                if result["triggered"]:
+                    log.info("[alerts] %s", result)
         except Exception as exc:
             from utils.http_errors import redact
             log.error("[alerts] evaluation failed: %s: %s", type(exc).__name__, redact(exc))

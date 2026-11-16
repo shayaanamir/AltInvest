@@ -45,11 +45,16 @@ def record_snapshots() -> int:
 
 
 def run_snapshot_scheduler() -> None:
-    """Daemon-thread loop: snapshot at startup, then hourly. Never raises."""
+    """
+    Daemon-thread loop: snapshot at startup, then hourly. Never raises. With several workers only
+    the one that claims the run records snapshots (utils/scheduler_gate.py).
+    """
+    from utils.scheduler_gate import claim_run
     while True:
         try:
-            n = record_snapshots()
-            log.info("[snapshots] recorded %d portfolio snapshot(s)", n)
+            if claim_run("portfolio-snapshots", _INTERVAL_SECONDS - 60):
+                n = record_snapshots()
+                log.info("[snapshots] recorded %d portfolio snapshot(s)", n)
         except Exception as exc:
             log.error("[snapshots] run failed: %s", exc)
         time.sleep(_INTERVAL_SECONDS)
