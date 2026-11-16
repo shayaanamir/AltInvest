@@ -23,7 +23,7 @@ STEPS = [
     ("assets (metadata only)", seed_assets.seed),
     ("live prices + market data (CoinGecko, Binance)", seed_prices.seed),
     ("nft_*", seed_nft.seed),
-    ("market_insights + sentiment_themes", seed_insights.seed),
+    ("market insights + themes (real headlines, LLM themes)", seed_insights.seed),
     ("predictions + risk_scores + risk_breakdown", seed_predictions_risk.seed),
     ("aai_scores (crypto + nft)", seed_aai_scores.seed),
     ("users (demo login)", seed_users.seed),

@@ -173,7 +173,11 @@ def on_startup():
     from controllers.market_data_controller import run_market_data_scheduler
     threading.Thread(target=run_market_data_scheduler, daemon=True, name="market-data").start()
 
-    # 9. NFT news sentiment (Groq LLM, VADER + FinBERT fallback) for every collection, every 30 minutes.
+    # 9. Market insights (the engines' real headlines) every 15 min, LLM-named themes every 2 h.
+    from controllers.insights_controller import run_insights_scheduler
+    threading.Thread(target=run_insights_scheduler, daemon=True, name="insights").start()
+
+    # 10. NFT news sentiment (Groq LLM, VADER + FinBERT fallback) for every collection, every 30 minutes.
     from controllers.nft_sentiment_controller import run_nft_sentiment_scheduler
     threading.Thread(target=run_nft_sentiment_scheduler, daemon=True, name="nft-sentiment").start()
 

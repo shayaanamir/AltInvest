@@ -59,6 +59,8 @@ export const dashboardApi = {
       url: safeHttpUrl(r.url),
       relatedAssetSymbol: r.related_asset_symbol,
       relatedNftSlug: r.related_nft_slug,
+      category: r.category || null,
+      reason: r.reason || null,
     }));
   },
 

@@ -158,6 +158,8 @@ class MarketInsightItem(BaseModel):
     related_asset_symbol: Optional[str] = None
     related_nft_slug: Optional[str] = None
     published_at: str
+    category: Optional[str] = None       # "crypto" | "nft"
+    reason: Optional[str] = None         # NFT headlines: the LLM's one-line reason for its rating
 
 
 class DashboardStats(BaseModel):

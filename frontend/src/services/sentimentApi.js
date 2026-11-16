@@ -381,10 +381,18 @@ export const sentimentApi = {
     });
   },
 
-  /** Themes stored for the coverage (GET /sentiment/themes). */
+  /** Recurring themes in the real headlines, named by an LLM, with the headlines behind each (GET /sentiment/themes). */
   getThemes: async () => {
     const rows = await getJson("/sentiment/themes", "Themes request");
-    return rows.map((t) => ({ label: t.label, direction: t.direction, category: t.category }));
+    return rows.map((t) => ({
+      label: t.label,
+      direction: t.direction,
+      category: t.category,
+      count: t.count ?? null,
+      headlines: (t.headlines || []).map((h) => h.title).filter(Boolean),
+      generatedAt: t.generated_at || null,
+      model: t.model || null,
+    }));
   },
 
   /** Headlines behind the readings: "news" is crypto and NFT together, "nft" is NFT only. */

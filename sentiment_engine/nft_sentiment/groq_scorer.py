@@ -213,6 +213,12 @@ def _post(payload: dict, session=None) -> dict:
     raise GroqError(f"gave up after {cfg.GROQ_MAX_ATTEMPTS} attempts: {last}")
 
 
+def post_chat(payload: dict, session=None) -> dict:
+    """A chat completion on Groq with this module's key, retries and error handling (also used by the
+    backend's theme extraction). Raises GroqError when it gives up."""
+    return _post(payload, session=session)
+
+
 def parse_results(body: dict, n_articles: int) -> dict[int, dict]:
     """Extracts {article index: verdict} from a chat completion; invalid or unknown items are skipped."""
     try:
