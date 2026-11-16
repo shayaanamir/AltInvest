@@ -7,6 +7,9 @@ import Step2RiskStyle from "../components/onboarding/Step2RiskStyle";
 import Step3Goals from "../components/onboarding/Step3Goals";
 import Step4Assets from "../components/onboarding/Step4Assets";
 import Step5Layout from "../components/onboarding/Step5Layout";
+import { onboardingApi } from "../services/onboardingApi";
+import { authApi } from "../services/authApi";
+import { answersToPayload } from "../utils/onboardingPayload";
 
 const TOTAL_STEPS = 5;
 
@@ -15,13 +18,34 @@ const STEPS = [Step1Markets, Step2RiskStyle, Step3Goals, Step4Assets, Step5Layou
 export default function OnboardingPage({ onNavigate }) {
     const [step, setStep] = useState(0);
     const [answers, setAnswers] = useState({});
+    const [saving, setSaving] = useState(false);
+    const [saveFailed, setSaveFailed] = useState(false);
 
     const stepNum = step + 1;
     const progress = (stepNum / TOTAL_STEPS) * 100;
 
+    const goToDashboard = () => onNavigate && onNavigate("Dashboard");
+
+    // Saves the answers (or the skip), then leaves. Leaves only once the server has them, so a
+    // failed save is shown and can be retried, or the person can carry on without saving.
+    const finish = async (skipped) => {
+        if (saving) return;
+        setSaving(true);
+        setSaveFailed(false);
+        try {
+            await onboardingApi.save(answersToPayload(answers, { skipped }));
+        } catch {
+            setSaving(false);
+            setSaveFailed(true);
+            return;
+        }
+        authApi.me().catch(() => {});   // refresh the saved user (onboarding_completed); not worth blocking on
+        goToDashboard();
+    };
+
     const next = () => {
         if (step < TOTAL_STEPS - 1) setStep(s => s + 1);
-        else onNavigate && onNavigate("Dashboard");
+        else finish(false);
     };
 
     const back = () => {
@@ -60,7 +84,8 @@ export default function OnboardingPage({ onNavigate }) {
                 </span>
 
                 <button
-                    onClick={() => onNavigate && onNavigate("Dashboard")}
+                    onClick={() => finish(true)}
+                    disabled={saving}
                     style={{
                         background: "none", border: "none", fontSize: 13,
                         color: L.ink2, cursor: "pointer", fontFamily: "inherit",
@@ -104,6 +129,24 @@ export default function OnboardingPage({ onNavigate }) {
                 </AnimatePresence>
             </div>
 
+            {saveFailed && (
+                <div role="alert" style={{
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 14, flexWrap: "wrap",
+                    padding: "10px 32px", fontSize: 13, color: "var(--sv2-red, #e5484d)", flexShrink: 0,
+                }}>
+                    <span>We couldn't save your answers. Check your connection and try again.</span>
+                    <button
+                        onClick={goToDashboard}
+                        style={{
+                            background: "none", border: "none", padding: 0, fontSize: 13, fontWeight: 600,
+                            color: L.ink2, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline",
+                        }}
+                    >
+                        Continue without saving
+                    </button>
+                </div>
+            )}
+
             <div style={{
                 display: "flex", alignItems: "center",
                 justifyContent: step === 0 ? "flex-end" : "space-between",
@@ -123,17 +166,19 @@ export default function OnboardingPage({ onNavigate }) {
                 )}
                 <motion.button
                     onClick={next}
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
+                    disabled={saving}
+                    whileHover={saving ? undefined : { scale: 1.03 }}
+                    whileTap={saving ? undefined : { scale: 0.97 }}
                     style={{
                         background: "var(--sv2-accent)",
                         border: "none", borderRadius: 10,
                         padding: "11px 28px", fontSize: 14, fontWeight: 700, color: "#fff",
-                        cursor: "pointer", fontFamily: "inherit",
+                        cursor: saving ? "default" : "pointer", fontFamily: "inherit",
+                        opacity: saving ? 0.7 : 1,
                         boxShadow: "0 4px 20px color-mix(in srgb, var(--sv2-accent) 35%, transparent)",
                     }}
                 >
-                    Continue
+                    {saving ? "Saving…" : step === TOTAL_STEPS - 1 ? "Finish" : "Continue"}
                 </motion.button>
             </div>
         </div>

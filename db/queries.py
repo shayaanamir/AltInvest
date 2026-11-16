@@ -829,6 +829,17 @@ def update_user(user_id: ObjectId, payload: dict) -> bool:
     return result.matched_count > 0
 
 
+def set_onboarding_if_open(user_id: ObjectId, onboarding: dict, extra: dict | None = None) -> bool:
+    """Stores the onboarding result (and any derived profile fields in `extra`) in one write, but only
+    while onboarding isn't completed yet. False when it already was, so a double submit or a second
+    tab can't run it (or its follow-up work) twice."""
+    result = get_db().users.update_one(
+        {"_id": user_id, "onboarding.completed": {"$ne": True}},
+        {"$set": {"onboarding": onboarding, **(extra or {})}},
+    )
+    return result.matched_count > 0
+
+
 def replace_password_if_unchanged(user_id: ObjectId, expected_hash: str | None, payload: dict) -> bool:
     """$sets payload only while the stored password_hash is still `expected_hash` (None: no password
     yet). False if the password changed in between, so a reset link can be used at most once."""

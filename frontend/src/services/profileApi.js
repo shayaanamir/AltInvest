@@ -1,4 +1,5 @@
 import { apiFetch } from "./apiClient";
+import { marketsLabel } from "../utils/onboardingPayload";
 
 function mapBackendProfile(p) {
   return {
@@ -12,7 +13,7 @@ function mapBackendProfile(p) {
     riskProfile: p.risk_profile || "balanced",
     investmentGoal: p.investment_goal || "", // "" = not chosen yet
     emailVerified: !!p.email_verified,
-    marketsFollowed: "", // same — onboarding answers aren't persisted server-side yet
+    marketsFollowed: marketsLabel(p.markets_followed), // picked in onboarding; "" until then
     activitySummary: {
       holdingsCount: p.activity_summary?.holdings_count ?? 0,
       watchlistsCount: p.activity_summary?.watchlists_count ?? 0,
