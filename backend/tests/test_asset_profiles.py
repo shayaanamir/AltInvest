@@ -52,8 +52,12 @@ def test_related_assets_share_specific_tags_not_portfolios_or_ubiquitous_ones():
     cats = {"BTC": BTC, "ETH": ETH, "BNB": BNB, "DAI": DAI, "UNI": UNI}
     rel = ap.related_from_categories(cats, {"ETH": 2e11, "BNB": 7e10, "DAI": 4e9, "UNI": 3e9})
     related, basis = rel["DAI"]
-    # 4 of these 5 carry "Ethereum Ecosystem", so it is too common to mean anything; DeFi is not.
+    # "Ethereum Ecosystem" only says where a token is deployed; DeFi says what it is.
     assert related == ["UNI"] and basis["UNI"] == ["Decentralized Finance (DeFi)"]
+    deployed_only = ap.related_from_categories({"LINK": ["Oracle", "BNB Chain Ecosystem", "Base Native"],
+                                                "ATOM": ["Governance", "BNB Chain Ecosystem", "Base Native"],
+                                                "X": ["Meme"]})
+    assert deployed_only["ATOM"] == ([], {})
     assert rel["BTC"] == ([], {})                            # Layer 1 / FTX Holdings / indices don't count
     assert "Alleged SEC Securities" not in str(rel["BNB"][1])
 

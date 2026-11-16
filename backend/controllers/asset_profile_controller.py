@@ -62,8 +62,11 @@ SUBCATEGORY_RULES = [
     (re.compile(r"smart contract platform", re.I), "Smart contract platform"),
 ]
 
-# Tags that say nothing about what an asset is: who invested, which index lists it, where it is "made".
-NOT_RELATEDNESS = re.compile(r"portfolio|index|holdings|made in|launchpad|alleged sec|proof of|top 100", re.I)
+# Tags that say nothing about what an asset is: who invested, which index lists it, where it is "made", and
+# which chains it is deployed or bridged on ("BNB Chain Ecosystem", "Base Native": Chainlink carries nearly
+# every one of those, which made it "related" to everything).
+NOT_RELATEDNESS = re.compile(
+    r"portfolio|index|holdings|made in|launchpad|alleged sec|proof of|top 100|ecosystem|native", re.I)
 
 
 def subcategory_of(categories: list) -> str | None:
