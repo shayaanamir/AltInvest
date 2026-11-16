@@ -120,8 +120,10 @@ class AAIResponse(BaseModel):
 
 
 class HealthResponse(BaseModel):
-    status: str
+    status: str                                  # "ok", or "unavailable" (with HTTP 503) when the database is down
     version: str
+    database: str                                # "ok" or "unreachable"
+    jobs: Dict[str, Optional[str]] = {}          # scheduler name -> last claimed run (ISO UTC)
 
 
 class LoginRequest(BaseModel):

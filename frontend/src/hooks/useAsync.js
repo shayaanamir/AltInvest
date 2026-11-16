@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { createLatestRequest } from "../utils/latestRequest.js";
 
 /**
  * Replaces the repeated:
@@ -22,22 +23,34 @@ export function useAsync(asyncFn, deps = [], { subscribe } = {}) {
   const fnRef = useRef(asyncFn);
   fnRef.current = asyncFn;
 
-  const cancelPrevRef = useRef(null);
+  const requestsRef = useRef(null);
+  if (requestsRef.current === null) requestsRef.current = createLatestRequest();
 
   const run = useCallback((silent = false) => {
-    cancelPrevRef.current?.(); // a newer request supersedes one still in flight
-    let cancelled = false;
-    if (!silent) {
+    const requests = requestsRef.current;
+    // A newer request supersedes one still in flight. A silent one that supersedes a pending normal
+    // load is promoted to a normal one, so loading still ends (utils/latestRequest.js, audit G-24).
+    const req = requests.start(silent);
+    if (!req.silent) {
       setLoading(true);
       setError(null);
     }
     fnRef.current()
-      .then((result) => { if (!cancelled) { setData(result); if (silent) setError(null); } })
-      .catch((err) => { if (!cancelled) { console.error(err); if (!silent) setError(err); } })
-      .finally(() => { if (!cancelled && !silent) setLoading(false); });
-    const cancel = () => { cancelled = true; };
-    cancelPrevRef.current = cancel;
-    return cancel;
+      .then((result) => {
+        if (!requests.settle(req)) return;
+        setData(result);
+        setError(null);
+        if (!req.silent) setLoading(false);
+      })
+      .catch((err) => {
+        if (!requests.settle(req)) return;
+        console.error(err);
+        if (!req.silent) {
+          setError(err);
+          setLoading(false);
+        }
+      });
+    return () => requests.cancel(req);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 

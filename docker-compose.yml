@@ -34,9 +34,9 @@ services:
       # host-side scripts, possibly the shared Atlas cluster) is NOT passed in; set BACKEND_MONGO_URI to point
       # the container somewhere else on purpose.
       MONGO_URI: ${BACKEND_MONGO_URI:-mongodb://mongodb:27017}
+      # One database for everything, the sentiment engine included (audit G-18). Data written to the old
+      # separate `altinvest` database can be copied over once: python db/migrate_sentiment_db.py
       MONGO_DB_NAME: ${BACKEND_MONGO_DB_NAME:-aaip_db}
-
-      MONGO_DB: altinvest
       # NFT news sentiment (sentiment_engine/nft_sentiment). Without the key it falls back to VADER + FinBERT.
       GROQ_API_KEY: ${GROQ_API_KEY:-}
       NFT_SENTIMENT_MODEL: ${NFT_SENTIMENT_MODEL:-openai/gpt-oss-120b}

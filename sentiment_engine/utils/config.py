@@ -12,7 +12,13 @@ load_dotenv()
 # Market data needs no API key: CoinGecko's public API and Binance's public klines are keyless.
 
 MONGO_URI   = os.getenv("MONGO_URI", "mongodb://localhost:27017")
-MONGO_DB    = os.getenv("MONGO_DB", "altinvest")
+# One database for the whole app (audit G-18): the backend's MONGO_DB_NAME. MONGO_DB is the engine's old
+# variable, still honoured when MONGO_DB_NAME is unset; the default matches docker-compose's.
+def resolve_db_name(env=os.environ) -> str:
+    return env.get("MONGO_DB_NAME") or env.get("MONGO_DB") or "aaip_db"
+
+
+MONGO_DB    = resolve_db_name()
 
 # ── Asset Definitions ─────────────────────────────────────────────────────────
 # Maps internal asset_id → how to find the asset in market data and in RSS articles.
@@ -301,3 +307,8 @@ TREND_TOLERANCE_HOURS = 6
 COLLECTION_SENTIMENT        = "sentiment"
 COLLECTION_RAW_ARTICLES     = "raw_articles"
 COLLECTION_SENTIMENT_HISTORY = "sentiment_history"
+
+# History rows carry `ts` (a real date, next to the ISO-string `timestamp`) and expire this long after it
+# through a TTL index (audit G-22). Longer than the longest window the API serves (90 days). Must match
+# db/indexes.py, which creates the same index; a test checks they agree.
+SENTIMENT_HISTORY_TTL_SECONDS = 120 * 24 * 60 * 60

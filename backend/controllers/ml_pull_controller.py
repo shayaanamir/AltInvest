@@ -156,12 +156,17 @@ def run_ml_pull_scheduler(initial_delay_seconds: int = 20) -> None:
     Daemon-thread loop: a pull shortly after startup, then daily at 00:15 UTC. After a run with a
     failure it tries again in 15 min (but never later than the next 00:15). Never raises.
     """
+    from utils.scheduler_gate import claim_run
     time.sleep(initial_delay_seconds)
     while True:
         try:
-            result = pull_all()
-            _log(f"{ML_BASE_URL}: {result}")
-            failed = has_failures(result)
+            # Gap below the retry interval: a failed pull can be retried 15 min later by any worker.
+            if claim_run("ml-pull", RETRY_AFTER_FAILURE_SECONDS - 60):
+                result = pull_all()
+                _log(f"{ML_BASE_URL}: {result}")
+                failed = has_failures(result)
+            else:
+                failed = False   # another worker pulled; wait for the next 00:15
         except Exception as exc:   # database down etc.; keep the thread alive
             from utils.http_errors import redact
             _log(f"run failed: {type(exc).__name__}: {redact(exc)}")

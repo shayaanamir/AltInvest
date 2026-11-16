@@ -19,7 +19,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional
 
 # pyrefly: ignore [missing-import]
-from pymongo import MongoClient, DESCENDING
+from pymongo import ASCENDING, MongoClient, DESCENDING
 # pyrefly: ignore [missing-import]
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 
@@ -30,6 +30,7 @@ try:
         COLLECTION_SENTIMENT,
         COLLECTION_SENTIMENT_HISTORY,
         COLLECTION_RAW_ARTICLES,
+        SENTIMENT_HISTORY_TTL_SECONDS,
         TREND_LOOKBACK_HOURS,
         TREND_TOLERANCE_HOURS,
     )
@@ -41,6 +42,7 @@ except ImportError:
         COLLECTION_SENTIMENT,
         COLLECTION_SENTIMENT_HISTORY,
         COLLECTION_RAW_ARTICLES,
+        SENTIMENT_HISTORY_TTL_SECONDS,
         TREND_LOOKBACK_HOURS,
         TREND_TOLERANCE_HOURS,
     )
@@ -79,9 +81,10 @@ def _get_db():
     try:
         # Reduced from 3000ms — local/dev Mongo either responds almost
         # instantly or isn't running at all; no need to wait 3s to find out.
-        _client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=1000)
+        _client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=1000, tz_aware=True)
         _client.admin.command("ping")
         _db = _client[MONGO_DB]
+        ensure_history_indexes(_db)
         # Never log MONGO_URI: it can carry a username and password.
         logger.info(f"Connected to MongoDB | db={MONGO_DB}")
     except (ConnectionFailure, ServerSelectionTimeoutError) as e:
@@ -91,6 +94,34 @@ def _get_db():
         _last_failure_time = time.monotonic()
 
     return _db
+
+
+# Index specs for sentiment_history. db/indexes.py creates the same ones (same keys and options, so the
+# two never conflict); they are here too because the engine also runs on its own.
+HISTORY_INDEXES = [
+    ([("asset_id", ASCENDING), ("timestamp", DESCENDING)], {}),
+    ([("ts", ASCENDING)], {"expireAfterSeconds": SENTIMENT_HISTORY_TTL_SECONDS}),
+]
+
+
+def ensure_history_indexes(db) -> None:
+    """Creates the sentiment_history indexes if missing. Never raises."""
+    for keys, options in HISTORY_INDEXES:
+        try:
+            db[COLLECTION_SENTIMENT_HISTORY].create_index(keys, **options)
+        except Exception as e:
+            logger.error(f"sentiment_history index {keys} failed: {e}")
+
+
+def history_ts(timestamp) -> datetime:
+    """The TTL date for a history row: its ISO `timestamp` as an aware datetime (now, if unparseable)."""
+    if isinstance(timestamp, datetime):
+        return timestamp if timestamp.tzinfo else timestamp.replace(tzinfo=timezone.utc)
+    try:
+        ts = datetime.fromisoformat(str(timestamp).replace("Z", "+00:00"))
+        return ts if ts.tzinfo else ts.replace(tzinfo=timezone.utc)
+    except ValueError:
+        return datetime.now(tz=timezone.utc)
 
 
 # ── Write operations ───────────────────────────────────────────────────────────
@@ -145,6 +176,7 @@ def save_sentiment(result: dict) -> bool:
         db[COLLECTION_SENTIMENT_HISTORY].insert_one({
             **result,
             "timestamp": timestamp,
+            "ts": history_ts(timestamp),   # TTL field (the string timestamp can't expire)
         })
 
         logger.info(f"Saved sentiment for {asset_id.upper()} | score={result['sentiment_score']}")
@@ -233,7 +265,7 @@ def get_sentiment_history(asset_id: str, days: int = 7) -> list[dict]:
                 "asset_id":  asset_id,
                 "timestamp": {"$gte": cutoff.isoformat()},
             },
-            {"_id": 0}
+            {"_id": 0, "ts": 0}
         ).sort("timestamp", DESCENDING).limit(days * 24)  # hourly resolution max
 
         return list(cursor)

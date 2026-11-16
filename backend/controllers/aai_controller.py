@@ -173,11 +173,13 @@ def refresh_all_aai_scores() -> dict:
 
 def run_aai_refresh_scheduler(initial_delay_seconds: int = 120) -> None:
     """Daemon-thread loop: first run shortly after startup (sentiment readings load first), then every 30 min."""
+    from utils.scheduler_gate import claim_run
     time.sleep(initial_delay_seconds)
     while True:
         try:
-            outcome = refresh_all_aai_scores()
-            _log.info("[aai] stored %d score(s); skipped %s", len(outcome["stored"]), outcome["skipped"] or "none")
+            if claim_run("aai-refresh", AAI_REFRESH_SECONDS - 60):
+                outcome = refresh_all_aai_scores()
+                _log.info("[aai] stored %d score(s); skipped %s", len(outcome["stored"]), outcome["skipped"] or "none")
         except Exception as exc:
             from utils.http_errors import redact
             _log.error("[aai] refresh failed: %s: %s", type(exc).__name__, redact(exc))

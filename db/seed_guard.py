@@ -5,7 +5,7 @@ Seeds write demo data, so they run only against a local MongoDB unless asked oth
 
 Local means localhost, 127.0.0.1, ::1, or `mongodb` (the docker-compose service, the altinvest-mongo
 container). Any other host, and every mongodb+srv:// URI (Atlas), is refused unless the command line has
---allow-remote. The URI is read the same way db/mongo_connection.py reads it (MONGO_URI, after backend/.env);
+--allow-remote. The URI is read the same way db/mongo_connection.py reads it (MONGO_URI, after the repo-root .env);
 an unset URI means pymongo's default, localhost. Only hosts are ever printed, never credentials.
 """
 import os
@@ -40,7 +40,7 @@ def require_local_target(argv=None, uri: str | None = None) -> None:
     """Exit with a message unless the seed target is local or --allow-remote was given."""
     argv = sys.argv if argv is None else argv
     if uri is None:
-        import db.mongo_connection  # noqa: F401  (loads backend/.env exactly as the seeds' connection does)
+        import db.mongo_connection  # noqa: F401  (loads the root .env exactly as the seeds' connection does)
         uri = os.getenv("MONGO_URI")
     if is_local(uri) or ALLOW_FLAG in argv:
         return
