@@ -119,7 +119,11 @@ def compute_aai_response(asset: str, sentiment: dict | None = None) -> dict:
         "aai_score": aai_score,
         "pred_score": pred_score,
         "expected_return_30d": round(expected, 2) if expected is not None else None,
-        "sentiment_score": round(sent_score, 2),
+        "sentiment_score": round(sent_score, 2),        # the AAI's 0-100 sentiment component
+        # The reading itself (-1..1), stored separately so a list or alert that falls back to this row never
+        # shows the 0-100 component as a sentiment (audit G-12). None when no real reading was used.
+        "sentiment_raw": (round(float(sent["sentiment_score"]), 4)
+                          if sentiment_available and isinstance(sent.get("sentiment_score"), (int, float)) else None),
         "sentiment_confidence": round(confidence, 2),
         "sentiment_available": sentiment_available,
         "sentiment_note": None if sentiment_available else (
@@ -146,6 +150,7 @@ def not_covered_response(asset: str) -> dict:
         "pred_score": None,
         "expected_return_30d": None,
         "sentiment_score": None,
+        "sentiment_raw": None,
         "sentiment_confidence": None,
         "sentiment_available": False,
         "sentiment_note": None,

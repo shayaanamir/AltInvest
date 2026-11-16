@@ -44,7 +44,7 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
     """
     from datetime import date
     from controllers.market_controller import (
-        aai_signal, build_crypto_items, live_sentiment_by_symbol, sentiment_confidence_label,
+        aai_signal, build_crypto_items, live_sentiment_by_symbol, sentiment_confidence_label, stored_sentiment,
     )
     from db.queries import (
         get_asset, get_asset_market_data_latest, get_daily_price_series,
@@ -97,21 +97,14 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
             "note": aai.get("note"),
         }
 
-    # Sentiment: the engine's live reading when it has one, else what aai_scores stored.
-    live = live_sentiment_by_symbol().get(symbol)
-    if live:
+    # Sentiment: the engine's live reading when it has one, else the reading (-1..1) aai_scores stored. Never the
+    # row's 0-100 AAI component, which is on another scale (audit G-12).
+    reading = live_sentiment_by_symbol().get(symbol) or stored_sentiment(aai)
+    if reading:
         sentiment = {
-            "score": live["score"], "confidence": live["confidence"],
-            "confidence_label": sentiment_confidence_label(live["confidence"]),
-            "trend": live["trend"],
-        }
-    elif aai and aai.get("sentiment_score") is not None:
-        conf = aai.get("sentiment_confidence")
-        sentiment = {
-            "score": aai["sentiment_score"],
-            "confidence": conf,
-            "confidence_label": sentiment_confidence_label(conf),
-            "trend": aai.get("sentiment_trend"),
+            "score": reading["score"], "confidence": reading["confidence"],
+            "confidence_label": sentiment_confidence_label(reading["confidence"]),
+            "trend": reading.get("trend"),
         }
 
     risk_overview = []

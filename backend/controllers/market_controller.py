@@ -88,20 +88,33 @@ def live_nft_sentiment(now: datetime | None = None) -> dict:
     return out
 
 
+def stored_sentiment(aai: dict | None) -> dict | None:
+    """
+    The sentiment reading (-1..1) an aai_scores row was computed from: {score, confidence, trend}, or None.
+
+    Only `sentiment_raw` counts. `sentiment_score` in that row is the AAI's 0-100 component, on another scale,
+    so it is never used as a sentiment (audit G-12); rows written before `sentiment_raw` existed give None.
+    """
+    raw = (aai or {}).get("sentiment_raw")
+    if not isinstance(raw, (int, float)):
+        return None
+    return {"score": raw, "confidence": aai.get("sentiment_confidence"), "trend": aai.get("sentiment_trend")}
+
+
 def _aai_fields(aai: dict | None, live: dict | None = None) -> dict:
-    """AAI + sentiment fields. Live sentiment (when present) wins over the value stored in aai_scores."""
+    """AAI + sentiment fields. Live sentiment (when present) wins over the reading stored in aai_scores."""
     aai = aai or {}
     score = aai.get("aai_score")
-    live = live or {}
-    sent_score = live.get("score", aai.get("sentiment_score"))
-    conf = live.get("confidence", aai.get("sentiment_confidence"))
+    live = live or stored_sentiment(aai) or {}
+    sent_score = live.get("score")
+    conf = live.get("confidence")
     return {
         "aai_score": score,
         "signal": aai_signal(score),
         "sentiment_score": sent_score,
         "sentiment_confidence": conf,
         "sentiment_confidence_label": sentiment_confidence_label(conf),
-        "sentiment_trend": live.get("trend", aai.get("sentiment_trend")),
+        "sentiment_trend": live.get("trend"),
     }
 
 

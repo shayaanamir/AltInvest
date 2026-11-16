@@ -109,7 +109,8 @@ class AAIResponse(BaseModel):
     aai_score: Optional[float] = None       # [0, 100]; null when the prediction or risk score is missing
     pred_score: Optional[float] = None
     expected_return_30d: Optional[float] = None
-    sentiment_score: Optional[float] = None     # null only when not covered
+    sentiment_score: Optional[float] = None     # the AAI's 0-100 sentiment component; null only when not covered
+    sentiment_raw: Optional[float] = None       # the sentiment reading itself, -1..1 (audit G-12)
     sentiment_confidence: Optional[float] = None
     sentiment_available: Optional[bool] = None      # False: no recent sentiment, neutral 50 was used
     sentiment_note: Optional[str] = None

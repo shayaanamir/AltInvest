@@ -14,7 +14,7 @@ GET /portfolio/intelligence: a read across everything the user holds, weighted b
 Holdings that can't be valued (no price) are left out of every weighting and counted separately.
 """
 from controllers.portfolio_controller import get_valued_holdings
-from controllers.market_controller import aai_signal, live_sentiment_by_symbol
+from controllers.market_controller import aai_signal, live_sentiment_by_symbol, stored_sentiment
 from db.queries import get_all_latest_aai_scores, get_all_latest_risk_scores
 
 CONCENTRATION_THRESHOLD = 0.40
@@ -63,7 +63,8 @@ def build_intelligence(user_id) -> dict:
             signal_mix[signal] = signal_mix.get(signal, 0) + 1
         if p["type"] == "crypto":
             risk_pairs.append(((risk.get(p["key"]) or {}).get("risk_score"), p["value"]))
-            sent = (live.get(p["key"]) or {}).get("score", aai.get("sentiment_score"))
+            reading = live.get(p["key"]) or stored_sentiment(aai) or {}     # -1..1 only (audit G-12)
+            sent = reading.get("score")
             sent_pairs.append((sent, p["value"]))
 
     hhi = sum(p["weight"] ** 2 for p in positions.values()) if positions else None
