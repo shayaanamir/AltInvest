@@ -10,7 +10,9 @@ new clone shows "BTC" instead of "Bitcoin", no descriptions, no trending list, n
 
 Steps, in dependency order (the app is usable after the first few; the slow profile step is last):
 
-  coins          the 17 coins' identity rows: id, symbol, name, category, display colour   (db/seed_assets.py)
+  indexes        the database indexes the backend normally creates at startup (a fresh database without them
+                 turned the first price backfill from under a minute into well over an hour)
+  coins         the 17 coins' identity rows: id, symbol, name, category, display colour   (db/seed_assets.py)
   nft            the 7 NFT collections' static metadata (names, symbols, supply)           (db/seed_nft.py)
   market         live prices, market caps, all-time highs and 400 days of hourly price history
                  (CoinGecko + Binance)                                           -> trending, charts, AAI inputs
@@ -50,6 +52,14 @@ def _quiet(fn, *args, **kwargs):
 
 
 # Each step returns (status, detail): status is "ok", "partial" or "skipped"; an exception becomes "failed".
+
+def step_indexes():
+    from db.indexes import ensure_indexes
+    r = ensure_indexes()
+    if r["failed"]:
+        return "partial", f"{r['created_or_present']} ok; failed: {', '.join(r['failed'])}"
+    return "ok", f"{r['created_or_present']} indexes"
+
 
 def step_coins():
     from db import seed_assets
@@ -126,6 +136,7 @@ def step_profiles():
 
 
 STEPS = [
+    ("indexes", "Database indexes (speed)", step_indexes),
     ("coins", "Coin names and colours", step_coins),
     ("nft", "NFT collection details", step_nft),
     ("market", "Live prices and price history", step_market),

@@ -27,7 +27,8 @@ def steps(monkeypatch):
 
 def test_real_steps_are_in_dependency_order():
     keys = [k for k, _, _ in bc.STEPS]
-    assert keys == ["coins", "nft", "market", "sentiment", "nft_sentiment", "insights", "themes", "profiles"]
+    assert keys == ["indexes", "coins", "nft", "market", "sentiment", "nft_sentiment", "insights", "themes", "profiles"]
+    assert keys[0] == "indexes"                                   # before any bulk write
     assert keys.index("coins") < keys.index("profiles")           # rows must exist before profiles fill them
     assert keys.index("sentiment") < keys.index("insights") < keys.index("themes")   # headlines before themes
     assert keys[-1] == "profiles"                                 # the slow one last, so the app is usable earlier

@@ -35,6 +35,9 @@ class FakeCollection:
     def update_one(self, flt, update, upsert=False):
         self.updates.append((flt, update, upsert))
 
+    def create_index(self, keys, **kw):
+        self.indexes = getattr(self, "indexes", []) + [keys]
+
     def delete_many(self, flt):
         self.deletes.append(flt)
         return SimpleNamespace(deleted_count=3)
@@ -158,6 +161,18 @@ def test_refresh_backfills_tops_up_and_removes_the_random_walk(monkeypatch):
     assert out["SOL"].startswith("failed") and out["removed_fake_rows"] == 3
     assert db.prices.deletes == [{"source": {"$nin": ["binance", "coingecko"]}}]
     assert {d["asset"] for d in saved} == {"BTC", "ETH", "DAI"}
+
+
+def test_the_prices_index_exists_before_any_row_is_written(monkeypatch):
+    """Without it every upsert scans the collection: a fresh database's 155,000-row backfill took 1h40m."""
+    monkeypatch.setattr(md, "SOURCES", {"BTC": ("bitcoin", "BTCUSDT")})
+    order = []
+    db = _db()
+    db.prices.create_index = lambda keys, **kw: order.append(("index", keys))
+    monkeypatch.setattr(md, "_save_prices", lambda d, docs: order.append(("save", len(docs))) or len(docs))
+    hour = NOW_MS - NOW_MS % H
+    md.refresh_prices(client=_client(lambda r: httpx.Response(200, json=[_kline(hour - H, 1.0)])), db=db, now=NOW)
+    assert order[0] == ("index", [("asset", 1), ("timestamp", -1)]) and ("save", 1) in order
 
 
 def test_nothing_is_deleted_when_every_fetch_fails(monkeypatch):

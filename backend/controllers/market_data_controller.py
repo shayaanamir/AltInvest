@@ -255,6 +255,12 @@ def refresh_prices(client: httpx.Client | None = None, db=None, now: datetime | 
     now_ms = int(now.timestamp() * 1000)
     out, fetched = {}, 0
 
+    # Every row is an upsert on (asset, timestamp). Without this index each one scans the whole collection, so
+    # the first backfill (~155,000 rows) on a fresh database slowed from under a minute to over an hour. It is the
+    # same index db/indexes.py creates at startup (creating it again is a no-op); doing it here too means the
+    # job never depends on startup having run first.
+    db.prices.create_index([("asset", 1), ("timestamp", -1)])
+
     with (client or httpx.Client()) as http:
         for asset, (cg_id, symbol) in SOURCES.items():
             try:
