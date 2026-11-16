@@ -8,24 +8,20 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ── API Keys ──────────────────────────────────────────────────────────────────
+# ── Environment ───────────────────────────────────────────────────────────────
+# Market data needs no API key: CoinGecko's public API and Binance's public klines are keyless.
 
-CMC_API_KEY = os.getenv("CMC_API_KEY")
-if not CMC_API_KEY:
-    import warnings
-    warnings.warn(
-        "CMC_API_KEY is not set. CoinMarketCap requests will fail and the "
-        "pipeline will fall back to neutral market signals for every asset."
-    )
 MONGO_URI   = os.getenv("MONGO_URI", "mongodb://localhost:27017")
 MONGO_DB    = os.getenv("MONGO_DB", "altinvest")
 
 # ── Asset Definitions ─────────────────────────────────────────────────────────
-# Maps internal asset_id → how to find the asset on CoinMarketCap and in RSS articles.
+# Maps internal asset_id → how to find the asset in market data and in RSS articles.
 #
-#   cmc_id          CoinMarketCap's stable id — what quote and trending lookups use. A symbol
-#                   isn't unique on CMC (and can change: MATIC became POL), the id is.
-#   cmc_symbol      Current ticker, for display/logging only.
+#   symbol          Current ticker, for display/logging only.
+#   coingecko_id    CoinGecko's stable coin id: what the market and trending lookups use. A symbol isn't
+#                   unique on CoinGecko (and can change: MATIC became POL), the id is.
+#   binance_symbol  The asset's USDT pair on Binance, for the 24h volume change (CoinGecko's markets
+#                   endpoint gives the volume but not its change).
 #   names           Full names / phrases that are unambiguous on their own. Matched
 #                   case-insensitively on word boundaries, in the title or the body.
 #   tickers         Ticker symbols. A "$TICKER" cashtag always matches. A bare ticker matches
@@ -39,102 +35,118 @@ MONGO_DB    = os.getenv("MONGO_DB", "altinvest")
 #
 # Asset ids are kept stable for storage/API compatibility, which is why "matic" is the id of the
 # token that has been called POL since the Sept 2024 migration. Both names match its articles.
+# (backend/controllers/market_data_controller.py SOURCES has the same ids; a backend test keeps them equal.)
 
 ASSETS = {
     "btc": {
-        "cmc_symbol": "BTC",
-        "cmc_id": 1,
+        "symbol": "BTC",
+        "coingecko_id": "bitcoin",
+        "binance_symbol": "BTCUSDT",
         "names": ["bitcoin", "satoshi nakamoto"],
         "tickers": ["btc"],
     },
     "eth": {
-        "cmc_symbol": "ETH",
-        "cmc_id": 1027,
+        "symbol": "ETH",
+        "coingecko_id": "ethereum",
+        "binance_symbol": "ETHUSDT",
         "names": ["ethereum", "vitalik buterin"],
         "tickers": ["eth"],
     },
     "sol": {
-        "cmc_symbol": "SOL",
-        "cmc_id": 5426,
+        "symbol": "SOL",
+        "coingecko_id": "solana",
+        "binance_symbol": "SOLUSDT",
         "names": ["solana"],
         "tickers": ["sol"],
         "ambiguous_ticker": True,
     },
     "bnb": {
-        "cmc_symbol": "BNB",
-        "cmc_id": 1839,
+        "symbol": "BNB",
+        "coingecko_id": "binancecoin",
+        "binance_symbol": "BNBUSDT",
         "names": ["bnb chain", "binance coin", "binance smart chain"],
         "tickers": ["bnb"],
     },
     "xrp": {
-        "cmc_symbol": "XRP",
-        "cmc_id": 52,
+        "symbol": "XRP",
+        "coingecko_id": "ripple",
+        "binance_symbol": "XRPUSDT",
         "names": ["xrp ledger", "ripple labs"],
         "tickers": ["xrp", "xrpl"],
     },
     "ada": {
-        "cmc_symbol": "ADA",
-        "cmc_id": 2010,
+        "symbol": "ADA",
+        "coingecko_id": "cardano",
+        "binance_symbol": "ADAUSDT",
         "names": ["cardano"],
         "tickers": ["ada"],
         "ambiguous_ticker": True,   # also the Americans with Disabilities Act
     },
     "avax": {
-        "cmc_symbol": "AVAX",
-        "cmc_id": 5805,
+        "symbol": "AVAX",
+        "coingecko_id": "avalanche-2",
+        "binance_symbol": "AVAXUSDT",
         "names": ["avalanche"],
         "tickers": ["avax"],
     },
     "doge": {
-        "cmc_symbol": "DOGE",
-        "cmc_id": 74,
+        "symbol": "DOGE",
+        "coingecko_id": "dogecoin",
+        "binance_symbol": "DOGEUSDT",
         "names": ["dogecoin"],
         "tickers": ["doge"],
     },
     "dot": {
-        "cmc_symbol": "DOT",
-        "cmc_id": 6636,
+        "symbol": "DOT",
+        "coingecko_id": "polkadot",
+        "binance_symbol": "DOTUSDT",
         "names": ["polkadot", "parachain"],
         "tickers": ["dot"],
         "ambiguous_ticker": True,
     },
     "link": {
-        "cmc_symbol": "LINK",
-        "cmc_id": 1975,
+        "symbol": "LINK",
+        "coingecko_id": "chainlink",
+        "binance_symbol": "LINKUSDT",
         "names": ["chainlink"],
         "tickers": ["link"],
         "ambiguous_ticker": True,
     },
     "matic": {
-        "cmc_symbol": "POL",        # renamed from MATIC; same CMC id
-        "cmc_id": 3890,
+        "symbol": "POL",            # renamed from MATIC; same token
+        "coingecko_id": "polygon-ecosystem-token",
+        "binance_symbol": "POLUSDT",
         "names": ["polygon", "polygon ecosystem token"],
         "tickers": ["matic", "pol"],
         "ambiguous_ticker": True,   # "pol" is also an everyday abbreviation (politics, policy)
     },
     "uni": {
-        "cmc_symbol": "UNI",
-        "cmc_id": 7083,
+        "symbol": "UNI",
+        "coingecko_id": "uniswap",
+        "binance_symbol": "UNIUSDT",
         "names": ["uniswap"],
         "tickers": ["uni"],
         "ambiguous_ticker": True,
     },
     "ltc": {
-        "cmc_symbol": "LTC",
-        "cmc_id": 2,
+        "symbol": "LTC",
+        "coingecko_id": "litecoin",
+        "binance_symbol": "LTCUSDT",
         "names": ["litecoin"],
         "tickers": ["ltc"],
     },
     "atom": {
-        "cmc_symbol": "ATOM",
-        "cmc_id": 3794,
+        "symbol": "ATOM",
+        "coingecko_id": "cosmos",
+        "binance_symbol": "ATOMUSDT",
         "names": ["cosmos hub", "cosmos network", "cosmos sdk"],
         "tickers": ["atom"],
         "ambiguous_ticker": True,
     },
     "near": {
-        "cmc_symbol": "NEAR",
-        "cmc_id": 6535,
+        "symbol": "NEAR",
+        "coingecko_id": "near",
+        "binance_symbol": "NEARUSDT",
         "names": ["near protocol"],
         "tickers": ["near"],
         "ambiguous_ticker": True,
@@ -142,7 +154,8 @@ ASSETS = {
 }
 
 # ── RSS Feed Sources ───────────────────────────────────────────────────────────
-# Each source has a url, a display name, and a trust_weight (higher = more trusted)
+# Each source has a url, a display name, and a trust_weight (higher = more trusted).
+# Fetched through collectors/feed_cache.py: once per cache period for all assets, with a real User-Agent.
 
 RSS_FEEDS = [
     {
@@ -177,7 +190,9 @@ RSS_FEEDS = [
     },
     {
         "name": "Bitcoin Magazine",
-        "url": "https://bitcoinmagazine.com/.rss/full/",
+        # The old /.rss/full/ URL answers 403 to every client; /feed works (checked 2026-11-16) but also
+        # rejects the default python-requests User-Agent, which collectors/feed_cache.py replaces.
+        "url": "https://bitcoinmagazine.com/feed",
         "trust_weight": 0.85,
     },
     {
@@ -197,10 +212,16 @@ RSS_FEEDS = [
     },
 ]
 
-# ── CoinMarketCap API ──────────────────────────────────────────────────────────
+# ── Market data (CoinGecko + Binance, both keyless) ───────────────────────────
+# Replaced CoinMarketCap, whose key ran out of credits (429) and whose plan has no trending endpoint (403).
+# One batched CoinGecko /coins/markets call covers every asset; /global and /search/trending are one call each.
 
-CMC_BASE_URL   = "https://pro-api.coinmarketcap.com/v1"
-CMC_TIMEOUT    = 10  # seconds
+COINGECKO_BASE_URL = "https://api.coingecko.com/api/v3"
+BINANCE_KLINES_URL = "https://api.binance.com/api/v3/klines"
+MARKET_HTTP_TIMEOUT = 10  # seconds
+
+# How long a fetched market response is reused across assets and pipeline runs.
+MARKET_CACHE_TTL_SECONDS = 300
 
 # ── NLP Settings ──────────────────────────────────────────────────────────────
 
@@ -224,7 +245,8 @@ RECENCY_HALF_LIFE_HOURS = 12
 MAX_ARTICLE_AGE_HOURS = 72
 
 # ── Aggregation Weights ───────────────────────────────────────────────────────
-# Final score = news_nlp_weight * nlp_score + market_signal_weight * cmc_score
+# Final score = news_nlp_weight * nlp_score + market_signal_weight * market_score.
+# When there is no usable market score the reading is news only, not news blended with a neutral 0.5.
 
 NEWS_NLP_WEIGHT     = 0.70
 MARKET_SIGNAL_WEIGHT = 0.30

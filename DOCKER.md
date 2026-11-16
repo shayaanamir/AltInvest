@@ -31,7 +31,7 @@ AltInvest/
 ## Quick start
 
 ```bash
-cp .env.example .env        # optional, fill in CMC_API_KEY if you have one
+cp .env.example .env        # optional; set GROQ_API_KEY for the NFT sentiment LLM (no key is needed for market data)
 docker compose up --build
 ```
 
@@ -79,7 +79,7 @@ To stop: `docker compose down` (add `-v` to also wipe the volumes: Mongo's data 
 
 4. **Env vars / secrets:** `db/mongo_connection.py` and
    `sentiment_engine/utils/config.py` read `MONGO_URI`, `MONGO_DB_NAME` /
-   `MONGO_DB`, and `CMC_API_KEY` via `os.getenv(...)`. These are set
+   `MONGO_DB` via `os.getenv(...)` (the NFT sentiment also reads `GROQ_API_KEY`). These are set
    directly in `docker-compose.yml`'s `environment:` block for `backend`,
    pointing at the `mongodb` service by its container name — no `.env`
    file inside `backend/` is needed for Docker (that `.env` file is only

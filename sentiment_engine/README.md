@@ -1,13 +1,13 @@
 # AltInvest — Sentiment Engine
 
-The **AltInvest Sentiment Engine** is a high-performance Python application that parses RSS feeds, runs natural language processing (NLP) model ensembles on crypto-related news, collects market metrics from CoinMarketCap (CMC), and calculates a blended sentiment score for alternative assets.
+The **AltInvest Sentiment Engine** is a high-performance Python application that parses RSS feeds, runs natural language processing (NLP) model ensembles on crypto-related news, collects market metrics from CoinGecko and Binance (no API key needed), and calculates a blended sentiment score for alternative assets.
 
 ---
 
 ## Key Features
 
 *   **NLP Ensemble:** Integrates VADER (fast, rules-based) and FinBERT (heavy, financial context-aware) to score news headlines.
-*   **Parallel Collectors:** Concurrent fetching for RSS feeds and CMC market signals to minimize network latency.
+*   **Shared, polite collectors:** every RSS feed is downloaded at most once per 10 minutes for all assets together (conditional requests, a real User-Agent, cool-down after a 429, last good copy served meanwhile: `collectors/feed_cache.py`), and one CoinGecko call covers every asset's market data (`collectors/market_collector.py`).
 *   **Blended Scoring:** Combines news sentiment (NLP) with market dynamics (price, volume, and dominance signals).
 *   **Caching & Resiliency:** Uses a MongoDB cache with a built-in **Circuit Breaker** to prevent performance degradation when the database is unreachable.
 
@@ -123,7 +123,7 @@ Once the backend is up and running on port `8000`, you can hit its endpoints usi
 
 Key settings can be overridden using environment variables or a `.env` file placed in the `sentiment_engine` folder:
 
-*   `CMC_API_KEY`: Your CoinMarketCap Pro API Key.
+*   Market data (CoinGecko, Binance) and the news feeds need no key. (`CMC_API_KEY` is no longer read.)
 *   `MONGO_URI`: Connection string for MongoDB (defaults to `mongodb://localhost:27017`).
 *   `MONGO_DB`: Name of the MongoDB database (defaults to `altinvest`).
 

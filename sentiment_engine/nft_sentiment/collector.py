@@ -20,16 +20,13 @@ from __future__ import annotations
 import calendar
 import re
 import time
-from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Any, Optional
 from urllib.parse import urlencode
 
-import feedparser
-import requests
-
 try:
     from sentiment_engine.nft_sentiment import config as cfg
+    from sentiment_engine.collectors import feed_cache
     from sentiment_engine.collectors.rss_collector import (
         _entry_matches_asset,
         _clean_html,
@@ -39,6 +36,7 @@ try:
     from sentiment_engine.utils.logger import get_logger
 except ImportError:
     from nft_sentiment import config as cfg
+    from collectors import feed_cache
     from collectors.rss_collector import (
         _entry_matches_asset,
         _clean_html,
@@ -90,27 +88,13 @@ def targets_for(slugs=None, include_market: bool = True) -> dict[str, dict]:
 
 # ── Fetching ──────────────────────────────────────────────────────────────────
 
-def _fetch_feed(feed: dict):
-    try:
-        resp = requests.get(
-            feed["url"],
-            headers={"User-Agent": cfg.FEED_USER_AGENT},
-            timeout=cfg.FEED_TIMEOUT_SECONDS,
-        )
-        resp.raise_for_status()
-        return feed, feedparser.parse(resp.content)
-    except Exception as exc:
-        logger.error(f"Failed to fetch {feed['name']} ({feed.get('target', 'broad')}): {exc}")
-        return feed, None
-
-
 def fetch_feeds(feeds: list[dict]) -> list[tuple[dict, Any]]:
-    """Downloads and parses feeds concurrently. Feeds that fail are left out."""
-    if not feeds:
-        return []
-    with ThreadPoolExecutor(max_workers=min(16, len(feeds))) as pool:
-        results = list(pool.map(_fetch_feed, feeds))
-    return [(feed, parsed) for feed, parsed in results if parsed is not None]
+    """
+    The parsed feeds, through the engines' shared cache (collectors/feed_cache.py): the crypto pipeline's 10
+    feeds are usually already fresh from its own cycle, and a feed that is rate-limited or down is served
+    from its last good copy. Feeds with nothing usable are left out.
+    """
+    return feed_cache.get_feeds(feeds)
 
 
 # ── Turning entries into articles ─────────────────────────────────────────────

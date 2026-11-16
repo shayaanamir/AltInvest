@@ -50,15 +50,20 @@ class MarketSignals(BaseModel):
     # Every field is optional: the market-data source can be down or rate-limited, in which
     # case the engine returns none of them (and a neutral result has none to give).
     price_change_24h: Optional[float] = None
+    price_change_7d: Optional[float] = None
     volume_change_24h: Optional[float] = None
     is_trending: Optional[bool] = None
     btc_dominance: Optional[float] = None
 
 
 class DataQuality(BaseModel):
-    # Which inputs fell back to placeholders. Older stored records carry only
-    # degraded / cmc_fallback, so everything is optional.
+    # Which inputs could not be fetched (a missing figure is None, never a placeholder). Records stored
+    # before CoinGecko replaced CoinMarketCap carry cmc_fallback / cmc_key_missing instead of the
+    # market_* fields, so everything is optional.
     degraded: Optional[bool] = None
+    market_source: Optional[str] = None
+    market_unavailable: Optional[bool] = None    # no market data: the score is the news alone
+    volume_fallback: Optional[bool] = None
     cmc_fallback: Optional[bool] = None
     quote_fallback: Optional[bool] = None
     global_fallback: Optional[bool] = None
@@ -80,7 +85,7 @@ class SentimentResponse(BaseModel):
     signal_strength: Optional[str] = None
     trend: Optional[str] = None
     source_count: Optional[int] = None
-    source_breakdown: Optional[Dict[str, float]] = None
+    source_breakdown: Optional[Dict[str, Optional[float]]] = None   # market_signals is None when the score is news only
     sentiment_distribution: Optional[SentimentDistribution] = None
     top_headlines: Optional[List[HeadlineItem]] = None
     market_signals: Optional[MarketSignals] = None

@@ -291,7 +291,7 @@ def _neutral(asset_id: str, error: str = "") -> dict:
         "last_updated":           datetime.now(tz=timezone.utc).isoformat(),
         "article_count":          0,
         "source_count":           0,
-        "source_breakdown":       {"news_nlp": 0.5, "market_signals": 0.5},
+        "source_breakdown":       {"news_nlp": None, "market_signals": None},
         "sentiment_distribution": {"positive": 0, "negative": 0, "neutral": 0},
         "top_headlines":          [],
         "market_signals":         {},

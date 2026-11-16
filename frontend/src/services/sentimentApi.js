@@ -7,6 +7,7 @@ import { watchlistApi } from "./watchlistApi";
 import {
   normaliseNftRecord, nftMoodOverview, nftSourceSplit, nftNarrative, nftMarketSignals,
 } from "../utils/nftSentimentHub";
+import { sourceShare, marketNotice } from "../utils/sentimentMarket";
 
 /*
  * Sentiment screens. Every figure here comes from the API:
@@ -173,7 +174,7 @@ function normaliseRecord(raw) {
     trend: raw.trend ?? "unknown",
     articleCount: raw.article_count ?? raw.post_count ?? 0,
     sourceCount: raw.source_count ?? 0,
-    sourceBreakdown: raw.source_breakdown ?? { news_nlp: 0, market_signals: 0 },
+    sourceBreakdown: raw.source_breakdown ?? {},
     distribution: raw.sentiment_distribution ?? { positive: 0, negative: 0, neutral: 0 },
     topHeadlines: raw.top_headlines ?? [],
     marketSignals: raw.market_signals ?? {},
@@ -269,8 +270,7 @@ function nftDetail(record, meta) {
     articlesBySource: record.articlesBySource,
     marketSignals: { ...signals, volumeChange24h: null, isTrending: null, btcDominance: null },
     dataQuality: {
-      cmcKeyMissing: false,
-      cmcFallback: false,
+      marketNotice: null,
       finbertUnavailable: false,
       llmUnavailable: record.dataQuality.llm_unavailable === true,
       marketFallback: record.dataQuality.market_fallback === true,
@@ -467,10 +467,7 @@ export const sentimentApi = {
           ].filter(Boolean).join(" · "),
         })),
       headlines,
-      sourceBreakdown: {
-        newsPct: Math.round((record.sourceBreakdown.news_nlp ?? 0) * 100),
-        marketPct: Math.round((record.sourceBreakdown.market_signals ?? 0) * 100),
-      },
+      sourceBreakdown: sourceShare(record.sourceBreakdown),
       articlesBySource: record.articlesBySource,
       marketSignals: {
         priceChange24h: record.marketSignals?.price_change_24h ?? m.changePct,
@@ -480,8 +477,7 @@ export const sentimentApi = {
       },
       // Which inputs fell back to placeholders, so the UI can say so instead of passing them off as readings.
       dataQuality: {
-        cmcKeyMissing: !!record.dataQuality.cmc_key_missing,
-        cmcFallback: !!record.dataQuality.cmc_fallback,
+        marketNotice: marketNotice(record.dataQuality),
         finbertUnavailable: !!record.dataQuality.finbert_unavailable,
       },
       lastUpdated: record.lastUpdated,

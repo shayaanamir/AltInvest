@@ -5,9 +5,10 @@ The master aggregator. Orchestrates the full pipeline:
     1. Fetch RSS articles
     2. Score with NLP ensemble
     3. Apply recency weights
-    4. Fetch CMC market signals
+    4. Fetch market signals (CoinGecko + Binance, collectors/market_collector.py)
     5. Compute volume/confidence metrics
-    6. Blend news NLP + CMC into final sentiment score
+    6. Blend news NLP (70%) + market signals (30%) into the final sentiment score; with no usable market
+       signal the score is the news alone, never news blended with a neutral placeholder
     7. Detect trend direction (by comparing to stored history)
     8. Return final structured output
 
@@ -22,7 +23,7 @@ from typing import Optional
 
 try:
     from sentiment_engine.collectors.rss_collector import fetch_articles_for_asset
-    from sentiment_engine.collectors.cmc_collector import fetch_all_signals
+    from sentiment_engine.collectors.market_collector import fetch_market_signals
     from sentiment_engine.nlp.ensemble_scorer import score_articles as ensemble_score
     from sentiment_engine.aggregator.recency_weighter import apply_recency_weights
     from sentiment_engine.aggregator.volume_weighter import compute_volume_metrics
@@ -36,7 +37,7 @@ try:
     from sentiment_engine.utils.logger import get_logger
 except ImportError:
     from collectors.rss_collector import fetch_articles_for_asset
-    from collectors.cmc_collector import fetch_all_signals
+    from collectors.market_collector import fetch_market_signals
     from nlp.ensemble_scorer import score_articles as ensemble_score
     from aggregator.recency_weighter import apply_recency_weights
     from aggregator.volume_weighter import compute_volume_metrics
@@ -216,14 +217,16 @@ def run_pipeline(
     logger.info(f"═══ Running sentiment pipeline for {asset_id.upper()} ═══")
     timestamp = datetime.now(tz=timezone.utc)
 
-    # ── Steps 1 & 4: fetch RSS articles and CMC signals concurrently ──────────
-    # Independent I/O calls — no reason to pay their latency sequentially.
+    # ── Steps 1 & 4: fetch RSS articles and market signals concurrently ───────
+    # Independent I/O calls — no reason to pay their latency sequentially. Both are served from shared
+    # caches (feeds: collectors/feed_cache.py; market: collectors/market_collector.py), so running every
+    # asset costs a handful of requests, not one set per asset.
     with ThreadPoolExecutor(max_workers=2) as executor:
         articles_future = executor.submit(fetch_articles_for_asset, asset_id)
-        cmc_future      = executor.submit(fetch_all_signals, asset_id)
+        market_future   = executor.submit(fetch_market_signals, asset_id)
 
         raw_articles = articles_future.result()
-        cmc_data     = cmc_future.result()
+        market_data  = market_future.result()
 
     if not raw_articles:
         logger.warning(f"No articles found for {asset_id}. Returning neutral output.")
@@ -236,7 +239,7 @@ def run_pipeline(
     # ── Step 3: Recency weighting ─────────────────────────────────────────────
     weighted_articles = apply_recency_weights(scored_articles)
 
-    cmc_score = cmc_data["final_cmc_score"]
+    market_score = market_data["market_score"]      # 0..1, or None when no market data could be fetched
 
     # ── Step 5: Volume / confidence metrics ───────────────────────────────────
     volume_metrics = compute_volume_metrics(scored_articles)
@@ -252,8 +255,13 @@ def run_pipeline(
     raw_nlp_score = _weighted_mean(nlp_scores, nlp_weights)
     nlp_score_01  = _normalise_nlp_to_0_1(raw_nlp_score)
 
-    # ── Step 7: Blend NLP + CMC ───────────────────────────────────────────────
-    final_score_01 = (NEWS_NLP_WEIGHT * nlp_score_01) + (MARKET_SIGNAL_WEIGHT * cmc_score)
+    # ── Step 7: Blend NLP + market ────────────────────────────────────────────
+    # No market signal means news only: blending in a neutral 0.5 would pull every score toward neutral
+    # for a reason that has nothing to do with the market.
+    if market_score is None:
+        final_score_01 = nlp_score_01
+    else:
+        final_score_01 = (NEWS_NLP_WEIGHT * nlp_score_01) + (MARKET_SIGNAL_WEIGHT * market_score)
     final_score = round((final_score_01 * 2.0) - 1.0, 4)
 
     # ── Step 8: Trend detection ───────────────────────────────────────────────
@@ -263,8 +271,9 @@ def run_pipeline(
 
     # ── Assemble output ───────────────────────────────────────────────────────
     source, finbert_unavailable = _scoring_source(scored_articles)
-    quote_fallback  = bool(cmc_data.get("quote", {}).get("is_fallback", False))
-    global_fallback = bool(cmc_data.get("global", {}).get("is_fallback", False))
+    quote_fallback  = bool(market_data["quote_fallback"])
+    global_fallback = bool(market_data["global_fallback"])
+    quote, glob     = market_data["quote"], market_data["global"]
 
     output = {
         # Core contract fields (what Person B needs)
@@ -282,7 +291,7 @@ def run_pipeline(
         "source_count":   volume_metrics["source_count"],
         "source_breakdown": {
             "news_nlp":        round(nlp_score_01, 4),
-            "market_signals":  round(cmc_score, 4),
+            "market_signals":  market_score,        # None: not blended in (news only)
         },
 
         # Volume detail
@@ -295,23 +304,25 @@ def run_pipeline(
         # Top headlines
         "top_headlines": _extract_top_headlines(weighted_articles),
 
-        # CMC detail — fallback values are placeholders, not readings, so they go out as None
+        # Market detail: a figure that could not be fetched is None, never a placeholder zero
         "market_signals": {
-            "price_change_24h":  None if quote_fallback else cmc_data["quote"]["price_change_24h"],
-            "volume_change_24h": None if quote_fallback else cmc_data["quote"]["volume_change_24h"],
-            "is_trending":       cmc_data["is_trending"],
-            "btc_dominance":     None if global_fallback else cmc_data["global"]["btc_dominance"],
+            "price_change_24h":  quote["price_change_24h"],
+            "price_change_7d":   quote["price_change_7d"],
+            "volume_change_24h": quote["volume_change_24h"],
+            "is_trending":       market_data["is_trending"],
+            "btc_dominance":     glob["btc_dominance"],
         },
 
         # Per-source article counts
         "articles_by_source": _source_breakdown(scored_articles),
         "data_quality": {
-            "degraded":          cmc_data.get("degraded", False),
-            "cmc_fallback":      quote_fallback or global_fallback,
+            "degraded":          market_data["degraded"],
+            "market_source":     market_data["source"],
+            "market_unavailable": market_score is None,     # the score is the news alone
             "quote_fallback":    quote_fallback,
             "global_fallback":   global_fallback,
-            "trending_fallback": cmc_data.get("trending_fallback", False),
-            "cmc_key_missing":   cmc_data.get("key_missing", False),
+            "volume_fallback":   market_data["volume_fallback"],
+            "trending_fallback": market_data["trending_fallback"],
             "finbert_unavailable": finbert_unavailable,
         },
     }
@@ -340,10 +351,10 @@ def _neutral_output(asset_id: str, timestamp: datetime) -> dict:
         "last_updated":       timestamp.isoformat(),
         "article_count":      0,
         "source_count":       0,
-        "source_breakdown":   {"news_nlp": 0.5, "market_signals": 0.5},
+        "source_breakdown":   {"news_nlp": None, "market_signals": None},
         "sentiment_distribution": {"positive": 0, "negative": 0, "neutral": 0},
         "top_headlines":      [],
         "market_signals":     {},
         "articles_by_source": {},
-        "data_quality":       {"degraded": True, "cmc_fallback": True, "reason": "no_articles"},
+        "data_quality":       {"degraded": True, "reason": "no_articles"},
     }

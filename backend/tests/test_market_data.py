@@ -167,6 +167,14 @@ def test_nothing_is_deleted_when_every_fetch_fails(monkeypatch):
     assert out["BTC"].startswith("failed") and "removed_fake_rows" not in out and db.prices.deletes == []
 
 
+def test_the_sentiment_engine_and_the_price_controller_agree_on_every_coin():
+    """Both map asset ids to CoinGecko coins and Binance pairs; they must never drift apart."""
+    from sentiment_engine.utils.config import ASSETS
+    for asset_id, cfg in ASSETS.items():
+        cg_id, pair = md.SOURCES[asset_id.upper()]
+        assert (cfg["coingecko_id"], cfg["binance_symbol"]) == (cg_id, pair), asset_id
+
+
 def test_every_mapped_asset_has_a_coingecko_id_and_base_has_none():
     assert all(cg for cg, _ in md.SOURCES.values())
     assert "BASE" not in md.SOURCES                     # a made-up index: no real market exists

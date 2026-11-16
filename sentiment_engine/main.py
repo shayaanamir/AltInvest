@@ -9,7 +9,8 @@ Usage:
     python main.py --asset eth
     python main.py --asset all
     python main.py --asset btc --no-save     (skip MongoDB write)
-    python main.py --asset btc --mock-cmc    (use neutral CMC signals if API key missing)
+
+Market data (CoinGecko, Binance) and the news feeds need no API key.
 """
 
 from __future__ import annotations

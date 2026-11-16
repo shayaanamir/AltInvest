@@ -130,8 +130,7 @@ NFT_RSS_FEEDS = [
     {"name": "NFT Plazas",    "url": "https://nftplazas.com/feed/",          "trust_weight": 0.7},
 ]
 
-FEED_TIMEOUT_SECONDS = 8
-FEED_USER_AGENT = "Mozilla/5.0 (compatible; AltInvestSentiment/1.0)"
+# (Fetching, timeouts and the User-Agent live in collectors/feed_cache.py, shared with the crypto pipeline.)
 SUMMARY_MAX_CHARS = 600
 
 # ── Windows and weights ───────────────────────────────────────────────────────

@@ -43,7 +43,9 @@ export default function WhatWeReadList({ detail, colors }) {
       <hr style={{ border: "none", borderTop: "1px solid var(--sv2-border)", margin: "18px 0" }} />
 
       <div className="sv2-small sv2-muted">
-        Roughly {detail.sourceBreakdown.newsPct}% of this read comes from news / nlp, {detail.sourceBreakdown.marketPct}% from market signals.
+        {detail.sourceBreakdown.marketPct > 0
+          ? `This read is ${detail.sourceBreakdown.newsPct}% news and ${detail.sourceBreakdown.marketPct}% market signals.`
+          : "This read is the news alone: no market data could be fetched for it."}
       </div>
       <div className="sv2-dist-bar" style={{ marginTop: 10 }}>
         <div style={{ width: `${detail.sourceBreakdown.newsPct}%`, background: colors.accent }} />

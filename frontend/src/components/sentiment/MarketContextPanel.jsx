@@ -40,12 +40,7 @@ function NftMarketContext({ detail }) {
 export default function MarketContextPanel({ detail }) {
   if (detail?.category === "nft") return <NftMarketContext detail={detail} />;
   const s = detail?.marketSignals || {};
-  const q = detail?.dataQuality || {};
-  const notice = q.cmcKeyMissing
-    ? "Market data is off: no CoinMarketCap API key is configured, so the market half of this read is a neutral placeholder."
-    : q.cmcFallback
-      ? "CoinMarketCap couldn't be reached for part of this read, so that part is a neutral placeholder. Missing figures are shown as —."
-      : null;
+  const notice = detail?.dataQuality?.marketNotice || null;   // built in sentimentApi from the engine's data-quality flags
   return (
     <div className="sv2-card sv2-card-pad">
       <div className="sv2-card-title">Market context</div>
