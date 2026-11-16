@@ -3,12 +3,14 @@
 // ---- AAI signal (0-100 score -> label/tone) ----
 // Single source of truth. Previously drifted across assetDetailApi.js (75/55/45/25),
 // ScoreShowcase.jsx (duplicate of same), and watchlistApi.js (65/45, 3 tiers only).
+// Audit G-37: the bands are an AAI rating, never trade advice. No direction model is served (ML D33) and every
+// forecast part is the no-change baseline (D35, D94), so the rating reflects sentiment and risk only.
 const AAI_BANDS = [
-  { min: 75, label: "Strong Buy", tone: "positive" },
-  { min: 55, label: "Buy", tone: "positive" },
-  { min: 45, label: "Hold", tone: "neutral" },
-  { min: 25, label: "Sell", tone: "negative" },
-  { min: -Infinity, label: "Strong Sell", tone: "negative" },
+  { min: 75, label: "Very strong", tone: "positive" },
+  { min: 55, label: "Strong", tone: "positive" },
+  { min: 45, label: "Neutral", tone: "neutral" },
+  { min: 25, label: "Weak", tone: "negative" },
+  { min: -Infinity, label: "Very weak", tone: "negative" },
 ];
 
 export function bandByThreshold(value, bands, fallback = null) {
@@ -18,15 +20,22 @@ export function bandByThreshold(value, bands, fallback = null) {
 }
 
 export function getAaiSignal(score) {
-  const band = bandByThreshold(score, AAI_BANDS, { label: "Hold", tone: "neutral" });
+  const band = bandByThreshold(score, AAI_BANDS, { label: "Neutral", tone: "neutral" });
   return { label: band.label, tone: band.tone };
 }
 
-// The BUY/HOLD/SELL badges are the AAI score's band, never the ML model's call. While the ML
-// service says UNCERTAIN (no proven up/down skill, ml/docs D33) they must read as an "AAI rating".
+// The API's `signal` (BUY / HOLD / SELL) is the AAI score's band, kept as a stable value for filters and alerts.
+// It is always shown as a rating (audit G-37), never as Buy/Sell: it is not the ML model's call (the ML service
+// says UNCERTAIN, ml/docs D33) and not a recommendation.
 export const ML_UNCERTAIN = "UNCERTAIN";
 export const isMlUncertain = (mlSignal) => mlSignal === ML_UNCERTAIN;
-export const AAI_BADGE_LABEL = { BUY: "AAI Buy", HOLD: "AAI Hold", SELL: "AAI Sell" };
+export const AAI_RATING_LABEL = { BUY: "Strong", HOLD: "Neutral", SELL: "Weak" };
+export const AAI_BADGE_LABEL = { BUY: "AAI Strong", HOLD: "AAI Neutral", SELL: "AAI Weak" };
+/** The rating word for an API signal value; null without one. */
+export const aaiRatingLabel = (signal) => (signal ? AAI_RATING_LABEL[signal] ?? signal : null);
+/** CSS class suffix (the existing buy/hold/sell colours) for a rating word or a signal value. */
+export const ratingClass = (ratingOrSignal) =>
+  ({ Strong: "buy", Neutral: "hold", Weak: "sell", BUY: "buy", HOLD: "hold", SELL: "sell" })[ratingOrSignal] ?? "hold";
 
 // Coarser tier used for dot/badge coloring across cards
 // (previously: aaiTier in TrendingAssetsSection/TrendingCollectionsSection at 65/45,

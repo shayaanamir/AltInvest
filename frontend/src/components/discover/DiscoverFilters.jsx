@@ -1,5 +1,6 @@
 import { formatCurrencyCompact } from "../../utils/formatters";
 import { activeFilterCount } from "../../services/discoverApi";
+import { AAI_RATING_LABEL } from "../../utils/scoring";
 
 function pct(value, min, max) {
   if (max === min) return 0;
@@ -10,7 +11,7 @@ function sliderFill(p) {
   return { background: `linear-gradient(90deg, var(--sv2-accent) ${p}%, var(--sv2-chip) ${p}%)` };
 }
 
-const SIGNAL_LABELS = { BUY: "Buy", HOLD: "Hold", SELL: "Sell" };
+const SIGNAL_LABELS = AAI_RATING_LABEL;     // shown as a rating, never Buy/Sell (audit G-37)
 
 /**
  * Sliders come from the UI config; sort keys, subcategories and signals come from the backend
@@ -73,7 +74,7 @@ export default function DiscoverFilters({ config, options, category, filters, on
 
       {options?.signals?.length > 0 && (
         <div className="disc-field">
-          <div className="disc-field-label"><span>AAI signal</span></div>
+          <div className="disc-field-label"><span>AAI rating</span></div>
           <div className="disc-chip-row">
             {options.signals.map((s) => (
               <button

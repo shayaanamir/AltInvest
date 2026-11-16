@@ -44,7 +44,7 @@ export default function Step4Assets({ answers, setAnswer }) {
         name: a.name,
         chg: formatPct(a.changePct ?? 0, { withSign: true }),
         pos: (a.changePct ?? 0) >= 0,
-        aiPick: a.signal === "BUY", // the platform's own BUY read
+        aiPick: a.signal === "BUY", // a Strong AAI rating (audit G-37: shown as a rating, not a pick)
         spark: a.sparkline,
     }));
 
@@ -151,7 +151,7 @@ export default function Step4Assets({ answers, setAnswer }) {
                                                 fontSize: 8, fontWeight: 700, padding: "1px 5px", borderRadius: 4,
                                                 background: "color-mix(in srgb, var(--sv2-accent) 20%, transparent)", color: L.blue,
                                                 border: "1px solid color-mix(in srgb, var(--sv2-accent) 30%, transparent)", letterSpacing: "0.03em",
-                                            }}>AI Pick</span>
+                                            }}>Strong AAI</span>
                                         )}
                                     </div>
                                     <div style={{ fontSize: 10, color: L.ink3 }}>{a.name}</div>

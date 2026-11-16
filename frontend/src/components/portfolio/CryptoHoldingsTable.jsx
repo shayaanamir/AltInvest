@@ -40,7 +40,7 @@ export default function CryptoHoldingsTable() {
           <span>Value</span>
           <span>24h Change</span>
           <span>AAI Read</span>
-          <span>AI Suggestion</span>
+          <span>AAI rating</span>
           <span style={{ textAlign: "right" }}>Manage</span>
         </div>
 

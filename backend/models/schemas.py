@@ -516,7 +516,8 @@ class DiscoverItem(BaseModel):
     market_cap: Optional[float] = None
     volume_24h: Optional[float] = None
     aai_score: Optional[float] = None
-    signal: Optional[str] = None             # BUY | HOLD | SELL, derived from aai_score
+    signal: Optional[str] = None             # BUY | HOLD | SELL, derived from aai_score (filter value)
+    rating: Optional[str] = None             # Strong | Neutral | Weak: the words shown for `signal` (audit G-37)
     risk_score: Optional[float] = None
     volatility: Optional[float] = None       # crypto: volatility_index, nft: illiquidity risk
     expected_return: Optional[float] = None  # predicted 30d %, crypto only

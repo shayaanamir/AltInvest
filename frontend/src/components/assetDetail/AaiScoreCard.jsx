@@ -1,14 +1,13 @@
 import { deriveAaiSignal } from "../../services/assetDetailApi";
-import { isMlUncertain } from "../../utils/scoring";
 import { DISCLAIMER_SHORT } from "../layout/Disclaimer";
 
-export default function AaiScoreCard({ aaiPanel, mlSignal }) {
+export default function AaiScoreCard({ aaiPanel }) {
   if (!aaiPanel) return null;
   const { score, confidence, note } = aaiPanel;
   const signal = deriveAaiSignal(score);
   const pct = Math.max(0, Math.min(100, score));
-  // While the ML model has no direction call, the band is the AAI's rating, not a model Buy/Sell.
-  const label = isMlUncertain(mlSignal) ? `AAI rating: ${signal.label}` : signal.label;
+  // Always a rating, never a Buy/Sell call (audit G-37).
+  const label = `AAI rating: ${signal.label}`;
 
   return (
     <div className="sv2-card adt-panel-card">

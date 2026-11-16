@@ -58,7 +58,7 @@ export async function loadPortfolioAnalysis() {
     concentrated: !!withShare[0] && withShare[0].sharePct > CONCENTRATED_ABOVE_PCT,
     strongest: byScore[0] || null,
     weakest: byScore.length > 1 ? byScore[byScore.length - 1] : null,
-    toReduce: withShare.filter((p) => p.action === "Reduce"),
+    weakRated: withShare.filter((p) => p.action === "Weak"),      // AAI rating, not advice (audit G-37)
     unscored: withShare.filter((p) => p.aaiScore == null),
   };
 }

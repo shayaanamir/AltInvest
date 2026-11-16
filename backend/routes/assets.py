@@ -45,7 +45,7 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
     """
     from datetime import date
     from controllers.market_controller import (
-        aai_signal, build_crypto_items, live_sentiment_by_symbol, sentiment_confidence_label, stored_sentiment,
+        aai_rating, aai_signal, build_crypto_items, live_sentiment_by_symbol, sentiment_confidence_label, stored_sentiment,
     )
     from db.queries import (
         get_asset, get_asset_market_data_latest, get_daily_price_series,
@@ -90,6 +90,7 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
         aai_panel = {
             "score": score,
             "signal": aai_signal(score),
+            "rating": aai_rating(score),
             "confidence": aai.get("confidence"),
             "pred_score": aai.get("pred_score"),
             "sentiment_score": aai.get("sentiment_score"),

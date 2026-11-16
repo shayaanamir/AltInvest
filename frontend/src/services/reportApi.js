@@ -40,7 +40,7 @@ export async function buildReportHtml() {
     if (a.largest) highlights.push(`${a.largest.label} is ${a.largest.sharePct.toFixed(0)}% of the portfolio${a.concentrated ? " (heavily concentrated)" : ""}.`);
     if (a.strongest) highlights.push(`Highest AAI score: ${a.strongest.label} (${Math.round(a.strongest.aaiScore)}).`);
     if (a.weakest) highlights.push(`Lowest AAI score: ${a.weakest.label} (${Math.round(a.weakest.aaiScore)}).`);
-    if (a.toReduce.length) highlights.push(`Current signal suggests reducing: ${a.toReduce.map((p) => p.label).join(", ")}.`);
+    if (a.weakRated.length) highlights.push(`Weak AAI rating (not a recommendation): ${a.weakRated.map((p) => p.label).join(", ")}.`);
     if (a.unscored.length) highlights.push(`No stored score for ${a.unscored.map((p) => p.label).join(", ")}.`);
 
     sections.push(`<h2>Your portfolio</h2>
@@ -49,7 +49,7 @@ export async function buildReportHtml() {
       ${a.weightedAai != null ? `Value-weighted AAI score ${Math.round(a.weightedAai)}.` : ""}
       ${a.intel.aggregateRiskScore != null ? `Average risk score ${a.intel.aggregateRiskScore}/100 (higher means lower risk).` : ""}</p>
       ${table(
-        ["Holding", "Value", "Share", "AAI", "Signal"],
+        ["Holding", "Value", "Share", "AAI", "AAI rating"],
         a.positions.map((p) => [p.label, formatCurrencyFull(p.valueUsd), `${p.sharePct.toFixed(1)}%`, p.aaiScore != null ? Math.round(p.aaiScore) : "—", p.action])
       )}
       ${highlights.length ? `<h2>What stands out</h2><ul>${highlights.map((h) => `<li>${esc(h)}</li>`).join("")}</ul>` : ""}`);

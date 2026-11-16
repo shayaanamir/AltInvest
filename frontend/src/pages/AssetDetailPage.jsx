@@ -67,12 +67,12 @@ export default function AssetDetailPage({ onNavigate }) {
 
             {/* AAI Score comes first in this row, per the redesign */}
             <div className="adt-panel-row">
-              <ErrorBoundary variant="section" label="AAI score"><AaiScoreCard aaiPanel={detail.aaiPanel} mlSignal={detail.mlSignal} /></ErrorBoundary>
+              <ErrorBoundary variant="section" label="AAI score"><AaiScoreCard aaiPanel={detail.aaiPanel} /></ErrorBoundary>
               <ErrorBoundary variant="section" label="Risk overview"><RiskOverviewCard riskOverview={detail.riskOverview} /></ErrorBoundary>
               <ErrorBoundary variant="section" label="Sentiment"><SentimentReadCard sentimentSnippet={detail.sentimentSnippet} /></ErrorBoundary>
             </div>
 
-            <AboutAssetCard name={detail.header.name} about={detail.about} aaiScore={detail.aaiPanel?.score} mlSignal={detail.mlSignal} />
+            <AboutAssetCard name={detail.header.name} about={detail.about} aaiScore={detail.aaiPanel?.score} />
 
             {detail.relatedAssets.length > 0 && (
               <ErrorBoundary variant="section" label="Related assets">

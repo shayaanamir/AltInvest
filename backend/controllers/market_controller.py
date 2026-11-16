@@ -25,8 +25,19 @@ from db.queries import (
 )
 
 
+# Audit G-37: the band is an AAI rating, not trade advice. The API keeps `signal` (BUY/HOLD/SELL, the stable value
+# filters and alerts use) and adds `rating` with the words the app shows. No direction model is served (ML D33) and
+# every forecast part is the no-change baseline (D35, D94), so the band reflects sentiment and risk only.
+AAI_RATING = {"BUY": "Strong", "HOLD": "Neutral", "SELL": "Weak"}
+
+
+def aai_rating(score: float | None) -> str | None:
+    """Strong / Neutral / Weak from a 0-100 AAI score: the words shown for aai_signal's band."""
+    return AAI_RATING.get(aai_signal(score))
+
+
 def aai_signal(score: float | None) -> str | None:
-    """BUY / HOLD / SELL from a 0-100 AAI score (same cut-offs as the frontend's scoring.js)."""
+    """BUY / HOLD / SELL from a 0-100 AAI score (same cut-offs as the frontend's scoring.js). Shown as aai_rating."""
     if score is None:
         return None
     if score >= 55:
@@ -112,6 +123,7 @@ def _aai_fields(aai: dict | None, live: dict | None = None) -> dict:
     return {
         "aai_score": score,
         "signal": aai_signal(score),
+        "rating": aai_rating(score),
         "sentiment_score": sent_score,
         "sentiment_confidence": conf,
         "sentiment_confidence_label": sentiment_confidence_label(conf),
