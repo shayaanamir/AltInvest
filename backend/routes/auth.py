@@ -40,11 +40,11 @@ from models.schemas import (
 )
 from auth.security import (
     verify_password, create_access_token, hash_password,
-    create_reset_token, decode_reset_token,
+    create_reset_token, decode_reset_token, password_fingerprint,
     create_verify_token, decode_verify_token,
     decode_access_token, JWT_EXPIRY_HOURS, SESSION_MAX_DAYS, password_problem,
 )
-from auth.dependencies import get_current_user_id, get_current_session, CurrentSession
+from auth.dependencies import get_current_user_id, get_current_session, CurrentSession, is_admin_user
 from auth import rate_limit as rl
 from auth import google_oauth
 from utils.mailer import send_email, smtp_configured
@@ -109,7 +109,7 @@ def login(payload: LoginRequest, request: Request):
     token = _issue_token(user_id, email, request)
 
     return AuthResponse(
-        user=AuthUser(id=user_id, name=user.get("name", ""), email=email),
+        user=AuthUser(id=user_id, name=user.get("name", ""), email=email, is_admin=is_admin_user(user)),
         token=token,
     )
 
@@ -177,6 +177,7 @@ def me(user_id: ObjectId = Depends(get_current_user_id)):
         has_password=bool(user.get("password_hash")),
         google_linked=bool(user.get("google_sub")),
         google_email=user.get("google_email"),
+        is_admin=is_admin_user(user),
     )
 
 
@@ -241,7 +242,7 @@ def forgot_password(payload: ForgotPasswordRequest, request: Request):
         raise db_unavailable(exc)
 
     if user:
-        token = create_reset_token(str(user["_id"]), email)
+        token = create_reset_token(str(user["_id"]), email, user.get("password_hash"))
         reset_link = f"{FRONTEND_BASE_URL}/reset-password?token={token}"
         send_email(
             email,
@@ -262,19 +263,40 @@ def reset_password(payload: ResetPasswordRequest, request: Request):
         raise HTTPException(status_code=422, detail=problem)
     rl.hit(rl.RESET_PER_IP, rl.client_ip(request))
 
+    invalid_link = HTTPException(status_code=400, detail="This reset link is invalid or has expired.")
     token_payload = decode_reset_token(payload.token)
     if not token_payload:
-        raise HTTPException(status_code=400, detail="This reset link is invalid or has expired.")
-
-    user_id = token_payload.get("sub")
+        raise invalid_link
     try:
-        from db.queries import update_user
-        updated = update_user(ObjectId(user_id), {"password_hash": hash_password(payload.new_password)})
+        user_id = ObjectId(token_payload.get("sub"))
+    except Exception:
+        raise invalid_link
+
+    from db.queries import get_user_by_id, replace_password_if_unchanged, delete_all_user_sessions
+    try:
+        user = get_user_by_id(str(user_id))
     except Exception as exc:
         raise db_unavailable(exc)
+    # The token carries a fingerprint of the password it was issued against: once the password has
+    # changed (this link already used, another link used, or a change from Settings), it is dead.
+    current_hash = (user or {}).get("password_hash")
+    if not user or token_payload["pwf"] != password_fingerprint(current_hash):
+        raise invalid_link
 
-    if not updated:
-        raise HTTPException(status_code=404, detail="Account not found.")
+    try:
+        # Conditional on the hash we just checked, so two concurrent uses of one link can't both win.
+        replaced = replace_password_if_unchanged(user_id, current_hash, {
+            "password_hash": hash_password(payload.new_password),
+            "password_changed_at": datetime.now(timezone.utc),
+        })
+        if not replaced:
+            raise invalid_link
+        # Whoever knew the old password (or holds a stolen session) is signed out everywhere.
+        delete_all_user_sessions(user_id)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise db_unavailable(exc)
 
     return {"message": "Password updated. You can now sign in with your new password."}
 
@@ -598,7 +620,7 @@ def google_sign_in(payload: GoogleAuthRequest, request: Request):
     email = user.get("email") or identity.email
     token = _issue_token(user_id, email, request)
     return AuthResponse(
-        user=AuthUser(id=user_id, name=user.get("name", ""), email=email),
+        user=AuthUser(id=user_id, name=user.get("name", ""), email=email, is_admin=is_admin_user(user)),
         token=token,
         created=created,
     )

@@ -1,5 +1,6 @@
 import path_setup  # noqa: F401 — must be first, fixes sys.path before any local imports
 
+import os
 import threading
 import traceback
 
@@ -75,12 +76,21 @@ async def _unexpected_error(request: Request, call_next):
         return JSONResponse(status_code=500, content={"detail": INTERNAL_ERROR_MESSAGE})
 
 
+def _cors_origins() -> list:
+    """FRONTEND_BASE_URL, plus any extra origins in CORS_EXTRA_ORIGINS (comma-separated). Never "*":
+    the API is called with a bearer token, and only the real frontend should be able to read it."""
+    origins = [os.getenv("FRONTEND_BASE_URL") or "http://localhost:5173"]
+    origins += (os.getenv("CORS_EXTRA_ORIGINS") or "").split(",")
+    return sorted({o.strip().rstrip("/") for o in origins if o.strip() and o.strip() != "*"})
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # tighten to ["http://localhost:3000"] once frontend is running
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_cors_origins(),
+    # Auth is a bearer token in the Authorization header, never a cookie.
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
     expose_headers=["X-Total-Count"],   # Discover's paging reads the match count from it
 )
 

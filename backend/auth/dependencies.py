@@ -7,6 +7,7 @@ Authorization header, for use on any USER-scoped route.
 A login token is only honoured while its row in `user_sessions` exists, so deleting
 that row ("log out of other sessions", logout, password change) revokes it at once.
 """
+import os
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -79,6 +80,32 @@ def get_current_session(authorization: Optional[str] = Header(None)) -> CurrentS
 
 def get_current_user_id(session: CurrentSession = Depends(get_current_session)) -> ObjectId:
     return session.user_id
+
+
+def admin_emails() -> set:
+    """ADMIN_EMAILS: comma-separated addresses allowed to run operator actions (forced pipeline
+    refreshes). Empty or unset means nobody."""
+    return {e.strip().lower() for e in (os.getenv("ADMIN_EMAILS") or "").split(",") if e.strip()}
+
+
+def is_admin_user(user: Optional[dict]) -> bool:
+    """An admin is a user whose current, verified email is in ADMIN_EMAILS. Verified, so nobody can
+    claim an admin address by signing up with it before the admin does."""
+    if not user or not user.get("email_verified"):
+        return False
+    return (user.get("email") or "").strip().lower() in admin_emails()
+
+
+def require_admin(session: CurrentSession = Depends(get_current_session)) -> CurrentSession:
+    """401 without a valid session, 403 for a signed-in user who isn't an admin."""
+    from db.queries import get_user_by_id
+    try:
+        user = get_user_by_id(str(session.user_id))
+    except Exception as exc:
+        raise db_unavailable(exc)
+    if not is_admin_user(user):
+        raise HTTPException(status_code=403, detail="Only an administrator can do this.")
+    return session
 
 
 def get_optional_user_id(authorization: Optional[str] = Header(None)) -> Optional[ObjectId]:

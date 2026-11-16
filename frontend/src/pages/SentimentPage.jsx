@@ -3,7 +3,7 @@ import { useTheme } from "../context/ThemeContext";
 import "../styles/sentiment.css";
 import SentimentHub from "../components/sentiment/SentimentHub";
 import AssetSentimentDetail from "../components/sentiment/AssetSentimentDetail";
-import { sentimentApi, notifySentimentUpdated } from "../services/sentimentApi";
+import { sentimentApi, notifySentimentUpdated, canForceSentimentRefresh } from "../services/sentimentApi";
 import { useSentimentPoller } from "../hooks/useSentimentPoller";
 import { ErrorBoundary, useToast } from "../errors";
 import { getApiState, subscribeConnection } from "../errors/connectionStatus";
@@ -94,7 +94,7 @@ export default function SentimentPage() {
           <SentimentHub
             colors={colors}
             onSelectAsset={setSelectedAsset}
-            onRefresh={handleRefresh}
+            onRefresh={canForceSentimentRefresh() ? handleRefresh : undefined}
             refreshing={refreshing}
           />
         )}

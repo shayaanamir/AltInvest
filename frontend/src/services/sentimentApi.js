@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "../config";
+import { getToken, getStoredUser } from "../hooks/useAuth";
 import { ApiError, kindFromStatus } from "../errors/errorCatalog";
 import { reportApiReachable } from "../errors/connectionStatus";
 import { confidenceLabelFromValue, getEvidencePhrase as evidencePhrase, bandByThreshold } from "../utils/scoring";
@@ -70,10 +71,23 @@ async function getJson(path, what = "Request") {
   return res.json();
 }
 
+// Forcing a pipeline run is an admin action on the server (ADMIN_EMAILS); the POSTs carry the session.
+function authHeaders() {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+/** Whether the signed-in user may force pipeline runs (the server checks again). */
+export function canForceSentimentRefresh() {
+  return !!getStoredUser()?.is_admin;
+}
+
 async function postRefresh(assetId) {
   let res;
   try {
-    res = await fetchWithTimeout(`${API_BASE_URL}/sentiment/${assetId}/refresh`, { method: "POST" }, REFRESH_TIMEOUT_MS);
+    res = await fetchWithTimeout(
+      `${API_BASE_URL}/sentiment/${assetId}/refresh`, { method: "POST", headers: authHeaders() }, REFRESH_TIMEOUT_MS
+    );
   } catch (e) {
     throw new ApiError(describeFetchError(e), { kind: e.name === "AbortError" ? "timeout" : "network" });
   }
@@ -83,7 +97,7 @@ async function postRefresh(assetId) {
 async function postJson(path, what) {
   let res;
   try {
-    res = await fetchWithTimeout(`${API_BASE_URL}${path}`, { method: "POST" });
+    res = await fetchWithTimeout(`${API_BASE_URL}${path}`, { method: "POST", headers: authHeaders() });
   } catch (e) {
     throw new ApiError(describeFetchError(e), { kind: e.name === "AbortError" ? "timeout" : "network" });
   }
@@ -506,8 +520,12 @@ export const sentimentApi = {
   /** Throws an ApiError if the refresh itself failed, so the UI can say so instead of re-showing old data. */
   refreshAsset: async (assetId) => {
     // NFT readings are refreshed by the server every 30 minutes (never on request, so a click never costs
-    // an LLM call); refreshing one just re-reads the latest stored reading.
-    if (!(await fetchAllNftRaw()).some((r) => r.slug === assetId)) await postRefresh(assetId);
+    // an LLM call); refreshing one just re-reads the latest stored reading. Crypto readings are also
+    // refreshed by the server (every 15 minutes); only an admin can force a pipeline run, so for
+    // everyone else this re-reads the latest stored reading too.
+    if (canForceSentimentRefresh() && !(await fetchAllNftRaw()).some((r) => r.slug === assetId)) {
+      await postRefresh(assetId);
+    }
     resetCaches();
     return sentimentApi.getAssetDetail(assetId);
   },

@@ -6,13 +6,15 @@ Sends account emails (password reset, email verification) over SMTP when it is c
     SMTP_HOST, SMTP_PORT (default 587), SMTP_USER, SMTP_PASSWORD,
     SMTP_FROM (default SMTP_USER), SMTP_STARTTLS (default "true")
 
-Without SMTP_HOST nothing is sent: the message, including its link, is written to the server log
-instead, so local development still works. Never raises; returns whether the email was sent.
+Without SMTP_HOST nothing is sent. With APP_ENV=dev the message, including its link, is written to
+the server log instead, so local development still works; elsewhere only the subject is logged. Never raises; returns whether the email was sent.
 """
 import os
 import smtplib
 import logging
 from email.message import EmailMessage
+
+from shared.app_env import is_dev
 
 log = logging.getLogger("mailer")
 
@@ -24,7 +26,12 @@ def smtp_configured() -> bool:
 def send_email(to: str, subject: str, body: str) -> bool:
     host = os.getenv("SMTP_HOST")
     if not host:
-        print(f"[mailer] SMTP not configured; email to {to} not sent.\n  Subject: {subject}\n  {body}")
+        # The body holds reset and verification links: print it only on a development machine,
+        # where that is how you click them. Anywhere else the log must not grant account access.
+        if is_dev():
+            print(f"[mailer] SMTP not configured; email to {to} not sent.\n  Subject: {subject}\n  {body}")
+        else:
+            log.warning("[mailer] SMTP not configured; email %r not sent (body withheld outside APP_ENV=dev).", subject)
         return False
 
     user = os.getenv("SMTP_USER")
