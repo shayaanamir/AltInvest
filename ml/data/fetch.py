@@ -28,6 +28,10 @@ from ml.data.loader import COLUMNS, fetch_meta_path, raw_csv_path
 KLINES_URL = "https://api.binance.com/api/v3/klines"
 KLINES_MIRROR_URL = "https://data-api.binance.vision/api/v3/klines"     # D95: network-error fallback only
 KLINES_URLS = (KLINES_URL, KLINES_MIRROR_URL)
+# (connect, read) seconds. The main host gets a 5 s connect timeout: when it is unreachable from Docker the
+# connection hangs, and a 30 s wait per page made each fallback to the mirror cost about a minute (D95).
+MAIN_HOST_TIMEOUT = (5, 30)
+TIMEOUT = 30
 INTERVAL = "1d"
 LIMIT = 1000
 MAX_ATTEMPTS = 5
@@ -46,7 +50,7 @@ def _request(session: requests.Session, params: dict, urls=KLINES_URLS) -> tuple
         raise ValueError("no klines URL given")
     for i, url in enumerate(urls):
         try:
-            return session.get(url, params=params, timeout=30), url
+            return session.get(url, params=params, timeout=MAIN_HOST_TIMEOUT if url == KLINES_URL else TIMEOUT), url
         except requests.RequestException as exc:
             if i == len(urls) - 1:
                 raise
