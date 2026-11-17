@@ -1,7 +1,8 @@
 """
 routes/search.py
 
-Cross-collection text search (assets, nft_collections, market_insights).
+Cross-collection text search (assets, nft_collections, market_insights). Assets carry their latest price and
+collections their latest floor, each with price_as_of / price_delayed (audit N-05).
 Search itself is public (the search bar shouldn't require login) and doesn't record anything:
 the top bar searches as you type, so a search is only saved to history (POST /search/history)
 when the user actually picks a result.
@@ -18,7 +19,11 @@ from utils.http_errors import db_unavailable
 
 from models.schemas import SearchResults
 from auth.dependencies import get_current_user_id
-from db.queries import search_all, log_search, get_search_history, clear_search_history
+from db.queries import (
+    search_all, log_search, get_search_history, clear_search_history,
+    get_asset_market_data_all_latest, get_nft_market_data_all_latest,
+)
+from utils.price_freshness import floor_freshness, price_freshness
 from utils.serialization import serialize_dates
 
 router = APIRouter(tags=["Search"])
@@ -36,8 +41,17 @@ def search(
 
     try:
         results = search_all(q.strip(), limit=limit)
+        coins = {m["asset_id"]: m for m in get_asset_market_data_all_latest()} if results["assets"] else {}
+        floors = {m["slug"]: m for m in get_nft_market_data_all_latest()} if results["nft_collections"] else {}
     except Exception as exc:
         raise db_unavailable(exc)
+    for row in results["assets"]:
+        m = coins.get(row.get("asset_id")) or {}
+        row.update(price=m.get("price"), change_24h=m.get("change_24h"), **price_freshness(m))
+    for row in results["nft_collections"]:
+        m = floors.get(row.get("slug")) or {}
+        row.update(floor_usd=m.get("floor_usd"), floor_eth=m.get("floor_eth"), change_24h=m.get("change_24h"),
+                   **floor_freshness(m))
     for row in results["insights"]:
         row.pop("score", None)
         if hasattr(row.get("published_at"), "strftime"):

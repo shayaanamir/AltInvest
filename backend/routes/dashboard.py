@@ -30,6 +30,8 @@ from db.queries import (
 )
 from db.mongo_connection import get_db
 
+from utils.price_freshness import floor_freshness, price_freshness
+
 router = APIRouter(tags=["Dashboard"])
 
 _FILTER_DAYS = {"1D": 1, "1W": 7, "1M": 30, "3M": 90, "1Y": 365}
@@ -189,6 +191,7 @@ def get_dashboard_trending(
             "name": asset.get("name", asset_id),
             "logo_color": asset.get("logo_color"),
             "price": m.get("price"),
+            **price_freshness(m),            # price_as_of, price_delayed (audit N-05)
             "change_24h": m.get("change_24h"),
             "aai_score": score,
             "signal": aai_signal(score),
@@ -232,6 +235,7 @@ def get_dashboard_trending_collections(limit: int = Query(4, ge=1, le=20)):
             "banner_color": c.get("banner_color"),
             "floor_eth": m.get("floor_eth"),
             "floor_usd": m.get("floor_usd"),
+            **floor_freshness(m),            # price_as_of, price_delayed for the floor (audit N-05)
             "change_24h": m.get("change_24h"),
             "volume_24h_eth": m.get("volume_24h_eth"),
             "aai_score": aai.get("aai_score"),

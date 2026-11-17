@@ -18,6 +18,8 @@ function mapBackendItem(item, universeById) {
     subcategory: match?.subcategory || (isNft ? "NFT" : "Crypto"),
     color: match?.color || "var(--sv2-accent)",
     price: item.price ?? match?.price ?? null,
+    priceAsOf: item.price_as_of ?? match?.priceAsOf ?? null,      // audit N-05
+    priceDelayed: (item.price_delayed ?? match?.priceDelayed) === true,
     changePct: item.change_24h ?? match?.changePct ?? 0,
     aaiScore: item.aai_score ?? match?.aaiScore ?? null,
     signal: match?.signal ?? null,

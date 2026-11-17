@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useAsync } from "../../hooks/useAsync";
 import { dashboardApi } from "../../services/dashboardApi";
 import { formatAssetPrice, formatPct } from "../../utils/formatters";
+import DelayedBadge from "../shared/DelayedBadge";
 import { getAaiTierClass } from "../../utils/scoring";
 import Sparkline from "../charts/Sparkline";
 import AssetAvatar from "../shared/AssetAvatar";
@@ -59,7 +60,7 @@ export default function TrendingAssetsSection() {
                 <div className="dv2-asset-price-row">
                   <div>
                     <div className="dv2-asset-price">{formatAssetPrice(a.price)}</div>
-                    <div className="dv2-asset-price-label">last price</div>
+                    <div className="dv2-asset-price-label">last price <DelayedBadge delayed={a.priceDelayed} asOf={a.priceAsOf} /></div>
                   </div>
                   <span className={`dv2-asset-change ${positive ? "positive" : "negative"}`}>
                     {positive ? "↗" : "↘"} {formatPct(a.change24h, { withSign: true })}

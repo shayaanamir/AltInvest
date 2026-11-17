@@ -71,6 +71,8 @@ export const dashboardApi = {
       name: r.name,
       logoColor: r.logo_color,
       price: r.price,
+      priceAsOf: r.price_as_of ?? null,         // audit N-05
+      priceDelayed: r.price_delayed === true,
       change24h: r.change_24h,
       sparkline: r.sparkline,
       watching: !!r.watching,
@@ -88,6 +90,8 @@ export const dashboardApi = {
       bannerColor: r.banner_color,
       floorEth: r.floor_eth,
       floorUsd: r.floor_usd,
+      priceAsOf: r.price_as_of ?? null,         // the floor's as-of (audit N-05)
+      priceDelayed: r.price_delayed === true,
       change24h: r.change_24h,
       volume24hEth: r.volume_24h_eth ?? null,
       aai: { score: r.aai_score },

@@ -34,6 +34,7 @@ from db.queries import (
     get_nft_floor_history,
 )
 from utils.ml_rows import as_utc, iso, with_stale_note
+from utils.price_freshness import floor_freshness
 
 router = APIRouter(tags=["NFT"])
 
@@ -71,6 +72,7 @@ def list_nft_collections(
             **c,
             "floor_eth": m.get("floor_eth"),
             "floor_usd": m.get("floor_usd"),
+            **floor_freshness(m),            # price_as_of, price_delayed for the floor (audit N-05)
             "change_24h": m.get("change_24h"),
             "change_7d": m.get("change_7d"),
             "volume_24h_eth": m.get("volume_24h_eth"),
@@ -94,7 +96,8 @@ def get_nft_collection_detail(slug: str):
     if not collection:
         raise HTTPException(status_code=404, detail=f"NFT collection '{slug}' not found.")
 
-    market = _serialize_ts(get_nft_market_data_latest(slug))
+    raw_market = get_nft_market_data_latest(slug)
+    market = _serialize_ts(raw_market)
     holder_stats = _serialize_ts(get_nft_holder_stats(slug))
     liquidity = _serialize_ts(get_nft_liquidity(slug))
     risk_breakdown = _serialize_ts(get_nft_risk_breakdown(slug))
@@ -111,6 +114,7 @@ def get_nft_collection_detail(slug: str):
     return {
         **collection,
         "market": market,
+        **floor_freshness(raw_market),       # price_as_of, price_delayed for the floor (audit N-05)
         "holder_stats": holder_stats,
         "liquidity": liquidity,
         "risk_breakdown": risk_breakdown,

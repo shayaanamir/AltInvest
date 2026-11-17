@@ -66,6 +66,8 @@ export const nftApi = {
       bannerColor: d.banner_color,
       floorEth: m.floor_eth ?? null,
       floorUsd: m.floor_usd ?? null,
+      priceAsOf: d.price_as_of ?? null,         // the floor's as-of (audit N-05)
+      priceDelayed: d.price_delayed === true,
       change24h: m.change_24h ?? null,
       change7d: m.change_7d ?? null,
       floorDate: m.date ?? null,

@@ -6,6 +6,7 @@ import { nftApi } from "../services/nftApi";
 import { formatAssetPrice, formatPct } from "../utils/formatters";
 import { NFT_RISK_RELATIVE_NOTE } from "../utils/nftCone";
 import NftFloorCard from "../components/nft/NftFloorCard";
+import DelayedBadge from "../components/shared/DelayedBadge";
 import NftItemCard from "../components/nft/NftItemCard";
 import NftSentimentCard from "../components/nft/NftSentimentCard";
 import { IconArrowLeft } from "../components/icons";
@@ -123,6 +124,7 @@ export default function NftCollectionPage() {
                       {typeof c.change24h === "number" && (
                         <span className={`adt-change ${c.change24h >= 0 ? "positive" : "negative"}`}>{formatPct(c.change24h, { withSign: true })} 24h</span>
                       )}
+                      <DelayedBadge delayed={c.priceDelayed} asOf={c.priceAsOf} floor />
                     </div>
                     <div className="sv2-mute2 sv2-tiny">
                       Floor price {c.floorDate ? `at 00:00 UTC, ${c.floorDate}` : ""} · {num(c.supply)} items
