@@ -1,25 +1,38 @@
 import { lazy } from "react";
 
-// Each page is its own chunk, loaded when its route is first opened (App.jsx shows a fallback meanwhile).
-const DashboardPage = lazy(() => import("./pages/DashboardPage"));
-const PortfolioPage = lazy(() => import("./pages/PortfolioPage"));
-const AssetDetailPage = lazy(() => import("./pages/AssetDetailPage"));
-const NftCollectionPage = lazy(() => import("./pages/NftCollectionPage"));
-const SentimentPage = lazy(() => import("./pages/SentimentPage"));
-const DiscoverPage = lazy(() => import("./pages/DiscoverPage"));
-const WatchlistsPage = lazy(() => import("./pages/WatchlistsPage"));
-const LandingPage = lazy(() => import("./pages/LandingPage"));
-const LoginPage = lazy(() => import("./pages/LoginPage"));
-const SignupPage = lazy(() => import("./pages/SignupPage"));
-const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
-const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
-const VerifyEmailPage = lazy(() => import("./pages/VerifyEmailPage"));
-const OnboardingPage = lazy(() => import("./pages/OnboardingPage"));
-const ComparePage = lazy(() => import("./pages/ComparePage"));
-const AlertsPage = lazy(() => import("./pages/AlertsPage"));
-const SettingsPage = lazy(() => import("./pages/SettingsPage"));
-const ProfilePage = lazy(() => import("./pages/ProfilePage"));
-const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
+// Each page is its own chunk, loaded when its route is first opened (App.jsx shows a spinner meanwhile).
+// Every page also registers its loader here, so prefetchPages() can fetch them all once the app is idle and
+// moving between pages is then instant.
+const PAGE_LOADERS = [];
+const page = (loader) => {
+  PAGE_LOADERS.push(loader);
+  return lazy(loader);
+};
+let prefetched = false;
+export function prefetchPages() {
+  if (prefetched) return;
+  prefetched = true;
+  PAGE_LOADERS.forEach((load) => load().catch(() => { prefetched = false; }));
+}
+const DashboardPage = page(() => import("./pages/DashboardPage"));
+const PortfolioPage = page(() => import("./pages/PortfolioPage"));
+const AssetDetailPage = page(() => import("./pages/AssetDetailPage"));
+const NftCollectionPage = page(() => import("./pages/NftCollectionPage"));
+const SentimentPage = page(() => import("./pages/SentimentPage"));
+const DiscoverPage = page(() => import("./pages/DiscoverPage"));
+const WatchlistsPage = page(() => import("./pages/WatchlistsPage"));
+const LandingPage = page(() => import("./pages/LandingPage"));
+const LoginPage = page(() => import("./pages/LoginPage"));
+const SignupPage = page(() => import("./pages/SignupPage"));
+const ForgotPasswordPage = page(() => import("./pages/ForgotPasswordPage"));
+const ResetPasswordPage = page(() => import("./pages/ResetPasswordPage"));
+const VerifyEmailPage = page(() => import("./pages/VerifyEmailPage"));
+const OnboardingPage = page(() => import("./pages/OnboardingPage"));
+const ComparePage = page(() => import("./pages/ComparePage"));
+const AlertsPage = page(() => import("./pages/AlertsPage"));
+const SettingsPage = page(() => import("./pages/SettingsPage"));
+const ProfilePage = page(() => import("./pages/ProfilePage"));
+const NotificationsPage = page(() => import("./pages/NotificationsPage"));
 
 export const ROUTES = [
   { key: "Landing", path: "/", element: LandingPage, bare: true, inNav: false },

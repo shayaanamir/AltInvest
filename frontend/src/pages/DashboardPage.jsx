@@ -9,6 +9,7 @@ import MarketInsightsCard from "../components/dashboard/MarketInsightsCard";
 import TrendingAssetsSection from "../components/dashboard/TrendingAssetsSection";
 import TrendingCollectionsSection from "../components/dashboard/TrendingCollectionsSection";
 import { ErrorBoundary } from "../errors";
+import PageLoader from "../components/shared/PageLoader";
 import { useAppPreferences } from "../services/appPreferences";
 import { getFocus, rowKind } from "../utils/homeFocus";
 
@@ -62,7 +63,7 @@ export default function DashboardPage() {
             </p>
           </>
         ) : (
-          <div className="sv2-muted sv2-small">Loading your dashboard…</div>
+          <PageLoader label="Loading your dashboard" />
         )}
       </div>
     </div>
