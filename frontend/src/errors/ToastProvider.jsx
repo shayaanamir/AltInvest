@@ -1,9 +1,9 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { describeError } from "./errorCatalog";
 import { onReportedError } from "./errorBus";
+import { ToastContext } from "./toastContext";
 import "./errors.css";
 
-const ToastContext = createContext(null);
 const AUTO_DISMISS_MS = 7000;
 const DEDUPE_MS = 3000;
 const MAX_VISIBLE = 4;
@@ -73,10 +73,4 @@ export function ToastProvider({ children }) {
       </div>
     </ToastContext.Provider>
   );
-}
-
-export function useToast() {
-  const ctx = useContext(ToastContext);
-  if (!ctx) throw new Error("useToast must be used inside <ToastProvider>");
-  return ctx;
 }

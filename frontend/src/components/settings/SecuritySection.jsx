@@ -31,14 +31,12 @@ export default function SecuritySection({ data }) {
     return () => { live = false; };
   }, []);
 
-  const loadSessions = useCallback(async () => {
-    setSessionsError(null);
-    try {
-      setSessions(await authApi.listSessions());
-    } catch (err) {
-      setSessionsError(describeError(err).message);
-    }
-  }, []);
+  const loadSessions = useCallback(
+    () => authApi.listSessions()
+      .then((list) => { setSessions(list); setSessionsError(null); })
+      .catch((err) => setSessionsError(describeError(err).message)),
+    [],
+  );
 
   useEffect(() => { loadSessions(); }, [loadSessions]);
 

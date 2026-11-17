@@ -1,9 +1,10 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
+import { useElementSize } from "../../hooks/useElementSize";
 import { CMP_PALETTE } from "./chartPalette";
 
 export default function CompareRiskReturnChart({ assets }) {
   const [hoveredIdx, setHoveredIdx] = useState(null);
-  const containerRef = useRef(null);
+  const [containerRef, size] = useElementSize();
 
   const W = 640;
   const H = 260;
@@ -107,8 +108,8 @@ export default function CompareRiskReturnChart({ assets }) {
           <div
             style={{
               position: "absolute",
-              left: Math.min(Math.max((activeX / W) * (containerRef.current?.clientWidth || W) - 70, 10), (containerRef.current?.clientWidth || W) - 150),
-              top: Math.max(10, (activeY / H) * (containerRef.current?.clientHeight || H) - 56),
+              left: Math.min(Math.max((activeX / W) * (size.width || W) - 70, 10), (size.width || W) - 150),
+              top: Math.max(10, (activeY / H) * (size.height || H) - 56),
               background: "var(--sv2-card)",
               border: "1px solid var(--sv2-border)",
               borderRadius: 8,

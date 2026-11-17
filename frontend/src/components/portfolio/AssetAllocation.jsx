@@ -13,16 +13,19 @@ const CATEGORY_COLOR_VAR = {
 function DonutChart({ data, track }) {
   const cx = 80, cy = 80, r = 60, stroke = 22;
   const circumference = 2 * Math.PI * r;
-  let offset = 0;
+  const segments = data.reduce((acc, seg) => {
+    const dash = (seg.pct / 100) * circumference;
+    acc.list.push({ ...seg, dash, segOffset: acc.used });
+    acc.used += dash;
+    return acc;
+  }, { list: [], used: 0 }).list;
 
   return (
     <svg width="160" height="160" viewBox="0 0 160 160">
       <circle cx={cx} cy={cy} r={r} fill="none" stroke={track} strokeWidth={stroke} />
-      {data.map((seg) => {
-        const dash = (seg.pct / 100) * circumference;
+      {segments.map((seg) => {
+        const { dash, segOffset } = seg;
         const gap = circumference - dash;
-        const segOffset = offset;
-        offset += dash;
         const color = CATEGORY_COLOR_VAR[seg.label] || "var(--sv2-accent)";
         return (
           <circle

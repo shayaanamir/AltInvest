@@ -1,22 +1,25 @@
-import DashboardPage from "./pages/DashboardPage";
-import PortfolioPage from "./pages/PortfolioPage";
-import AssetDetailPage from "./pages/AssetDetailPage";
-import NftCollectionPage from "./pages/NftCollectionPage";
-import SentimentPage from "./pages/SentimentPage";
-import DiscoverPage from "./pages/DiscoverPage";
-import WatchlistsPage from "./pages/WatchlistsPage";
-import LandingPage from "./pages/LandingPage";
-import LoginPage from "./pages/LoginPage";
-import SignupPage from "./pages/SignupPage";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
-import VerifyEmailPage from "./pages/VerifyEmailPage";
-import OnboardingPage from "./pages/OnboardingPage";
-import ComparePage from "./pages/ComparePage";
-import AlertsPage from "./pages/AlertsPage";
-import SettingsPage from "./pages/SettingsPage";
-import ProfilePage from "./pages/ProfilePage";
-import NotificationsPage from "./pages/NotificationsPage";
+import { lazy } from "react";
+
+// Each page is its own chunk, loaded when its route is first opened (App.jsx shows a fallback meanwhile).
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const PortfolioPage = lazy(() => import("./pages/PortfolioPage"));
+const AssetDetailPage = lazy(() => import("./pages/AssetDetailPage"));
+const NftCollectionPage = lazy(() => import("./pages/NftCollectionPage"));
+const SentimentPage = lazy(() => import("./pages/SentimentPage"));
+const DiscoverPage = lazy(() => import("./pages/DiscoverPage"));
+const WatchlistsPage = lazy(() => import("./pages/WatchlistsPage"));
+const LandingPage = lazy(() => import("./pages/LandingPage"));
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const SignupPage = lazy(() => import("./pages/SignupPage"));
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
+const VerifyEmailPage = lazy(() => import("./pages/VerifyEmailPage"));
+const OnboardingPage = lazy(() => import("./pages/OnboardingPage"));
+const ComparePage = lazy(() => import("./pages/ComparePage"));
+const AlertsPage = lazy(() => import("./pages/AlertsPage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
 
 export const ROUTES = [
   { key: "Landing", path: "/", element: LandingPage, bare: true, inNav: false },

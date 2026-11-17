@@ -25,9 +25,7 @@ export default function DiscoverPage() {
   const [showFilters, setShowFilters] = useState(true);
   const [filters, setFilters] = useState(defaultFilters);
   const [options, setOptions] = useState(null); // sort keys + subcategories/signals from the backend
-  const [result, setResult] = useState({ items: [], total: 0 });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [fetched, setFetched] = useState({ key: null, result: { items: [], total: 0 }, error: null });
   const [reloadTick, setReloadTick] = useState(0);
   const [compareIds, setCompareIds] = useState([]);
 
@@ -65,16 +63,19 @@ export default function DiscoverPage() {
     };
   }, [category]);
 
+  // The newest answer, tagged with the request it belongs to. Loading is "no answer for this request yet".
+  const requestKey = `${category}|${JSON.stringify(filters)}|${urlQuery}|${page}|${reloadTick}`;
+  const loading = fetched.key !== requestKey;
+  const result = fetched.result;
+  const error = fetched.key === requestKey ? fetched.error : null;
+
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setError(null);
     discoverApi.getPage(category, filters, { q: urlQuery, offset: page * PAGE_SIZE, limit: PAGE_SIZE })
-      .then((res) => !cancelled && setResult(res))
-      .catch((e) => { if (!cancelled) { setResult({ items: [], total: 0 }); setError(e); } })
-      .finally(() => { if (!cancelled) setLoading(false); });
+      .then((res) => !cancelled && setFetched({ key: requestKey, result: res, error: null }))
+      .catch((e) => { if (!cancelled) setFetched({ key: requestKey, result: { items: [], total: 0 }, error: e }); });
     return () => { cancelled = true; };
-  }, [category, filters, urlQuery, page, reloadTick]);
+  }, [category, filters, urlQuery, page, requestKey]);
 
   // Any change to what's being asked for starts again at page 1.
   const changeFilters = (next) => {

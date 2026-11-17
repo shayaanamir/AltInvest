@@ -13,6 +13,7 @@
 export { default as ErrorState } from "./ErrorState";
 export { default as ErrorBoundary } from "./ErrorBoundary";
 export { default as ConnectionBanner } from "./ConnectionBanner";
-export { ToastProvider, useToast } from "./ToastProvider";
+export { ToastProvider } from "./ToastProvider";
+export { useToast } from "./toastContext";
 export { describeError, ApiError } from "./errorCatalog";
 export { reportError } from "./errorBus";

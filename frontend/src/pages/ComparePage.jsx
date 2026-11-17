@@ -22,34 +22,35 @@ export default function ComparePage() {
     if (paramIds) return paramIds.split(",").filter(Boolean);
     return [];
   });
-  const [assets, setAssets] = useState([]);
   const [reloadTick, setReloadTick] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+
+  // When the link or router state names two or more assets, that becomes the selection. This is
+  // picked up while rendering (a change of the ids, not of every render), not in an effect.
+  const stateIds = location.state?.ids;
+  const paramIds = searchParams.get("ids");
+  const targetIds = stateIds || (paramIds ? paramIds.split(",").filter(Boolean) : null);
+  const targetKey = targetIds && targetIds.length >= 2 ? targetIds.join(",") : null;
+  const [syncedKey, setSyncedKey] = useState(targetKey); // the first selection above already came from the same place
+  if (targetKey !== syncedKey) {
+    setSyncedKey(targetKey);
+    if (targetKey) setSelectedIds(targetIds);
+  }
+
+  // The newest answer, tagged with the request it belongs to. Loading is "no answer for this request yet".
+  const [fetched, setFetched] = useState({ key: null, assets: [], error: null });
+  const requestKey = `${selectedIds.join(",")}|${reloadTick}`;
+  const loading = selectedIds.length > 0 && fetched.key !== requestKey;
+  const assets = selectedIds.length === 0 ? [] : fetched.assets;
+  const error = fetched.key === requestKey ? fetched.error : null;
 
   useEffect(() => {
-    const stateIds = location.state?.ids;
-    const paramIds = searchParams.get("ids");
-    const targetIds = stateIds || (paramIds ? paramIds.split(",").filter(Boolean) : null);
-    if (targetIds && targetIds.length >= 2) {
-      setSelectedIds(targetIds);
-    }
-  }, [location.state, searchParams]);
-
-  useEffect(() => {
-    if (selectedIds.length === 0) {
-      setAssets([]);
-      return;
-    }
+    if (selectedIds.length === 0) return undefined;
     let cancelled = false;
-    setLoading(true);
-    setError(null);
     compareApi.getByIds(selectedIds)
-      .then((a) => { if (!cancelled) setAssets(a); })
-      .catch((e) => { if (!cancelled) { console.error(e); setAssets([]); setError(e); } })
-      .finally(() => { if (!cancelled) setLoading(false); });
+      .then((a) => { if (!cancelled) setFetched({ key: requestKey, assets: a, error: null }); })
+      .catch((e) => { if (!cancelled) { console.error(e); setFetched({ key: requestKey, assets: [], error: e }); } });
     return () => { cancelled = true; };
-  }, [selectedIds, reloadTick]);
+  }, [selectedIds, requestKey]);
 
   const handleConfirm = (ids) => {
     setSelectedIds(ids);

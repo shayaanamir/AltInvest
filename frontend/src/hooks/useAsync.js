@@ -20,14 +20,15 @@ export function useAsync(asyncFn, deps = [], { subscribe } = {}) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // The newest fetch function, kept in a ref so `run` doesn't change on every render. It is updated in
+  // an effect (not while rendering), and declared before the effect that starts the fetch.
   const fnRef = useRef(asyncFn);
-  fnRef.current = asyncFn;
+  useEffect(() => { fnRef.current = asyncFn; });
 
-  const requestsRef = useRef(null);
-  if (requestsRef.current === null) requestsRef.current = createLatestRequest();
+  const [requests] = useState(createLatestRequest);
 
+  // The caller's `deps` decide when to fetch again, so they are passed on as they are (see the lint note below).
   const run = useCallback((silent = false) => {
-    const requests = requestsRef.current;
     // A newer request supersedes one still in flight. A silent one that supersedes a pending normal
     // load is promoted to a normal one, so loading still ends (utils/latestRequest.js, audit G-24).
     const req = requests.start(silent);
@@ -51,8 +52,9 @@ export function useAsync(asyncFn, deps = [], { subscribe } = {}) {
         }
       });
     return () => requests.cancel(req);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
+    // The dependency list is the caller's, not a literal, on purpose: that is this hook's whole API.
+    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/use-memo
+  }, [requests, ...deps]);
 
   useEffect(() => run(), [run]);
 

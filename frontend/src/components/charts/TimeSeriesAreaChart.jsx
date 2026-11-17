@@ -1,29 +1,7 @@
-import { useMemo, useState, useRef } from "react";
+import { useMemo, useState } from "react";
+import { useElementSize } from "../../hooks/useElementSize";
 import { formatCurrencyAxis, formatAssetPrice } from "../../utils/formatters";
-
-export function buildSeriesPaths(data, width, height, { padLeft = 0, padRight = 0, padTop = 0, padBottom = 0 } = {}) {
-  if (!data || data.length < 2) return null;
-  const vals = data.map((d) => (typeof d === "number" ? d : d.value));
-  const minV = Math.min(...vals) * 0.98;
-  const maxV = Math.max(...vals) * 1.02;
-  const range = Math.max(1, maxV - minV);
-
-  const plotW = width - padLeft - padRight;
-  const plotH = height - padTop - padBottom;
-
-  const pts = data.map((d, i) => {
-    const v = typeof d === "number" ? d : d.value;
-    return {
-      x: padLeft + (i / (data.length - 1)) * plotW,
-      y: height - padBottom - ((v - minV) / range) * plotH,
-    };
-  });
-  const last = pts[pts.length - 1];
-  const linePath = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
-  const areaPath = `${linePath} L ${last.x.toFixed(1)} ${height - padBottom} L ${pts[0].x.toFixed(1)} ${height - padBottom} Z`;
-
-  return { pts, last, linePath, areaPath, minV, maxV, range };
-}
+import { buildSeriesPaths } from "../../utils/seriesPaths";
 
 function defaultXFormatter(dateStr) {
   if (!dateStr) return "";
@@ -54,7 +32,7 @@ export default function TimeSeriesAreaChart({
   gradientId = "tsa-grad",
 }) {
   const [hoverIdx, setHoverIdx] = useState(null);
-  const containerRef = useRef(null);
+  const [containerRef, size] = useElementSize();
 
   const chart = useMemo(() => {
     const res = buildSeriesPaths(data, width, height, { padLeft, padRight, padTop, padBottom });
@@ -218,8 +196,8 @@ export default function TimeSeriesAreaChart({
         <div
           style={{
             position: "absolute",
-            left: Math.min(Math.max(activePt.x * (containerRef.current ? containerRef.current.clientWidth / width : 1) - 60, 10), (containerRef.current?.clientWidth || width) - 130),
-            top: Math.max(10, activePt.y * (containerRef.current ? containerRef.current.clientHeight / height : 1) - 52),
+            left: Math.min(Math.max(activePt.x * (size.width ? size.width / width : 1) - 60, 10), (size.width || width) - 130),
+            top: Math.max(10, activePt.y * (size.height ? size.height / height : 1) - 52),
             background: "var(--sv2-card)",
             border: "1px solid var(--sv2-border)",
             borderRadius: 8,
