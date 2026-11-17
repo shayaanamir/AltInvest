@@ -160,9 +160,13 @@ def test_scheduler_runs_its_job_only_when_it_wins_the_claim(monkeypatch, index, 
     monkeypatch.setattr(gate, "claim_run", fake_claim)
     monkeypatch.setattr(module, job_attr, job)
     monkeypatch.setattr(time, "sleep", fake_sleep)
+    import controllers.risk_breakdown_controller as rb
+    monkeypatch.setattr(rb, "refresh_risk_breakdowns", lambda: {"rows": [], "not_available": {}})
     with pytest.raises(_Stop):
         loop()
-    assert [c[0] for c in claims] == [name]
+    # D96: after a pull it runs, the ML pull loop also claims the risk breakdown (its own job, own claim).
+    follow_up = ["risk-breakdown"] if name == "ml-pull" and claimed else []
+    assert [c[0] for c in claims] == [name] + follow_up
     assert claims[0][1] > 0
     assert runs == ([1] if claimed else [])
 

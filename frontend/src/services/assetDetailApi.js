@@ -76,6 +76,7 @@ export const assetDetailApi = {
       mlSignal: d.ml_signal ?? null,
       mlNote: d.ml_note ?? null,
       riskOverview: d.risk_overview,
+      riskCovered: d.risk_covered !== false,          // DAI, BASE: "Not covered" (D94, D96)
       marketStats: buildMarketStats(d.market_stats),
       sentimentSnippet: d.sentiment && {
         score: d.sentiment.score,

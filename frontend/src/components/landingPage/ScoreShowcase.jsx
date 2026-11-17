@@ -24,10 +24,11 @@ export default function ScoreShowcase() {
   const score = asset?.aaiPanel?.score;
   const { label, tone } = score != null ? getAaiSignal(score) : { label: "", tone: "neutral" };
 
-  const metrics = (asset?.riskOverview || []).map((r) => ({
+  // D96: every risk metric is a safety score, higher = safer; a metric without a value is left out here.
+  const metrics = (asset?.riskOverview || []).filter((r) => r.value != null).map((r) => ({
     label: r.label,
     value: r.value,
-    tone: getRiskTone(r.value, { higherIsBetter: r.label === "Liquidity Score" }),
+    tone: getRiskTone(r.value, { higherIsBetter: true }),
   }));
 
   return (
