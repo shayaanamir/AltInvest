@@ -3,6 +3,14 @@
 Current phase: 10 (NFTs, docs/PLAN_NFT.md) CLOSED at checkpoint 10.9 (ml/docs/phase10/checkpoint_10.9.md), branch phase-10-nft (pushed, not merged; 0 commits behind main). Pre-merge fixes from the independent review done in 10.9b (ml/docs/phase10/checkpoint_10.9b.md); the owner approved D63-D85 (D86). Next: the owner merges (steps in checkpoint_10.9.md) and rotates the Atlas credential (review SHOULD FIX 4). Previously: 9 (forecasting v2) DONE and merged as PR #8; phase-9-vol-cone and phase-7-integration are in main.
 Served now: crypto risk = persistence vol_30d (D82, the EWMA approval was withdrawn under top-only, D81); NFT risk = persistence vol_30d (D73); NFT item value = the monthly refit of fv_pooled_l1_nl15 for 6 collections, B2 for lilpudgys (D80, D83), no range; price = last value (D35); direction = UNCERTAIN (D33).
 
+## Stage 1 merged, D96, G-20, G-45 A2, N-10 (2026-11-17, PRs #12-#18 on main)
+
+- ML Stage 1 (D94) is on `main` (PR #12): the ML service serves 16 coins (BTC, ETH, SOL evaluated; 13 more served only), no-change forecast, persistence vol_30d risk with the 16-coin pool. DAI and BASE are not covered (404). The D95 mirror fallback covers Binance network errors.
+- No seed script writes predictions, risk, risk breakdowns or AAI, and no seed script may be run against Atlas; Atlas gets only idempotent upserts of real data (bootstrap `coins` / `profiles` with `--allow-remote`).
+- D96 (PR #14): measured risk breakdown (volatility, liquidity, 90-day drawdown), higher = safer. Scheduled writes are OFF until `RISK_BREAKDOWN_WRITES=1`; not yet run on Atlas.
+- G-20 (PR #13): AAI ignores prediction / risk rows older than 3 days. G-45 A2 (PR #15): a corrupt prediction-log line is skipped. N-10 (PR #16): `ml/signal/` is now `ml/signals/`, so `cd ml && python -m pytest` works (466 passed, 28 skipped).
+- Tests on `main` after these merges: ML 466 passed, 28 skipped; backend 369 passed.
+
 ## Phase 10 step 10.9b: pre-merge fixes from the independent review (2026-11-14, ml/docs/phase10/checkpoint_10.9b.md)
 
 - Refits, `CURRENT`, `refit_log.jsonl` and the live accuracy summaries are on the ml-data volume (`/data/nft/fv_refits`, `/data/nft/live_accuracy/summaries`), not in the repo. Every repo bind mount is read-only. Copies of the log are in `ml/docs/phase10/refits/`.
