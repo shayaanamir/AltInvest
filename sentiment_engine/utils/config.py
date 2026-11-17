@@ -162,6 +162,15 @@ ASSETS = {
         "tickers": ["near"],
         "ambiguous_ticker": True,
     },
+    # Served by the ML service (D94), so the AAI needs its sentiment; without an entry here it never had one.
+    "arb": {
+        "symbol": "ARB",
+        "coingecko_id": "arbitrum",
+        "binance_symbol": "ARBUSDT",
+        "names": ["arbitrum"],
+        "tickers": ["arb"],
+        "ambiguous_ticker": True,
+    },
 }
 
 # ── Per-coin news search (Google News RSS, collectors/news_search.py) ─────────
@@ -184,6 +193,7 @@ NEWS_SEARCH_QUERIES = {
     "ltc":   'Litecoin',
     "atom":  '"Cosmos Hub" OR "Cosmos blockchain"',
     "near":  '"NEAR Protocol"',
+    "arb":   'Arbitrum',
 }
 
 # ── RSS Feed Sources ───────────────────────────────────────────────────────────
