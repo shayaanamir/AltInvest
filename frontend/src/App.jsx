@@ -12,7 +12,8 @@ import { ErrorBoundary, ConnectionBanner, ToastProvider } from "./errors";
 import { onSessionExpired } from "./hooks/sessionEvents";
 import { isAuthenticated } from "./hooks/useAuth";
 import { loadAppPreferences, resetAppPreferences, useAppPreferences, getDisplayCurrency } from "./services/appPreferences";
-import { ROUTES, BARE_PAGES, getPath, getPageName } from "./routes";
+import { ROUTES, BARE_PAGES, getPath, getPageName, prefetchPages } from "./routes";
+import PageLoader from "./components/shared/PageLoader";
 import NotFoundPage from "./pages/NotFoundPage";
 
 // Applies the saved settings that act on the whole app: loads them once the user is signed in,
@@ -55,6 +56,15 @@ function ShellRoutes() {
     return onSessionExpired(() => setSessionExpired(true));
   }, []);
 
+  // Once the first page is up and the browser is idle, fetch the code of every other page, so clicking
+  // around the app doesn't wait on the network (and, in development, Vite has transformed them already).
+  useEffect(() => {
+    if (!isAuthenticated()) return undefined;
+    const ric = window.requestIdleCallback;
+    const handle = ric ? ric(prefetchPages, { timeout: 4000 }) : setTimeout(prefetchPages, 1500);
+    return () => (ric ? window.cancelIdleCallback(handle) : clearTimeout(handle));
+  }, [location.pathname]);
+
   const activePage = getPageName(location.pathname);
   // A 404 sits inside the app shell for signed-in users, and on its own for everyone else.
   const isBare = BARE_PAGES.includes(activePage) || (activePage === "NotFound" && !isAuthenticated());
@@ -68,7 +78,7 @@ function ShellRoutes() {
   };
 
   const pageContent = (
-    <Suspense fallback={<div className="sv2-muted sv2-small" role="status" style={{ padding: 24 }}>Loading…</div>}>
+    <Suspense fallback={<PageLoader />}>
     <Routes>
       {ROUTES.map(({ key, path, element: Element, protected: isProtected }) => {
         const inner =
