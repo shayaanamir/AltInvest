@@ -55,9 +55,9 @@ jobs:
       - name: "Install (torch is left out, since nothing in the tests loads FinBERT)"
         run: |
           python -m pip install --upgrade pip
-          pip install -r backend/requirements.txt pytest
-          grep -v '^torch' sentiment_engine/requirements.txt > "$RUNNER_TEMP/sentiment-no-torch.txt"
-          pip install -r "$RUNNER_TEMP/sentiment-no-torch.txt"
+          # The backend image's lock file without torch and its CUDA packages (it already includes pytest).
+          grep -vE '^(torch|nvidia-|triton)' backend/requirements.txt > "$RUNNER_TEMP/backend-no-torch.txt"
+          pip install -r "$RUNNER_TEMP/backend-no-torch.txt"
       - name: pytest
         working-directory: backend
         run: python -m pytest tests -q -p no:cacheprovider
@@ -152,8 +152,8 @@ jobs:
           grep -v '^torch' sentiment_engine/requirements.txt > "$RUNNER_TEMP/sentiment-no-torch.txt"
           pip-audit -r "$RUNNER_TEMP/sentiment-no-torch.txt" --no-deps --disable-pip
           pip-audit -r ml/requirements.txt --no-deps --disable-pip
-      - name: pip-audit, backend (unpinned, so it audits whatever pip resolves today)
-        run: pip-audit -r backend/requirements.txt
+      - name: pip-audit, backend image lock file (fully pinned, torch included)
+        run: pip-audit -r backend/requirements.txt --no-deps --disable-pip
       - name: npm audit, packages shipped to the browser
         working-directory: frontend
         run: |

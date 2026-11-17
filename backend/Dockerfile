@@ -21,13 +21,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-COPY backend/requirements.txt ./backend-requirements.txt
+# One fully pinned file (audit N-02 / G-17): the backend's and the sentiment engine's packages with every
+# transitive dependency, so the image can't end up with two files' versions fighting each other.
+COPY backend/requirements.txt ./requirements.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --timeout 1000 --retries 10 -r backend-requirements.txt
-
-COPY sentiment_engine/requirements.txt ./sentiment-requirements.txt
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --timeout 1000 --retries 10 -r sentiment-requirements.txt
+    pip install --timeout 1000 --retries 10 -r requirements.txt
 
 # Unprivileged user (audit G-11). Its home holds the Hugging Face cache (FinBERT is downloaded on first use);
 # docker-compose.prod.yml keeps that cache on a volume so a restart doesn't download the model again.
