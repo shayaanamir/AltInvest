@@ -78,6 +78,21 @@ def upsert_ml_risk(doc: dict) -> None:
     _upsert_ml_row("risk_scores", doc)
 
 
+def upsert_risk_breakdown(doc: dict) -> None:
+    """The measured risk breakdown (D96): one row per asset per UTC day."""
+    _upsert_ml_row("risk_breakdown", doc)
+
+
+def get_prices_since(asset: str, since: datetime) -> list:
+    """Oldest-first [(timestamp, price)] of `prices` rows for `asset` at or after `since`."""
+    rows = get_db().prices.find(
+        {"asset": asset.upper(), "timestamp": {"$gte": since}},
+        sort=[("timestamp", 1)],
+        projection={"_id": 0, "timestamp": 1, "price": 1},
+    )
+    return [(r["timestamp"], r["price"]) for r in rows]
+
+
 def get_supported_assets() -> list:
     db = get_db()
     return list(db.assets.find({}, projection={"_id": 0}))

@@ -110,7 +110,8 @@ export default function DiscoverFilters({ config, options, category, filters, on
 
       {slider("Min AAI score", filters.minAai, "minAai", aaiScoreRange.min, aaiScoreRange.max, aaiScoreRange.step)}
       {isCrypto && slider("Min sentiment", (filters.minSentiment / 100).toFixed(2), "minSentiment", sentMin, sentMax, sentStep)}
-      {isCrypto && slider("Max risk score", filters.maxRisk, "maxRisk", riskRange.min, riskRange.max, riskRange.step)}
+      {/* risk_score is a safety score, higher = safer (D36, D96): the filter keeps rows at or above it (audit G-28). */}
+      {isCrypto && slider("Min safety score", filters.minSafety, "minSafety", riskRange.min, riskRange.max, riskRange.step)}
       {slider(isCrypto ? "Max volatility" : "Max illiquidity risk", filters.maxVolatility, "maxVolatility", volatilityRange.min, volatilityRange.max, volatilityRange.step)}
       {slider("Min market cap", fmtCap(filters.minMarketCap), "minMarketCap", marketCapRange.min, marketCapRange.max, marketCapRange.step)}
 

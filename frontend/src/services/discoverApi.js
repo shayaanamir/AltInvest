@@ -15,7 +15,7 @@ function filterParams(f, ranges) {
   if (f.minAai > ranges.aaiScoreRange.min) p.set("min_aai", f.minAai);
   if (f.minSentiment > ranges.sentimentRange.min * 100) p.set("min_sentiment", f.minSentiment / 100);
   if (f.maxVolatility < ranges.volatilityRange.max) p.set("max_volatility", f.maxVolatility);
-  if (f.maxRisk < ranges.riskRange.max) p.set("max_risk", f.maxRisk);
+  if (f.minSafety > ranges.riskRange.min) p.set("min_safety", f.minSafety);   // higher = safer (audit G-28)
   if (f.minMarketCap > ranges.marketCapRange.min) p.set("min_market_cap", f.minMarketCap);
   f.subcategories.forEach((s) => p.append("subcategory", s));
   f.signals.forEach((s) => p.append("signal", s));
@@ -31,7 +31,7 @@ export function defaultFilters() {
     minAai: r.aaiScoreRange.min,
     minSentiment: r.sentimentRange.min * 100,
     maxVolatility: r.volatilityRange.max,
-    maxRisk: r.riskRange.max,
+    minSafety: r.riskRange.min,
     minMarketCap: r.marketCapRange.min,
     subcategories: [],
     signals: [],
@@ -46,7 +46,7 @@ export function defaultFilters() {
 /** How many filters differ from their defaults (for the "Reset (3)" label). */
 export function activeFilterCount(f) {
   const d = defaultFilters();
-  return ["minAai", "minSentiment", "maxVolatility", "maxRisk", "minMarketCap", "verifiedOnly", "heldOnly", "watchingOnly"]
+  return ["minAai", "minSentiment", "maxVolatility", "minSafety", "minMarketCap", "verifiedOnly", "heldOnly", "watchingOnly"]
     .filter((k) => f[k] !== d[k]).length + f.subcategories.length + f.signals.length;
 }
 

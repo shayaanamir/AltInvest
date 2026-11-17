@@ -24,11 +24,33 @@ def get_assets():
 
 # ── GET /assets/{symbol}/detail ─────────────────────────────────────────────
 
-def _risk_level(value: float, higher_is_better: bool = False) -> str:
-    """Level words understood by the frontend's riskLevelTone()."""
-    if higher_is_better:  # liquidity
-        return "excellent" if value >= 80 else "good" if value >= 60 else "fair" if value >= 40 else "high"
-    return "low" if value < 35 else "medium" if value < 65 else "high"
+def _risk_level(safety: float) -> str:
+    """Risk level words (riskLevelTone) from a D96 safety score, where higher = safer."""
+    return "low" if safety >= 65 else "medium" if safety >= 35 else "high"
+
+
+def risk_overview_rows(breakdown: dict | None) -> list[dict]:
+    """
+    The Risk Overview rows from a measured D96 breakdown: Volatility, Liquidity and Market risk, each with its
+    safety score (higher = safer), raw value, source and as_of. A metric without a value is listed as not
+    available (value null). Any other row (the seeded breakdown D94 removed) gives no rows.
+    """
+    from controllers.risk_breakdown_controller import METRICS, SOURCE
+    if not breakdown or breakdown.get("source") != SOURCE:
+        return []
+    rows = []
+    for key in METRICS:
+        m = (breakdown.get("metrics") or {}).get(key) or {}
+        score = m.get("score")
+        rows.append({
+            "key": key, "label": m.get("label") or METRICS[key][0],
+            "value": score, "level": _risk_level(score) if score is not None else None,
+            "status": m.get("status") or "not available", "why": m.get("why"),
+            "raw": m.get("raw"), "raw_label": m.get("raw_label"),
+            "source": m.get("source"), "as_of": m.get("as_of"), "ranked_among": m.get("ranked_among"),
+            "direction": "higher = safer",
+        })
+    return rows
 
 
 @router.get("/assets/{symbol}/detail")
@@ -41,7 +63,7 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
       aai_panel      -> null when `aai_scores` has no row
       about           -> description / website / ATH; fields are null where the asset row has none
       related/similar -> see controllers/asset_detail_controller.py (each item carries a `reason`)
-      risk_overview   -> [] when `risk_breakdown` has no row
+      risk_overview   -> [] when no measured `risk_breakdown` row is stored (D96); risk_covered false for DAI / BASE
     """
     from datetime import date
     from controllers.market_controller import (
@@ -111,19 +133,9 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
             "trend": reading.get("trend"),
         }
 
-    risk_overview = []
-    if breakdown:
-        for label, key, better in [
-            ("Volatility Index", "volatility_index", False),
-            ("Liquidity Score", "liquidity_score", True),
-            ("Regulatory Risk", "regulatory_risk", False),
-            ("Market Risk", "market_risk", False),
-        ]:
-            if breakdown.get(key) is not None:
-                risk_overview.append({
-                    "label": label, "value": breakdown[key],
-                    "level": _risk_level(breakdown[key], better),
-                })
+    from db.queries import ML_COVERED_ASSETS
+    risk_covered = symbol in ML_COVERED_ASSETS          # DAI, BASE: "Not covered" (D94, D96)
+    risk_overview = risk_overview_rows(breakdown) if risk_covered else []
 
     related, similar = related_and_similar(asset, universe)
     try:
@@ -152,6 +164,7 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
         if prediction else None,
         "aai_panel": aai_panel,
         "risk_overview": risk_overview,
+        "risk_covered": risk_covered,
         "market_stats": {
             "market_rank": market.get("market_rank"),
             "market_cap": market.get("market_cap"),
@@ -297,17 +310,22 @@ def get_asset_intelligence(symbol: str):
 
 @router.get("/assets/{symbol}/risk")
 def get_asset_risk_breakdown(symbol: str):
-    from db.queries import get_latest_risk_breakdown
+    """The latest measured breakdown (D96): 404 for an asset the ML service doesn't cover, or with no measured row."""
+    from controllers.risk_breakdown_controller import SOURCE
+    from db.queries import ML_COVERED_ASSETS, get_latest_risk_breakdown
+    from utils.serialization import serialize_dates
 
     symbol = symbol.upper()
+    if symbol not in ML_COVERED_ASSETS:
+        raise HTTPException(status_code=404, detail=f"{symbol} is not covered by the risk breakdown.")
     try:
         breakdown = get_latest_risk_breakdown(symbol)
     except Exception as exc:
         raise db_unavailable(exc)
 
-    if not breakdown:
+    if not breakdown or breakdown.get("source") != SOURCE:
         raise HTTPException(status_code=404, detail=f"No risk breakdown found for '{symbol}'.")
-    return breakdown
+    return serialize_dates(breakdown)
 
 
 # ── GET /assets/{symbol}/market-stats ───────────────────────────────────────

@@ -165,6 +165,9 @@ def run_ml_pull_scheduler(initial_delay_seconds: int = 20) -> None:
                 result = pull_all()
                 _log(f"{ML_BASE_URL}: {result}")
                 failed = has_failures(result)
+                # D96: the measured risk breakdown ranks the volatility just pulled (own claim, never raises).
+                from controllers.risk_breakdown_controller import run_after_ml_pull
+                run_after_ml_pull()
             else:
                 failed = False   # another worker pulled; wait for the next 00:15
         except Exception as exc:   # database down etc.; keep the thread alive

@@ -131,6 +131,16 @@ def _aai_fields(aai: dict | None, live: dict | None = None) -> dict:
     }
 
 
+def volatility_rank(breakdown: dict | None) -> float | None:
+    """0-100, higher = more volatile, for Discover's "Max volatility" filter: 100 minus the D96 volatility safety
+    score (ml/docs/DECISIONS.md D96 item 5). None without a measured breakdown or when volatility isn't available."""
+    from controllers.risk_breakdown_controller import SOURCE
+    if not breakdown or breakdown.get("source") != SOURCE:
+        return None
+    score = ((breakdown.get("metrics") or {}).get("volatility") or {}).get("score")
+    return round(100.0 - score, 1) if isinstance(score, (int, float)) else None
+
+
 def build_crypto_items(user_id=None, with_sparklines: bool = False) -> list[dict]:
     assets = {a["asset_id"]: a for a in get_supported_assets()}
     market = {m["asset_id"]: m for m in get_asset_market_data_all_latest()}
@@ -163,7 +173,7 @@ def build_crypto_items(user_id=None, with_sparklines: bool = False) -> list[dict
             "market_cap": m.get("market_cap"),
             "volume_24h": m.get("volume_24h"),
             "risk_score": risk.get("risk_score"),
-            "volatility": breakdown.get("volatility_index"),
+            "volatility": volatility_rank(breakdown),
             "expected_return": pred.get("prediction_30d"),
             "verified": None,
             "held": asset_id in flags["held"],
