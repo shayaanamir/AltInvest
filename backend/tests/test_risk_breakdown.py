@@ -174,3 +174,17 @@ def test_aai_formula_respects_the_age_check(monkeypatch):
     monkeypatch.setattr(aai, "_get_real_risk", lambda a: {**RISK_BTC, "timestamp": NOW - timedelta(days=4)})
     out = aai.compute_aai_response("BTC", sentiment={"sentiment_score": 0.1, "confidence": 1.0, "available": True}, now=NOW)
     assert out["aai_score"] is None and out["stale_inputs"] == ["risk score"]
+
+
+def test_scheduled_writes_are_off_unless_enabled(monkeypatch):
+    """No breakdown is written by the scheduler until RISK_BREAKDOWN_WRITES=1 (owner approval for the first run)."""
+    import utils.scheduler_gate as gate
+    calls = []
+    monkeypatch.setattr(gate, "claim_run", lambda *a: calls.append("claim") or True)
+    monkeypatch.setattr(rb, "refresh_risk_breakdowns", lambda: calls.append("refresh") or {"rows": [], "not_available": {}})
+    monkeypatch.delenv("RISK_BREAKDOWN_WRITES", raising=False)
+    rb.run_after_ml_pull()
+    assert calls == []
+    monkeypatch.setenv("RISK_BREAKDOWN_WRITES", "1")
+    rb.run_after_ml_pull()
+    assert calls == ["claim", "refresh"]

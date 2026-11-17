@@ -190,9 +190,19 @@ def refresh_risk_breakdowns(now: datetime | None = None, write: bool = True) -> 
     return {"rows": rows, "not_available": {a: m for a, m in missing.items() if m}}
 
 
+def writes_enabled() -> bool:
+    """The scheduled job stores rows only when RISK_BREAKDOWN_WRITES=1 (off by default until the owner approves the
+    first run against the shared database; the dry run, `python -m controllers.risk_breakdown_controller`, always works)."""
+    import os
+    return os.getenv("RISK_BREAKDOWN_WRITES", "").strip() == "1"
+
+
 def run_after_ml_pull() -> None:
     """Called by the ML pull scheduler after each pull; one worker per CLAIM_GAP_SECONDS. Never raises."""
     from utils.scheduler_gate import claim_run
+    if not writes_enabled():
+        _log.info("[risk-breakdown] skipped: RISK_BREAKDOWN_WRITES is not 1")
+        return
     try:
         if claim_run("risk-breakdown", CLAIM_GAP_SECONDS):
             out = refresh_risk_breakdowns()

@@ -162,6 +162,7 @@ def test_scheduler_runs_its_job_only_when_it_wins_the_claim(monkeypatch, index, 
     monkeypatch.setattr(time, "sleep", fake_sleep)
     import controllers.risk_breakdown_controller as rb
     monkeypatch.setattr(rb, "refresh_risk_breakdowns", lambda: {"rows": [], "not_available": {}})
+    monkeypatch.setenv("RISK_BREAKDOWN_WRITES", "1")
     with pytest.raises(_Stop):
         loop()
     # D96: after a pull it runs, the ML pull loop also claims the risk breakdown (its own job, own claim).
