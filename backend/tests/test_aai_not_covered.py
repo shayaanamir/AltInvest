@@ -7,6 +7,13 @@ from controllers import aai_controller as aai
 from models.schemas import AAIResponse
 from tests.test_ml_pull import PREDICT_BTC, RISK_BTC
 
+
+def _fresh(row):
+    """The fixture row as if pulled just now: older rows count as stale since G-20."""
+    from datetime import datetime, timezone
+    return {**row, "timestamp": datetime.now(timezone.utc)}
+
+
 UNCOVERED = ["DAI", "BASE"]
 
 
@@ -27,8 +34,8 @@ def test_controller_computes_nothing_for_an_uncovered_asset(monkeypatch, asset):
 
 
 def test_covered_asset_is_marked_covered(monkeypatch):
-    monkeypatch.setattr(aai, "_get_real_prediction", lambda a: dict(PREDICT_BTC))
-    monkeypatch.setattr(aai, "_get_real_risk", lambda a: dict(RISK_BTC))
+    monkeypatch.setattr(aai, "_get_real_prediction", lambda a: _fresh(PREDICT_BTC))
+    monkeypatch.setattr(aai, "_get_real_risk", lambda a: _fresh(RISK_BTC))
     out = aai.compute_aai_response("BTC", sentiment={"sentiment_score": 0.2, "confidence": 0.5, "available": True})
     assert out["covered"] is True and out["aai_score"] is not None
 
@@ -40,8 +47,8 @@ def test_refresh_skips_uncovered_assets(monkeypatch):
     monkeypatch.setattr(queries, "upsert_aai_score_generalized", lambda t, i, p: stored.append(i))
     monkeypatch.setattr(mc, "live_sentiment_by_symbol",
                         lambda: {a: {"score": 0.1, "confidence": 0.9, "trend": "flat"} for a in ("BTC", "DAI", "BASE")})
-    monkeypatch.setattr(aai, "_get_real_prediction", lambda a: dict(PREDICT_BTC))
-    monkeypatch.setattr(aai, "_get_real_risk", lambda a: dict(RISK_BTC))
+    monkeypatch.setattr(aai, "_get_real_prediction", lambda a: _fresh(PREDICT_BTC))
+    monkeypatch.setattr(aai, "_get_real_risk", lambda a: _fresh(RISK_BTC))
     out = aai.refresh_all_aai_scores()
     assert stored == ["BTC"] and out["stored"] == ["BTC"]
     assert out["skipped"] == {"DAI": "not covered by the ML service", "BASE": "not covered by the ML service"}

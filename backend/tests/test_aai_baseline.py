@@ -4,12 +4,19 @@ import pytest
 from controllers import aai_controller as aai
 from tests.test_ml_pull import PREDICT_BTC, RISK_BTC
 
+
+def _fresh(row):
+    """The fixture row as if pulled just now: older rows count as stale since G-20."""
+    from datetime import datetime, timezone
+    return {**row, "timestamp": datetime.now(timezone.utc)}
+
+
 SENT = {"sentiment_score": 0.0, "confidence": 0.0, "available": True}
 
 
 @pytest.fixture
 def inputs(monkeypatch):
-    rows = {"pred": dict(PREDICT_BTC), "risk": dict(RISK_BTC)}
+    rows = {"pred": _fresh(PREDICT_BTC), "risk": _fresh(RISK_BTC)}
     monkeypatch.setattr(aai, "_get_real_prediction", lambda a: rows["pred"])
     monkeypatch.setattr(aai, "_get_real_risk", lambda a: rows["risk"])
     return rows

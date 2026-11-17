@@ -97,6 +97,8 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
             "risk_score": aai.get("risk_score"),
             "model_version": aai.get("model_version"),
             "note": aai.get("note"),
+            "stale_inputs": aai.get("stale_inputs") or [],     # G-20: score is null and the card says "inputs stale"
+            "as_of": aai.get("as_of"),
         }
 
     # Sentiment: the engine's live reading when it has one, else the reading (-1..1) aai_scores stored. Never the
@@ -265,6 +267,11 @@ def get_asset_intelligence(symbol: str):
             "sentiment_score": cached.get("sentiment_score"),
             "sentiment_confidence": cached.get("sentiment_confidence"),
             "risk_score": cached.get("risk_score"),
+            "missing_inputs": cached.get("missing_inputs") or [],
+            "stale_inputs": cached.get("stale_inputs") or [],      # G-20
+            "inputs_as_of": cached.get("inputs_as_of") or {},
+            "as_of": cached.get("as_of"),
+            "note": cached.get("note"),
             "model_version": cached.get("model_version"),
             "timestamp": ts.strftime("%Y-%m-%dT%H:%M:%SZ") if hasattr(ts, "strftime") else ts,
         }

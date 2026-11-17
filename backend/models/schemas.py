@@ -116,6 +116,9 @@ class AAIResponse(BaseModel):
     sentiment_note: Optional[str] = None
     risk_score: Optional[float] = None
     missing_inputs: List[str] = []
+    stale_inputs: List[str] = []                # inputs that existed but were too old to use (audit G-20)
+    inputs_as_of: Dict[str, Optional[str]] = {}  # when each input (prediction, risk) was produced
+    as_of: Optional[str] = None                 # the oldest input the score was built from
     note: Optional[str] = None
     model_version: Optional[str] = None
     timestamp: str
