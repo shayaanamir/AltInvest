@@ -168,11 +168,11 @@ cd frontend && npm run lint && npm run build     # lint and production build
 ```
 
 - The sentiment tests need `sentiment_engine/requirements.txt` (`feedparser` and the NLP libraries), and from the repo root 5 of them fail on import paths, so run them from inside the folder.
-- The ML tests need `ml/requirements.txt`, and `ml/requirements-train.txt` for the training and evaluation ones.
+- The ML tests need `ml/requirements.txt` plus `pyarrow`. Installing `ml/requirements-train.txt` as well (it pulls in CPU torch and Prophet) runs about 9 more training and evaluation tests that are otherwise skipped.
 - Some backend tests run against a real MongoDB only when `MONGO_TEST_URI` is set, and are skipped otherwise. Use a
   throwaway server, for example `docker run --rm -p 27099:27017 mongo:7`, with `MONGO_TEST_URI=mongodb://localhost:27099`.
 - `test_seed_guard` reads the repo-root `.env`, so it fails if that file points at a remote database.
-- There is no CI pipeline yet.
+- GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs all of the above on every push to `main` and every pull request, with a real MongoDB so the concurrency tests run. It also runs `pip-audit` and `npm audit` weekly, and checks that the compose files are valid. For the ML job, `pyarrow` is the one extra package the tests need (`pip install -r ml/requirements.txt pyarrow==26.0.1`).
 
 ---
 
@@ -194,7 +194,7 @@ Further reading: [ARCHITECTURE](ml/docs/ARCHITECTURE.md) · [CONTRACT](ml/docs/C
 ## Project status
 
 AltInvest runs well as a local development stack. It is **not production-ready yet**. There is no production compose
-file (the frontend runs the Vite dev server and MongoDB is published without authentication), no CI, and the background
+file (the frontend runs the Vite dev server and MongoDB is published without authentication), and the background
 jobs still share a process with the API. [AUDIT_2026-11-16.md](AUDIT_2026-11-16.md) is the current review: every known gap,
 what has been fixed, and what is left. [AUDIT_2026-11-02.md](AUDIT_2026-11-02.md) is the earlier one, kept for its detailed
 write-ups. Open ML items are in the backlog section of [ml/docs/STATUS.md](ml/docs/STATUS.md).
