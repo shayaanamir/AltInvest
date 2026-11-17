@@ -1,18 +1,20 @@
-"""Tests for ml.signal.signal_logic.generate_signal (Phase 5b, D7, D33, D34).
+"""Tests for ml.signals.signal_logic.generate_signal (Phase 5b, D7, D33, D34).
 
 All probabilities below are small HAND-MADE numbers, NOT model output or market data.
 """
 
 import inspect
 import itertools
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
 from ml import config
 from ml.labels.labels import DIRECTION_CLASSES
-from ml.signal import signal_logic
-from ml.signal.signal_logic import generate_signal
+from ml.signals import signal_logic
+from ml.signals.signal_logic import generate_signal
 
 PROBS = {"DOWN": 0.2, "FLAT": 0.3, "UP": 0.5}
 
@@ -20,8 +22,26 @@ PROBS = {"DOWN": 0.2, "FLAT": 0.3, "UP": 0.5}
 def test_stdlib_signal_not_shadowed():
     import signal
     assert hasattr(signal, "SIGINT")
-    assert "ml" not in Path(signal.__file__).parts                  # the stdlib module, not ml/signal
-    assert Path(signal_logic.__file__).parent.name == "signal"
+    assert "ml" not in Path(signal.__file__).parts                  # the stdlib module, not ml/signals
+    assert Path(signal_logic.__file__).parent.name == "signals"
+
+
+ML_DIR = Path(__file__).resolve().parents[1]
+
+
+def test_nothing_in_ml_shadows_a_stdlib_module():
+    """Audit N-10: running from inside ml/ puts ml/ first on sys.path, so a package there named like a stdlib module
+    (ml/signal did) replaced it and pytest died with "cannot import name 'Signals'"."""
+    names = {p.stem if p.is_file() else p.name for p in ML_DIR.iterdir()
+             if (p.is_dir() and (p / "__init__.py").exists()) or p.suffix == ".py"}
+    assert not names & set(sys.stdlib_module_names)
+
+
+def test_stdlib_signal_resolves_from_inside_ml():
+    out = subprocess.run([sys.executable, "-c", "import signal; print(signal.Signals.SIGINT.name, signal.__file__)"],
+                         cwd=ML_DIR, capture_output=True, text=True, timeout=60)
+    assert out.returncode == 0, out.stderr
+    assert out.stdout.startswith("SIGINT ") and str(ML_DIR) not in out.stdout
 
 
 @pytest.mark.parametrize("asset", config.ASSETS)

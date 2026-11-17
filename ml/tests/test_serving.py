@@ -20,7 +20,7 @@ from ml.evaluation.risk_mapping_check import historical_scores
 from ml.features.features import build_features, ewma_vol
 from ml.labels import labels
 from ml.serving import responses as rs
-from ml.signal.signal_logic import NOTE_NOT_SERVED
+from ml.signals.signal_logic import NOTE_NOT_SERVED
 
 DAY0 = pd.Timestamp("2026-10-15", tz="UTC")
 HOUR = pd.Timedelta(hours=1)
