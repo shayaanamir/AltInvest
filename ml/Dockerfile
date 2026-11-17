@@ -21,6 +21,13 @@ RUN pip install --no-cache-dir --timeout 1000 --retries 10 -r ml/requirements.tx
 
 COPY ml/ ml/
 
+# Unprivileged user for production (audit G-11). docker-compose.prod.yml runs every ml container as 10001; a new
+# named volume mounted on /data takes this directory's owner, so that user can write its data. The development
+# compose still runs as root, because its existing ml-data volume holds files root wrote.
+RUN useradd --uid 10001 --create-home --shell /usr/sbin/nologin app \
+    && mkdir -p /data \
+    && chown app:app /data
+
 # Serving data directories (D40); never the evaluation snapshot under ml/.
 ENV ML_RAW_DIR=/data/raw \
     ML_VALIDATION_DIR=/data/validation \

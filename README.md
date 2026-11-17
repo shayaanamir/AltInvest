@@ -128,7 +128,7 @@ docker exec -w /app/backend altinvest-backend python -m controllers.bootstrap_co
 It creates the coin names and colours and the NFT collection details, loads live prices and history, runs a news
 sentiment pass, builds the insights and themes, and fetches each coin's CoinGecko profile (about 6 minutes). It writes
 no made-up numbers and refuses a non-local database. Then hard-refresh the browser. More detail, including hot reload,
-the production frontend image and upgrade notes, is in [DOCKER.md](DOCKER.md).
+the production stack and upgrade notes, is in [DOCKER.md](DOCKER.md).
 
 **For local development only**, `python db/seed_all.py` seeds sample data: a demo user and portfolio (only when
 `APP_ENV=dev`), and also **invented predictions and risk scores** for the coins ML doesn't cover. Those invented numbers
@@ -193,8 +193,9 @@ Further reading: [ARCHITECTURE](ml/docs/ARCHITECTURE.md) · [CONTRACT](ml/docs/C
 
 ## Project status
 
-AltInvest runs well as a local development stack. It is **not production-ready yet**. There is no production compose
-file (the frontend runs the Vite dev server and MongoDB is published without authentication), and the background
-jobs still share a process with the API. [AUDIT_2026-11-16.md](AUDIT_2026-11-16.md) is the current review: every known gap,
+AltInvest runs well as a local development stack, and `docker-compose.prod.yml` runs it as a production stack (nginx
+with an `/api` proxy and a CSP, non-root containers, MongoDB with authentication and no published port; see
+[DOCKER.md](DOCKER.md#production-stack-docker-composeprodyml)). It is **not production-ready yet**: TLS has to be put in
+front of it, and the background jobs still share a process with the API. [AUDIT_2026-11-16.md](AUDIT_2026-11-16.md) is the current review: every known gap,
 what has been fixed, and what is left. [AUDIT_2026-11-02.md](AUDIT_2026-11-02.md) is the earlier one, kept for its detailed
 write-ups. Open ML items are in the backlog section of [ml/docs/STATUS.md](ml/docs/STATUS.md).

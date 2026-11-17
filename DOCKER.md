@@ -120,21 +120,54 @@ docker exec -w /app altinvest-backend python db/normalize_holdings.py
    database; copy that data over once with `python db/migrate_sentiment_db.py` (see its docstring).
 
 5. **Vite envs are baked at build time, not run time**, for the
-   *production* image (`Dockerfile.prod`). Pass them as `--build-arg`
-   (see the comment at the top of that file), not as `docker run -e`.
+   *production* image (`Dockerfile.prod`). It defaults to `VITE_API_BASE_URL=/api`, the nginx
+   proxy, so no build argument is needed for the production stack below.
 
-## Production build (optional)
+6. **The backend image runs as the unprivileged user `app`** (development too). The dev
+   compose only bind-mounts read-only source, so nothing in it needs root.
+
+## Production stack (`docker-compose.prod.yml`)
+
+A separate compose file with its own project name (`altinvest-prod`), so it never touches the
+development containers or volumes.
 
 ```bash
-docker build -f frontend/Dockerfile.prod \
-  --build-arg VITE_API_BASE_URL=https://your-backend-domain \
-  -t altinvest-frontend:prod ./frontend
-
-docker run -p 80:80 altinvest-frontend:prod
+cp .env.prod.example .env.prod      # fill in FRONTEND_BASE_URL, JWT_SECRET and the two Mongo passwords
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+docker compose -f docker-compose.prod.yml --env-file .env.prod exec backend python -m controllers.bootstrap_controller
 ```
 
-This serves the built static assets via nginx, with an SPA fallback to
-`index.html` for `react-router-dom` client-side routes.
+With `--env-file`, compose reads only `.env.prod`, never the development `.env`. A missing required
+value stops compose with a message naming it.
+
+| Service | Published | What it is |
+|---|---|---|
+| `frontend` | `HTTP_PORT` (default 80) → 8080 | nginx (unprivileged image) serving the built app. `/api/…` is proxied to `backend:8000/…`, so the bundle calls its own origin (`VITE_API_BASE_URL=/api`) and needs no CORS. Sends a CSP and the other security headers (`frontend/nginx-security-headers.conf`); `index.html` is `no-cache`, hashed assets are cached for a year. `/healthz` for health checks. |
+| `backend` | no | The built image (no bind mounts), as user `app`, `APP_ENV=production` (so `/docs` and `/openapi.json` are off), `--proxy-headers`, `TRUST_PROXY_HEADERS=true`. `WEB_CONCURRENCY` sets the worker count (default 1; each loads FinBERT). FinBERT is cached on the `hf_cache` volume. |
+| `mongodb` | no | Authentication on. The root user comes from `MONGO_ROOT_*`; on the first start of a new volume `deploy/mongo-init/01-app-user.js` creates the app's own user with `readWrite` on `MONGO_DB_NAME` only, and the backend connects as that user. |
+| `ml`, `ml-refresh`, `ml-nft-refresh` | no | As in development, run as uid 10001. |
+
+All containers rotate their logs (10 MB × 5); the app containers drop every Linux capability and set
+`no-new-privileges`.
+
+**Things to know:**
+- **TLS is not terminated here.** Put a TLS proxy or load balancer (Caddy, Traefik, a cloud LB) in
+  front of `HTTP_PORT`. If that proxy is the only thing that can reach nginx, uncomment the
+  `set_real_ip_from` lines in `frontend/nginx.conf` so sign-in rate limits see client addresses.
+  The HSTS header only takes effect over HTTPS.
+- **The Mongo users are created once**, when the `mongo_data` volume is new. Changing a password
+  later is done with `mongosh` (see the comment in `deploy/mongo-init/01-app-user.js`).
+  `MONGO_APP_PASSWORD` goes into a URI unescaped, so keep it URL-safe (`secrets.token_urlsafe`).
+- **To use Atlas instead**, set `PROD_MONGO_URI`. The bundled `mongodb` still starts (its passwords
+  are still required); the bootstrap then needs `--allow-remote`.
+- **Configure SMTP before launch**: outside development, new users can't verify their email without it.
+- **Google sign-in**: add `FRONTEND_BASE_URL` to the OAuth client's authorized JavaScript origins.
+- Calling a backend on another origin instead of `/api` needs a rebuild with
+  `--build-arg VITE_API_BASE_URL=https://…`, that origin in the CSP's `connect-src`, and the site in
+  the backend's `FRONTEND_BASE_URL` / `CORS_EXTRA_ORIGINS`.
+
+Stop it with `docker compose -f docker-compose.prod.yml --env-file .env.prod down` (add `-v` only
+to delete its data).
 
 ## Hot reload
 

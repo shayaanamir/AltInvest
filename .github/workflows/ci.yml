@@ -171,9 +171,14 @@ jobs:
         env:
           JWT_SECRET: ci-only-not-a-secret-ci-only-not-a-secret
       - name: Production stack
+        # The example leaves the secrets empty, and the production file refuses to resolve without them.
+        run: docker compose -f docker-compose.prod.yml --env-file .env.prod.example config --quiet
+        env:
+          FRONTEND_BASE_URL: https://altinvest.example
+          JWT_SECRET: ci-only-not-a-secret-ci-only-not-a-secret
+          MONGO_ROOT_PASSWORD: ci-only-not-a-secret
+          MONGO_APP_PASSWORD: ci-only-not-a-secret
+      - name: Production images build
         run: |
-          if [ -f docker-compose.prod.yml ]; then
-            docker compose -f docker-compose.prod.yml --env-file .env.prod.example config --quiet
-          else
-            echo "No production compose file yet."
-          fi
+          docker build -f frontend/Dockerfile.prod -t altinvest-frontend:ci frontend
+          docker run --rm --entrypoint nginx altinvest-frontend:ci -t

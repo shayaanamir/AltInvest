@@ -1,0 +1,12 @@
+# Build context for frontend/Dockerfile and Dockerfile.prod (audit G-42, G-11).
+node_modules
+dist
+build
+coverage
+.env
+.env.*
+*.log
+.git
+.vscode
+.idea
+.DS_Store

@@ -37,12 +37,24 @@ from routes import (
     fx,
 )
 
+from shared.app_env import is_dev
+
 _log = logging.getLogger("api")
+
+
+def _api_docs_settings() -> dict:
+    """The interactive docs (/docs, /redoc) and the OpenAPI schema are served only in development (audit G-31,
+    G-11): in production they would hand anyone a map of every endpoint."""
+    if is_dev():
+        return {}
+    return {"docs_url": None, "redoc_url": None, "openapi_url": None}
+
 
 app = FastAPI(
     title="AAIP Backend",
     description="Alternative Asset Intelligence Platform API",
     version="1.0.0",
+    **_api_docs_settings(),
 )
 
 # ── Error handling ───────────────────────────────────────────────────────────
@@ -199,4 +211,4 @@ def on_startup():
 
 @app.get("/")
 def root():
-    return {"message": "AAIP API is running. Visit /docs for the full API reference."}
+    return {"message": "AAIP API is running."}
