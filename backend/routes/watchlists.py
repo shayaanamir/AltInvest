@@ -31,6 +31,8 @@ from db.queries import (
     get_latest_aai_scores_for,
 )
 
+from utils.price_freshness import floor_freshness, price_freshness
+
 router = APIRouter(tags=["Watchlists"])
 
 _MAX_NAME = 60
@@ -83,12 +85,14 @@ def _enrich_watchlists(watchlists: list) -> list:
             market = markets.get(sym, {})
             item["name"] = assets.get(sym, {}).get("name", key)
             item["price"] = market.get("price")
+            item.update(price_freshness(market))      # price_as_of, price_delayed (audit N-05)
             item["change_24h"] = market.get("change_24h")
             item["aai_score"] = (crypto_aai.get(sym) or {}).get("aai_score")
         elif item["type"] == "nft":
             market = nft_markets.get(key, {})
             item["name"] = collections.get(key, {}).get("name", key)
             item["price"] = market.get("floor_usd")
+            item.update(floor_freshness(market))      # the floor's as-of and 48 h limit (audit N-05)
             item["change_24h"] = market.get("change_24h")
             item["aai_score"] = (nft_aai.get(key) or {}).get("aai_score")
         return item

@@ -1,5 +1,6 @@
-// How old a crypto price is (audit N-05). The backend sends price_as_of (ISO UTC) and price_delayed (true when the
-// price is more than 15 minutes old: the market snapshot stalled). Pure helpers so node --test can check them.
+// How old a price is (audit N-05). The backend sends price_as_of (ISO UTC) and price_delayed: true when a crypto
+// price is more than 15 minutes old (the market snapshot stalled), or an NFT floor more than 48 hours old (floors are
+// daily). Pure helpers so node --test can check them.
 
 const pad = (n) => String(n).padStart(2, "0");
 
@@ -16,8 +17,9 @@ export function priceAsOfLabel(iso, now = new Date()) {
   return `as of ${t.getUTCDate()} ${month}, ${hm}`;
 }
 
-/** Tooltip for a delayed price. */
-export function delayedTitle(iso, now = new Date()) {
+/** Tooltip for a delayed price, or (floor: true) a delayed NFT floor. */
+export function delayedTitle(iso, now = new Date(), { floor = false } = {}) {
   const label = priceAsOfLabel(iso, now);
-  return `This price has not updated for over 15 minutes${label ? ` (${label})` : ""}.`;
+  const what = floor ? "This floor price has not updated for over 48 hours" : "This price has not updated for over 15 minutes";
+  return `${what}${label ? ` (${label})` : ""}.`;
 }

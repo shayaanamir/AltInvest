@@ -21,3 +21,8 @@ test("delayed tooltip names the time when known", () => {
   assert.equal(delayedTitle("2026-11-17T09:30:00Z", NOW), "This price has not updated for over 15 minutes (as of 09:30 UTC).");
   assert.equal(delayedTitle(null, NOW), "This price has not updated for over 15 minutes.");
 });
+
+test("delayed tooltip for an NFT floor names the 48-hour limit", () => {
+  assert.equal(delayedTitle("2026-11-15T00:00:00Z", NOW, { floor: true }),
+    "This floor price has not updated for over 48 hours (as of 15 Nov, 00:00 UTC).");
+});

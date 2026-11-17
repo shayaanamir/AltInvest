@@ -322,6 +322,8 @@ class WatchlistItemOut(BaseModel):
     # enriched at read time
     name: Optional[str] = None
     price: Optional[float] = None
+    price_as_of: Optional[str] = None       # audit N-05
+    price_delayed: Optional[bool] = None
     change_24h: Optional[float] = None
     aai_score: Optional[float] = None
 
@@ -373,6 +375,8 @@ class NFTCollectionListItem(BaseModel):
     supply: int
     floor_eth: Optional[float] = None
     floor_usd: Optional[float] = None
+    price_as_of: Optional[str] = None       # the floor's as-of time (audit N-05)
+    price_delayed: Optional[bool] = None    # older than 48 h
     change_24h: Optional[float] = None
     change_7d: Optional[float] = None
     volume_24h_eth: Optional[float] = None
@@ -395,6 +399,8 @@ class NFTCollectionDetail(BaseModel):
     verified: bool
     supply: int
     market: Optional[Dict] = None
+    price_as_of: Optional[str] = None       # the floor's as-of time (audit N-05)
+    price_delayed: Optional[bool] = None    # older than 48 h
     holder_stats: Optional[Dict] = None
     liquidity: Optional[Dict] = None
     risk_breakdown: Optional[Dict] = None

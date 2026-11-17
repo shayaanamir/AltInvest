@@ -2,6 +2,7 @@ import AssetAvatar from "../shared/AssetAvatar";
 import { IconBell, IconTrash, IconCheck } from "../icons";
 import { getAaiTierColor, AAI_BADGE_LABEL as SIGNAL_LABEL } from "../../utils/scoring";
 import { formatAssetPrice } from "../../utils/formatters";
+import DelayedBadge from "../shared/DelayedBadge";
 
 const SIGNAL_CLASS = { BUY: "signal-buy", HOLD: "signal-hold", SELL: "signal-sell" };
 
@@ -20,6 +21,7 @@ export default function WatchlistRow({ item, onAddToPortfolio, onSetAlert, onRem
 
       <div className="wl-price">
         {item.price != null ? formatAssetPrice(item.price) : "—"}
+        <DelayedBadge delayed={item.priceDelayed} asOf={item.priceAsOf} floor={item.type === "nft"} />
       </div>
 
       <span className={`wl-change ${positive ? "positive" : "negative"}`}>

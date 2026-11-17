@@ -50,7 +50,7 @@ export default function DiscoverAssetCard({ item, isComparing, onToggleCompare }
       <div className="disc-price-row">
         <span className="disc-price" title={priceAsOfLabel(item.priceAsOf) ?? undefined}>{formatAssetPrice(item.price)}</span>
         {item.priceDelayed && (
-          <span className="price-delayed-badge" title={delayedTitle(item.priceAsOf)}>Delayed</span>
+          <span className="price-delayed-badge" title={delayedTitle(item.priceAsOf, new Date(), { floor: item.type === "nft" })}>Delayed</span>
         )}
         <span className={`disc-change ${positive ? "positive" : "negative"}`}>
           {positive ? "↗" : "↘"} {item.changePct != null ? `${Math.abs(item.changePct).toFixed(2)}%` : "—"}

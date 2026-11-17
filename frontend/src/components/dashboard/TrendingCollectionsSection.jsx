@@ -3,6 +3,7 @@ import { useAsync } from "../../hooks/useAsync";
 import { dashboardApi } from "../../services/dashboardApi";
 import { formatPct } from "../../utils/formatters";
 import { getAaiTierClass } from "../../utils/scoring";
+import DelayedBadge from "../shared/DelayedBadge";
 import { ErrorState } from "../../errors";
 
 export default function TrendingCollectionsSection() {
@@ -55,7 +56,7 @@ export default function TrendingCollectionsSection() {
                   <div className="dv2-collection-price-row">
                     <div>
                       <div className="dv2-collection-price">{c.floorEth != null ? `${c.floorEth.toFixed(2)} ETH` : "—"}</div>
-                      <div className="dv2-collection-price-label">floor price</div>
+                      <div className="dv2-collection-price-label">floor price <DelayedBadge delayed={c.priceDelayed} asOf={c.priceAsOf} floor /></div>
                     </div>
                     <span className={`dv2-asset-change ${positive ? "positive" : "negative"}`}>
                       {positive ? "↗" : "↘"} {formatPct(c.change24h, { withSign: true })}

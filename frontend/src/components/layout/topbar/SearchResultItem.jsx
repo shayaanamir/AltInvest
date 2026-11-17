@@ -1,5 +1,6 @@
 import { formatAssetPrice } from "../../../utils/formatters";
 import { getAaiTierColor } from "../../../utils/scoring";
+import DelayedBadge from "../../shared/DelayedBadge";
 
 /** One search row: an asset / collection (price, AAI, held / watching), an insight, or a recent search. */
 export default function SearchResultItem({ id, item, priceKey, active, onHover, onSelect }) {
@@ -31,6 +32,7 @@ export default function SearchResultItem({ id, item, priceKey, active, onHover, 
 
       {isMarket && (
         <div className="tb-search-item-meta">
+          <DelayedBadge delayed={item.priceDelayed} asOf={item.priceAsOf} floor={item.kind === "collection"} />
           {item.held && <span className="tb-search-tag held">Held</span>}
           {!item.held && item.watching && <span className="tb-search-tag watching">Watching</span>}
           {item.aaiScore != null && (

@@ -62,6 +62,8 @@ export const topbarApi = {
         name: a.name,
         subtitle: a.subcategory,
         price: a.price,
+        priceAsOf: a.priceAsOf,          // audit N-05
+        priceDelayed: a.priceDelayed,
         aaiScore: a.aaiScore,
         held: a.held,
         watching: a.watching,
@@ -77,6 +79,8 @@ export const topbarApi = {
         name: c.name,
         subtitle: c.subcategory || "NFT Collection",
         floorUsd: c.price,
+        priceAsOf: c.priceAsOf,          // the floor's as-of (audit N-05)
+        priceDelayed: c.priceDelayed,
         aaiScore: c.aaiScore,
         held: c.held,
         watching: c.watching,

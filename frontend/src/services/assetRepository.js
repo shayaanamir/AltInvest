@@ -16,7 +16,7 @@ export function mapUniverseItem(r) {
     color: r.logo_color,
     avatarColor: r.logo_color,
     price: r.price,
-    priceAsOf: r.price_as_of ?? null,       // audit N-05: crypto only
+    priceAsOf: r.price_as_of ?? null,       // audit N-05: the price's time, or the NFT floor's as-of
     priceDelayed: r.price_delayed === true,
     priceLabel: nft && r.floor_eth != null ? `${r.floor_eth.toFixed(2)} ETH` : null,
     floorEth: r.floor_eth ?? null,
