@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
+import { useElementSize } from "../../hooks/useElementSize";
 import { ErrorState } from "../../errors";
 import { useAsync } from "../../hooks/useAsync";
 import { sentimentApi, onSentimentUpdated } from "../../services/sentimentApi";
@@ -23,7 +24,7 @@ function formatDateLabel(dStr) {
 export default function AssetOverTimeChart({ assetId, trend, colors }) {
   const [range, setRange] = useState(30);
   const [hoverIdx, setHoverIdx] = useState(null);
-  const containerRef = useRef(null);
+  const [containerRef, size] = useElementSize();
 
   const { data: rawSeries, loading, error, refetch } = useAsync(() => sentimentApi.getAssetOverTime(assetId, range), [assetId, range], { subscribe: onSentimentUpdated });
   const series = rawSeries || [];
@@ -156,7 +157,7 @@ export default function AssetOverTimeChart({ assetId, trend, colors }) {
               <div
                 style={{
                   position: "absolute",
-                  left: Math.min(Math.max((hoverPt.x / W) * (containerRef.current?.clientWidth || W) - 45, 5), (containerRef.current?.clientWidth || W) - 105),
+                  left: Math.min(Math.max((hoverPt.x / W) * (size.width || W) - 45, 5), (size.width || W) - 105),
                   top: 5,
                   background: "var(--sv2-card)",
                   border: "1px solid var(--sv2-border)",

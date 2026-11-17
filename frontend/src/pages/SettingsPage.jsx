@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/settingsProfile.css";
 import { authApi } from "../services/authApi";
@@ -24,25 +24,18 @@ const TABS = [
   { key: "data", label: "Data & account", icon: "db" },
 ];
 
-// Maps sidebar tab keys ("connected") to settingsApi section keys ("connectedAccounts")
-const TAB_TO_SECTION = {
-  preferences: "preferences",
-  appearance: "appearance",
-  notifications: "notifications",
-  security: "security",
-  connected: "connectedAccounts",
-};
-
 export default function SettingsPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("preferences");
   const toast = useToast();
   const { data: initialSettings, loading, error, refetch } = useAsync(() => settingsApi.getSettings(), []);
   const [settings, setSettings] = useState(null);
-
-  useEffect(() => {
-    if (initialSettings) setSettings(initialSettings);
-  }, [initialSettings]);
+  // Edits are made on a local copy (so they show at once); a freshly loaded copy replaces it.
+  const [loadedFrom, setLoadedFrom] = useState(null);
+  if (initialSettings && initialSettings !== loadedFrom) {
+    setLoadedFrom(initialSettings);
+    setSettings(initialSettings);
+  }
 
   const updateSection = (sectionKey, patch) => {
     const previous = settings?.[sectionKey];

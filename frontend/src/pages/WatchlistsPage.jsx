@@ -29,25 +29,26 @@ export default function WatchlistsPage() {
   const emptyState = watchlistApi.getEmptyState();
   const activeList = lists.find((l) => l.id === activeId) || null;
 
+  const load = () =>
+    watchlistApi.getInitialListsAsync()
+      .then((fetched) => {
+        setLists(fetched);
+        setActiveId((prev) => (fetched.some((l) => l.id === prev) ? prev : fetched[0]?.id ?? null));
+      })
+      .catch((e) => setLoadError(e))
+      .finally(() => setLoading(false));
+
+  // A retry or a reload after an edit: show loading again and clear the last error.
   const refetch = async () => {
     setLoading(true);
     setLoadError(null);
-    try {
-      const fetched = await watchlistApi.getInitialListsAsync();
-      setLists(fetched);
-      setActiveId((prev) => (fetched.some((l) => l.id === prev) ? prev : fetched[0]?.id ?? null));
-    } catch (e) {
-      setLoadError(e);
-    } finally {
-      setLoading(false);
-    }
+    await load();
   };
 
   useEffect(() => {
     // Starter assets offered when creating a list (a failure just leaves the picker empty).
     watchlistApi.getSearchableItems().then(setSearchableItems).catch(() => setSearchableItems([]));
-    refetch();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    load();
   }, []);
 
   // One request creates the list with its starter assets, so it can't half-succeed. A failure is

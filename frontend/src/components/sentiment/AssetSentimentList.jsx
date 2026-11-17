@@ -27,7 +27,7 @@ export default function AssetSentimentList({ colors, onSelectAsset }) {
   // "all" (Everything) fetches the combined feed; "tokenized" is disabled/unreachable
   const apiScope = tab === "all" ? "all" : tab === "tokenized" ? "crypto" : tab;
   const { data: rawRows, loading, error, refetch } = useAsync(() => sentimentApi.getAssetList(apiScope), [apiScope], { subscribe: onSentimentUpdated });
-  const rows = rawRows || [];
+  const rows = useMemo(() => rawRows || [], [rawRows]);
   // Everything on the signed-in user's watchlists, kept current as they edit them.
   const { data: watched } = useAsync(() => sentimentApi.getWatchedAssetIds(), [], { subscribe: onWatchlistsChanged });
 
@@ -127,7 +127,6 @@ export default function AssetSentimentList({ colors, onSelectAsset }) {
         ) : (
           filtered.map((row) => {
             const covered = row.score != null;
-            const positive = row.changePct >= 0;
             return (
               <div
                 key={row.assetId}

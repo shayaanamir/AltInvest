@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { relativeTime } from "../../utils/dateTime";
 import { formatAssetPrice } from "../../utils/formatters";
-import { IconSearch, IconRefresh, IconStar, IconChevronDown } from "../icons";
+import { IconSearch, IconRefresh, IconStar } from "../icons";
 
 export default function AssetDetailHeader({ detail, switchable, onBack, onSwitchAsset, onRefresh, refreshing, watching, onToggleWatching, watchDisabled }) {
-  const [ago, setAgo] = useState(relativeTime(detail.lastUpdated));
+  const [, setTick] = useState(0); // re-render every few seconds so "updated 5s ago" keeps counting
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -25,10 +25,10 @@ export default function AssetDetailHeader({ detail, switchable, onBack, onSwitch
   };
 
   useEffect(() => {
-    setAgo(relativeTime(detail.lastUpdated));
-    const id = setInterval(() => setAgo(relativeTime(detail.lastUpdated)), 5000);
+    const id = setInterval(() => setTick((t) => t + 1), 5000);
     return () => clearInterval(id);
-  }, [detail.lastUpdated]);
+  }, []);
+  const ago = relativeTime(detail.lastUpdated);
 
   return (
     <div className="sv2-flex-col sv2-gap-16">

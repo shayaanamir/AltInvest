@@ -1,6 +1,7 @@
-import { useEffect, useState, useRef } from "react";
+import { Suspense, useEffect, useState, useRef } from "react";
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
-import { ThemeProvider, useTheme } from "./context/ThemeContext";
+import { useTheme } from "./context/ThemeContext";
+import { ThemeProvider } from "./context/ThemeProvider";
 import "./styles/tokens.css";
 import Sidebar from "./components/layout/Sidebar";
 import Topbar from "./components/layout/Topbar";
@@ -46,7 +47,9 @@ function ShellRoutes() {
   // Track the current path so the modal's "Sign In" button can send the
   // person back to where they were once they re-authenticate.
   const currentPathRef = useRef(location.pathname + location.search);
-  currentPathRef.current = location.pathname + location.search;
+  useEffect(() => {
+    currentPathRef.current = location.pathname + location.search;
+  }, [location.pathname, location.search]);
 
   useEffect(() => {
     return onSessionExpired(() => setSessionExpired(true));
@@ -65,6 +68,7 @@ function ShellRoutes() {
   };
 
   const pageContent = (
+    <Suspense fallback={<div className="sv2-muted sv2-small" role="status" style={{ padding: 24 }}>Loading…</div>}>
     <Routes>
       {ROUTES.map(({ key, path, element: Element, protected: isProtected }) => {
         const inner =
@@ -84,6 +88,7 @@ function ShellRoutes() {
       })}
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
+    </Suspense>
   );
 
   // Changing the display currency (or rates arriving) re-mounts the page so every amount is redone.

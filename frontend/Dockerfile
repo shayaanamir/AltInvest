@@ -1,12 +1,12 @@
-# Dev image: runs the Vite dev server with HMR.
+# Dev image: runs the Vite dev server with HMR. For production see Dockerfile.prod.
 # Build from frontend/:  docker build -t altinvest-frontend .
 
-FROM node:20-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
 
 COPY . .
 

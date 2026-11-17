@@ -17,7 +17,6 @@ export default function MoodGaugeCard({
   title,
   metaLine,
   caption,
-  infoNote,
   axisLabels,
   score,
   arcGreen,

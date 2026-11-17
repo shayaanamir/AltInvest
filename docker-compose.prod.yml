@@ -1,0 +1,192 @@
+# Production stack (audit G-11). Development stays in docker-compose.yml.
+#
+#   cp .env.prod.example .env.prod      # then fill it in (see the comments there)
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+#
+# What is different from development:
+#   - nginx (frontend/Dockerfile.prod) is the only published port. It serves the built app and proxies /api/ to
+#     the backend, with a CSP and the other security headers (frontend/nginx-security-headers.conf).
+#   - The backend runs the built image (no bind mounts), as a non-root user, with APP_ENV=production, so no
+#     /docs, no demo user, no email links in the log, and a real JWT_SECRET is required.
+#   - MongoDB requires authentication, is not published, and the app uses its own readWrite user.
+#   - Every container has log rotation, the app containers drop all Linux capabilities, and ml runs as non-root.
+#   - Its own project name, so it never touches the development containers or volumes.
+#
+# TLS is not handled here: put a TLS proxy or load balancer in front of HTTP_PORT.
+
+name: altinvest-prod
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+x-hardening: &hardening
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+
+services:
+  mongodb:
+    image: mongo:7
+    command: mongod --quiet
+    restart: unless-stopped
+    # No ports: only reachable on the internal network.
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-root}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?set MONGO_ROOT_PASSWORD in .env.prod}
+      # Read by deploy/mongo-init/01-app-user.js on the first start of a new volume.
+      MONGO_APP_DB: ${MONGO_DB_NAME:-aaip_db}
+      MONGO_APP_USER: ${MONGO_APP_USER:-altinvest}
+      MONGO_APP_PASSWORD: ${MONGO_APP_PASSWORD:?set MONGO_APP_PASSWORD in .env.prod}
+    volumes:
+      - mongo_data:/data/db
+      - ./deploy/mongo-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # ping needs no authentication
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    logging: *logging
+    networks:
+      - altinvest
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: altinvest-backend:prod
+    restart: unless-stopped
+    init: true
+    <<: *hardening
+    # No ports: nginx reaches it as http://backend:8000.
+    environment:
+      APP_ENV: production
+      # The bundled MongoDB, as the app user. Set PROD_MONGO_URI to use another database (e.g. Atlas) instead.
+      MONGO_URI: ${PROD_MONGO_URI:-mongodb://${MONGO_APP_USER:-altinvest}:${MONGO_APP_PASSWORD}@mongodb:27017/${MONGO_DB_NAME:-aaip_db}?authSource=${MONGO_DB_NAME:-aaip_db}}
+      MONGO_DB_NAME: ${MONGO_DB_NAME:-aaip_db}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET (32+ bytes) in .env.prod}
+      # The public origin: email links, and the CORS allow-list (the browser itself calls /api on this origin).
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:?set FRONTEND_BASE_URL in .env.prod}
+      CORS_EXTRA_ORIGINS: ${CORS_EXTRA_ORIGINS:-}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      # nginx overwrites X-Forwarded-For with the address it sees, and the backend is reachable only from the
+      # internal network, so the forwarded address can be trusted.
+      TRUST_PROXY_HEADERS: "true"
+      FORWARDED_ALLOW_IPS: "*"
+      # uvicorn worker processes. Each one loads FinBERT (about 1 GB) and starts the schedulers (claim_run keeps
+      # them from running a job twice).
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-1}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      NFT_SENTIMENT_MODEL: ${NFT_SENTIMENT_MODEL:-openai/gpt-oss-120b}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
+      ML_BASE_URL: http://ml:8001
+    volumes:
+      # FinBERT is downloaded once and kept here.
+      - hf_cache:/home/app/.cache/huggingface
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      ml:
+        condition: service_started
+    logging: *logging
+    networks:
+      - altinvest
+
+  # ML service (see docker-compose.yml for what it and its two sidecars do). Same image, run as the image's
+  # unprivileged user; a new ml_data volume takes /data's owner from the image.
+  ml:
+    build:
+      context: .
+      dockerfile: ml/Dockerfile
+    image: altinvest-ml:prod
+    restart: unless-stopped
+    init: true
+    user: "10001:10001"
+    <<: *hardening
+    environment:
+      ML_NFT_FV_ARTIFACT_DIR: /artifacts/nft_fv
+      ML_NFT_FV_REFIT_DIR: /data/nft/fv_refits
+    volumes:
+      - ml_data:/data
+      - ./ml/artifacts/nft_fv:/artifacts/nft_fv:ro
+    logging: *logging
+    networks:
+      - altinvest
+
+  ml-refresh:
+    image: altinvest-ml:prod
+    restart: unless-stopped
+    init: true
+    user: "10001:10001"
+    <<: *hardening
+    command: python -m ml.data.refresh --loop
+    volumes:
+      - ml_data:/data
+    healthcheck:
+      disable: true
+    depends_on:
+      - ml
+    logging: *logging
+    networks:
+      - altinvest
+
+  ml-nft-refresh:
+    image: altinvest-ml:prod
+    restart: unless-stopped
+    init: true
+    user: "10001:10001"
+    <<: *hardening
+    command: python -m ml.nft.refresh --loop
+    environment:
+      OPENSEA_API_KEY: ${OPENSEA_API_KEY:-}
+      ALCHEMY_API_KEY: ${ALCHEMY_API_KEY:-}
+      ML_NFT_FV_ARTIFACT_DIR: /artifacts/nft_fv
+      ML_NFT_FV_REFIT_DIR: /data/nft/fv_refits
+      ML_NFT_LIVE_ACCURACY_DIR: /data/nft/live_accuracy/summaries
+    volumes:
+      - ml_data:/data
+      - ./ml/artifacts/nft_fv:/artifacts/nft_fv:ro
+    healthcheck:
+      disable: true
+    depends_on:
+      - ml
+    logging: *logging
+    networks:
+      - altinvest
+
+  # nginx: the built app, plus /api/ -> backend. The only published port.
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    image: altinvest-frontend:prod
+    restart: unless-stopped
+    <<: *hardening
+    ports:
+      - "${HTTP_PORT:-80}:8080"
+    depends_on:
+      - backend
+    logging: *logging
+    networks:
+      - altinvest
+
+volumes:
+  mongo_data:
+  ml_data:
+  hf_cache:
+
+networks:
+  altinvest:
+    driver: bridge
