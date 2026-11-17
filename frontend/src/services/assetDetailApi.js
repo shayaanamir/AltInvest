@@ -69,6 +69,8 @@ export const assetDetailApi = {
         signal: d.aai_panel.signal,
         confidence: d.aai_panel.confidence,
         note: d.aai_panel.note ?? null,
+        staleInputs: d.aai_panel.stale_inputs ?? [],   // audit G-20: inputs too old, no score
+        asOf: d.aai_panel.as_of ?? null,
       },
       // The ML service's own signal and note (null when no prediction is stored).
       mlSignal: d.ml_signal ?? null,

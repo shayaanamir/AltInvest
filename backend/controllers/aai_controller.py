@@ -5,11 +5,15 @@ Inputs come only from the database (`predictions`, `risk_scores`) and the sentim
 nothing is made up. A missing prediction or risk score leaves that component null and the AAI
 score null (with `missing_inputs` / `note` saying why). Sentiment is the one component with a
 stand-in (a neutral 50 at zero confidence), and the response flags when that happened.
+
+Input age (audit G-20): a prediction or risk row older than INPUT_MAX_AGE, or one the ML service itself marked
+"data stale", counts as missing. The score is then null, `stale_inputs` names the old inputs and the note says
+"inputs stale". Every response and stored row carries `inputs_as_of`, the time of each input it was built from.
 """
 
 import time
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from aai_engine.aai import compute_aai, normalise_sentiment, normalise_expected_return
 
 # ML's "no model beat no-change" fallback (ml/docs/DECISIONS.md D35): prediction_30d is 0 %.
@@ -19,6 +23,37 @@ BASELINE_NOTE = (
     "The prediction part is ML's no-change baseline (prediction_30d 0 %, model_version "
     "baseline-last-value): no model beat it, so it counts as a neutral 50, not as a forecast."
 )
+
+
+# The ML pull runs once a day (00:15 UTC), so a healthy row is at most ~24 h old. Three days allows two missed
+# pulls; past that the prediction / risk score no longer describes the market and is treated as missing (G-20).
+INPUT_MAX_AGE = timedelta(days=3)
+ML_STALE_MARKER = "data stale"      # ml/serving/responses.py adds "data stale: last bar <date>" to the note
+
+
+def _as_of(row: dict | None) -> datetime | None:
+    """When the ML service produced this row (its `timestamp`), as an aware UTC datetime; None if unknown."""
+    ts = (row or {}).get("timestamp")
+    if isinstance(ts, str):
+        try:
+            ts = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    if not isinstance(ts, datetime):
+        return None
+    return (ts if ts.tzinfo else ts.replace(tzinfo=timezone.utc)).astimezone(timezone.utc)
+
+
+def _is_stale(row: dict, now: datetime) -> bool:
+    """Too old to use: no readable time, older than INPUT_MAX_AGE, or flagged stale by the ML service."""
+    as_of = _as_of(row)
+    if as_of is None or now - as_of > INPUT_MAX_AGE:
+        return True
+    return ML_STALE_MARKER in str(row.get("note") or "")
+
+
+def _iso(dt: datetime | None) -> str | None:
+    return dt.strftime("%Y-%m-%dT%H:%M:%SZ") if dt else None
 
 
 def _get_real_prediction(asset: str) -> dict | None:
@@ -76,20 +111,29 @@ def _expected_return_pct(pred: dict, asset: str) -> float | None:
     return (target / price - 1.0) * 100.0
 
 
-def compute_aai_response(asset: str, sentiment: dict | None = None) -> dict:
+def compute_aai_response(asset: str, sentiment: dict | None = None, now: datetime | None = None) -> dict:
     """
     `sentiment` lets a caller pass a reading it already has ({sentiment_score, confidence,
     available}); without it the engine is asked, which may refresh a stale reading.
 
     An asset outside db.queries.ML_COVERED_ASSETS (DAI, BASE; ml/docs/DECISIONS.md D94) gets no AAI at all: no
     database read, no sentiment call, every score null and `covered` False.
+
+    A prediction or risk row past INPUT_MAX_AGE (or marked stale by the ML service) is not used: it is listed in
+    `stale_inputs` and in `missing_inputs`, and the score is null (audit G-20).
     """
     from db.queries import ML_COVERED_ASSETS
     if asset.upper() not in ML_COVERED_ASSETS:
         return not_covered_response(asset)
-    pred = _get_real_prediction(asset)
+    now = now or datetime.now(timezone.utc)
+    pred_row = _get_real_prediction(asset)
     sent = sentiment if sentiment is not None else _get_real_sentiment(asset)
-    risk = _get_real_risk(asset)
+    risk_row = _get_real_risk(asset)
+
+    inputs_as_of = {"prediction": _iso(_as_of(pred_row)), "risk": _iso(_as_of(risk_row))}
+    stale = [name for name, row in (("prediction", pred_row), ("risk score", risk_row)) if row and _is_stale(row, now)]
+    pred = None if "prediction" in stale else pred_row
+    risk = None if "risk score" in stale else risk_row
 
     expected = _expected_return_pct(pred, asset) if pred else None
     pred_score = normalise_expected_return(expected) if expected is not None else None
@@ -107,12 +151,19 @@ def compute_aai_response(asset: str, sentiment: dict | None = None) -> dict:
     )
     sentiment_available = bool(sent.get("available", True))
     missing = [name for name, v in (("prediction", pred_score), ("risk score", risk_score)) if v is None]
+    absent = [m for m in missing if m not in stale]
     notes = []
-    if missing:
-        notes.append(f"No {' or '.join(missing)} is stored for {asset} yet, so the AAI score can't be computed.")
+    if stale:
+        key = {"prediction": "prediction", "risk score": "risk"}
+        dated = " and ".join(f"{name} (from {inputs_as_of[key[name]] or 'an unknown time'})" for name in stale)
+        notes.append(f"Inputs stale: the stored {dated} is older than {INPUT_MAX_AGE.days} days or marked stale "
+                     f"by the ML service, so no AAI score is shown for {asset}.")
+    if absent:
+        notes.append(f"No {' or '.join(absent)} is stored for {asset} yet, so the AAI score can't be computed.")
     if pred_score is not None and (pred or {}).get("model_version") == BASELINE_MODEL_VERSION:
         notes.append(BASELINE_NOTE)
 
+    used = [inputs_as_of[k] for k, row in (("prediction", pred), ("risk", risk)) if row and inputs_as_of[k]]
     return {
         "asset": asset,
         "covered": True,
@@ -131,9 +182,12 @@ def compute_aai_response(asset: str, sentiment: dict | None = None) -> dict:
         ),
         "risk_score": round(risk_score, 2) if risk_score is not None else None,
         "missing_inputs": missing,
+        "stale_inputs": stale,                          # inputs that existed but were too old to use (G-20)
+        "inputs_as_of": inputs_as_of,                   # when each input was produced, used or not
+        "as_of": min(used) if used else None,           # the oldest input the score was built from
         "note": " ".join(notes) or None,
         "model_version": (pred or {}).get("model_version"),
-        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "timestamp": _iso(now),
     }
 
 
@@ -156,6 +210,9 @@ def not_covered_response(asset: str) -> dict:
         "sentiment_note": None,
         "risk_score": None,
         "missing_inputs": ["prediction", "risk score"],
+        "stale_inputs": [],
+        "inputs_as_of": {"prediction": None, "risk": None},
+        "as_of": None,
         "note": NOT_COVERED_NOTE,
         "model_version": None,
         "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -165,6 +222,11 @@ def not_covered_response(asset: str) -> dict:
 def is_complete(result: dict) -> bool:
     """True when every input was real (prediction, risk and sentiment): only then may it be cached."""
     return result.get("aai_score") is not None and result.get("sentiment_available") is not False
+
+
+def is_stale(result: dict) -> bool:
+    """True when a prediction or risk row existed but was too old to use (G-20)."""
+    return bool(result.get("stale_inputs"))
 
 
 # ── Background refresh ───────────────────────────────────────────────────────
@@ -180,13 +242,15 @@ def refresh_all_aai_scores() -> dict:
     Computes and stores the AAI for every covered crypto asset. Uses only stored sentiment
     readings (never runs the sentiment pipeline), and stores only complete scores; an asset
     missing a prediction, risk score or recent sentiment keeps its previous row.
-    Returns {"stored": [...], "skipped": {asset: reason}}.
+    An asset whose prediction or risk row is stale (G-20) gets a row with a null score and its
+    `stale_inputs`, so lists stop showing a score built from old inputs.
+    Returns {"stored": [...], "stale": [...], "skipped": {asset: reason}}.
     """
     from db.queries import get_supported_assets, upsert_aai_score_generalized
     from controllers.market_controller import live_sentiment_by_symbol
 
     live = live_sentiment_by_symbol()
-    stored, skipped = [], {}
+    stored, stale, skipped = [], [], {}
     from db.queries import ML_COVERED_ASSETS
     for a in get_supported_assets():
         symbol = a["asset_id"].upper()
@@ -199,6 +263,14 @@ def refresh_all_aai_scores() -> dict:
             if reading else {"sentiment_score": 0.0, "confidence": 0.0, "available": False}
         )
         result = compute_aai_response(symbol, sentiment=sentiment)
+        if is_stale(result):
+            upsert_aai_score_generalized(
+                "crypto", symbol,
+                {**result, "target_type": "crypto", "target_id": symbol, "sentiment_trend": None,
+                 "timestamp": datetime.now(timezone.utc)},
+            )
+            stale.append(symbol)
+            continue
         if not is_complete(result):
             skipped[symbol] = ", ".join(result["missing_inputs"] + ([] if reading else ["recent sentiment"]))
             continue
@@ -208,7 +280,7 @@ def refresh_all_aai_scores() -> dict:
              "timestamp": datetime.now(timezone.utc)},
         )
         stored.append(symbol)
-    return {"stored": stored, "skipped": skipped}
+    return {"stored": stored, "stale": stale, "skipped": skipped}
 
 
 def run_aai_refresh_scheduler(initial_delay_seconds: int = 120) -> None:
@@ -219,7 +291,8 @@ def run_aai_refresh_scheduler(initial_delay_seconds: int = 120) -> None:
         try:
             if claim_run("aai-refresh", AAI_REFRESH_SECONDS - 60):
                 outcome = refresh_all_aai_scores()
-                _log.info("[aai] stored %d score(s); skipped %s", len(outcome["stored"]), outcome["skipped"] or "none")
+                _log.info("[aai] stored %d score(s); inputs stale: %s; skipped %s", len(outcome["stored"]),
+                          outcome["stale"] or "none", outcome["skipped"] or "none")
         except Exception as exc:
             from utils.http_errors import redact
             _log.error("[aai] refresh failed: %s: %s", type(exc).__name__, redact(exc))
