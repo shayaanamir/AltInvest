@@ -1,182 +1,208 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { L } from "../landingPage/landingTokens";
-import { IconCheck2 } from "../icons";
-import { useAsync } from "../../hooks/useAsync";
-import { fetchUniverse } from "../../services/assetRepository";
-import { formatPct } from "../../utils/formatters";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { IconSearch, IconX } from "../icons";
 import { ErrorState } from "../../errors";
+import { discoverApi, defaultFilters } from "../../services/discoverApi";
+import { togglePick, MAX_PICKS } from "../../utils/onboardingPayload";
+import AssetPickCard from "./AssetPickCard";
+import StepHead from "./StepHead";
 
-// Draws a sparkline path from real price points (scaled into the 42x16 box).
-function sparkPath(values) {
-    if (!values || values.length < 2) return "";
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    const span = max - min || 1;
-    return values
-        .map((v, i) => `${i === 0 ? "M" : "L"}${((i / (values.length - 1)) * 42).toFixed(1)},${(15 - ((v - min) / span) * 14).toFixed(1)}`)
-        .join(" ");
-}
+const PAGE_SIZE = 24;
+const SORTS = [
+  { key: "aai_score", label: "AAI score" },
+  { key: "change_24h", label: "24h move" },
+  { key: "market_cap", label: "Market cap" },
+];
+// answers.markets uses "nfts"; Discover calls the category "nft". `list` is the answers key that stores the picks.
+const TABS = {
+  crypto: { label: "Crypto", category: "crypto", list: "assets", pick: (i) => i.symbol },
+  nfts: { label: "NFTs", category: "nft", list: "nfts", pick: (i) => i.id },
+};
 
-function Spark({ values, pos }) {
-    const path = sparkPath(values);
-    if (!path) return <div style={{ width: 42, height: 16 }} />;
-    return (
-        <svg width="42" height="16" viewBox="0 0 42 16" preserveAspectRatio="none">
-            <path d={path} fill="none"
-                stroke={pos ? L.green : L.red}
-                strokeWidth="1.8" strokeLinecap="round" />
-        </svg>
-    );
+function useDebounced(value, ms) {
+  const [v, setV] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setV(value), ms);
+    return () => clearTimeout(t);
+  }, [value, ms]);
+  return v;
 }
 
 export default function Step4Assets({ answers, setAnswer }) {
-    const [query, setQuery] = useState("");
-    const selected = answers.assets || [];
+  const markets = answers.markets?.length ? answers.markets : ["crypto", "nfts"];
+  const tabKeys = Object.keys(TABS).filter((k) => markets.includes(k));
+  const [tab, setTab] = useState(tabKeys[0]);
+  const [q, setQ] = useState("");
+  const [sort, setSort] = useState("aai_score");
+  // `key` names the search the rows belong to; while it differs from the current search, a load is in flight.
+  const [state, setState] = useState({ key: null, cat: null, items: [], total: 0, error: null });
+  const [more, setMore] = useState({ loading: false, error: null });
+  const [reload, setReload] = useState(0);
+  const query = useDebounced(q, 300);
+  const requestId = useRef(0);
 
-    // The crypto assets the platform covers, best AAI score first, with their real 24h move and price trail.
-    const { data: universe, loading, error, refetch } = useAsync(
-        () => fetchUniverse({ category: "crypto", sort: "aai_score", order: "desc" }),
-        []
-    );
-    const assets = (universe || []).map((a) => ({
-        sym: a.symbol,
-        name: a.name,
-        chg: formatPct(a.changePct ?? 0, { withSign: true }),
-        pos: (a.changePct ?? 0) >= 0,
-        aiPick: a.signal === "BUY", // a Strong AAI rating (audit G-37: shown as a rating, not a pick)
-        spark: a.sparkline,
-    }));
+  const cfg = TABS[tab];
+  const picked = answers.picked || {};               // { "crypto:BTC": { kind, id, symbol, name, color } } for the tray
+  const selectedIds = answers[cfg.list] || [];
 
-    const toggle = (sym) => {
-        const next = selected.includes(sym)
-            ? selected.filter(s => s !== sym)
-            : [...selected, sym];
-        setAnswer("assets", next);
-    };
+  const fetchPage = useCallback((offset) => {
+    const id = ++requestId.current;                  // ignore answers that arrive after a newer request
+    return discoverApi
+      .getPage(cfg.category, { ...defaultFilters(), sort, order: "desc" }, { q: query, offset, limit: PAGE_SIZE })
+      .then((page) => (id === requestId.current ? page : null));
+  }, [cfg.category, sort, query]);
 
-    const filtered = assets.filter(a =>
-        a.sym.toLowerCase().includes(query.toLowerCase()) ||
-        a.name.toLowerCase().includes(query.toLowerCase())
-    );
+  const searchKey = `${cfg.category}|${sort}|${query}|${reload}`;
 
-    return (
-        <div style={{
-            flex: 1, display: "flex", flexDirection: "column",
-            alignItems: "center", justifyContent: "flex-start",
-            padding: "44px 48px 24px",
-            fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
-        }}>
-            <motion.h1
-                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.55 }}
-                style={{ fontSize: "clamp(26px,3.5vw,40px)", fontWeight: 800, color: L.ink, margin: "0 0 10px", textAlign: "center", letterSpacing: "-1px" }}
-            >
-                Build your intelligence feed.
-            </motion.h1>
-            <motion.p
-                initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.08, duration: 0.5 }}
-                style={{ fontSize: 14.5, color: L.ink2, margin: "0 0 28px", textAlign: "center" }}
-            >
-                Add assets to track. AI will surface signals on what matters.
-            </motion.p>
+  useEffect(() => {
+    let live = true;
+    const done = { key: searchKey, cat: cfg.category };
+    fetchPage(0)
+      .then((page) => live && page && setState({ ...done, items: page.items, total: page.total, error: null }))
+      .catch((error) => live && setState({ ...done, items: [], total: 0, error }));
+    return () => { live = false; };
+  }, [fetchPage, searchKey, cfg.category]);
 
-            <motion.div
-                initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.14, duration: 0.5 }}
-                style={{ width: "100%", maxWidth: 560, marginBottom: 18, position: "relative" }}
-            >
-                <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: L.ink3, fontSize: 14 }}>⌕</span>
-                <input
-                    type="text"
-                    placeholder="Search assets..."
-                    value={query}
-                    onChange={e => setQuery(e.target.value)}
-                    style={{
-                        width: "100%", boxSizing: "border-box",
-                        background: "var(--sv2-card-alt)",
-                        border: "1px solid var(--sv2-border)",
-                        borderRadius: 10, padding: "11px 14px 11px 38px",
-                        fontSize: 13.5, color: L.ink, outline: "none", fontFamily: "inherit",
-                        transition: "border-color 0.2s",
-                    }}
-                    onFocus={e => e.target.style.borderColor = "color-mix(in srgb, var(--sv2-accent) 50%, transparent)"}
-                    onBlur={e => e.target.style.borderColor = "var(--sv2-border)"}
-                />
-            </motion.div>
+  const loadMore = () => {
+    setMore({ loading: true, error: null });
+    fetchPage(items.length)
+      .then((page) => {
+        if (!page) return;
+        setState((s) => ({ ...s, items: [...s.items, ...page.items], total: page.total }));
+        setMore({ loading: false, error: null });
+      })
+      .catch((error) => setMore({ loading: false, error }));
+  };
 
-            <motion.div
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                transition={{ delay: 0.2, duration: 0.5 }}
-                style={{ width: "100%", maxWidth: 560 }}
-            >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: L.ink3, textTransform: "uppercase", letterSpacing: "0.07em" }}>Covered assets</span>
-                    <span style={{ fontSize: 11, color: L.ink2 }}>{selected.length} asset{selected.length !== 1 ? "s" : ""} selected</span>
-                </div>
+  const toggle = (item) => {
+    const id = cfg.pick(item);
+    const key = `${tab}:${id}`;
+    if (!selectedIds.includes(id) && selectedIds.length >= MAX_PICKS) return;   // at the cap: ignore a new pick
+    const next = togglePick(selectedIds, id, MAX_PICKS);
+    setAnswer(cfg.list, next);
+    const meta = { ...picked };
+    if (next.includes(id)) meta[key] = { kind: tab, id, symbol: item.symbol, name: item.name };
+    else delete meta[key];
+    setAnswer("picked", meta);
+  };
 
-                {error ? (
-                    <ErrorState error={error} onRetry={refetch} title="Couldn't load assets" />
-                ) : loading ? (
-                    <div style={{ fontSize: 12, color: L.ink3 }}>Loading assets…</div>
-                ) : filtered.length === 0 ? (
-                    <div style={{ fontSize: 12, color: L.ink3 }}>{query ? "No assets match your search." : "No assets are covered yet."}</div>
-                ) : null}
+  const remove = (key) => {
+    const { kind, id } = picked[key];
+    setAnswer(TABS[kind].list, (answers[TABS[kind].list] || []).filter((x) => x !== id));
+    const meta = { ...picked };
+    delete meta[key];
+    setAnswer("picked", meta);
+  };
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-                    {filtered.map((a, i) => {
-                        const active = selected.includes(a.sym);
-                        return (
-                            <motion.div
-                                key={a.sym}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: i * 0.03, duration: 0.35 }}
-                                onClick={() => toggle(a.sym)}
-                                style={{
-                                    background: active ? "color-mix(in srgb, var(--sv2-accent) 10%, transparent)" : "var(--sv2-card-alt)",
-                                    border: `1px solid ${active ? "color-mix(in srgb, var(--sv2-accent) 40%, transparent)" : "var(--sv2-border)"}`,
-                                    borderRadius: 10, padding: "11px 12px",
-                                    cursor: "pointer", display: "flex", alignItems: "center",
-                                    justifyContent: "space-between", gap: 8,
-                                    transition: "all 0.18s",
-                                }}
-                            >
-                                <div style={{ minWidth: 0 }}>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
-                                        <span style={{ fontSize: 12, fontWeight: 700, color: L.ink }}>{a.sym}</span>
-                                        {a.aiPick && (
-                                            <span style={{
-                                                fontSize: 8, fontWeight: 700, padding: "1px 5px", borderRadius: 4,
-                                                background: "color-mix(in srgb, var(--sv2-accent) 20%, transparent)", color: L.blue,
-                                                border: "1px solid color-mix(in srgb, var(--sv2-accent) 30%, transparent)", letterSpacing: "0.03em",
-                                            }}>Strong AAI</span>
-                                        )}
-                                    </div>
-                                    <div style={{ fontSize: 10, color: L.ink3 }}>{a.name}</div>
-                                </div>
-                                <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                                    <div>
-                                        <Spark values={a.spark} pos={a.pos} />
-                                        <div style={{ fontSize: 10, fontWeight: 600, color: a.pos ? L.green : L.red, textAlign: "right" }}>{a.chg}</div>
-                                    </div>
-                                    <div style={{
-                                        width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
-                                        background: active ? L.blue : "var(--sv2-chip)",
-                                        border: `1px solid ${active ? L.blue : "var(--sv2-border-strong)"}`,
-                                        display: "flex", alignItems: "center", justifyContent: "center",
-                                        fontSize: 11, color: active ? "#fff" : L.ink3,
-                                        transition: "all 0.18s",
-                                    }}>
-                                        {active ? <IconCheck2 size={13} style={{ color: "#fff" }} /> : "+"}
-                                    </div>
-                                </div>
-                            </motion.div>
-                        );
-                    })}
-                </div>
-            </motion.div>
+  const chips = Object.entries(picked).filter(([, p]) => (answers[TABS[p.kind].list] || []).includes(p.id));
+  const loading = state.key !== searchKey;
+  const items = state.cat === cfg.category ? state.items : [];   // never show the other market's rows
+  const { total } = state;
+  const error = state.key === searchKey ? state.error : null;
+  const hasMore = items.length < total;
+
+  return (
+    <>
+      <StepHead
+        eyebrow="Follow"
+        title="Pick what you want to follow"
+        sub="Choose a few coins or collections. They're saved to a watchlist so your dashboard has something to show from day one."
+      />
+
+      <div className="ob-toolbar">
+        {tabKeys.length > 1 && (
+          <div className="sv2-segmented" role="tablist" aria-label="Market">
+            {tabKeys.map((k) => (
+              <button
+                key={k} type="button" role="tab" aria-selected={tab === k}
+                className={tab === k ? "active" : ""}
+                onClick={() => { setTab(k); setQ(""); }}
+              >
+                {TABS[k].label}
+                {(answers[TABS[k].list] || []).length > 0 && ` · ${(answers[TABS[k].list] || []).length}`}
+              </button>
+            ))}
+          </div>
+        )}
+        <label className="ob-search">
+          <IconSearch size={15} />
+          <input
+            type="text"
+            autoComplete="off"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={tab === "nfts" ? "Search collections" : "Search coins"}
+            aria-label={tab === "nfts" ? "Search collections" : "Search coins"}
+            maxLength={64}
+          />
+          {q && (
+            <button type="button" onClick={() => setQ("")} aria-label="Clear search"><IconX size={14} /></button>
+          )}
+        </label>
+      </div>
+
+      <div className="ob-sortrow" role="group" aria-label="Sort by">
+        <span className="ob-sortlabel">Sort by</span>
+        {SORTS.map((s) => (
+          <button
+            key={s.key} type="button"
+            className={`sv2-chip ${sort === s.key ? "active" : ""}`}
+            aria-pressed={sort === s.key}
+            onClick={() => setSort(s.key)}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      {error && items.length === 0 ? (
+        <ErrorState error={error} onRetry={() => setReload((n) => n + 1)} variant="inline" title="Couldn't load the list" />
+      ) : loading && items.length === 0 ? (
+        <div className="ob-state" role="status"><span className="sv2-spinner" /> Loading…</div>
+      ) : items.length === 0 ? (
+        <div className="sv2-empty-state">
+          <div className="sv2-empty-title">{query ? `Nothing matches "${query}"` : "Nothing to show yet"}</div>
+          <div>{query ? "Try a different name or symbol." : "You can add assets any time from Discover."}</div>
         </div>
-    );
+      ) : (
+        <>
+          <div className="ob-asset-grid">
+            {items.map((item) => (
+              <AssetPickCard key={`${item.type}:${item.id}`} item={item} selected={selectedIds.includes(cfg.pick(item))} onToggle={toggle} />
+            ))}
+          </div>
+          {more.error && <ErrorState error={more.error} onRetry={loadMore} variant="inline" title="Couldn't load more" />}
+          {hasMore && (
+            <div className="ob-more">
+              <button type="button" className="ob-btn ob-btn-outline" onClick={loadMore} disabled={more.loading}>
+                {more.loading ? "Loading…" : `Show more (${total - items.length})`}
+              </button>
+            </div>
+          )}
+        </>
+      )}
+
+      <div className="sv2-card ob-tray">
+        <div className="ob-tray-head">
+          <span className="ob-tray-title">{chips.length ? `${chips.length} selected` : "Nothing selected yet"}</span>
+          <span className="ob-tray-hint">
+            {chips.length
+              ? "Saved as “My Watchlist” when you finish."
+              : "That's fine. You can add assets any time from Discover."}
+          </span>
+        </div>
+        {chips.length > 0 && (
+          <div className="ob-chips">
+            {chips.map(([key, p]) => (
+              <span className="ob-chip" key={key}>
+                {p.symbol}
+                <button type="button" className="ob-chip-x" onClick={() => remove(key)} aria-label={`Remove ${p.name}`}>
+                  <IconX size={12} />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
+  );
 }

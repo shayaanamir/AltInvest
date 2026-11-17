@@ -34,7 +34,7 @@ def seed():
             "created_at": NOW,
             "email_verified": True,
             "risk_profile": "balanced",
-            "layout_preference": "ai-first",
+            "layout_preference": "everything",
             "display_currency": "USD",
             "onboarding": {
                 "completed": True,
@@ -45,7 +45,7 @@ def seed():
                     "risk": 55,
                     "goals": ["research", "discovery", "portfolio"],
                     "assets": ["BTC", "ETH", "SOL"],
-                    "layout": "ai-first",
+                    "focus": "everything",
                 },
             },
             "bio": "Long-term crypto holder exploring alternative assets.",
@@ -63,7 +63,7 @@ def seed():
             "user_id": user_id,
             "preferences": {
                 "display_currency": "USD", "date_format": "MM/DD/YYYY",
-                "default_landing_page": "Dashboard", "default_dashboard_layout": "ai-first",
+                "default_landing_page": "Dashboard", "default_dashboard_layout": "everything",
             },
             "appearance": {"theme": "dark", "density": "comfortable"},
             "notifications": {

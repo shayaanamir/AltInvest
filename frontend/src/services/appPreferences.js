@@ -3,6 +3,7 @@ import { useSyncExternalStore } from "react";
 // Loaded from GET /settings (and GET /fx for exchange rates) after sign-in; the Settings page pushes
 // changes in as they are saved.
 import { apiFetch } from "./apiClient";
+import { DEFAULT_FOCUS, normalizeFocus } from "../utils/homeFocus";
 
 const DEFAULTS = {
   loaded: false,
@@ -10,6 +11,7 @@ const DEFAULTS = {
   density: "comfortable",
   theme: null, // null = leave whatever the top-bar toggle says
   landingPage: "Dashboard",
+  dashboardFocus: DEFAULT_FOCUS, // which dashboard widgets show (utils/homeFocus.js)
   displayCurrency: "USD", // what the user chose
   fx: null, // { rates: { EUR: 0.89, ... }, asOf: "YYYY-MM-DD", source } from GET /fx, or null if unavailable
 };
@@ -49,6 +51,7 @@ export async function loadAppPreferences() {
     density: s.appearance?.density ?? DEFAULTS.density,
     theme: s.appearance?.theme ?? null,
     landingPage: s.preferences?.default_landing_page ?? DEFAULTS.landingPage,
+    dashboardFocus: normalizeFocus(s.preferences?.default_dashboard_layout),
     displayCurrency: s.preferences?.display_currency ?? DEFAULTS.displayCurrency,
     fx,
   });
@@ -61,6 +64,7 @@ export function applySavedPreference(section, patch) {
   if (section === "preferences") {
     if (patch.dateFormat !== undefined) next.dateFormat = patch.dateFormat;
     if (patch.defaultLandingPage !== undefined) next.landingPage = patch.defaultLandingPage;
+    if (patch.defaultDashboardLayout !== undefined) next.dashboardFocus = normalizeFocus(patch.defaultDashboardLayout);
     if (patch.displayCurrency !== undefined) {
       next.displayCurrency = patch.displayCurrency;
       // Rates may have been unavailable at sign-in; try again now that they're needed.
@@ -91,7 +95,7 @@ export function getDisplayCurrency() {
   return { code: "USD", rate: 1, wanted, unavailable: true, asOf: null };
 }
 
-const LANDING_PATHS = { Dashboard: "/dashboard", Portfolio: "/portfolio", Sentiment: "/sentiment" };
+const LANDING_PATHS = { Dashboard: "/dashboard", Portfolio: "/portfolio", Discover: "/discover", Sentiment: "/sentiment" };
 
 // Where to send the user after signing in; falls back to the dashboard if the settings can't be read.
 export async function resolveLandingPath() {
