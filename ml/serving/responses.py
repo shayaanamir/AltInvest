@@ -7,7 +7,7 @@ no metric is computed on any split. Served:
   history for all assets (D36); sharpe per D37. Since D82 that is persistence vol_30d (D27): the D51 EWMA approval
   was withdrawn under top-only selection (D81). EWMA (ml.features.features.ewma_vol, as in the Phase 9
   evaluation) is still computed and logged for the D46 monitor, but not served;
-- signal and confidence: ml.signal.signal_logic.generate_signal (D33).
+- signal and confidence: ml.signals.signal_logic.generate_signal (D33).
 Staleness is measured from the latest bar's close (its open time + 1 day), when its data became complete (D38).
 Every asset passes the serving gate first (D40): its CSV must match a passed validation report, else NotServable.
 """
@@ -25,7 +25,7 @@ from ml.data.serving_gate import NotServable, servable_raw
 from ml.evaluation import metrics as m
 from ml.evaluation.backtest import percentile_rank
 from ml.features.features import build_features, ewma_vol
-from ml.signal.signal_logic import generate_signal
+from ml.signals.signal_logic import generate_signal
 
 BAR = pd.Timedelta(days=1)
 DECISIONS_IN_FORCE = ("D6", "D27", "D33", "D35", "D36", "D37", "D38", "D40", "D81", "D82", "D94")

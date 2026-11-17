@@ -10,7 +10,7 @@ Write the one function that turns model output into the API's BUY/HOLD/SELL/UNCE
 4. Ran the backtest for BTC, ETH and SOL on the walk-forward fold origins only (before the sealed test split).
 
 ## 3. Files
-- `ml/signal/signal_logic.py`: the one `generate_signal()`; no price inputs, never STRONG_*.
+- `ml/signals/signal_logic.py`: the one `generate_signal()`; no price inputs, never STRONG_*.
 - `ml/evaluation/backtest.py`: positions, fees, returns, hit rate, random baseline.
 - `ml/evaluation/run_backtest.py`: calls `generate_signal` for every window and writes the report.
 - `ml/reports/{btc,eth,sol}/backtest.json`: tracked evidence.

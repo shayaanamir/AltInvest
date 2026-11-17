@@ -4,7 +4,7 @@
 
 Writes ml/reports/{asset}/backtest.json. One 30-day window per fold origin; the signal at origin t comes
 from that fold's fit (Phase 4.0 harness, so the test split stays sealed). Every signal comes from
-ml.signal.signal_logic.generate_signal. Strategies: served (D33, all UNCERTAIN) and the reference row
+ml.signals.signal_logic.generate_signal. Strategies: served (D33, all UNCERTAIN) and the reference row
 (4c top config with serving forced on; evidence only, never served). Nothing here is an approval (D32, D34).
 """
 
@@ -28,7 +28,7 @@ from ml.evaluation.run_walkforward_direction import prob_columns
 from ml.evaluation.walkforward import make_folds, run_folds
 from ml.labels.labels import DIRECTION_CLASSES
 from ml.models import direction
-from ml.signal import signal_logic
+from ml.signals import signal_logic
 
 FEE = config.BACKTEST_FEE_PER_SIDE
 
@@ -112,7 +112,7 @@ def run(asset: str) -> dict:
                                 "demonstrated gain' (D29, D30). Reported, not used for approval (D32, D34).")}
     report["metadata"] = run_metadata(asset, data, b2, n, pooled)
     report["metadata"]["note"] = ("Backtest on walk-forward fold origins (D21, D34). Signals from "
-                                  "ml.signal.signal_logic.generate_signal. Test rows [b2, n) were never built or read.")
+                                  "ml.signals.signal_logic.generate_signal. Test rows [b2, n) were never built or read.")
     return _clean(report)
 
 

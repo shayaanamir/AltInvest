@@ -110,7 +110,7 @@ Terms marked *(not used yet)* appear in the plan docs but no code uses them so f
 - **Convergence warning**: the fitting algorithm stopped at its iteration limit before settling. Phase 4c counts these per fold (D31).
 - **Move-vs-no-move skill vs up/down skill**: knowing *whether* the price will move a lot (useful for risk) versus knowing *which way* it will move (needed for BUY or SELL). Phase 5a found neither demonstrated for the ETH direction model (D33).
 - **Serving rule**: the recorded decision on what the API returns for an asset, whatever a model scores. For direction: signal UNCERTAIN, confidence null (D33).
-- **generate_signal**: the one function (`ml/signal/signal_logic.py`) that turns direction probabilities into BUY/HOLD/SELL/UNCERTAIN. The API and the backtest both call it (AGENTS rule 6).
+- **generate_signal**: the one function (`ml/signals/signal_logic.py`) that turns direction probabilities into BUY/HOLD/SELL/UNCERTAIN. The API and the backtest both call it (AGENTS rule 6).
 - **Long-only**: a strategy that can only own the coin or hold cash; SELL means "be in cash", not "bet on a fall" (D34).
 - **Transaction cost**: the fee paid when buying or selling; here 0.1% each time the position changes (D34).
 - **Random-signal baseline**: a strategy that says BUY with 50% chance each window, repeated over 1000 seeded runs, to show what luck alone gives (D34).

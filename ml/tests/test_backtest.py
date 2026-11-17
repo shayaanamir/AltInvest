@@ -91,7 +91,7 @@ def test_served_policy_equals_always_hold():
 
 def test_backtest_calls_generate_signal(monkeypatch):
     at, _, _ = _origins()
-    monkeypatch.setattr("ml.signal.signal_logic.generate_signal",
+    monkeypatch.setattr("ml.signals.signal_logic.generate_signal",
                         lambda *args, **kwargs: {"signal": "BUY", "confidence": None, "note": "test"})
     res = backtest("eth", at, TOP)
     raw = np.exp(at["fwd_return_30d"].to_numpy()) - 1
