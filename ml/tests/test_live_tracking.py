@@ -155,3 +155,26 @@ def test_risk_monitor_ignores_rows_logged_before_ewma():
     old = [{k: v for k, v in r.items() if k != "ewma_vol"} for r in _scored("sol", range(0, 400), 0.02, 0.03, 0.02)]
     res = live_score.risk_monitor(old)["per_asset"]["sol"]
     assert res["n_scored"] == 0 and res["status"] == "insufficient data"
+
+
+def test_read_log_skips_a_corrupt_line_and_says_so(dirs, capsys):
+    """Audit G-45 A2: a half-written line (e.g. the process was killed mid-write) is skipped, not fatal."""
+    path = prediction_log.log_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    good = {"asset": "btc", "last_bar": "2026-11-01"}
+    path.write_text(json.dumps(good) + "\n" + '{"asset": "eth", "last_ba' + "\n\n" + "[1, 2]\n"
+                    + json.dumps({**good, "asset": "sol"}) + "\n", encoding="utf-8")
+    assert [r["asset"] for r in prediction_log.read_log()] == ["btc", "sol"]
+    out = capsys.readouterr().out
+    assert "skipped corrupt line 2" in out and "skipped line 4" in out and "not a JSON object" in out
+
+
+def test_refresh_still_logs_after_a_corrupt_line(dirs, monkeypatch):
+    path = prediction_log.log_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text('{"asset": "btc", "last_bar": "20', encoding="utf-8")           # cut off mid-line, no newline
+    monkeypatch.setattr(fetch, "fetch", fake_fetch(400))
+    assert refresh.run_once() == 0
+    assert sorted(r["asset"] for r in prediction_log.read_log()) == sorted(config.ASSETS)
+    first, second = path.read_text(encoding="utf-8").splitlines()[:2]
+    assert first == '{"asset": "btc", "last_bar": "20' and json.loads(second)["asset"]   # new rows start on a new line

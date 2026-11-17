@@ -23,10 +23,25 @@ def log_path():
 
 
 def read_log() -> list[dict]:
+    """Every logged row. A line that isn't a JSON object (say, half-written when the process was killed) is skipped
+    and reported, so one bad line never stops the refresh's logging or the live scorecard (audit G-45 A2)."""
     path = log_path()
     if not path.exists():
         return []
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    rows = []
+    for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError as e:
+            print(f"prediction log: skipped corrupt line {n} of {path.name} ({e.msg})", flush=True)
+            continue
+        if not isinstance(row, dict):
+            print(f"prediction log: skipped line {n} of {path.name} (not a JSON object)", flush=True)
+            continue
+        rows.append(row)
+    return rows
 
 
 def served_row(asset: str, now: datetime, feats) -> dict:
@@ -48,12 +63,16 @@ def append_served(now: datetime) -> list[str]:
     except NotServable as e:
         print(f"prediction log skipped: {e}", flush=True)
         return []
-    seen = {(row["asset"], row["last_bar"]) for row in read_log()}
+    seen = {(row.get("asset"), row.get("last_bar")) for row in read_log()}
     new = [row for row in (served_row(a, now, feats) for a in config.ASSETS)
            if (row["asset"], row["last_bar"]) not in seen]
     if new:
         path = log_path()
         path.parent.mkdir(parents=True, exist_ok=True)
+        # A write cut off mid-line leaves no newline: start on a fresh line so the new rows stay readable (G-45 A2).
+        broken_tail = path.exists() and path.stat().st_size > 0 and not path.read_bytes().endswith(b"\n")
         with path.open("a", encoding="utf-8") as f:
+            if broken_tail:
+                f.write("\n")
             f.writelines(json.dumps(row) + "\n" for row in new)
     return [row["asset"] for row in new]
