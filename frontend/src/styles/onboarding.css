@@ -1,0 +1,240 @@
+/* Onboarding: the five first-run screens. Uses the app's tokens only (tokens.css), so it follows the
+   dark/light theme like every other page. Classes are prefixed ob-. */
+
+.ob-page {
+  min-height: 100vh; display: flex; flex-direction: column;
+  background: var(--sv2-bg); color: var(--sv2-text);
+  font-family: 'DM Sans', 'Segoe UI', sans-serif;
+}
+
+/* ---------- top bar + progress ---------- */
+.ob-top {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 14px 28px; border-bottom: 1px solid var(--sv2-border);
+}
+.ob-brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.ob-logo {
+  width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+  background: var(--sv2-accent); color: var(--sv2-accent-contrast);
+  display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800;
+}
+.ob-brand-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.ob-brand-name { font-size: 16px; font-weight: 700; line-height: 1.2; }
+.ob-brand-sub { font-size: 11px; color: var(--sv2-text-soft); }
+.ob-top-right { display: flex; align-items: center; gap: 6px; }
+.ob-stepcount { font-size: 12.5px; font-weight: 600; color: var(--sv2-text-soft); margin-right: 8px; white-space: nowrap; }
+
+.ob-icon-btn {
+  width: 34px; height: 34px; border-radius: 50%; border: none; background: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; color: var(--sv2-text-soft);
+  transition: background 0.15s, color 0.15s;
+}
+.ob-icon-btn:hover { background: var(--sv2-chip); color: var(--sv2-text); }
+
+.ob-progress {
+  width: 100%; max-width: 980px; margin: 18px auto 0; padding: 0 28px;
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
+}
+.ob-seg { height: 4px; border-radius: 4px; background: var(--sv2-chip); transition: background 0.3s; }
+.ob-seg.done { background: var(--sv2-accent); }
+
+/* ---------- content column ---------- */
+.ob-main { flex: 1; width: 100%; max-width: 980px; margin: 0 auto; padding: 30px 28px 40px; }
+.ob-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--sv2-accent); margin-bottom: 8px;
+}
+.ob-title { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.2; margin: 0 0 8px; }
+.ob-sub { font-size: 14px; color: var(--sv2-text-soft); line-height: 1.55; margin: 0 0 26px; max-width: 62ch; }
+.ob-note { font-size: 12px; color: var(--sv2-text-mute); margin: 18px 0 0; }
+
+.ob-grid { display: grid; gap: 14px; }
+.ob-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.ob-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 820px) { .ob-grid.cols-3 { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) {
+  .ob-grid.cols-2, .ob-grid.cols-3 { grid-template-columns: 1fr; }
+  .ob-top { padding: 12px 16px; }
+  .ob-progress, .ob-main, .ob-footer { padding-left: 16px; padding-right: 16px; }
+  .ob-brand-sub { display: none; }
+  .ob-title { font-size: 24px; }
+}
+
+/* ---------- selectable card (markets, goals, focus) ---------- */
+.ob-option {
+  position: relative; text-align: left; font: inherit; color: inherit; cursor: pointer;
+  display: flex; align-items: flex-start; gap: 14px; padding: 18px 48px 18px 18px;
+  background: var(--sv2-card); border: 1px solid var(--sv2-border); border-radius: 18px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.ob-option:hover { border-color: var(--sv2-border-strong); }
+.ob-option.is-selected { border-color: var(--sv2-accent); background: var(--sv2-accent-soft); }
+.ob-option:focus-visible, .ob-asset:focus-visible, .ob-btn:focus-visible, .ob-chip-x:focus-visible,
+.ob-icon-btn:focus-visible, .ob-link:focus-visible { outline: 2px solid var(--sv2-accent); outline-offset: 2px; }
+.ob-option-icon {
+  width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--sv2-chip); color: var(--sv2-accent);
+}
+.ob-option.is-selected .ob-option-icon { background: var(--sv2-accent); color: var(--sv2-accent-contrast); }
+.ob-option-body { min-width: 0; }
+.ob-option-title { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+.ob-option-desc { font-size: 12.5px; color: var(--sv2-text-soft); line-height: 1.5; }
+.ob-option-meta { font-size: 11.5px; font-weight: 600; color: var(--sv2-text-mute); margin-top: 8px; }
+.ob-option.is-selected .ob-option-meta { color: var(--sv2-accent); }
+
+.ob-check {
+  position: absolute; top: 14px; right: 14px; width: 22px; height: 22px; border-radius: 50%;
+  border: 1.5px solid var(--sv2-border-strong); color: transparent;
+  display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+}
+.ob-option.is-selected .ob-check, .ob-asset.is-selected .ob-check {
+  background: var(--sv2-accent); border-color: var(--sv2-accent); color: var(--sv2-accent-contrast);
+}
+.ob-badge {
+  display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 20px; margin-left: 8px; vertical-align: 2px;
+  background: var(--sv2-accent); color: var(--sv2-accent-contrast);
+}
+
+/* ---------- risk slider ---------- */
+.ob-risk { max-width: 640px; }
+.ob-slider-wrap { padding: 8px 4px 0; }
+.ob-slider {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 8px; border-radius: 8px; outline: none; cursor: pointer;
+  background: linear-gradient(to right, var(--sv2-accent) 0%, var(--sv2-accent) var(--ob-pct, 50%), var(--sv2-chip) var(--ob-pct, 50%), var(--sv2-chip) 100%);
+}
+.ob-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%;
+  background: var(--sv2-accent); border: 4px solid var(--sv2-card); box-shadow: 0 0 0 1px var(--sv2-accent);
+}
+.ob-slider::-moz-range-thumb {
+  width: 18px; height: 18px; border-radius: 50%; background: var(--sv2-accent); border: 4px solid var(--sv2-card); box-shadow: 0 0 0 1px var(--sv2-accent);
+}
+.ob-slider:focus-visible { box-shadow: 0 0 0 3px var(--sv2-accent-soft); }
+.ob-zones { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 14px; }
+.ob-zone { font-size: 12.5px; font-weight: 600; color: var(--sv2-text-mute); text-align: center; }
+.ob-zone:first-child { text-align: left; }
+.ob-zone:last-child { text-align: right; }
+.ob-zone.is-active { color: var(--sv2-accent); font-weight: 700; }
+.ob-profile-card { margin-top: 22px; padding: 20px 22px; }
+.ob-profile-name { font-size: 18px; font-weight: 800; margin-bottom: 6px; }
+
+/* ---------- step 4: follow coins and NFTs ---------- */
+.ob-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+.ob-search {
+  flex: 1; min-width: 200px; display: flex; align-items: center; gap: 8px; padding: 0 12px;
+  background: var(--sv2-input); border: 1px solid var(--sv2-border-strong); border-radius: 10px;
+  color: var(--sv2-text-mute);
+}
+.ob-search:focus-within { border-color: var(--sv2-accent); }
+.ob-search input {
+  flex: 1; min-width: 0; background: none; border: none; outline: none; padding: 10px 0;
+  font: inherit; font-size: 13.5px; color: var(--sv2-text);
+}
+.ob-search button { background: none; border: none; color: var(--sv2-text-mute); cursor: pointer; display: flex; padding: 4px; }
+.ob-sortrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.ob-sortlabel { font-size: 12px; color: var(--sv2-text-mute); font-weight: 600; margin-right: 2px; }
+
+.ob-asset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 12px; }
+.ob-asset {
+  position: relative; text-align: left; font: inherit; color: inherit; cursor: pointer;
+  background: var(--sv2-card); border: 1px solid var(--sv2-border); border-radius: 16px; padding: 14px 14px 12px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.ob-asset:hover { border-color: var(--sv2-border-strong); }
+.ob-asset.is-selected { border-color: var(--sv2-accent); background: var(--sv2-accent-soft); }
+.ob-asset-top { display: flex; align-items: center; gap: 10px; padding-right: 30px; margin-bottom: 12px; }
+.ob-asset-name { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ob-asset-sym { font-size: 11px; color: var(--sv2-text-mute); }
+.ob-asset-id { min-width: 0; }
+.ob-asset-price-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.ob-asset-price { font-size: 16px; font-weight: 800; }
+.ob-asset-spark { height: 30px; margin: 2px 0 10px; }
+.ob-asset-foot { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 10px; border-top: 1px solid var(--sv2-border); font-size: 11px; color: var(--sv2-text-soft); font-weight: 600; }
+.ob-asset .ob-check { top: 12px; right: 12px; }
+
+.ob-state { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 36px 12px; font-size: 13px; color: var(--sv2-text-soft); }
+.ob-more { display: flex; justify-content: center; margin-top: 16px; }
+
+.ob-tray { margin-top: 22px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.ob-tray-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.ob-tray-title { font-size: 13.5px; font-weight: 700; }
+.ob-tray-hint { font-size: 12px; color: var(--sv2-text-mute); }
+.ob-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.ob-chip {
+  display: inline-flex; align-items: center; gap: 4px; padding: 4px 4px 4px 11px; border-radius: 20px;
+  background: var(--sv2-chip); border: 1px solid var(--sv2-chip-border); font-size: 12px; font-weight: 600;
+}
+.ob-chip-x { border: none; background: none; cursor: pointer; display: flex; padding: 3px; border-radius: 50%; color: var(--sv2-text-mute); }
+.ob-chip-x:hover { color: var(--sv2-text); background: var(--sv2-border); }
+
+/* ---------- step 5: home focus, density, theme ---------- */
+.ob-group { margin-bottom: 28px; }
+.ob-group-title { font-size: 14px; font-weight: 700; margin: 0 0 3px; }
+.ob-group-sub { font-size: 12.5px; color: var(--sv2-text-soft); margin: 0 0 12px; }
+.ob-focus { flex-direction: column; gap: 12px; }
+.ob-focus-head { display: flex; align-items: flex-start; gap: 12px; width: 100%; }
+.ob-focus .ob-option-title { margin-bottom: 2px; }
+.ob-preview {
+  width: 100%; display: flex; flex-direction: column; gap: 4px; padding: 8px;
+  background: var(--sv2-bg); border: 1px solid var(--sv2-border); border-radius: 10px;
+}
+.ob-prev-row { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; }
+.ob-prev-block {
+  min-height: 22px; padding: 4px 7px; border-radius: 5px; font-size: 9.5px; font-weight: 600;
+  background: var(--sv2-chip); color: var(--sv2-text-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  display: flex; align-items: center;
+}
+.ob-prev-block.is-stats { background: var(--sv2-card-alt); color: var(--sv2-text-mute); min-height: 16px; }
+.ob-prev-block.is-lead { background: var(--sv2-accent-soft); color: var(--sv2-accent); }
+.ob-lands { font-size: 11.5px; color: var(--sv2-text-mute); }
+.ob-lands strong { color: var(--sv2-text-soft); font-weight: 700; }
+.ob-option.is-selected .ob-lands strong { color: var(--sv2-accent); }
+.ob-looks { display: flex; flex-wrap: wrap; gap: 28px; }
+.ob-looks .sv2-segmented button { padding: 8px 16px; font-size: 12.5px; }
+
+/* ---------- footer + buttons ---------- */
+.ob-footer {
+  position: sticky; bottom: 0; z-index: 5; background: var(--sv2-bg); border-top: 1px solid var(--sv2-border);
+  padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.ob-footer-inner { width: 100%; max-width: 980px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ob-btn {
+  font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; border-radius: 10px; padding: 11px 22px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: opacity 0.15s, background 0.15s, border-color 0.15s;
+}
+.ob-btn:disabled { cursor: default; opacity: 0.6; }
+.ob-btn-primary { background: var(--sv2-accent); color: var(--sv2-accent-contrast); border: 1px solid var(--sv2-accent); }
+.ob-btn-primary:hover:not(:disabled) { opacity: 0.9; }
+.ob-btn-outline { background: transparent; color: var(--sv2-text); border: 1px solid var(--sv2-border-strong); }
+.ob-btn-outline:hover:not(:disabled) { background: var(--sv2-chip); }
+.ob-link {
+  background: none; border: none; padding: 4px 6px; border-radius: 6px; font: inherit; font-size: 13px; font-weight: 600;
+  color: var(--sv2-text-soft); cursor: pointer;
+}
+.ob-link:hover:not(:disabled) { color: var(--sv2-text); }
+.ob-link:disabled { cursor: default; opacity: 0.6; }
+
+.ob-saveerr {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 14px;
+  padding: 10px 28px; font-size: 13px; color: var(--sv2-red); background: var(--sv2-red-soft);
+}
+.ob-saveerr .ob-link { color: var(--sv2-text); text-decoration: underline; }
+
+/* ---------- skip confirmation ---------- */
+.ob-modal { max-width: 400px; padding: 26px 24px 22px; }
+.ob-modal h3 { font-size: 17px; font-weight: 800; margin: 0 0 8px; color: var(--sv2-text); }
+.ob-modal p { font-size: 13px; line-height: 1.55; color: var(--sv2-text-soft); margin: 0 0 20px; }
+.ob-modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ob-option, .ob-asset, .ob-seg, .ob-btn, .ob-check { transition: none; }
+}
+
+/* text inside the option button is spans (a button can't hold block elements) */
+.ob-option-title, .ob-option-desc, .ob-option-meta { display: block; }
+.ob-change { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+.ob-change.positive { background: var(--sv2-green-soft); color: var(--sv2-green); }
+.ob-change.negative { background: var(--sv2-red-soft); color: var(--sv2-red); }
+.ob-change.flat { background: var(--sv2-chip); color: var(--sv2-text-mute); }

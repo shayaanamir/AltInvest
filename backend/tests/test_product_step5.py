@@ -295,7 +295,8 @@ def test_quiet_hours_use_the_users_timezone():
 
 def _alert_db(email_on: bool, quiet: dict | None = None):
     db, uid = FakeDB(), ObjectId()
-    db.users.insert_one({"_id": uid, "email": "ada@example.com"})
+    # Verified: alert emails go only to a verified address (G-34), so these tests exercise the settings rules.
+    db.users.insert_one({"_id": uid, "email": "ada@example.com", "email_verified": True})
     db.user_settings.insert_one({"user_id": uid, "notifications": {
         "channels": {"email": email_on}, "quiet_hours": quiet or {"enabled": False}}})
     db.alerts.insert_one({

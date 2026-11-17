@@ -1,141 +1,161 @@
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { L } from "../components/landingPage/landingTokens";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import "../styles/onboarding.css";
 
 import Step1Markets from "../components/onboarding/Step1Markets";
 import Step2RiskStyle from "../components/onboarding/Step2RiskStyle";
 import Step3Goals from "../components/onboarding/Step3Goals";
 import Step4Assets from "../components/onboarding/Step4Assets";
-import Step5Layout from "../components/onboarding/Step5Layout";
+import Step5Focus from "../components/onboarding/Step5Focus";
+import { IconThemeToggle, IconArrowLeft, IconArrowRight } from "../components/icons";
+import { useTheme } from "../context/ThemeContext";
+import { onboardingApi } from "../services/onboardingApi";
+import { authApi } from "../services/authApi";
+import { resolveLandingPath } from "../services/appPreferences";
+import { answersToPayload } from "../utils/onboardingPayload";
+import systemStates from "../content/systemStates.json";
 
-const TOTAL_STEPS = 5;
+const STEPS = [Step1Markets, Step2RiskStyle, Step3Goals, Step4Assets, Step5Focus];
+const TOTAL_STEPS = STEPS.length;
 
-const STEPS = [Step1Markets, Step2RiskStyle, Step3Goals, Step4Assets, Step5Layout];
+function SkipDialog({ onStay, onLeave }) {
+    const { title, message, confirmLabel, cancelLabel } = systemStates.confirmDialogs.abandonOnboarding;
+    useEffect(() => {
+        const onKey = (e) => e.key === "Escape" && onStay();
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, [onStay]);
+
+    return (
+        <div className="sv2-modal-overlay" onClick={onStay}>
+            <div className="sv2-modal ob-modal" role="dialog" aria-modal="true" aria-labelledby="ob-skip-title" onClick={(e) => e.stopPropagation()}>
+                <h3 id="ob-skip-title">{title}</h3>
+                <p>{message}</p>
+                <div className="ob-modal-actions">
+                    <button type="button" className="ob-btn ob-btn-outline" onClick={onLeave}>{confirmLabel}</button>
+                    <button type="button" className="ob-btn ob-btn-primary" onClick={onStay} autoFocus>{cancelLabel}</button>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 export default function OnboardingPage({ onNavigate }) {
     const [step, setStep] = useState(0);
     const [answers, setAnswers] = useState({});
+    const [saving, setSaving] = useState(false);
+    const [saveFailed, setSaveFailed] = useState(false);
+    const [confirmSkip, setConfirmSkip] = useState(false);
+    const { isDark, toggle } = useTheme();
+    const reduceMotion = useReducedMotion();
+    const navigate = useNavigate();
+    const mainRef = useRef(null);
+    const firstRender = useRef(true);
 
-    const stepNum = step + 1;
-    const progress = (stepNum / TOTAL_STEPS) * 100;
-
-    const next = () => {
-        if (step < TOTAL_STEPS - 1) setStep(s => s + 1);
-        else onNavigate && onNavigate("Dashboard");
-    };
-
-    const back = () => {
-        if (step > 0) setStep(s => s - 1);
-    };
-
-    const setAnswer = (key, val) => setAnswers(a => ({ ...a, [key]: val }));
-
+    const setAnswer = (key, val) => setAnswers((a) => ({ ...a, [key]: val }));
     const StepComponent = STEPS[step];
 
+    // Move to the top of each new step and put keyboard focus there.
+    useEffect(() => {
+        if (firstRender.current) { firstRender.current = false; return; }
+        window.scrollTo(0, 0);
+        mainRef.current?.focus({ preventScroll: true });
+    }, [step]);
+
+    const leave = async () => {
+        // The saved home focus decides where to land; fall back to the dashboard if it can't be read.
+        try {
+            navigate(await resolveLandingPath(), { replace: true });
+        } catch {
+            if (onNavigate) onNavigate("Dashboard"); else navigate("/dashboard", { replace: true });
+        }
+    };
+
+    // Saves the answers (or the skip), then leaves. It leaves only once the server has them, so a
+    // failed save is shown and can be retried, or the person can carry on without saving.
+    const finish = async (skipped) => {
+        if (saving) return;
+        setConfirmSkip(false);
+        setSaving(true);
+        setSaveFailed(false);
+        try {
+            await onboardingApi.save(answersToPayload(answers, { skipped, theme: isDark ? "dark" : "light" }));
+        } catch {
+            setSaving(false);
+            setSaveFailed(true);
+            return;
+        }
+        authApi.me().catch(() => {});   // refresh the saved user (onboarding_completed); not worth blocking on
+        leave();
+    };
+
+    const next = () => (step < TOTAL_STEPS - 1 ? setStep((s) => s + 1) : finish(false));
+    const back = () => step > 0 && setStep((s) => s - 1);
+
     return (
-        <div className="sv2" style={{
-            minHeight: "100vh", width: "100vw",
-            background: L.bg0,
-            fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
-            color: L.ink,
-            display: "flex", flexDirection: "column",
-            overflow: "hidden",
-        }}>
-            <div style={{
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "0 32px", height: 52, flexShrink: 0,
-            }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                    <div style={{
-                        width: 30, height: 30, borderRadius: 8,
-                        background: "var(--sv2-accent)",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: 13, fontWeight: 800, color: "#fff",
-                    }}>A</div>
-                    <span style={{ fontSize: 15, fontWeight: 700, color: L.ink, letterSpacing: "-0.3px" }}>AltInvest</span>
+        <div className="sv2 ob-page">
+            <div className="ob-top">
+                <div className="ob-brand">
+                    <div className="ob-logo" aria-hidden="true">AI</div>
+                    <div className="ob-brand-text">
+                        <span className="ob-brand-name">AltInvest</span>
+                        <span className="ob-brand-sub">Alternative asset desk</span>
+                    </div>
                 </div>
-
-                <span style={{ fontSize: 13, color: L.ink2, fontWeight: 500 }}>
-                    Step {stepNum} of {TOTAL_STEPS}
-                </span>
-
-                <button
-                    onClick={() => onNavigate && onNavigate("Dashboard")}
-                    style={{
-                        background: "none", border: "none", fontSize: 13,
-                        color: L.ink2, cursor: "pointer", fontFamily: "inherit",
-                        fontWeight: 500, padding: 0,
-                        transition: "color 0.15s",
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.color = L.ink}
-                    onMouseLeave={e => e.currentTarget.style.color = L.ink2}
-                >
-                    Skip
-                </button>
+                <div className="ob-top-right">
+                    <span className="ob-stepcount">Step {step + 1} of {TOTAL_STEPS}</span>
+                    <button
+                        type="button" className="ob-icon-btn" onClick={toggle}
+                        title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+                        aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+                    >
+                        <IconThemeToggle isDark={isDark} variant="outline" size={16} />
+                    </button>
+                    <button type="button" className="ob-link" onClick={() => setConfirmSkip(true)} disabled={saving}>Skip</button>
+                </div>
             </div>
 
-            <div style={{ height: 3, background: "var(--sv2-chip)", flexShrink: 0 }}>
-                <motion.div
-                    animate={{ width: `${progress}%` }}
-                    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    style={{
-                        height: "100%",
-                        background: "var(--sv2-accent)",
-                        borderRadius: 2,
-                    }}
-                />
+            <div className="ob-progress" role="progressbar" aria-valuemin={1} aria-valuemax={TOTAL_STEPS} aria-valuenow={step + 1} aria-label="Onboarding progress">
+                {STEPS.map((_, i) => <span key={i} className={`ob-seg ${i <= step ? "done" : ""}`} />)}
             </div>
 
-            <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }}>
+            <main className="ob-main" ref={mainRef} tabIndex={-1} style={{ outline: "none" }}>
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={step}
-                        initial={{ opacity: 0, x: 32 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -32 }}
-                        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                        style={{ flex: 1, display: "flex", flexDirection: "column" }}
+                        initial={reduceMotion ? false : { opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={reduceMotion ? { opacity: 1 } : { opacity: 0 }}
+                        transition={{ duration: reduceMotion ? 0 : 0.18 }}
                     >
-                        <StepComponent
-                            answers={answers}
-                            setAnswer={setAnswer}
-                        />
+                        <StepComponent answers={answers} setAnswer={setAnswer} />
                     </motion.div>
                 </AnimatePresence>
+            </main>
+
+            {saveFailed && (
+                <div role="alert" className="ob-saveerr">
+                    <span>We couldn't save your answers. Check your connection and try again.</span>
+                    <button type="button" className="ob-link" onClick={leave}>Continue without saving</button>
+                </div>
+            )}
+
+            <div className="ob-footer">
+                <div className="ob-footer-inner">
+                    {step > 0 ? (
+                        <button type="button" className="ob-btn ob-btn-outline" onClick={back} disabled={saving}>
+                            <IconArrowLeft size={14} /> Back
+                        </button>
+                    ) : <span />}
+                    <button type="button" className="ob-btn ob-btn-primary" onClick={next} disabled={saving}>
+                        {saving ? "Saving…" : step === TOTAL_STEPS - 1 ? "Finish" : "Continue"}
+                        {!saving && step < TOTAL_STEPS - 1 && <IconArrowRight size={14} />}
+                    </button>
+                </div>
             </div>
 
-            <div style={{
-                display: "flex", alignItems: "center",
-                justifyContent: step === 0 ? "flex-end" : "space-between",
-                padding: "16px 32px", flexShrink: 0,
-            }}>
-                {step > 0 && (
-                    <button
-                        onClick={back}
-                        style={{
-                            background: "none", border: "none", fontSize: 13,
-                            color: L.ink2, cursor: "pointer", fontFamily: "inherit",
-                            fontWeight: 500, padding: 0,
-                        }}
-                    >
-                        Back
-                    </button>
-                )}
-                <motion.button
-                    onClick={next}
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
-                    style={{
-                        background: "var(--sv2-accent)",
-                        border: "none", borderRadius: 10,
-                        padding: "11px 28px", fontSize: 14, fontWeight: 700, color: "#fff",
-                        cursor: "pointer", fontFamily: "inherit",
-                        boxShadow: "0 4px 20px color-mix(in srgb, var(--sv2-accent) 35%, transparent)",
-                    }}
-                >
-                    Continue
-                </motion.button>
-            </div>
+            {confirmSkip && <SkipDialog onStay={() => setConfirmSkip(false)} onLeave={() => finish(true)} />}
         </div>
     );
 }

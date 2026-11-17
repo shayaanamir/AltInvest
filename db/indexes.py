@@ -45,7 +45,16 @@ INDEXES = {
         ([("target_type", ASC), ("target_id", ASC), ("timestamp", DESC)], {}),
         ([("target_type", ASC), ("target_id", ASC), ("date", ASC)], {}),   # the daily upsert's filter
     ],
-    "portfolio_holdings": [([("user_id", ASC), ("asset_type", ASC)], {})],
+    "portfolio_holdings": [
+        ([("user_id", ASC), ("asset_type", ASC)], {}),
+        # One row per crypto symbol and per NFT token and user, so two concurrent adds can't create
+        # duplicates (audit G-35). Building these fails while duplicate rows exist; run
+        # `python -m db.normalize_holdings` first (the failure is logged and startup continues).
+        ([("user_id", ASC), ("symbol", ASC)],
+         {"unique": True, "name": "uniq_user_crypto_symbol", "partialFilterExpression": {"asset_type": "crypto"}}),
+        ([("user_id", ASC), ("nft_collection_slug", ASC), ("nft_token_id", ASC)],
+         {"unique": True, "name": "uniq_user_nft_token", "partialFilterExpression": {"asset_type": "nft"}}),
+    ],
     "portfolio_transactions": [
         ([("user_id", ASC), ("holding_id", ASC), ("timestamp", DESC)], {}),
         ([("user_id", ASC), ("timestamp", DESC)], {}),

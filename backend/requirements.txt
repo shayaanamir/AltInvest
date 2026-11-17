@@ -7,3 +7,4 @@ httpx
 requests            # used by the sentiment engine the backend imports (collectors, insights)
 bcrypt
 PyJWT[crypto]
+tzdata             # timezone database for quiet hours (zoneinfo); Windows and slim images have none

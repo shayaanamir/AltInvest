@@ -557,8 +557,29 @@ class ProfileOut(BaseModel):
     display_currency: Optional[str] = None
     investment_goal: Optional[str] = None
     email_verified: Optional[bool] = None
+    markets_followed: List[str] = []        # the markets picked in onboarding, e.g. ["crypto", "nfts"]
     created_at: Optional[str] = None
     activity_summary: ActivitySummary
+
+
+class OnboardingAnswers(BaseModel):
+    """What the five onboarding steps collect. Values are checked against the allowed sets in routes/profile.py."""
+    model_config = ConfigDict(extra="forbid")
+    markets: List[str] = Field(default_factory=list, max_length=10)
+    risk: Optional[float] = Field(None, ge=0, le=100, allow_inf_nan=False)
+    goals: List[str] = Field(default_factory=list, max_length=10)
+    assets: List[str] = Field(default_factory=list, max_length=50)    # crypto symbols to follow
+    nfts: List[str] = Field(default_factory=list, max_length=50)      # NFT collection slugs to follow
+    focus: Optional[str] = Field(None, max_length=32)                 # home focus, see routes/profile.py _VALID_FOCUS
+    density: Optional[Literal["comfortable", "compact"]] = None
+    theme: Optional[Literal["dark", "light"]] = None
+
+
+class OnboardingIn(BaseModel):
+    """PUT /profile/onboarding: finished (answers) or skipped."""
+    model_config = ConfigDict(extra="forbid")
+    skipped: bool = False
+    answers: OnboardingAnswers = Field(default_factory=OnboardingAnswers)
 
 
 class ProfileUpdate(BaseModel):
@@ -591,8 +612,9 @@ class _SettingsPatch(BaseModel):
 class PreferencesPatch(_SettingsPatch):
     display_currency: Optional[str] = Field(None, max_length=8)   # checked against the supported list in the route
     date_format: Optional[Literal["MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD"]] = None
-    default_landing_page: Optional[Literal["Dashboard", "Portfolio", "Sentiment"]] = None
-    default_dashboard_layout: Optional[Literal["minimal", "analyst", "trader", "ai-first"]] = None
+    default_landing_page: Optional[Literal["Dashboard", "Portfolio", "Discover", "Sentiment"]] = None
+    # The home focus: which dashboard widgets show and in what order (frontend utils/homeFocus.js).
+    default_dashboard_layout: Optional[Literal["everything", "portfolio", "markets", "sentiment"]] = None
 
 
 class AppearancePatch(_SettingsPatch):

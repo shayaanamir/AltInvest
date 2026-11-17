@@ -242,8 +242,13 @@ def _deliver_email(db, user_id, title: str, message: str, now: datetime, cache: 
     action, held_until = email_plan(_notification_settings(db, user_id, cache), now)
     if action == "skip":
         return
-    user = db.users.find_one({"_id": user_id}, {"email": 1})
+    user = db.users.find_one({"_id": user_id}, {"email": 1, "email_verified": 1})
     if not (user and user.get("email")):
+        return
+    if user.get("email_verified") is not True:
+        # The in-app notification is still delivered, but we don't mail (or hold a mail for) an
+        # address nobody has proven they own (audit G-34).
+        log.info("[alerts] email skipped for user %s: address not verified", user_id)
         return
     subject = f"AltInvest alert: {title}"
     body = f"{message}\n\nThe alert is paused until you re-arm it on the Alerts page."
@@ -268,8 +273,8 @@ def _send_due_emails(db, now: datetime) -> int:
         settings = (db.user_settings.find_one({"user_id": row["user_id"]}, {"notifications": 1}) or {}).get("notifications") or {}
         if (settings.get("channels") or {}).get("email") is False:
             continue
-        user = db.users.find_one({"_id": row["user_id"]}, {"email": 1})
-        if user and user.get("email"):
+        user = db.users.find_one({"_id": row["user_id"]}, {"email": 1, "email_verified": 1})
+        if user and user.get("email") and user.get("email_verified") is True:
             send_email(user["email"], row["subject"], row["body"] + "\n\n(Held until your quiet hours ended.)")
             sent += 1
     return sent

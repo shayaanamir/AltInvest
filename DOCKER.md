@@ -64,6 +64,18 @@ re-read `.env`): `GROQ_API_KEY` for themes and the NFT sentiment LLM; `OPENSEA_A
 NFT floor prices and sales, whose first download takes a while. Predictions, risk and AAI for the coins the ML
 service does not cover are not set up by this command.
 
+**Upgrading a database that already has portfolio data:** the backend now builds two unique indexes on
+`portfolio_holdings` (one row per crypto symbol and per NFT token, per user) so two simultaneous trades can't
+create duplicates. If old duplicate rows exist, the index build fails (the backend logs `uniq_user_crypto_symbol` /
+`uniq_user_nft_token` under `[indexes] ... failed` and keeps running without it). Merge the duplicates first, then
+restart the backend:
+
+```bash
+docker exec -w /app altinvest-backend python db/normalize_holdings.py
+```
+
+(It merges duplicate crypto rows. A duplicate NFT token row has to be removed by hand.)
+
 ## Important things to know before you build
 
 1. **The backend build context is the repo root, not `backend/`.**
