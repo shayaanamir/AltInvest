@@ -65,7 +65,7 @@ def discover(
     min_aai: Optional[float] = Query(None),
     min_sentiment: Optional[float] = Query(None, description="-1..1"),
     max_volatility: Optional[float] = Query(None),
-    max_risk: Optional[float] = Query(None),
+    min_safety: Optional[float] = Query(None, description="risk_score >= this (0-100, higher = safer; audit G-28)"),
     min_market_cap: Optional[float] = Query(None),
     verified_only: bool = Query(False),
     held_only: bool = Query(False),
@@ -111,8 +111,8 @@ def discover(
         items = [i for i in items if i.get("sentiment_score") is not None and i["sentiment_score"] >= min_sentiment]
     if max_volatility is not None:
         items = [i for i in items if i.get("volatility") is not None and i["volatility"] <= max_volatility]
-    if max_risk is not None:
-        items = [i for i in items if i.get("risk_score") is not None and i["risk_score"] <= max_risk]
+    if min_safety is not None:      # risk_score is a safety score (D36, D96): keep the safer rows
+        items = [i for i in items if i.get("risk_score") is not None and i["risk_score"] >= min_safety]
     if min_market_cap is not None:
         items = [i for i in items if i.get("market_cap") is not None and i["market_cap"] >= min_market_cap]
     if verified_only:
