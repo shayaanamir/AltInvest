@@ -1,4 +1,4 @@
-"""Daily refresh of the SERVING data (D40): fetch, then validate, every asset in config.ASSETS.
+"""Daily refresh of the SERVING data (D40): fetch, then validate, every asset in config.SERVED_ASSETS (D94).
 
     python -m ml.data.refresh            # once; exit 0 if every asset ends servable, else 1
     python -m ml.data.refresh --loop     # once now, then daily at config.REFRESH_UTC until stopped
@@ -36,7 +36,7 @@ from ml.serving import prediction_log
 
 STATUS_FILE = "refresh_status.json"
 LOCK_FILE = ".refresh.lock"
-LOCK_WAIT_SECONDS = 600       # a full refresh of three assets takes well under a minute
+LOCK_WAIT_SECONDS = 600       # a full refresh of the 16 served assets (D94) takes about a minute
 LOCK_STALE_SECONDS = 3600     # a lock this old was left by a killed run
 
 
@@ -203,7 +203,7 @@ def run_once(force: bool = False, lock_wait: float = LOCK_WAIT_SECONDS) -> int:
     check_targets(force)
     try:
         with refresh_lock(lock_wait):            # status and log writes too: two refreshers share one volume
-            assets = {a: refresh_asset(a) for a in config.ASSETS}
+            assets = {a: refresh_asset(a) for a in config.SERVED_ASSETS}     # D94
             status = {"decision": "D40", "generated_at": _iso(_utc_now()), "raw_dir": str(config.ML_RAW_DIR),
                       "validation_dir": str(config.ML_VALIDATION_DIR), "assets": assets,
                       "all_servable": all(s["servable"] for s in assets.values())}

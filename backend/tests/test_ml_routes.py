@@ -1,5 +1,6 @@
 """C2 + C3: /prediction and /risk pass `note` through, never mock a covered asset, mark stale rows."""
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import pytest
 from fastapi import FastAPI
@@ -45,11 +46,49 @@ def test_note_and_signal_pass_through(db, client):
     assert r["note"] == RISK_BTC["note"] and r["risk_score"] == RISK_BTC["risk_score"]
 
 
-@pytest.mark.parametrize("asset", ["BTC", "ETH", "SOL"])
+@pytest.mark.parametrize("asset", ["BTC", "ETH", "SOL", "LINK", "DOGE", "MATIC", "ARB"])
 def test_no_mock_for_covered_assets(db, client, asset):
     resp = client.get(f"/risk/{asset}")
     assert resp.status_code == 404
     assert "mock" not in resp.text.lower()
+
+
+ML_CONFIG = Path(__file__).resolve().parents[2] / "ml" / "config.py"
+
+
+@pytest.mark.skipif(not ML_CONFIG.exists(), reason="ml/ is not in the backend image; runs from a repo checkout")
+def test_every_served_asset_is_covered_and_dai_is_not():
+    """D94: the backend pulls exactly the assets the ML service serves (ml/config.py SERVED_ASSET_SYMBOLS, read
+    as text: ml is not installed in the backend image); DAI, a stablecoin, is not one of them."""
+    import ast
+    tree = ast.parse(ML_CONFIG.read_text(encoding="utf-8"))
+    wanted = ("ASSET_SYMBOLS", "SERVED_ASSET_SYMBOLS")
+    ns = {}
+    exec(compile(ast.Module([n for n in tree.body if isinstance(n, ast.Assign)
+                             and getattr(n.targets[0], "id", "") in wanted], []), "ml/config.py", "exec"), ns)
+    served = {a.upper() for a in ns["SERVED_ASSET_SYMBOLS"]}
+    assert set(queries.ML_COVERED_ASSETS) == served and len(served) == 16
+    assert "DAI" not in queries.ML_COVERED_ASSETS
+
+
+@pytest.mark.parametrize("asset", ["DAI", "BASE"])
+def test_uncovered_asset_is_404_even_with_a_stored_row(db, client, asset):
+    """D94: no mock and no seeded row is served for an asset the ML service does not cover (DAI, BASE), on /risk or
+    /prediction, even when an old seeded row is still in the database."""
+    db["risk"] = _row({**RISK_BTC, "asset": asset}, 1)
+    db["pred"] = _row({**PREDICT_BTC, "asset": asset, "model_version": "seed-v1"}, 1)
+    for route in ("risk", "prediction"):
+        resp = client.get(f"/{route}/{asset}")
+        assert resp.status_code == 404 and "not covered" in resp.json()["detail"]
+    assert "BASE" not in queries.ML_COVERED_ASSETS and "DAI" not in queries.ML_COVERED_ASSETS
+
+
+def test_database_error_is_not_turned_into_mock_risk(db, monkeypatch, client):
+    def down(asset):
+        raise RuntimeError("mongo down")
+    monkeypatch.setattr(queries, "get_latest_risk", down)
+    with pytest.raises(RuntimeError):          # main.py maps database errors to 503; never a made-up score
+        client.get("/risk/LINK")
 
 
 def test_null_risk_score_is_404_not_500(db, client):

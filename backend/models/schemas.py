@@ -105,10 +105,12 @@ class RiskResponse(BaseModel):
 
 class AAIResponse(BaseModel):
     asset: str
+    covered: bool = True                    # False: the ML service does not cover the asset (DAI, BASE; D94)
     aai_score: Optional[float] = None       # [0, 100]; null when the prediction or risk score is missing
     pred_score: Optional[float] = None
     expected_return_30d: Optional[float] = None
-    sentiment_score: float
+    sentiment_score: Optional[float] = None     # the AAI's 0-100 sentiment component; null only when not covered
+    sentiment_raw: Optional[float] = None       # the sentiment reading itself, -1..1 (audit G-12)
     sentiment_confidence: Optional[float] = None
     sentiment_available: Optional[bool] = None      # False: no recent sentiment, neutral 50 was used
     sentiment_note: Optional[str] = None
@@ -155,6 +157,8 @@ class AssetHeader(BaseModel):
     logo_color: Optional[str] = None
     logo_url: Optional[str] = None
     price: Optional[float] = None
+    price_as_of: Optional[str] = None       # the price's time, ISO UTC (audit N-05)
+    price_delayed: Optional[bool] = None    # True when the price is more than 15 minutes old
     change_24h: Optional[float] = None
     market_cap: Optional[float] = None
     market_rank: Optional[int] = None
@@ -504,13 +508,16 @@ class DiscoverItem(BaseModel):
     subcategory: Optional[str] = None
     logo_color: Optional[str] = None
     price: Optional[float] = None   # crypto price or nft floor_usd
+    price_as_of: Optional[str] = None        # crypto only: the price's time, ISO UTC (audit N-05)
+    price_delayed: Optional[bool] = None     # crypto only: True when the price is more than 15 minutes old
     floor_eth: Optional[float] = None        # nft only
     change_24h: Optional[float] = None
     change_7d: Optional[float] = None
     market_cap: Optional[float] = None
     volume_24h: Optional[float] = None
     aai_score: Optional[float] = None
-    signal: Optional[str] = None             # BUY | HOLD | SELL, derived from aai_score
+    signal: Optional[str] = None             # BUY | HOLD | SELL, derived from aai_score (filter value)
+    rating: Optional[str] = None             # Strong | Neutral | Weak: the words shown for `signal` (audit G-37)
     risk_score: Optional[float] = None
     volatility: Optional[float] = None       # crypto: volatility_index, nft: illiquidity risk
     expected_return: Optional[float] = None  # predicted 30d %, crypto only

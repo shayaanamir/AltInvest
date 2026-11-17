@@ -103,7 +103,7 @@ def _current_values() -> dict:
         get_asset_market_data_all_latest, get_nft_market_data_all_latest,
         get_all_latest_aai_scores, get_all_latest_risk_scores,
     )
-    from controllers.market_controller import live_sentiment_by_symbol
+    from controllers.market_controller import live_sentiment_by_symbol, stored_sentiment
 
     values = {}
     for m in get_asset_market_data_all_latest():
@@ -113,8 +113,9 @@ def _current_values() -> dict:
     for t in ("crypto", "nft"):
         for k, a in get_all_latest_aai_scores(t).items():
             values[(t, k, "aai_score")] = a.get("aai_score")
-            if t == "crypto" and a.get("sentiment_score") is not None:
-                values[("crypto", k, "sentiment")] = a["sentiment_score"]
+            stored = stored_sentiment(a) if t == "crypto" else None     # -1..1 only, never the 0-100 component
+            if stored:
+                values[("crypto", k, "sentiment")] = stored["score"]
     for k, r in get_all_latest_risk_scores().items():
         values[("crypto", k, "risk")] = r.get("risk_score")
     for k, s in live_sentiment_by_symbol().items():   # live reading beats the stored one

@@ -1,3 +1,5 @@
+import { DISCLAIMER_TEXT } from "../layout/Disclaimer";
+
 export default function LandingFooter() {
   const year = new Date().getFullYear();
 
@@ -8,7 +10,8 @@ export default function LandingFooter() {
           <div className="lp2-footer-logo">AI</div>
           <span className="lp2-footer-name">AltInvest</span>
         </div>
-        <div className="lp2-footer-copy">© {year} AltInvest. Analysis, not advice.</div>
+        <div className="lp2-footer-copy">© {year} AltInvest.</div>
+        <div className="lp2-footer-copy lp2-footer-disclaimer">{DISCLAIMER_TEXT}</div>
       </div>
       <div className="lp2-footer-links">
 

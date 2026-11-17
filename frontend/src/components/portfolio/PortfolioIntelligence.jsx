@@ -2,6 +2,7 @@ import { useAsync } from "../../hooks/useAsync";
 import { onHoldingsChanged } from "../../services/holdingsEvents";
 import { portfolioApi } from "../../services/portfolioApi";
 import { ErrorState } from "../../errors";
+import { ratingClass } from "../../utils/scoring";
 
 export default function PortfolioIntelligence() {
   const { data: intel, error, refetch } = useAsync(() => portfolioApi.getIntelligence(), [], { subscribe: onHoldingsChanged });
@@ -53,11 +54,11 @@ export default function PortfolioIntelligence() {
         </div>
 
         <div className="pv2-intel-card">
-          <div className="dv2-stat-label">Signal Mix</div>
+          <div className="dv2-stat-label">AAI Rating Mix</div>
           <div className="pv2-signal-row">
             {signalEntries.length > 0 ? (
               signalEntries.map(([signal, count]) => (
-                <span key={signal} className={`pv2-signal-pill ${signal.toLowerCase()}`}>
+                <span key={signal} className={`pv2-signal-pill ${ratingClass(signal)}`}>
                   {signal} <span className="pv2-signal-count">×{count}</span>
                 </span>
               ))
@@ -65,7 +66,7 @@ export default function PortfolioIntelligence() {
               <span className="sv2-muted sv2-small">—</span>
             )}
           </div>
-          <div className="dv2-stat-sub">Current AI suggestion per position</div>
+          <div className="dv2-stat-sub">AAI rating per position, not a recommendation</div>
         </div>
       </div>
 

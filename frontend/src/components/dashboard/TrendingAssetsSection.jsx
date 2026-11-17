@@ -9,6 +9,7 @@ import { IconStar } from "../icons";
 import WatchStar from "../watchlists/WatchStar";
 import { onWatchlistsChanged } from "../../services/holdingsEvents";
 import { ErrorState } from "../../errors";
+import { AAI_BADGE_LABEL } from "../../utils/scoring";
 
 export default function TrendingAssetsSection() {
   const { data: assets, error, refetch } = useAsync(() => dashboardApi.getTrendingAssets(), [], { subscribe: onWatchlistsChanged });
@@ -75,7 +76,7 @@ export default function TrendingAssetsSection() {
                   <span className={`dv2-badge dv2-badge-aai ${getAaiTierClass(a.aai?.score)}`}>
                     AAI {a.aai?.score != null ? Math.round(a.aai.score) : "—"}
                   </span>
-                  {a.aai?.signal && <span className="sv2-badge-pill">{a.aai.signal}</span>}
+                  {a.aai?.signal && <span className="sv2-badge-pill">{AAI_BADGE_LABEL[a.aai.signal] || a.aai.signal}</span>}
                   {watching && (
                     <span className="sv2-badge-pill dv2-badge-watching" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                       <IconStar size={11} filled={true} /> Watching

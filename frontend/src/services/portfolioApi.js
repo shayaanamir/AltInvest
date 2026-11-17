@@ -3,6 +3,7 @@ import { holdingEstimate } from "../utils/nftItemValue";
 import { fetchUniverse } from "./assetRepository";
 import { notifyHoldingsChanged } from "./holdingsEvents";
 import { getToken } from "../hooks/useAuth";
+import { aaiRatingLabel } from "../utils/scoring";
 
 function round2(n) {
   return Math.round(n * 100) / 100;
@@ -13,7 +14,7 @@ function round2(n) {
 // come from the same covered-universe rows Discover uses (GET /discover), so they are
 // database values too. A holding whose asset isn't covered keeps its own stored fields.
 
-const SIGNAL_TO_ACTION = { BUY: "Buy More", HOLD: "Hold", SELL: "Reduce" };
+// The AAI rating per holding (audit G-37): a rating word, never an action such as "Buy More" or "Reduce".
 
 // A holding the server couldn't value (no market price yet) comes back with no value, not 0.
 // Treat it as unpriced everywhere, so it isn't shown as worth nothing or as a total loss.
@@ -36,7 +37,7 @@ function mapCryptoHolding(h, meta) {
     // Per-holding 24h P&L isn't computed server-side; the asset's own market change is the closest stored signal.
     change24hPct: meta?.change24h ?? 0,
     aaiScore: meta?.aaiScore ?? null,
-    aiAction: meta?.signal ? SIGNAL_TO_ACTION[meta.signal] || "Hold" : "Hold",
+    aiAction: aaiRatingLabel(meta?.signal) ?? "—",
     dateAdded: h.date_added,
   };
 }
@@ -60,7 +61,7 @@ function mapNftHolding(h, meta) {
     costBasisUsd: costBasis,
     changePct: priced && costBasis > 0 ? round2(((currentValueUsd - costBasis) / costBasis) * 100) : 0,
     aaiScore: meta?.aaiScore ?? null,
-    aiAction: meta?.signal ? SIGNAL_TO_ACTION[meta.signal] || "Hold" : "Hold",
+    aiAction: aaiRatingLabel(meta?.signal) ?? "—",
     artColor: meta?.color || "#c9805a",
     dateAdded: h.date_added,
     estimate: holdingEstimate(h),           // Phase 10 step 10.7 (D78): ML item estimate, ETH, display only
@@ -152,10 +153,9 @@ export const portfolioApi = {
   // Computed on the server (GET /portfolio/intelligence), weighted by each position's current value.
   getIntelligence: async () => {
     const i = await fetchIntelligence();
-    const LABELS = { BUY: "Buy", HOLD: "Hold", SELL: "Sell" };
     const signalMix = {};
     Object.entries(i.signal_mix || {}).forEach(([k, n]) => {
-      signalMix[LABELS[k] || k] = n;
+      signalMix[aaiRatingLabel(k)] = n;
     });
     return {
       aggregateRiskScore: i.aggregate_risk_score,

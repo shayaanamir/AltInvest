@@ -1,10 +1,9 @@
 import { deriveAaiSignal } from "../../services/assetDetailApi";
-import { isMlUncertain } from "../../utils/scoring";
 import { formatAssetPrice } from "../../utils/formatters";
 import { formatDate, useAppPreferences } from "../../services/appPreferences";
 
 /** Description, website and all-time high for the asset; hidden when the database has none of them. */
-export default function AboutAssetCard({ name, about, aaiScore, mlSignal }) {
+export default function AboutAssetCard({ name, about, aaiScore }) {
   useAppPreferences();
   if (!about || !(about.description || about.website || about.allTimeHigh != null)) return null;
   const signal = aaiScore != null ? deriveAaiSignal(aaiScore) : null;
@@ -30,7 +29,7 @@ export default function AboutAssetCard({ name, about, aaiScore, mlSignal }) {
         <div className="adt-about-tags">
           <span className="adt-tag-pill">AAI {Math.round(aaiScore)}</span>
           <span className={`adt-tag-pill ${signal.tone}`}>
-            {isMlUncertain(mlSignal) ? "AAI rating: " : ""}{signal.label.replace("Strong ", "")}
+            AAI rating: {signal.label}
           </span>
         </div>
       )}

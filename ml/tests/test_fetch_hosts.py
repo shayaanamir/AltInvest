@@ -39,6 +39,7 @@ class _Session:
 
     def get(self, url, params=None, timeout=None):
         self.calls.append(url)
+        self.timeouts = getattr(self, "timeouts", []) + [(url, timeout)]
         out = self.by_host[url]
         if isinstance(out, Exception):
             raise out
@@ -92,3 +93,9 @@ def test_main_host_alone_is_recorded_when_the_mirror_is_not_needed(monkeypatch, 
     s = _Session({fetch.KLINES_URL: _Resp(body=_klines(4))})
     monkeypatch.setattr(fetch.requests, "Session", lambda: s)
     assert fetch.fetch("btc", tmp_path)["source"] == fetch.KLINES_URL
+
+
+def test_main_host_gets_a_5_second_connect_timeout_and_the_mirror_30():
+    s = _Session({fetch.KLINES_URL: requests.ConnectTimeout("t"), fetch.KLINES_MIRROR_URL: _Resp(body=_klines(2))})
+    fetch._get_page(s, "SOLUSDT", 0)
+    assert s.timeouts == [(fetch.KLINES_URL, (5, 30)), (fetch.KLINES_MIRROR_URL, 30)]

@@ -1,5 +1,6 @@
 # backend/routes/assets.py
 import path_setup  # noqa
+from utils.price_freshness import price_freshness
 from datetime import datetime, timezone, timedelta
 
 from bson import ObjectId
@@ -36,22 +37,22 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
     Everything the Asset Detail page renders, in one call. Every value comes
     from the database; a section with no backing row is null (or empty) rather
     than estimated:
-      forecast        -> null when `predictions` has no row for the asset
-      aai_panel       -> null when `aai_scores` has no row
+      (no forecast: no price model is approved, ml/docs/DECISIONS.md D35; the chart draws a volatility cone, D52)
+      aai_panel      -> null when `aai_scores` has no row
       about           -> description / website / ATH; fields are null where the asset row has none
       related/similar -> see controllers/asset_detail_controller.py (each item carries a `reason`)
       risk_overview   -> [] when `risk_breakdown` has no row
     """
     from datetime import date
     from controllers.market_controller import (
-        aai_signal, build_crypto_items, live_sentiment_by_symbol, sentiment_confidence_label,
+        aai_rating, aai_signal, build_crypto_items, live_sentiment_by_symbol, sentiment_confidence_label, stored_sentiment,
     )
     from db.queries import (
         get_asset, get_asset_market_data_latest, get_daily_price_series,
         get_latest_aai_score, get_latest_prediction, get_latest_risk_breakdown,
-        get_price_sparklines, get_user_flags, get_prediction_history,
+        get_price_sparklines, get_user_flags,
     )
-    from controllers.asset_detail_controller import related_and_similar, build_forecast
+    from controllers.asset_detail_controller import related_and_similar
     from db.mongo_connection import get_db
     from utils.ml_rows import with_stale_note
 
@@ -64,7 +65,6 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
         market = get_asset_market_data_latest(symbol) or {}
         history = get_daily_price_series(symbol, 365)
         prediction = get_latest_prediction(symbol)
-        prediction_runs = get_prediction_history(symbol, 12)
         aai = get_latest_aai_score("crypto", symbol)
         breakdown = get_latest_risk_breakdown(symbol)
         flags = get_user_flags(user_id)
@@ -83,8 +83,6 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
     except Exception as exc:
         raise db_unavailable(exc)
 
-    forecast = build_forecast(prediction, prediction_runs, history)
-
     aai_panel = None
     sentiment = None
     if aai:
@@ -92,6 +90,7 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
         aai_panel = {
             "score": score,
             "signal": aai_signal(score),
+            "rating": aai_rating(score),
             "confidence": aai.get("confidence"),
             "pred_score": aai.get("pred_score"),
             "sentiment_score": aai.get("sentiment_score"),
@@ -100,21 +99,14 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
             "note": aai.get("note"),
         }
 
-    # Sentiment: the engine's live reading when it has one, else what aai_scores stored.
-    live = live_sentiment_by_symbol().get(symbol)
-    if live:
+    # Sentiment: the engine's live reading when it has one, else the reading (-1..1) aai_scores stored. Never the
+    # row's 0-100 AAI component, which is on another scale (audit G-12).
+    reading = live_sentiment_by_symbol().get(symbol) or stored_sentiment(aai)
+    if reading:
         sentiment = {
-            "score": live["score"], "confidence": live["confidence"],
-            "confidence_label": sentiment_confidence_label(live["confidence"]),
-            "trend": live["trend"],
-        }
-    elif aai and aai.get("sentiment_score") is not None:
-        conf = aai.get("sentiment_confidence")
-        sentiment = {
-            "score": aai["sentiment_score"],
-            "confidence": conf,
-            "confidence_label": sentiment_confidence_label(conf),
-            "trend": aai.get("sentiment_trend"),
+            "score": reading["score"], "confidence": reading["confidence"],
+            "confidence_label": sentiment_confidence_label(reading["confidence"]),
+            "trend": reading.get("trend"),
         }
 
     risk_overview = []
@@ -146,11 +138,11 @@ def get_asset_detail(symbol: str, user_id: Optional[ObjectId] = Depends(get_opti
             "category": asset.get("category"), "subcategory": asset.get("subcategory"),
             "logo_color": asset.get("logo_color"),
             "price": market.get("price"), "change_24h": market.get("change_24h"),
+            **price_freshness(market),       # price_as_of, price_delayed (audit N-05)
             "held": symbol in flags["held"], "quantity_held": quantity_held,
             "watching": symbol in flags["watching"],
         },
         "price_history": history,
-        "forecast": forecast,
         # The ML service's own signal and note (null when no prediction is stored). While ml_signal is
         # UNCERTAIN the frontend must not present the AAI-derived BUY/HOLD/SELL as the model's call.
         "ml_signal": (prediction or {}).get("signal"),
@@ -206,6 +198,7 @@ def get_asset_header(symbol: str):
         logo_color=asset.get("logo_color"),
         logo_url=asset.get("logo_url"),
         price=market.get("price"),
+        **price_freshness(market),
         change_24h=market.get("change_24h"),
         market_cap=market.get("market_cap"),
         market_rank=market.get("market_rank"),
@@ -217,24 +210,22 @@ def get_asset_header(symbol: str):
 @router.get("/assets/{symbol}/performance")
 def get_asset_performance(
     symbol: str,
-    mode: str = Query("Price", pattern="^(Price|AI Prediction)$"),
+    # Price only: the "AI Prediction" mode drew stored predicted prices as a line, and only seeded rows ever had
+    # one (no price model is approved, ml/docs/DECISIONS.md D35; removed with D94).
+    mode: str = Query("Price", pattern="^Price$"),
     filter: str = Query("1M", pattern="^(1D|1W|1M|3M|1Y)$"),
 ):
-    from db.queries import get_price_history, get_prediction_history
+    from db.queries import get_price_history
 
     symbol = symbol.upper()
     days_map = {"1D": 1, "1W": 7, "1M": 30, "3M": 90, "1Y": 365}
     days = days_map[filter]
 
     try:
-        if mode == "Price":
-            # `prices` is hourly; cap the row count so 1Y doesn't pull 400 days of hourly data.
-            n_rows = min(days * 24, 24 * 400)
-            history = get_price_history(symbol, days=n_rows)
-            points = [{"timestamp": h["timestamp"], "value": h["price"]} for h in reversed(history)]
-        else:
-            history = get_prediction_history(symbol, days=days)
-            points = [{"timestamp": h["timestamp"], "value": h["predicted_price"]} for h in reversed(history)]
+        # `prices` is hourly; cap the row count so 1Y doesn't pull 400 days of hourly data.
+        n_rows = min(days * 24, 24 * 400)
+        history = get_price_history(symbol, days=n_rows)
+        points = [{"timestamp": h["timestamp"], "value": h["price"]} for h in reversed(history)]
     except Exception as exc:
         raise db_unavailable(exc)
 

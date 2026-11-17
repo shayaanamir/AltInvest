@@ -2,8 +2,7 @@ import { IconCheck2 } from "../icons";
 import AssetAvatar from "../shared/AssetAvatar";
 import Sparkline from "../charts/Sparkline";
 import { formatAssetPrice } from "../../utils/formatters";
-
-const SIGNAL_CLASS = { BUY: "buy", HOLD: "hold", SELL: "sell" };
+import { AAI_BADGE_LABEL, ratingClass } from "../../utils/scoring";
 
 /** One coin or NFT collection in the "follow" step: real price, move, sparkline and AAI reading. */
 export default function AssetPickCard({ item, selected, onToggle }) {
@@ -48,7 +47,8 @@ export default function AssetPickCard({ item, selected, onToggle }) {
 
       <span className="ob-asset-foot">
         <span>AAI {item.aaiScore != null ? Math.round(item.aaiScore) : "—"}</span>
-        {item.signal && <span className={`sv2-signal-pill ${SIGNAL_CLASS[item.signal] || ""}`}>{item.signal}</span>}
+        {/* An AAI rating, never Buy/Sell (audit G-37). */}
+        {item.signal && <span className={`sv2-signal-pill ${ratingClass(item.signal)}`}>{AAI_BADGE_LABEL[item.signal] ?? item.signal}</span>}
       </span>
     </button>
   );

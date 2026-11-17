@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatAssetPrice, formatPct } from "../../utils/formatters";
+import { priceAsOfLabel, delayedTitle } from "../../utils/priceFreshness";
 import { IconArrowLeft, IconClock, IconPlus, IconColumns, IconBell } from "../icons";
 import WatchStar from "../watchlists/WatchStar";
 import CreateAlertModal from "../alerts/CreateAlertModal";
@@ -30,10 +31,19 @@ export default function AssetHeaderCard({ header, onBack }) {
                 {header.held && <span className="adt-tag held">Held</span>}
               </div>
               <div className="adt-price-row">
-                <span className="adt-price">{formatAssetPrice(header.price)}</span>
-                <span className={`adt-change ${positive ? "positive" : "negative"}`}>
-                  {positive ? "↗" : "↘"} {formatPct(Math.abs(header.change24h))}
-                </span>
+                {/* No market data (e.g. BASE): a dash, never "$0.00 ↗ 0.00%". */}
+                <span className="adt-price">{header.price != null ? formatAssetPrice(header.price) : "—"}</span>
+                {header.change24h != null && (
+                  <span className={`adt-change ${positive ? "positive" : "negative"}`}>
+                    {positive ? "↗" : "↘"} {formatPct(Math.abs(header.change24h))}
+                  </span>
+                )}
+                {header.priceDelayed && (
+                  <span className="price-delayed-badge" title={delayedTitle(header.priceAsOf)}>Delayed</span>
+                )}
+                {priceAsOfLabel(header.priceAsOf) && (
+                  <span className="price-as-of">{priceAsOfLabel(header.priceAsOf)}</span>
+                )}
                 {header.held && header.quantityHeld != null && (
                   <span className="adt-holding-note">you hold {header.quantityHeld} {header.symbol}</span>
                 )}

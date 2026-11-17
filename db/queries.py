@@ -46,9 +46,12 @@ def get_latest_risk(asset: str) -> dict | None:
         projection={"_id": 0}
     )
 
-# Assets the ML service (ml/, port 8001) covers. Their `predictions` and `risk_scores` rows come only
-# from backend/controllers/ml_pull_controller.py, never from a seed.
-ML_COVERED_ASSETS = ("BTC", "ETH", "SOL")
+# Assets the ML service (ml/, port 8001) serves (ml/config.py SERVED_ASSETS, ml/docs/DECISIONS.md D94). Their
+# `predictions` and `risk_scores` rows come only from backend/controllers/ml_pull_controller.py, never from a seed.
+# Not covered: DAI (a stablecoin) and BASE (a made-up index with no market). They have no prediction, risk score or
+# AAI: /prediction and /risk return 404, and the AAI functions below return nothing for them.
+ML_COVERED_ASSETS = ("BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "AVAX", "DOGE", "DOT", "LINK", "MATIC", "UNI",
+                     "LTC", "ATOM", "NEAR", "ARB")
 
 
 def _upsert_ml_row(collection: str, doc: dict) -> None:
@@ -226,17 +229,6 @@ def get_asset_market_data_all_latest() -> list:
     return _latest_rows("asset_market_data", "asset_id")
 
 
-def get_prediction_history(asset: str, days: int = 30) -> list:
-    db = get_db()
-    cursor = db.predictions.find(
-        {"asset": asset.upper()},
-        sort=[("timestamp", -1)],
-        limit=days,
-        projection={"_id": 0},
-    )
-    return list(cursor)
-
-
 def get_latest_risk_breakdown(asset: str) -> dict | None:
     db = get_db()
     return db.risk_breakdown.find_one(
@@ -247,6 +239,8 @@ def get_latest_risk_breakdown(asset: str) -> dict | None:
 
 
 def get_latest_aai_score(target_type: str, target_id: str) -> dict | None:
+    if target_type == "crypto" and str(target_id).upper() not in ML_COVERED_ASSETS:
+        return None             # D94: no AAI outside the ML-covered coins (DAI, BASE), whatever rows remain
     db = get_db()
     return db.aai_scores.find_one(
         {"target_type": target_type, "target_id": target_id},
@@ -809,6 +803,9 @@ def _latest_aai(target_type: str, target_ids=None) -> dict:
     match: dict = {"target_type": target_type}
     if target_ids is not None:
         match["target_id"] = {"$in": sorted(set(target_ids))}
+    if target_type == "crypto":     # D94: no AAI outside the ML-covered coins (DAI, BASE), whatever rows remain
+        allowed = set(ML_COVERED_ASSETS) if target_ids is None else set(ML_COVERED_ASSETS) & set(target_ids)
+        match["target_id"] = {"$in": sorted(allowed)}
     pipeline = [
         {"$match": match},
         {"$sort": {"target_type": 1, "target_id": 1, "timestamp": -1}},

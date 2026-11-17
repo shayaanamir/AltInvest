@@ -64,8 +64,8 @@ def dirs(monkeypatch, tmp_path):
 
 
 def _files(raw, val) -> dict[str, bytes]:
-    paths = [p for a in config.ASSETS for p in (raw / f"{a}_1d.csv", raw / f"{a}_1d.fetch.json",
-                                                 val / f"{a}_validation.json")]
+    paths = [p for a in config.SERVED_ASSETS for p in (raw / f"{a}_1d.csv", raw / f"{a}_1d.fetch.json",
+                                                        val / f"{a}_validation.json")]
     return {p.name: p.read_bytes() for p in paths if p.exists()}
 
 
@@ -78,8 +78,8 @@ def test_refresh_replaces_with_a_validated_set(monkeypatch, dirs):
     monkeypatch.setattr(fetch, "fetch", fake_fetch(400))
     assert refresh.run_once() == 0
     s = _status(val)
-    assert s["all_servable"] and set(s["assets"]) == set(config.ASSETS)
-    for a in config.ASSETS:
+    assert s["all_servable"] and set(s["assets"]) == set(config.SERVED_ASSETS)
+    for a in config.SERVED_ASSETS:
         assert s["assets"][a] | {"time": None} == {"status": "ok", "reason": None, "servable": True,
                                                    "last_bar": "2026-10-17", "rows": 400, "time": None}
         report = json.loads(validate.report_path(a).read_text(encoding="utf-8"))
@@ -97,7 +97,7 @@ def test_fetch_failure_restores_csv_meta_and_report(monkeypatch, dirs, error):
     before = _files(raw, val)
     monkeypatch.setattr(fetch, "fetch", fake_fetch(401, fail=error))
     assert refresh.run_once() == 0                  # still servable: the previous data was restored
-    assert _files(raw, val) == before and len(before) == 9
+    assert _files(raw, val) == before and len(before) == 3 * len(config.SERVED_ASSETS)      # D94: every served asset
     a = _status(val)["assets"]["btc"]
     assert a["status"] == "failed" and a["reason"].startswith(type(error).__name__) and a["servable"]
     assert a["last_bar"] == "2026-10-17"
@@ -165,7 +165,7 @@ def test_refuses_the_evaluation_snapshot_without_force(monkeypatch, dirs, target
     with pytest.raises(SystemExit, match="refusing to write to the evaluation snapshot"):
         refresh.main()
     assert calls == [] and not snap_raw.exists() and not snap_val.exists()
-    assert refresh.run_once(force=True) == 0 and calls == list(config.ASSETS)
+    assert refresh.run_once(force=True) == 0 and calls == list(config.SERVED_ASSETS)
 
 
 def test_lock_busy_skips_and_stale_lock_is_taken_over(monkeypatch, dirs):
@@ -178,7 +178,7 @@ def test_lock_busy_skips_and_stale_lock_is_taken_over(monkeypatch, dirs):
     assert refresh.run_once(lock_wait=0) == 1 and calls == []
     old = lock.stat().st_mtime - refresh.LOCK_STALE_SECONDS - 10
     os.utime(lock, (old, old))
-    assert refresh.run_once(lock_wait=0) == 0 and calls == list(config.ASSETS)
+    assert refresh.run_once(lock_wait=0) == 0 and calls == list(config.SERVED_ASSETS)
     assert not lock.exists()
 
 
@@ -239,7 +239,7 @@ def test_refresh_rejects_gaps_and_older_data(monkeypatch, dirs, n, edit, reason)
     before = _files(raw, val)
     monkeypatch.setattr(fetch, "fetch", fake_fetch(n, edit=edit))
     assert refresh.run_once() == 0                  # still servable on the previous data
-    assert _files(raw, val) == before and len(before) == 9
+    assert _files(raw, val) == before and len(before) == 3 * len(config.SERVED_ASSETS)      # D94: every served asset
     a = _status(val)["assets"]["btc"]
     assert a["status"] == "failed" and a["reason"].startswith(reason) and a["servable"] and a["rows"] == 400
     monkeypatch.setattr(fetch, "fetch", fake_fetch(401))      # control: longer and later data is accepted

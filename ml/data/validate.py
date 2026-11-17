@@ -132,7 +132,7 @@ def build_report(asset: str, raw_dir: Path | None = None) -> dict:
     meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
     return {
         "asset": asset,
-        "symbol": config.ASSET_SYMBOLS[asset],
+        "symbol": config.SERVED_ASSET_SYMBOLS[asset],      # D94
         "source": meta.get("source"),
         "fetched_at": meta.get("fetched_at"),
         "validated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),

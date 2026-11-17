@@ -56,7 +56,7 @@ export default function PricePerformanceCard({ priceHistory, risk, aaiPanel }) {
           <div className="adt-signal-badge">
             {/* A composite rating of the asset, not a price forecast; the chart above says it is not a prediction. */}
             AAI rating (composite score)
-            <span className={`adt-signal-pill ${signal.tone}`}>{signal.label.replace("Strong ", "")}</span>
+            <span className={`adt-signal-pill ${signal.tone}`}>{signal.label}</span>
             {aaiPanel?.confidence != null && (
               <span className="adt-signal-conf">{Math.round(aaiPanel.confidence * 100)}% confidence</span>
             )}

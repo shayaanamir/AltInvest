@@ -56,7 +56,7 @@ export default function PortfolioAnalysisModal({ onClose, onAddHolding }) {
               {row("Value-weighted AAI score", a.weightedAai != null ? Math.round(a.weightedAai) : "No scored holdings")}
               {a.intel.aggregateRiskScore != null && row("Average risk score", `${a.intel.aggregateRiskScore}/100 (higher means lower risk)`)}
               {a.intel.sentimentExposure != null && row("Average sentiment", `${a.intel.sentimentExposure > 0 ? "+" : ""}${a.intel.sentimentExposure}`)}
-              {signals.length > 0 && row("Signal mix", signals.map(([k, n]) => `${k} ×${n}`).join(" · "))}
+              {signals.length > 0 && row("AAI rating mix", signals.map(([k, n]) => `${k} ×${n}`).join(" · "))}
             </div>
 
             <h3 className="pa-h">What stands out</h3>
@@ -73,8 +73,8 @@ export default function PortfolioAnalysisModal({ onClose, onAddHolding }) {
               {a.weakest && (
                 <li>Lowest AAI score: <strong>{a.weakest.label}</strong> ({Math.round(a.weakest.aaiScore)}).</li>
               )}
-              {a.toReduce.length > 0 && (
-                <li>The current signal suggests reducing: {a.toReduce.map((p) => p.label).join(", ")}.</li>
+              {a.weakRated.length > 0 && (
+                <li>Weak AAI rating (not a recommendation): {a.weakRated.map((p) => p.label).join(", ")}.</li>
               )}
               {a.unscored.length > 0 && (
                 <li>No stored score for {a.unscored.map((p) => p.label).join(", ")}, so they are left out of the averages above.</li>

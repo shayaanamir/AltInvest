@@ -28,7 +28,7 @@ from ml.features.features import build_features, ewma_vol
 from ml.signal.signal_logic import generate_signal
 
 BAR = pd.Timedelta(days=1)
-DECISIONS_IN_FORCE = ("D6", "D27", "D33", "D35", "D36", "D37", "D38", "D40", "D81", "D82")
+DECISIONS_IN_FORCE = ("D6", "D27", "D33", "D35", "D36", "D37", "D38", "D40", "D81", "D82", "D94")
 NOTE_PRICE = ("No model beats the no-change baseline (D35): prediction_30d is the last-value baseline (0%); "
               "no predicted price or interval.")
 
@@ -43,16 +43,27 @@ def serving_table(raw: pd.DataFrame) -> pd.DataFrame:
     return feats
 
 
-def feature_tables(assets=config.ASSETS) -> dict[str, pd.DataFrame]:
-    """Serving table of every pooled asset (D36). Refuses all of them if any one fails the serving gate (D40)
-    or has a gap in its bars (build_features refuses gaps)."""
+def _table(asset: str) -> pd.DataFrame:
+    """One asset's serving table after the serving gate (D40); NotServable on a gate failure or a gap in its bars
+    (build_features refuses gaps)."""
+    raw = servable_raw(asset)
+    try:
+        return serving_table(raw)
+    except ValueError as e:
+        raise NotServable(f"{asset}: bars cannot be served ({e})") from None
+
+
+def feature_tables(assets=config.SERVED_ASSETS, required=config.ASSETS) -> dict[str, pd.DataFrame]:
+    """Serving table of every pooled asset (D36). If a `required` (evaluated) asset fails the serving gate (D40)
+    all are refused, as before D94. Any other served asset that fails is left out of the pool (D94); it is then
+    NotServable itself (risk_inputs), and the risk note names the assets actually pooled."""
     out = {}
     for a in assets:
-        raw = servable_raw(a)
         try:
-            out[a] = serving_table(raw)
-        except ValueError as e:
-            raise NotServable(f"{a}: bars cannot be served ({e})") from None
+            out[a] = _table(a)
+        except NotServable:
+            if a in required:
+                raise
     return out
 
 
@@ -92,6 +103,9 @@ def bar_age_hours(last_bar: pd.Timestamp, now: datetime) -> float:
 def risk_inputs(asset: str, now: datetime, feats: Mapping[str, pd.DataFrame] | None = None) -> dict:
     """Every input /risk, /predict and /debug use for one asset. `feats` defaults to feature_tables()."""
     feats = feature_tables() if feats is None else feats
+    if asset not in feats:
+        _table(asset)                   # raises the asset's own NotServable reason (D94)
+        raise NotServable(f"{asset}: not in the served pool")
     own = feats[asset]
     today = own.index[-1]
     vol = float(own[config.RISK_VOL_COLUMN].iloc[-1])
@@ -183,7 +197,7 @@ def debug(asset: str, now: datetime, feats: Mapping[str, pd.DataFrame] | None = 
     }
 
 
-def data_last_bars(assets=config.ASSETS) -> dict[str, str | None]:
+def data_last_bars(assets=config.SERVED_ASSETS) -> dict[str, str | None]:
     """Date of each asset's latest bar; None if its raw file is missing."""
     out = {}
     for a in assets:

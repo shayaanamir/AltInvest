@@ -7,6 +7,7 @@ One place that joins the per-asset / per-collection collections into the flat
 Every field comes from the database. A field with no backing data is None —
 nothing is estimated here.
 """
+from utils.price_freshness import price_freshness
 from datetime import datetime, timedelta, timezone
 
 from db.queries import (
@@ -24,8 +25,19 @@ from db.queries import (
 )
 
 
+# Audit G-37: the band is an AAI rating, not trade advice. The API keeps `signal` (BUY/HOLD/SELL, the stable value
+# filters and alerts use) and adds `rating` with the words the app shows. No direction model is served (ML D33) and
+# every forecast part is the no-change baseline (D35, D94), so the band reflects sentiment and risk only.
+AAI_RATING = {"BUY": "Strong", "HOLD": "Neutral", "SELL": "Weak"}
+
+
+def aai_rating(score: float | None) -> str | None:
+    """Strong / Neutral / Weak from a 0-100 AAI score: the words shown for aai_signal's band."""
+    return AAI_RATING.get(aai_signal(score))
+
+
 def aai_signal(score: float | None) -> str | None:
-    """BUY / HOLD / SELL from a 0-100 AAI score (same cut-offs as the frontend's scoring.js)."""
+    """BUY / HOLD / SELL from a 0-100 AAI score (same cut-offs as the frontend's scoring.js). Shown as aai_rating."""
     if score is None:
         return None
     if score >= 55:
@@ -88,20 +100,34 @@ def live_nft_sentiment(now: datetime | None = None) -> dict:
     return out
 
 
+def stored_sentiment(aai: dict | None) -> dict | None:
+    """
+    The sentiment reading (-1..1) an aai_scores row was computed from: {score, confidence, trend}, or None.
+
+    Only `sentiment_raw` counts. `sentiment_score` in that row is the AAI's 0-100 component, on another scale,
+    so it is never used as a sentiment (audit G-12); rows written before `sentiment_raw` existed give None.
+    """
+    raw = (aai or {}).get("sentiment_raw")
+    if not isinstance(raw, (int, float)):
+        return None
+    return {"score": raw, "confidence": aai.get("sentiment_confidence"), "trend": aai.get("sentiment_trend")}
+
+
 def _aai_fields(aai: dict | None, live: dict | None = None) -> dict:
-    """AAI + sentiment fields. Live sentiment (when present) wins over the value stored in aai_scores."""
+    """AAI + sentiment fields. Live sentiment (when present) wins over the reading stored in aai_scores."""
     aai = aai or {}
     score = aai.get("aai_score")
-    live = live or {}
-    sent_score = live.get("score", aai.get("sentiment_score"))
-    conf = live.get("confidence", aai.get("sentiment_confidence"))
+    live = live or stored_sentiment(aai) or {}
+    sent_score = live.get("score")
+    conf = live.get("confidence")
     return {
         "aai_score": score,
         "signal": aai_signal(score),
+        "rating": aai_rating(score),
         "sentiment_score": sent_score,
         "sentiment_confidence": conf,
         "sentiment_confidence_label": sentiment_confidence_label(conf),
-        "sentiment_trend": live.get("trend", aai.get("sentiment_trend")),
+        "sentiment_trend": live.get("trend"),
     }
 
 
@@ -130,6 +156,7 @@ def build_crypto_items(user_id=None, with_sparklines: bool = False) -> list[dict
             "subcategory": meta.get("subcategory"),
             "logo_color": meta.get("logo_color"),
             "price": m.get("price"),
+            **price_freshness(m),            # price_as_of, price_delayed (audit N-05)
             "floor_eth": None,
             "change_24h": m.get("change_24h"),
             "change_7d": m.get("change_7d"),

@@ -10,7 +10,7 @@ from typing import Optional
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Query
 from utils.http_errors import db_unavailable
-from controllers.market_controller import aai_signal
+from controllers.market_controller import aai_rating, aai_signal
 from controllers.portfolio_controller import get_valued_holdings
 
 from auth.dependencies import get_current_user_id, get_optional_user_id
@@ -192,6 +192,7 @@ def get_dashboard_trending(
             "change_24h": m.get("change_24h"),
             "aai_score": score,
             "signal": aai_signal(score),
+            "rating": aai_rating(score),
             "sparkline": sparks.get(asset_id, []),
             "watching": asset_id in watching,
             "trend_score": m.get("trend_score"),

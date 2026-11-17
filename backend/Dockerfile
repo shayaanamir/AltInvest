@@ -5,7 +5,7 @@
 #
 # Why root context? backend/path_setup.py puts the project root AND
 # sentiment_engine/ on sys.path so that backend code can do
-# `from shared.mock_data import ...`, `from aai_engine.aai import ...`,
+# `from aai_engine.aai import ...`,
 # `from db.queries import ...`, and (lazily) `from aggregator.sentiment_aggregator
 # import run_pipeline` / `from storage.mongo_handler import ...` /
 # `from utils.config import ASSETS` which live inside sentiment_engine/.

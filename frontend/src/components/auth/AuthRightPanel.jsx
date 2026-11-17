@@ -94,36 +94,6 @@ function MarketLine() {
     );
 }
 
-function Ticker() {
-    const T = useLandingTheme();
-    const items = [
-        { label: "BTC", value: "+4.2%", up: true },
-        { label: "ETH", value: "+2.8%", up: true },
-        { label: "SPX", value: "−0.4%", up: false },
-        { label: "GOLD", value: "+0.9%", up: true },
-        { label: "VIX", value: "18.4", up: null },
-    ];
-    return (
-        <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
-            {items.map(({ label, value, up }) => (
-                <div key={label} style={{ display: "flex", gap: 5, alignItems: "baseline" }}>
-                    <span style={{ fontSize: 9.5, fontWeight: 600, color: T.ink3, letterSpacing: "0.12em" }}>
-                        {label}
-                    </span>
-                    <span style={{
-                        fontSize: 10.5, fontWeight: 600,
-                        color: up === true ? T.green
-                            : up === false ? T.red
-                                : T.ink2,
-                    }}>
-                        {value}
-                    </span>
-                </div>
-            ))}
-        </div>
-    );
-}
-
 export default function AuthRightPanel() {
     const { isDark } = useTheme();
     const T = useLandingTheme();
@@ -160,35 +130,11 @@ export default function AuthRightPanel() {
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 0.35, duration: 0.9 }}
-                    style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 32 }}
-                >
-                    <motion.div
-                        animate={{ opacity: [1, 0.25, 1] }}
-                        transition={{ repeat: Infinity, duration: 2.8, ease: "easeInOut" }}
-                        style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--sv2-green)" }}
-                    />
-                    <span style={{ fontSize: 10, fontWeight: 600, color: T.ink3, letterSpacing: "0.18em", textTransform: "uppercase" }}>
-                        Live Markets
-                    </span>
-                </motion.div>
-
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
                     transition={{ delay: 0.5, duration: 1.4 }}
-                    style={{ width: "100%", marginBottom: 20 }}
+                    style={{ width: "100%", marginBottom: 64 }}
                 >
+                    {/* Decorative only: no prices or market data are shown on the sign-in page (audit G-39). */}
                     <MarketLine />
-                </motion.div>
-
-                <motion.div
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.75, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-                    style={{ marginBottom: 64 }}
-                >
-                    <Ticker />
                 </motion.div>
 
                 <motion.div
