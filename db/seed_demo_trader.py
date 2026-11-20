@@ -20,8 +20,8 @@ Usage (the local docker-compose database the running app uses):
     MONGO_URI=mongodb://localhost:27017 MONGO_DB_NAME=aaip_db APP_ENV=dev python db/seed_demo_trader.py
 
 Demo credentials (development only):
-    email:    alex.rivera@altinvest.com
-    password: AlexDemo2026!
+    email:    sanchit.narayan@altinvest.com
+    password: SanchitDemo2026!
 """
 import os
 import sys
@@ -34,9 +34,9 @@ sys.path.insert(0, os.path.join(PROJECT_ROOT, "backend"))
 from db.mongo_connection import get_db
 from shared.app_env import app_env, is_dev
 
-EMAIL = "alex.rivera@altinvest.com"
-PASSWORD = "AlexDemo2026!"
-NAME = "Alex Rivera"
+EMAIL = "sanchit.narayan@altinvest.com"
+PASSWORD = "SanchitDemo2026!"
+NAME = "Sanchit Narayan"
 DAYS_ON_PLATFORM = 14
 
 NOW = datetime.now(timezone.utc)
@@ -92,7 +92,7 @@ def seed():
             "email": EMAIL, "name": NAME, "password_hash": hash_password(PASSWORD),
             "created_at": SIGNUP, "email_verified": True, "email_verified_at": SIGNUP + timedelta(minutes=3),
             "risk_profile": "growth", "layout_preference": "everything", "display_currency": "USD",
-            "avatar_initials": "AR", "avatar_color": "#14b8a6",
+            "avatar_initials": "SN", "avatar_color": "#14b8a6",
             "onboarding": {
                 "completed": True, "completed_at": SIGNUP + timedelta(minutes=9), "skipped": False,
                 "answers": {
