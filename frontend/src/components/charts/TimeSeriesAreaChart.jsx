@@ -3,12 +3,16 @@ import { useElementSize } from "../../hooks/useElementSize";
 import { formatCurrencyAxis, formatAssetPrice } from "../../utils/formatters";
 import { buildSeriesPaths } from "../../utils/seriesPaths";
 
-function defaultXFormatter(dateStr) {
+const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
+
+// Clock times only for an intraday series; a longer one (daily snapshots stamped "...T00:00:00Z")
+// would otherwise show the same local time on every tick.
+function defaultXFormatter(dateStr, spanMs = 0) {
   if (!dateStr) return "";
   try {
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return dateStr;
-    if (dateStr.includes("T")) {
+    if (dateStr.includes("T") && spanMs < TWO_DAYS_MS) {
       return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
     }
     return d.toLocaleDateString([], { month: "short", day: "numeric" });
@@ -56,7 +60,8 @@ export default function TimeSeriesAreaChart({
     );
   }
 
-  const formatX = xLabelFormatter || defaultXFormatter;
+  const spanMs = Math.abs(new Date(data[data.length - 1]?.date) - new Date(data[0]?.date)) || 0;
+  const formatX = xLabelFormatter || ((date) => defaultXFormatter(date, spanMs));
 
   const handleMouseMove = (e) => {
     if (!containerRef.current || !data?.length) return;

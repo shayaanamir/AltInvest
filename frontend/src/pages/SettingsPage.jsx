@@ -70,7 +70,7 @@ export default function SettingsPage() {
             <h1 className="sv2-h1" style={{ marginTop: 0 }}>Settings</h1>
             <p className="sv2-lead">Account configuration — everything here applies immediately.</p>
           </div>
-          <button className="sv2-btn-outline" style={{ width: "auto" }} onClick={() => navigate("/profile")}>
+          <button className="sv2-btn-outline" style={{ flex: "none", width: "auto" }} onClick={() => navigate("/profile")}>
             View profile
           </button>
         </div>

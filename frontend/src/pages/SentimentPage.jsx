@@ -71,7 +71,7 @@ export default function SentimentPage() {
           <div style={{
             display: "flex", alignItems: "center", gap: 6,
             fontSize: 11, color: offline || checkFailed ? colors.red : (isDark ? "#3fcf8e" : "#2f8f5b"),
-            marginBottom: -8, paddingLeft: 2,
+            marginBottom: 10, paddingLeft: 2,
           }}>
             <span style={{
               width: 7, height: 7, borderRadius: "50%",

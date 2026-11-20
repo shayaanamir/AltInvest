@@ -11,7 +11,7 @@ export default function TrendingCollectionsSection() {
   const navigate = useNavigate();
 
   return (
-    <section style={{ marginTop: 30 }}>
+    <section className="dv2-collections-section">
       <div className="dv2-section-head">
         <div>
           <h2 className="dv2-section-title">Trending collections</h2>
