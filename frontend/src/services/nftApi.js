@@ -28,6 +28,26 @@ function mapLiquidity(l) {
 }
 
 export const nftApi = {
+  /**
+   * The collection's AAI (ml/docs/DECISIONS.md D98), in AaiScoreCard's shape. Null for an unknown collection (404).
+   * No confidence is passed: the NFT score has no forecast part, so there is no model confidence to show.
+   */
+  getAai: async (slug) => {
+    let d;
+    try {
+      d = await apiFetch(`/aai/nft/${encodeURIComponent(slug)}`);
+    } catch (e) {
+      if (e.status === 404) return null;
+      throw e;
+    }
+    return {
+      score: typeof d.aai_score === "number" ? d.aai_score : null,
+      confidence: null,
+      note: d.note ?? null,
+      staleInputs: d.stale_inputs ?? [],
+      asOf: d.as_of ?? null,
+    };
+  },
   /** News sentiment of a collection (or NFT_MARKET_SLUG for the market). Null when none was computed yet (404). */
   getSentiment: async (slug) => {
     try {

@@ -101,6 +101,7 @@ def test_refresh_stores_a_null_row_for_stale_inputs(rows, monkeypatch):
             rows["risk"] = _at(RISK_BTC, timedelta(hours=1))
         return real(symbol, sentiment=sentiment, now=NOW)
     monkeypatch.setattr(aai, "compute_aai_response", fake)
+    monkeypatch.setattr(aai, "_refresh_nft_aai_scores", lambda *a: None)    # NFT half: tests/test_nft_aai.py
 
     out = aai.refresh_all_aai_scores()
     assert out["stored"] == ["BTC"] and out["stale"] == ["ETH"]

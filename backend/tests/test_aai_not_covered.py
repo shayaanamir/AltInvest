@@ -49,6 +49,7 @@ def test_refresh_skips_uncovered_assets(monkeypatch):
                         lambda: {a: {"score": 0.1, "confidence": 0.9, "trend": "flat"} for a in ("BTC", "DAI", "BASE")})
     monkeypatch.setattr(aai, "_get_real_prediction", lambda a: _fresh(PREDICT_BTC))
     monkeypatch.setattr(aai, "_get_real_risk", lambda a: _fresh(RISK_BTC))
+    monkeypatch.setattr(aai, "_refresh_nft_aai_scores", lambda *a: None)    # NFT half: tests/test_nft_aai.py
     out = aai.refresh_all_aai_scores()
     assert stored == ["BTC"] and out["stored"] == ["BTC"]
     assert out["skipped"] == {"DAI": "not covered by the ML service", "BASE": "not covered by the ML service"}

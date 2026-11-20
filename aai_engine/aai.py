@@ -41,6 +41,17 @@ def compute_aai(
     return round(min(max(aai, 0.0), 100.0), 2)
 
 
+# NFT AAI (ml/docs/DECISIONS.md D98, decision C6): there is no NFT floor forecast, so the prediction
+# part is fixed at a neutral 50, the same rule as crypto's no-change baseline (C5). The weights stay
+# those of compute_aai, so an NFT score lies in [20, 80].
+NFT_NEUTRAL_PRED_SCORE = 50.0
+
+
+def compute_nft_aai(sentiment_score: float, risk_score: float) -> float:
+    """AAI for an NFT collection: compute_aai with the prediction part at a neutral 50."""
+    return compute_aai(NFT_NEUTRAL_PRED_SCORE, sentiment_score, risk_score)
+
+
 def normalise_sentiment(compound: float) -> float:
     """
     Maps a VADER compound score from [-1, +1] to [0, 100].

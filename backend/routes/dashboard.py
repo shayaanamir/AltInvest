@@ -90,7 +90,7 @@ def get_dashboard_stats(user_id: ObjectId = Depends(get_current_user_id)):
         assets_count=len(market_latest),
         collections_count=len(nft_market),
         crypto_score_count=len(crypto_aai),
-        # No NFT AAI exists yet (ml/docs/DECISIONS.md D67): count collections with an ML NFT risk score.
+        # NFT AAI rows (D98); before the first refresh stores any, count collections with an ML NFT risk score.
         nft_score_count=len(nft_aai) or sum(isinstance(r.get("risk_score"), (int, float)) for r in nft_risk.values()),
         market_mood_confidence=round(sum(confidences) / len(confidences) * 100, 1) if confidences else None,
         sentiment_asset_count=len(sentiment_scores),

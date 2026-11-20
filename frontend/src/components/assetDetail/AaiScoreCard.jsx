@@ -1,7 +1,10 @@
 import { deriveAaiSignal } from "../../services/assetDetailApi";
 import { DISCLAIMER_SHORT } from "../layout/Disclaimer";
 
-export default function AaiScoreCard({ aaiPanel }) {
+const DEFAULT_DESCRIPTION = "A composite of price behaviour, liquidity, sentiment and risk. It is a summary, not a "
+  + "verdict — the panels below are what it is made of.";
+
+export default function AaiScoreCard({ aaiPanel, description = DEFAULT_DESCRIPTION }) {
   if (!aaiPanel) return null;
   const { score, confidence, note, staleInputs = [], asOf } = aaiPanel;
 
@@ -38,10 +41,7 @@ export default function AaiScoreCard({ aaiPanel }) {
       <div className="adt-progress-track">
         <div className={`adt-progress-fill ${signal.tone}`} style={{ width: `${pct}%` }} />
       </div>
-      <p className="adt-panel-desc">
-        A composite of price behaviour, liquidity, sentiment and risk. It is a summary, not a
-        verdict — the panels below are what it is made of.
-      </p>
+      <p className="adt-panel-desc">{description}</p>
       {asOf && <p className="adt-panel-desc sv2-small sv2-muted">Inputs as of {asOf.slice(0, 16).replace("T", " ")} UTC</p>}
       {note && <p className="adt-panel-desc sv2-muted">{note}</p>}
       <p className="adt-panel-desc sv2-small sv2-muted">{DISCLAIMER_SHORT}</p>

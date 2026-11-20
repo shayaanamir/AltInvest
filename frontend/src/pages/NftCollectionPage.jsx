@@ -9,6 +9,7 @@ import NftFloorCard from "../components/nft/NftFloorCard";
 import DelayedBadge from "../components/shared/DelayedBadge";
 import NftItemCard from "../components/nft/NftItemCard";
 import NftSentimentCard from "../components/nft/NftSentimentCard";
+import AaiScoreCard from "../components/assetDetail/AaiScoreCard";
 import { IconArrowLeft } from "../components/icons";
 import { ErrorState, ErrorBoundary } from "../errors";
 
@@ -84,6 +85,15 @@ function SalesCard({ sales }) {
   );
 }
 
+const NFT_AAI_DESCRIPTION = "A composite of news sentiment and floor risk. There is no floor forecast, so the "
+  + "prediction part counts as a neutral 50. It is a summary, not a verdict, and is not comparable to a crypto AAI score.";
+
+function NftAaiCard({ slug }) {
+  const { data, loading, error } = useAsync(() => nftApi.getAai(slug), [slug]);
+  if (loading || error || !data) return null;   // the rest of the page stands on its own
+  return <AaiScoreCard aaiPanel={data} description={NFT_AAI_DESCRIPTION} />;
+}
+
 export default function NftCollectionPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -133,6 +143,8 @@ export default function NftCollectionPage() {
                 </div>
               </div>
             </div>
+
+            <ErrorBoundary variant="section" label="AAI"><NftAaiCard slug={c.slug} /></ErrorBoundary>
 
             <ErrorBoundary variant="section" label="Floor chart">
               <NftFloorCard history={c.history} risk={c.risk} liquidityBadge={<LiquidityBadge liquidity={c.liquidity} />} />
