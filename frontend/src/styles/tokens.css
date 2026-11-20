@@ -595,7 +595,10 @@
   font-weight: 700;
 }
 /* ---------- page scroll area ---------- */
-.app-content { flex: 1; overflow: auto; padding: 40px 40px 20px; }
+.app-content { flex: 1; overflow: auto; padding: 40px 40px 20px; display: flex; flex-direction: column; }
+/* The page fills the space above the disclaimer, so a short page (or a loading spinner) keeps it at the bottom. */
+.app-page { flex: 1 0 auto; min-width: 0; }
+.app-content > .app-disclaimer { flex-shrink: 0; }
 /* "Not financial advice" notice at the end of every app page (audit G-38). */
 .app-disclaimer { max-width: 760px; margin: 32px 0 0; padding-top: 14px; border-top: 1px solid var(--sv2-border); line-height: 1.5; }
 [data-density="compact"] .app-disclaimer { margin: 24px 24px 16px; }

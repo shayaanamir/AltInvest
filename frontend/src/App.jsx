@@ -115,7 +115,7 @@ function ShellRoutes() {
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--sv2-bg)", transition: "background 0.25s" }}>
         <Topbar />
         <ConnectionBanner />
-        <div className="app-content">{wrappedPageContent}<Disclaimer /></div>
+        <div className="app-content"><div className="app-page">{wrappedPageContent}</div><Disclaimer /></div>
       </div>
     </div>
   );
