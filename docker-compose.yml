@@ -54,6 +54,8 @@ services:
       SMTP_FROM: ${SMTP_FROM:-}
       SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
       ML_BASE_URL: ${ML_BASE_URL:-http://ml:8001}
+      # Risk breakdown writes to Atlas: approved by owner 2026-11-20 (D96, D97).
+      RISK_BREAKDOWN_WRITES: ${RISK_BREAKDOWN_WRITES:-1}
       # The source is bind-mounted read-only (no container writes into the repo, Phase 10 review 10.9b)
       PYTHONDONTWRITEBYTECODE: "1"
     depends_on:

@@ -1,12 +1,12 @@
 """
-Measured risk breakdown for the coins the ML service serves (ml/docs/DECISIONS.md D96, D94 Stage 2).
+Measured risk breakdown for the coins the ML service serves (ml/docs/DECISIONS.md D96, D94 Stage 2, D97).
 
 Three metrics per coin, each a 0-100 SAFETY score (higher = safer, like the D36 risk score) from ranking a measured
 value across the covered coins:
 
   volatility   the served 30-day volatility (ML /risk `volatility`, persistence, D82)   lower is safer
-  liquidity    24h volume / market cap (latest CoinGecko snapshot)                    higher is safer
-  market_risk  maximum drawdown over the last 90 days of daily closes (`prices`)       shallower is safer
+  liquidity    24h USD trading volume (latest CoinGecko snapshot, D97)                  higher is safer
+  market_risk  maximum drawdown over the last 90 days of daily closes (`prices`)        shallower is safer
 
 Every metric keeps its raw value, source and as_of. An input that is missing, unreadable or older than its limit
 gives value null and status "not available" (never a default) and is left out of that metric's ranking. There is
@@ -35,7 +35,7 @@ OK = "ok"
 # metric -> (label, raw-value description, source description, riskier when the raw value is higher?)
 METRICS = {
     "volatility": ("Volatility", "30-day volatility, annualised", "ML service /risk (30-day volatility, D82)", True),
-    "liquidity": ("Liquidity", "24h volume / market cap", "CoinGecko 24h volume and market cap", False),
+    "liquidity": ("Liquidity", "24h USD trading volume", "CoinGecko 24h volume (D97)", False),
     "market_risk": ("Market risk", f"maximum drawdown over {DRAWDOWN_DAYS} days", "daily closes from Binance / CoinGecko prices", True),
 }
 
@@ -122,16 +122,19 @@ def gather_inputs(assets, now: datetime) -> dict:
         else:
             vol_m = _measured(vol, r_at)
 
-        # Liquidity: 24h volume / market cap from the same CoinGecko snapshot.
+        # Liquidity: 24h USD trading volume from the latest CoinGecko snapshot (D97).
+        # Raw volume is ranked across the 16 covered coins (higher = safer = more liquid).
+        # Using raw volume instead of volume/market_cap correctly ranks large-cap coins like BTC
+        # that dominate spot markets but have lower turnover ratios than small-cap assets.
         m = market_rows.get(asset) or {}
         m_at = _aware(m.get("timestamp"))
-        volume, cap = _num(m.get("volume_24h")), _num(m.get("market_cap"))
-        if volume is None or cap is None or cap <= 0 or volume < 0:
-            liq_m = _measured(None, m_at, "no 24h volume or market cap")
+        volume = _num(m.get("volume_24h"))
+        if volume is None or volume < 0:
+            liq_m = _measured(None, m_at, "no 24h volume")
         elif m_at is None or now - m_at > MARKET_MAX_AGE:
             liq_m = _measured(None, m_at, f"market snapshot older than {MARKET_MAX_AGE.days} day")
         else:
-            liq_m = _measured(volume / cap, m_at)
+            liq_m = _measured(volume, m_at)
 
         # Market risk: 90-day maximum drawdown of daily closes.
         rows = get_prices_since(asset, now - timedelta(days=DRAWDOWN_DAYS))
